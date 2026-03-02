@@ -5,6 +5,7 @@ import { Router, Route, Switch, Redirect } from 'wouter';
 import gradientBackground from './assets/gradient-background.png';
 import { ProtectedRoute, PublicOnlyRoute } from './components/ProtectedRoute';
 import { HomeRedirect } from './components/HomeRedirect';
+import { Analytics } from '@vercel/analytics/react';
 
 // ─── Eagerly loaded: critical user journey pages ─────────────────────────
 // These are loaded in the initial bundle so navigation is instant.
@@ -100,6 +101,7 @@ export default function App() {
           </AuthProvider>
         </Router>
       </SplashScreen>
+      <Analytics />
     </QueryClientProvider>
   );
 }
