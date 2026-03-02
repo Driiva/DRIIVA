@@ -2,7 +2,7 @@ import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { securityHeaders, sanitizeInput, errorHandler, apiLimiter } from "./middleware/security";
-import { log } from "./vite";
+import { log } from "./logger";
 
 const app = express();
 

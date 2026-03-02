@@ -1,7 +1,15 @@
 {
-  "buildCommand": "npx vite build",
+  "version": 2,
+  "buildCommand": "npx vite build && npx esbuild server/app.ts --bundle --platform=node --packages=external --format=esm --outfile=api/_server.js",
   "outputDirectory": "dist/public",
+  "functions": {
+    "api/index.ts": {
+      "maxDuration": 30,
+      "includeFiles": "api/_server.js"
+    }
+  },
   "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/index" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
