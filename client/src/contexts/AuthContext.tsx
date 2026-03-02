@@ -9,6 +9,7 @@ interface User {
   email: string;
   onboardingComplete?: boolean;
   emailVerified?: boolean;
+  isAdmin?: boolean;
 }
 
 interface AuthContextType {
@@ -37,6 +38,19 @@ async function readOnboardingFromFirestore(uid: string): Promise<boolean> {
     }
   } catch (e) {
     console.warn('[AuthContext] Firestore onboarding fallback failed:', e);
+  }
+  return false;
+}
+
+async function readAdminFlagFromFirestore(uid: string): Promise<boolean> {
+  if (!db) return false;
+  try {
+    const userSnap = await getDoc(doc(db, 'users', uid));
+    if (userSnap.exists()) {
+      return userSnap.data()?.isAdmin === true;
+    }
+  } catch {
+    // Non-critical — default to false
   }
   return false;
 }
@@ -99,34 +113,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           });
           if (res.ok) {
             const profile = await res.json();
+            const adminFlag = await readAdminFlagFromFirestore(firebaseUser.uid);
             setUser({
               id: firebaseUser.uid,
               email: profile.email ?? firebaseUser.email ?? "",
               name: profile.name ?? firebaseUser.displayName ?? firebaseUser.email?.split("@")[0] ?? "User",
               onboardingComplete: profile.onboardingComplete === true,
               emailVerified: firebaseUser.emailVerified,
+              isAdmin: adminFlag,
             });
           } else {
             // API unavailable (e.g. no service account key configured) — fall back to Firestore
-            const onboardingComplete = await readOnboardingFromFirestore(firebaseUser.uid);
+            const [onboardingComplete, adminFlag] = await Promise.all([
+              readOnboardingFromFirestore(firebaseUser.uid),
+              readAdminFlagFromFirestore(firebaseUser.uid),
+            ]);
             setUser({
               id: firebaseUser.uid,
               email: firebaseUser.email ?? "",
               name: firebaseUser.displayName ?? firebaseUser.email?.split("@")[0] ?? "User",
               onboardingComplete,
               emailVerified: firebaseUser.emailVerified,
+              isAdmin: adminFlag,
             });
           }
         } catch (error) {
           console.error("[AuthContext] Error fetching profile from API:", error);
           // Fall back to Firestore instead of defaulting to onboardingComplete: false
-          const onboardingComplete = await readOnboardingFromFirestore(firebaseUser.uid);
+          const [onboardingComplete, adminFlag] = await Promise.all([
+            readOnboardingFromFirestore(firebaseUser.uid),
+            readAdminFlagFromFirestore(firebaseUser.uid),
+          ]);
           setUser({
             id: firebaseUser.uid,
             email: firebaseUser.email ?? "",
             name: firebaseUser.displayName ?? firebaseUser.email?.split("@")[0] ?? "User",
             onboardingComplete,
             emailVerified: firebaseUser.emailVerified,
+            isAdmin: adminFlag,
           });
         }
       } else {

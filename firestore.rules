@@ -235,6 +235,24 @@ service cloud.firestore {
     }
 
     // =========================================================================
+    // FEEDBACK COLLECTION
+    // =========================================================================
+    // Authenticated users can submit feedback; no client reads (admin SDK only).
+
+    match /feedback/{docId} {
+      allow create: if isAuthenticated();
+      allow read, update, delete: if false;
+    }
+
+    // =========================================================================
+    // SYSTEM LOGS (admin SDK only — FCA audit trail)
+    // =========================================================================
+
+    match /systemLogs/{document=**} {
+      allow read, write: if false;
+    }
+
+    // =========================================================================
     // CATCH-ALL: DENY
     // =========================================================================
 

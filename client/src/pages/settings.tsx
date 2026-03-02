@@ -188,6 +188,19 @@ export default function Settings() {
                 <ChevronRight className="w-4 h-4 text-white/40" />
               </button>
               <button
+                onClick={() => setFeedbackOpen(true)}
+                className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <MessageSquare className="w-5 h-5 text-teal-400" />
+                  <div className="text-left">
+                    <span className="text-white block">Share Feedback</span>
+                    <span className="text-white/40 text-xs">Help us improve Driiva</span>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-white/40" />
+              </button>
+              <button
                 onClick={() => {
                   // Navigate FIRST, then logout — prevents ProtectedRoute
                   // from intercepting and redirecting to /signin
@@ -205,6 +218,7 @@ export default function Settings() {
           </motion.div>
         </div>
       </div>
+      <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
     </PageWrapper>
   );
 }

@@ -2,7 +2,7 @@
  * PRIVACY POLICY
  * ==============
  * UK GDPR–compliant privacy policy for Driiva telematics insurance.
- * Last updated: February 2026
+ * Last updated: March 2026
  */
 
 import { motion } from "framer-motion";
@@ -74,7 +74,7 @@ export default function Privacy() {
 
         <h1 className="text-2xl font-bold mb-2">Privacy Policy</h1>
         <p className="text-white/60 text-xs mb-6">
-          Effective: February 2026 · Driiva Ltd (UK)
+          Effective: March 2026 · Driiva Ltd (UK)
         </p>
 
         <div className="backdrop-blur-xl bg-[#1a1a2e]/80 border border-white/10 rounded-2xl p-6 text-left">
@@ -119,7 +119,38 @@ export default function Privacy() {
                 ]}
               />
             </SubSection>
-            <SubSection title="2.3 Other data">
+            <SubSection title="2.3 Telematics sensor data (passive collection)">
+              <P>
+                When the app detects a driving trip, we passively collect data
+                from your device's GPS, accelerometer, and gyroscope sensors.
+                This includes:
+              </P>
+              <List
+                items={[
+                  "Speed, braking intensity, and acceleration patterns.",
+                  "Cornering behaviour and heading changes.",
+                  "Phone usage indicators (device motion during driving).",
+                  "GPS coordinates and timestamps for route reconstruction.",
+                ]}
+              />
+              <P>
+                This data is used solely to calculate your driving safety score
+                for insurance pricing and community pool eligibility. Raw
+                telemetry data is retained on a rolling 12-month basis;
+                aggregated scores are retained per our policy retention schedule
+                (Section 7).
+              </P>
+            </SubSection>
+            <SubSection title="2.4 In-app feedback">
+              <P>
+                You may voluntarily submit feedback (star ratings and freetext
+                comments) through the app. This data is stored securely and used
+                solely for product improvement. Feedback is never shared with
+                third parties, sold, or used in any way to influence your
+                insurance pricing or driving score.
+              </P>
+            </SubSection>
+            <SubSection title="2.5 Other data">
               <P>
                 We may collect device type, app version, and usage information
                 to operate and improve the service. We do not sell your personal
@@ -184,7 +215,42 @@ export default function Privacy() {
                 to their privacy policy and our agreements with them.
               </P>
             </SubSection>
-            <SubSection title="5.3 Others">
+            <SubSection title="5.3 Damoov (Driving Behaviour Analytics)">
+              <P>
+                Driving behaviour data (GPS telemetry, speed, braking,
+                acceleration, cornering, and phone usage indicators) is
+                transmitted to and processed by Damoov, an EU-based telematics
+                data processor acting on Driiva's behalf under a GDPR Article 28
+                data processing agreement.
+              </P>
+              <P>
+                Damoov processes this data solely to provide driving analytics
+                that feed into your safety score. Damoov does not use your data
+                for any purpose other than those specified by Driiva. You can
+                review Damoov's privacy policy at{" "}
+                <a
+                  href="https://www.damoov.com/privacy-policy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-teal-400 hover:underline"
+                >
+                  damoov.com/privacy-policy
+                </a>
+                .
+              </P>
+              <P>
+                You have the right to request deletion of any data held by
+                Damoov on your behalf. To exercise this right, contact us at{" "}
+                <a
+                  href="mailto:info@driiva.co.uk"
+                  className="text-teal-400 hover:underline"
+                >
+                  info@driiva.co.uk
+                </a>{" "}
+                and we will action the request with Damoov within 30 days.
+              </P>
+            </SubSection>
+            <SubSection title="5.4 Others">
               <P>
                 We may use payment providers, cloud hosting, and support tools.
                 All processors are bound by contract to use data only for the
@@ -223,18 +289,24 @@ export default function Privacy() {
             <P>You have the right to:</P>
             <List
               items={[
-                "Access: request a copy of your personal data (no red tape, no hassle).",
+                "Access: request a copy of your personal data, including all telematics records and driving scores (no red tape, no hassle).",
                 "Rectification: have inaccurate data corrected.",
-                "Erasure: request deletion (“Delete Account” in the app – and we will remove it subject to legal retention).",
-                "Export: receive your data in a portable format (data portability).",
+                "Erasure: request deletion of all data including telematics records (“Delete Account” in the app – and we will remove it subject to legal retention). This includes data held by our processors such as Damoov.",
+                "Portability: receive your data (including trip history and scores) in a portable, machine-readable format.",
                 "Restrict processing or object to certain processing where the law allows.",
                 "Withdraw consent where processing is based on consent (e.g. marketing: unsubscribe at any time).",
                 "Lodge a complaint with the ICO (ico.org.uk).",
               ]}
             />
             <P>
-              To exercise these rights, contact us at info@driiva.co.uk. We will
-              respond within one month.
+              To exercise these rights, contact us at{" "}
+              <a
+                href="mailto:info@driiva.co.uk"
+                className="text-teal-400 hover:underline"
+              >
+                info@driiva.co.uk
+              </a>
+              . We will respond within one month.
             </P>
           </Section>
 

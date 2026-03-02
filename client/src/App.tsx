@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import React, { lazy, Suspense } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/queryClient';
 import { Router, Route, Switch, Redirect } from 'wouter';
@@ -33,10 +33,26 @@ const Achievements = lazy(() => import('./pages/achievements'));
 const TripDetail = lazy(() => import('./pages/trip-detail'));
 const ForgotPassword = lazy(() => import('./pages/forgot-password'));
 const VerifyEmail = lazy(() => import('./pages/verify-email'));
+const AdminFeedback = lazy(() => import('./pages/admin/feedback'));
 
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { OnlineStatusProvider, useOnlineStatusContext } from './contexts/OnlineStatusContext';
 import OfflineBanner from './components/OfflineBanner';
+
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-10 h-10 border-3 border-white/20 border-t-white rounded-full animate-spin" />
+      </div>
+    );
+  }
+  if (!user?.isAdmin) {
+    return <Redirect to="/dashboard" />;
+  }
+  return <>{children}</>;
+}
 
 /** Minimal loading spinner shown while lazy pages load */
 function PageFallback() {
@@ -154,6 +170,13 @@ function AppContent() {
           </Route>
           <Route path="/achievements">
             <ProtectedRoute><Achievements /></ProtectedRoute>
+          </Route>
+
+          {/* Admin routes */}
+          <Route path="/admin/feedback">
+            <ProtectedRoute>
+              <AdminRoute><AdminFeedback /></AdminRoute>
+            </ProtectedRoute>
           </Route>
 
           <Route>{() => <Redirect to="/" />}</Route>

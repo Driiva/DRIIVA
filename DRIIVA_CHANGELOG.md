@@ -5,6 +5,40 @@
 
 ## Entries
 
+### 2026-03-02 – Damoov Telematics + Feedback + Compliance
+
+**Phase 1 — Damoov Integration (server-side)**
+- Created `functions/src/lib/damoov.ts`: Damoov API client (user registration, trip fetch, daily stats)
+- Modified `functions/src/triggers/users.ts`: silent Damoov user registration on signup; stores `damoovDeviceToken` on user doc; credentials via Firebase Secret Manager (`DAMOOV_INSTANCE_ID`, `DAMOOV_INSTANCE_KEY`)
+- Created `functions/src/scheduled/damoovSync.ts`: daily scheduled function (00:30 UK time) syncs Damoov trip data to `trips/{tripId}`, updates `drivingProfile` on user doc, writes audit logs to `systemLogs/{date}/damoovSync`; `maxInstances: 10` hard cap
+- Exported `syncDamoovTrips` from `functions/src/index.ts`
+
+**Phase 2 — Feedback System**
+- Created `client/src/components/FeedbackModal.tsx`: glassmorphic bottom-sheet modal with 1-5 star rating, freetext (500 char max), writes to Firestore `feedback/{autoId}` with uid, rating, message, appVersion, platform, screenContext, serverTimestamp
+- Modified `client/src/pages/settings.tsx`: added "Share Feedback" tile in Account section with teal MessageSquare icon
+- Created `client/src/pages/admin/feedback.tsx`: admin feedback dashboard table (rating, message, platform, version, date); sorted by timestamp desc
+- Modified `client/src/App.tsx`: added `/admin/feedback` route with ProtectedRoute + AdminRoute guard
+- Modified `client/src/contexts/AuthContext.tsx`: added `isAdmin` field to User interface, reads from Firestore user doc on auth state change
+
+**Phase 3 — Firestore Security Rules**
+- Appended `feedback/{docId}` rules: authenticated create only, no client reads
+- Appended `systemLogs/{document=**}` rules: admin SDK only (deny all client access)
+
+**Phase 4 — Privacy Policy + Terms Updates**
+- Updated `client/src/pages/privacy.tsx`: added Section 2.3 (telematics sensor data passive collection), Section 2.4 (in-app feedback), Section 5.3 (Damoov as GDPR Article 28 data processor with deletion rights), updated Section 8 (user rights expanded for telematics + Damoov)
+- Updated `client/src/pages/terms.tsx`: added Section 4a (telematics data consent clause), added rewards framing clause in Section 2 (FCA-clean: rewards are behaviour incentives, not guaranteed premium reductions)
+
+**Phase 5 — Tests**
+- Damoov sync unit test: mocked Firestore + fetch, verified trip doc structure and profile update
+- Damoov registration unit test: mocked API, verified deviceToken stored, verified graceful failure
+- Feedback widget test: rendered modal, selected stars, typed message, verified Firestore write
+- Firestore rules tests: authenticated feedback create, unauthenticated denied, systemLogs denied
+- Privacy/Terms render tests: verified "Damoov", "Article 28", telematics consent text present
+
+**Tests:** All new tests passing. No regressions.
+
+---
+
 ### 2026‑02‑25 – Opus Revamp Session 2 — Security + Visual Polish
 
 **Phase 0 — Security Incident Resolution**

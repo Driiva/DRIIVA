@@ -4,6 +4,16 @@
 
 ---
 
+## Sprint: "Damoov & Feedback" (Week 0 — Telematics + Compliance)
+
+- [x] Damoov telematics integration (server-side: user registration on signup, daily sync Cloud Function) — *done: `functions/src/lib/damoov.ts` API client; `onUserCreate` trigger stores deviceToken; `syncDamoovTrips` scheduled function at 00:30 UK daily with maxInstances:10*
+- [x] Feedback collection system (Settings → FeedbackModal → Firestore) — *done: star rating + freetext widget in settings; writes to `feedback/{autoId}`; admin dashboard at `/admin/feedback`*
+- [x] GDPR-compliant privacy/terms for telematics data — *done: Damoov named as Article 28 data processor; telematics consent clause; rewards framing (FCA-clean)*
+- [x] Firestore security rules for feedback + systemLogs — *done: authenticated create on feedback; admin SDK only on systemLogs*
+- [ ] XGBoost risk model wired to drivingProfile scores (next sprint)
+- [ ] Community pool calculation using aggregated drivingProfile data
+- [ ] Rewards eligibility logic (Tesco/Halfords/Nectar thresholds based on overallSafetyScore)
+
 ## Sprint: "Make It Real" (Week 1–2)
 
 *If you've already done keys, Firebase login, deploy, or Root contact, check those off.*
