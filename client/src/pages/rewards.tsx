@@ -9,7 +9,8 @@ import type { RewardState } from "@/components/RewardsTimeline";
 import { Gift, TrendingUp, Check, Bell, ChevronDown, Loader2 } from "lucide-react";
 import { container, item, timing, easing, microInteractions } from "@/lib/animations";
 import { useAuth } from '../contexts/AuthContext';
-import { useDashboardData } from "../hooks/useDashboardData";
+import { useUserProfile } from "../hooks/useUserProfile";
+import { DEFAULT_DRIVING_PROFILE } from '../../../shared/firestore-types';
 import { getAchievementDefinitions, getUserAchievements } from "@/lib/firestore";
 import type { AchievementDef, UserAchievementRecord } from "@/lib/firestore";
 import { isFirebaseConfigured } from "@/lib/firebase";
@@ -38,10 +39,11 @@ const ICON_FALLBACK: Record<string, string> = {
 export default function Rewards() {
   const [, setLocation] = useLocation();
   const { user, logout } = useAuth();
-  const { data: dashboardData, loading: dataLoading } = useDashboardData(user?.id || null);
+  const { userDoc, loading: dataLoading } = useUserProfile(user?.id || null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [activeTab, setActiveTab] = useState<"achievements" | "rewards" | "progress">("achievements");
-  const policyNumber = dashboardData?.policyNumber ?? '—';
+  const profile = userDoc?.drivingProfile || DEFAULT_DRIVING_PROFILE;
+  const policyNumber = userDoc?.activePolicy?.policyNumber ?? '—';
 
   const [achievements, setAchievements] = useState<DisplayAchievement[]>([]);
   const [achievementsLoading, setAchievementsLoading] = useState(true);
@@ -49,8 +51,8 @@ export default function Rewards() {
 
   // Reward milestone states — derive from streakDays + drivingScore
   const rewardStates: RewardState[] = (() => {
-    const score = dashboardData?.drivingScore ?? 0;
-    const days = dashboardData?.streakDays ?? 0;
+    const score = Math.round(profile.currentScore);
+    const days = profile.streakDays;
     const states: RewardState[] = [];
 
     states.push({
@@ -146,13 +148,13 @@ export default function Rewards() {
 
   const unlockedCount = achievements.filter(a => a.unlocked).length;
   const totalAchievements = achievements.length;
-  const drivingScore = dashboardData?.drivingScore ?? 0;
-  const streakDays = dashboardData?.streakDays ?? 0;
-  const projectedRefund = dashboardData?.projectedRefund ?? 0;
-  const poolShare = dashboardData?.poolShare ?? 0;
-  const totalTrips = dashboardData?.totalTrips ?? 0;
+  const drivingScore = Math.round(profile.currentScore);
+  const streakDays = profile.streakDays;
+  const projectedRefund = 0; // Requires policy data; shown as '—' when 0
+  const poolShare = userDoc?.poolShare?.currentShareCents ? userDoc.poolShare.currentShareCents / 100 : 0;
+  const totalTrips = profile.totalTrips;
 
-  const loading = dataLoading && !dashboardData;
+  const loading = dataLoading && !userDoc;
 
   return (
     <PageWrapper>
@@ -424,7 +426,7 @@ export default function Rewards() {
                         {[
                           { value: drivingScore > 0 ? String(drivingScore) : '—', label: "Current Score", accent: true },
                           { value: streakDays > 0 ? String(streakDays) : '—', label: "Streak Days" },
-                          { value: dashboardData?.totalMiles ? String(dashboardData.totalMiles) : '—', label: "Miles Driven" },
+                          { value: profile.totalMiles > 0 ? String(Math.round(profile.totalMiles)) : '—', label: "Miles Driven" },
                           { value: projectedRefund > 0 ? `£${projectedRefund}` : '—', label: "Refund Earned", accent: true },
                         ].map((stat, index) => (
                           <motion.div

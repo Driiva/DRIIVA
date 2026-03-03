@@ -371,27 +371,14 @@ async function finalizeTripFromPoints(tripId, tripData) {
         functions.logger.info(`Trip ${tripId} finalized with status: ${finalStatus}`, {
             flaggedForReview: anomalies.flaggedForReview,
         });
-        // 7. If completed (no anomalies), update driver profile
+        // 7. If completed (no anomalies), update driver profile.
+        // Classification and AI analysis are NOT triggered here — they fire in
+        // onTripStatusChange (processing → completed) which runs when this update
+        // sets finalStatus = 'completed'. This avoids duplicate Claude API calls.
         if (finalStatus === 'completed') {
-            // Re-fetch the updated trip data
             const updatedTrip = (await tripRef.get()).data();
             await updateDriverProfileAndPoolShare(updatedTrip, tripId);
             checkAchievementsAsync(updatedTrip.userId, updatedTrip, tripId);
-            // 8. Trigger intelligent trip segmentation (async, non-blocking)
-            // This calls the Python Stop-Go-Classifier to detect stops and trip segments
-            classifyCompletedTripAsync(tripId, updatedTrip);
-            // 9. Trigger AI analysis with Claude (async, non-blocking)
-            // Fetches the user's latest profile for historical comparison
-            try {
-                const userDoc = await db.collection(types_1.COLLECTION_NAMES.USERS).doc(updatedTrip.userId).get();
-                if (userDoc.exists) {
-                    const userData = userDoc.data();
-                    analyzeCompletedTripAsync(tripId, updatedTrip, points, userData.drivingProfile);
-                }
-            }
-            catch (aiSetupErr) {
-                functions.logger.warn(`[AI] Failed to fetch user profile for AI analysis of trip ${tripId}:`, aiSetupErr);
-            }
         }
     }
     catch (error) {

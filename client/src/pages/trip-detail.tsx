@@ -15,7 +15,11 @@ import { PageWrapper } from '../components/PageWrapper';
 import { BottomNav } from '../components/BottomNav';
 import DrivingAIFeedbackWidget from '../components/DrivingAIFeedbackWidget';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFirestoreDoc } from '@/hooks/useFirestoreDoc';
+import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 import type { TripDocument, TripPoint } from '../../../shared/firestore-types';
+
+const TripAIInsights = lazy(() => import('../components/TripAIInsights'));
 
 const TripRouteMap = lazy(() => import('../components/TripRouteMap'));
 
@@ -45,17 +49,21 @@ export default function TripDetail() {
   const [, setLocation] = useLocation();
   const [match, params] = useRoute('/trips/:tripId');
   const { user } = useAuth();
+  const { aiInsights: aiEnabled } = useFeatureFlags();
   const tripId = params?.tripId ?? '';
 
-  const [trip, setTrip] = useState<TripDocument | null>(null);
-  const [points, setPoints] = useState<TripPoint[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Real-time trip document — AI analysis field appears live when Cloud Function writes it
+  const tripPath = tripId && isFirebaseConfigured ? `trips/${tripId}` : null;
+  const { data: tripData, loading: tripLoading, error: tripError } = useFirestoreDoc<TripDocument>(tripPath);
 
+  const [points, setPoints] = useState<TripPoint[]>([]);
+  const [pointsLoading, setPointsLoading] = useState(true);
+  const [accessError, setAccessError] = useState<string | null>(null);
+
+  // Trip points are immutable after creation — one-shot fetch is fine
   useEffect(() => {
     if (!tripId || !isFirebaseConfigured || !db) {
-      setLoading(false);
-      setError('Trip not found.');
+      setPointsLoading(false);
       return;
     }
 
@@ -63,46 +71,35 @@ export default function TripDetail() {
 
     (async () => {
       try {
-        setLoading(true);
-        setError(null);
-
-        const [tripSnap, pointsSnap] = await Promise.all([
-          getDoc(doc(db, 'trips', tripId)),
-          getDoc(doc(db, 'tripPoints', tripId)),
-        ]);
-
+        const pointsSnap = await getDoc(doc(db, 'tripPoints', tripId));
         if (cancelled) return;
-
-        if (!tripSnap.exists()) {
-          setError('Trip not found.');
-          setLoading(false);
-          return;
-        }
-
-        const tripData = tripSnap.data() as TripDocument;
-
-        if (tripData.userId !== user?.id) {
-          setError('You do not have access to this trip.');
-          setLoading(false);
-          return;
-        }
-
-        setTrip(tripData);
-
         if (pointsSnap.exists()) {
           const data = pointsSnap.data();
           setPoints((data?.points ?? []) as TripPoint[]);
         }
       } catch (err) {
-        console.error('[TripDetail] Load error:', err);
-        if (!cancelled) setError('Failed to load trip details.');
+        console.error('[TripDetail] Points load error:', err);
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setPointsLoading(false);
       }
     })();
 
     return () => { cancelled = true; };
-  }, [tripId, user?.id]);
+  }, [tripId]);
+
+  // Access check — only allow the trip owner
+  useEffect(() => {
+    if (!tripData || !user) return;
+    if (tripData.userId !== user.id) {
+      setAccessError('You do not have access to this trip.');
+    } else {
+      setAccessError(null);
+    }
+  }, [tripData, user]);
+
+  const trip = accessError ? null : tripData;
+  const loading = tripLoading || pointsLoading;
+  const error = accessError || (tripError ? 'Failed to load trip details.' : (!tripLoading && !tripData ? 'Trip not found.' : null));
 
   if (loading) {
     return (
@@ -275,7 +272,7 @@ export default function TripDetail() {
           </div>
         </motion.div>
 
-        {/* AI Coach */}
+        {/* AI Coach — quick local insights */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -294,11 +291,32 @@ export default function TripDetail() {
           />
         </motion.div>
 
+        {/* Claude AI Analysis — deep insights from Cloud Functions pipeline */}
+        {aiEnabled && trip.status === 'completed' && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <Suspense fallback={
+              <div className="backdrop-blur-xl bg-white/[0.04] border border-white/[0.08] rounded-2xl p-6 animate-pulse">
+                <div className="h-5 w-28 bg-white/10 rounded mb-4" />
+                <div className="space-y-3">
+                  <div className="h-16 bg-white/10 rounded-xl" />
+                  <div className="h-12 bg-white/10 rounded-xl" />
+                </div>
+              </div>
+            }>
+              <TripAIInsights tripId={tripId} tripStatus={trip.status} />
+            </Suspense>
+          </motion.div>
+        )}
+
         {/* Driving events */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
+          transition={{ delay: 0.35 }}
           className="backdrop-blur-xl bg-white/[0.04] border border-white/[0.08] rounded-2xl p-4"
         >
           <h2 className="text-base font-semibold text-white mb-3 flex items-center gap-2">
@@ -318,7 +336,7 @@ export default function TripDetail() {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
+            transition={{ delay: 0.45 }}
             className="backdrop-blur-xl bg-white/[0.04] border border-white/[0.08] rounded-2xl p-4"
           >
             <h2 className="text-base font-semibold text-white mb-3 flex items-center gap-2">

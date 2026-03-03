@@ -12,10 +12,6 @@
 
 import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
-import { auth, db, isFirebaseConfigured } from '@/lib/firebase';
-import { onAuthStateChanged } from 'firebase/auth';
-import { doc } from 'firebase/firestore';
-import { getDocWithRetry } from '@/lib/firestoreRetry';
 import { useAuth } from '@/contexts/AuthContext';
 
 export interface OnboardingGuardResult {
@@ -50,14 +46,12 @@ export function useOnboardingGuard(
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Skip check for certain routes
     if (skipRoutes.includes(location)) {
       setIsReady(true);
       setLoading(false);
       return;
     }
 
-    // Check demo mode
     const isDemoMode = localStorage.getItem('driiva-demo-mode') === 'true';
     if (isDemoMode) {
       setIsAuthenticated(true);
@@ -68,73 +62,27 @@ export function useOnboardingGuard(
       return;
     }
 
-    // If user from context, use that
     if (user) {
       setIsAuthenticated(true);
       const completed = user.onboardingComplete === true;
       setOnboardingCompleted(completed);
       setNeedsOnboarding(!completed);
-      
+
       if (!completed && autoRedirect) {
         setLocation('/quick-onboarding');
       }
-      
+
       setIsReady(completed || !autoRedirect);
       setLoading(false);
       return;
     }
 
-    // If no Firebase, skip check
-    if (!isFirebaseConfigured || !auth) {
-      setIsReady(true);
-      setLoading(false);
-      return;
-    }
-
-    // Listen for auth state
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (!firebaseUser) {
-        setIsAuthenticated(false);
-        setOnboardingCompleted(false);
-        setNeedsOnboarding(false);
-        setIsReady(true);
-        setLoading(false);
-        return;
-      }
-
-      setIsAuthenticated(true);
-
-      try {
-        // Check Firestore for onboarding status
-        if (!db) throw new Error('Firestore not initialized');
-        const userDocRef = doc(db, 'users', firebaseUser.uid);
-        const userDoc = await getDocWithRetry(userDocRef);
-        const userData = userDoc.data();
-
-        const completed = userData?.onboardingCompleted === true || userData?.onboardingComplete === true;
-        setOnboardingCompleted(completed);
-        setNeedsOnboarding(!completed);
-
-        if (!completed && autoRedirect) {
-          setLocation('/quick-onboarding');
-          setIsReady(false);
-        } else {
-          setIsReady(true);
-        }
-      } catch (error) {
-        console.error('[useOnboardingGuard] Error checking onboarding status:', error);
-        // On error, assume onboarding needed for new users
-        setNeedsOnboarding(true);
-        if (autoRedirect) {
-          setLocation('/quick-onboarding');
-        }
-        setIsReady(!autoRedirect);
-      } finally {
-        setLoading(false);
-      }
-    });
-
-    return () => unsubscribe();
+    // No user from context yet — either still loading or not authenticated
+    setIsAuthenticated(false);
+    setOnboardingCompleted(false);
+    setNeedsOnboarding(false);
+    setIsReady(true);
+    setLoading(false);
   }, [user, location, autoRedirect, skipRoutes, setLocation]);
 
   return {

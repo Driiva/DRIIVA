@@ -17,3 +17,10 @@ functions/.env.local
 .vercel
 api/_server.js
 .env.staging
+
+# Firestore backup (local export; may contain PII)
+firestore-backup/
+
+# Firebase CLI
+firebase-debug.log
+firebase-debug.*.log

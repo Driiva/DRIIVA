@@ -14,7 +14,8 @@
     "lint": "eslint --ext .js,.ts .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "export-firestore": "npm run build && node lib/scripts/exportFirestore.js"
   },
   "engines": {
     "node": "20"

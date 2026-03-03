@@ -4,8 +4,8 @@ import { useLocation } from "wouter";
 import { Loader2, ChevronLeft, ChevronRight, Check } from "lucide-react";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import { auth, db } from "../lib/firebase";
-import { onAuthStateChanged } from "firebase/auth";
 import { doc, updateDoc } from "firebase/firestore";
+import { useAuth } from "../contexts/AuthContext";
 
 const TOTAL_STEPS = 4;
 
@@ -26,9 +26,9 @@ interface FormData {
 
 export default function Onboarding() {
   const [, setLocation] = useLocation();
+  const { user: authUser, loading: authLoading } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  const [authChecking, setAuthChecking] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<FormData>({
     fullName: "",
@@ -46,15 +46,11 @@ export default function Onboarding() {
   });
 
   useEffect(() => {
-    if (!auth) { setAuthChecking(false); return; }
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        setLocation("/signin");
-      }
-      setAuthChecking(false);
-    });
-    return () => unsubscribe();
-  }, [setLocation]);
+    if (authLoading) return;
+    if (!authUser) {
+      setLocation("/signin");
+    }
+  }, [authUser, authLoading, setLocation]);
 
   const updateField = (field: keyof FormData, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -151,7 +147,7 @@ export default function Onboarding() {
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: currentYear - 1999 }, (_, i) => currentYear - i);
 
-  if (authChecking) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-blue-900 flex items-center justify-center">
         <div className="relative z-10">

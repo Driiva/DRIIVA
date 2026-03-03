@@ -3,7 +3,9 @@ import { ArrowLeft, Shield, FileText, AlertCircle, CheckCircle, Loader2 } from '
 import { PageWrapper } from '../components/PageWrapper';
 import { BottomNav } from '../components/BottomNav';
 import { useAuth } from '../contexts/AuthContext';
-import { useDashboardData } from '../hooks/useDashboardData';
+import { useUserProfile } from '../hooks/useUserProfile';
+import { useActivePolicy } from '../hooks/useActivePolicy';
+import { DEFAULT_DRIVING_PROFILE } from '../../../shared/firestore-types';
 
 function Skeleton({ className = "" }: { className?: string }) {
   return (
@@ -33,18 +35,35 @@ function getScoreLabel(score: number): string {
   return 'Excellent';
 }
 
+function calculateProjectedRefund(score: number, premiumCents: number): number {
+  if (score < 70) return 0;
+  const scoreRange = Math.max(0, score - 70);
+  const baseRefund = 5;
+  const additionalRefund = (scoreRange / 30) * 10;
+  const totalPercentage = Math.min(baseRefund + additionalRefund, 15);
+  return Math.round((totalPercentage / 100) * (premiumCents / 100));
+}
+
 export default function PolicyPage() {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
-  const { data: dashboardData, loading, error, refresh } = useDashboardData(user?.id || null);
+  const userId = user?.id || null;
+  const { userDoc, loading: userLoading, error: userError, refresh: refreshUser } = useUserProfile(userId);
+  const { policy, loading: policyLoading, refresh: refreshPolicy } = useActivePolicy(userId);
 
-  const policyNumber = dashboardData?.policyNumber ?? null;
-  const premiumAmount = dashboardData?.premiumAmount ?? 0;
-  const currentScore = dashboardData?.drivingScore ?? 0;
-  const totalTrips = dashboardData?.totalTrips ?? 0;
-  const totalMiles = dashboardData?.totalMiles ?? 0;
-  const projectedRefund = dashboardData?.projectedRefund ?? 0;
-  const renewalDate = dashboardData?.renewalDate ?? null;
+  const loading = userLoading || policyLoading;
+  const error = userError;
+  const refresh = () => { refreshUser(); refreshPolicy(); };
+
+  const profile = userDoc?.drivingProfile || DEFAULT_DRIVING_PROFILE;
+  const policyNumber = policy?.policyNumber || null;
+  const premiumCents = policy?.currentPremiumCents || userDoc?.activePolicy?.premiumCents || 0;
+  const premiumAmount = premiumCents / 100;
+  const currentScore = Math.round(profile.currentScore);
+  const totalTrips = profile.totalTrips;
+  const totalMiles = Math.round(profile.totalMiles);
+  const projectedRefund = calculateProjectedRefund(profile.currentScore, premiumCents);
+  const renewalDate = policy?.renewalDate?.toDate() || userDoc?.activePolicy?.renewalDate?.toDate() || null;
 
   const refundRate = currentScore >= 70
     ? (((currentScore - 70) / 30 * 10 + 5)).toFixed(2)
@@ -54,7 +73,7 @@ export default function PolicyPage() {
     ? new Date(renewalDate.getFullYear() - 1, renewalDate.getMonth(), renewalDate.getDate())
     : null;
 
-  if (error && !dashboardData) {
+  if (error && !userDoc) {
     return (
       <PageWrapper>
         <div className="pb-24 text-white flex flex-col items-center justify-center min-h-[60vh] gap-4">

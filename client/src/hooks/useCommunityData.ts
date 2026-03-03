@@ -14,18 +14,13 @@
 import { useState, useEffect, useCallback, useMemo, useContext } from 'react';
 import {
   doc,
-  collection,
-  query,
-  where,
-  orderBy,
-  limit,
   onSnapshot,
-  getDoc,
   Timestamp,
   Unsubscribe,
 } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '@/lib/firebase';
 import { OnlineStatusContext } from '@/contexts/OnlineStatusContext';
+import { usePoolState } from './usePoolState';
 import {
   COLLECTION_NAMES,
   CommunityPoolDocument,
@@ -282,11 +277,33 @@ export function useCommunityData(userId: string | null): UseCommunityDataResult 
   const onlineStatus = useContext(OnlineStatusContext);
   const reportFirestoreError = onlineStatus?.reportFirestoreError ?? (() => {});
 
-  // Pool state
-  const [pool, setPool] = useState<CommunityPoolData | null>(null);
-  const [poolLoading, setPoolLoading] = useState(true);
-  const [poolError, setPoolError] = useState<Error | null>(null);
-  
+  // Pool state — shared via usePoolState (no duplicate listener)
+  const { pool: rawPool, loading: rawPoolLoading, error: rawPoolError, refresh: refreshPool } = usePoolState();
+
+  const pool: CommunityPoolData | null = useMemo(() => {
+    if (!rawPool) return rawPoolLoading ? null : DEFAULT_POOL_DATA;
+    return {
+      totalPoolCents: rawPool.totalPoolCents,
+      totalPoolPounds: rawPool.totalPoolCents / 100,
+      totalContributionsCents: rawPool.totalContributionsCents,
+      totalPayoutsCents: rawPool.totalPayoutsCents,
+      reserveCents: rawPool.reserveCents,
+      activeParticipants: rawPool.activeParticipants,
+      totalParticipantsEver: rawPool.totalParticipantsEver,
+      averagePoolScore: rawPool.averagePoolScore,
+      safetyFactor: rawPool.safetyFactor,
+      claimsThisPeriod: rawPool.claimsThisPeriod,
+      projectedRefundRate: rawPool.projectedRefundRate,
+      periodStart: rawPool.periodStart?.toDate() || null,
+      periodEnd: rawPool.periodEnd?.toDate() || null,
+      periodType: rawPool.periodType,
+      daysRemaining: calculateDaysRemaining(rawPool.periodEnd),
+      lastCalculatedAt: rawPool.lastCalculatedAt?.toDate() || null,
+    };
+  }, [rawPool, rawPoolLoading]);
+  const poolLoading = rawPoolLoading;
+  const poolError = rawPoolError;
+
   // User share state
   const [userShare, setUserShare] = useState<UserPoolShareData | null>(null);
   const [userShareLoading, setUserShareLoading] = useState(true);
@@ -298,65 +315,12 @@ export function useCommunityData(userId: string | null): UseCommunityDataResult 
   const [leaderboardError, setLeaderboardError] = useState<Error | null>(null);
   const [leaderboardPeriodType, setLeaderboardPeriodType] = useState<'weekly' | 'monthly' | 'all_time'>('weekly');
   
-  // Refresh key
   const [refreshKey, setRefreshKey] = useState(0);
   
   const refresh = useCallback(() => {
+    refreshPool();
     setRefreshKey(k => k + 1);
-  }, []);
-
-  // Subscribe to community pool
-  useEffect(() => {
-    if (!isFirebaseConfigured || !db) {
-      setPool(DEFAULT_POOL_DATA);
-      setPoolLoading(false);
-      return;
-    }
-
-    setPoolLoading(true);
-    setPoolError(null);
-
-    const poolRef = doc(db, COLLECTION_NAMES.COMMUNITY_POOL, 'current');
-    
-    const unsubscribe = onSnapshot(
-      poolRef,
-      (snapshot) => {
-        if (snapshot.exists()) {
-          const data = snapshot.data() as CommunityPoolDocument;
-          
-          setPool({
-            totalPoolCents: data.totalPoolCents,
-            totalPoolPounds: data.totalPoolCents / 100,
-            totalContributionsCents: data.totalContributionsCents,
-            totalPayoutsCents: data.totalPayoutsCents,
-            reserveCents: data.reserveCents,
-            activeParticipants: data.activeParticipants,
-            totalParticipantsEver: data.totalParticipantsEver,
-            averagePoolScore: data.averagePoolScore,
-            safetyFactor: data.safetyFactor,
-            claimsThisPeriod: data.claimsThisPeriod,
-            projectedRefundRate: data.projectedRefundRate,
-            periodStart: data.periodStart?.toDate() || null,
-            periodEnd: data.periodEnd?.toDate() || null,
-            periodType: data.periodType,
-            daysRemaining: calculateDaysRemaining(data.periodEnd),
-            lastCalculatedAt: data.lastCalculatedAt?.toDate() || null,
-          });
-        } else {
-          setPool(DEFAULT_POOL_DATA);
-        }
-        setPoolLoading(false);
-      },
-      (err) => {
-        console.error('[useCommunityData] Pool subscription error:', err);
-        reportFirestoreError();
-        setPoolError(err);
-        setPoolLoading(false);
-      }
-    );
-
-    return () => unsubscribe();
-  }, [refreshKey]);
+  }, [refreshPool]);
 
   // Subscribe to user's pool share
   useEffect(() => {

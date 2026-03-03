@@ -10,7 +10,7 @@
  *   - Anonymized driver names for privacy
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'wouter';
 import { ArrowLeft, Trophy, TrendingUp, TrendingDown, Minus, RefreshCw, Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -19,9 +19,6 @@ import { BottomNav } from '../components/BottomNav';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useCommunityData, LeaderboardEntry } from '@/hooks/useCommunityData';
 import { useAuth } from '@/contexts/AuthContext';
-import { auth, isFirebaseConfigured } from '@/lib/firebase';
-import { useEffect } from 'react';
-import { onAuthStateChanged } from 'firebase/auth';
 
 // ============================================================================
 // SKELETON COMPONENTS
@@ -199,10 +196,8 @@ function PeriodTabs({ selected, onChange }: PeriodTabsProps) {
 
 export default function LeaderboardPage() {
   const { user } = useAuth();
-  const [firebaseUserId, setFirebaseUserId] = useState<string | null>(null);
   const [isDemoMode, setIsDemoMode] = useState(false);
 
-  // Check demo mode
   useEffect(() => {
     const demoModeActive = sessionStorage.getItem('driiva-demo-mode') === 'true';
     if (demoModeActive) {
@@ -210,22 +205,8 @@ export default function LeaderboardPage() {
     }
   }, []);
 
-  // Get Firebase user ID
-  useEffect(() => {
-    if (isDemoMode) return;
-    
-    if (!isFirebaseConfigured || !auth) return;
+  const firebaseUserId = isDemoMode ? null : (user?.id ?? null);
 
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      if (firebaseUser) {
-        setFirebaseUserId(firebaseUser.uid);
-      }
-    });
-
-    return () => unsubscribe();
-  }, [isDemoMode]);
-
-  // Use community data hook
   const {
     pool,
     poolLoading,
@@ -234,7 +215,7 @@ export default function LeaderboardPage() {
     leaderboardError,
     refresh,
     setLeaderboardPeriodType,
-  } = useCommunityData(isDemoMode ? null : firebaseUserId);
+  } = useCommunityData(firebaseUserId);
 
   // Demo mode fallback data
   const demoLeaderboard: LeaderboardEntry[] = [

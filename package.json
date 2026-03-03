@@ -18,7 +18,8 @@
     "verify:db": "tsx scripts/verify-db.ts",
     "db:schema": "tsx scripts/run-schema.ts",
     "load-test": "tsx scripts/load-test.ts",
-    "test:root-api": "tsx scripts/test-root-api.ts"
+    "test:root-api": "tsx scripts/test-root-api.ts",
+    "export-firestore": "cd functions && npm run export-firestore"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",

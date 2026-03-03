@@ -20,8 +20,6 @@ import {
   writeBatch,
   serverTimestamp,
   Timestamp,
-  onSnapshot,
-  Unsubscribe,
 } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from './firebase';
 import {
@@ -350,25 +348,6 @@ export async function cancelTrip(tripId: string): Promise<void> {
   await updateDoc(tripRef, {
     status: 'failed',
     processedAt: serverTimestamp(),
-  });
-}
-
-/**
- * Subscribe to trip status changes
- */
-export function subscribeTripStatus(
-  tripId: string,
-  callback: (status: string) => void
-): Unsubscribe {
-  assertFirestore();
-
-  const tripRef = doc(db!, COLLECTION_NAMES.TRIPS, tripId);
-
-  return onSnapshot(tripRef, (snapshot) => {
-    if (snapshot.exists()) {
-      const data = snapshot.data();
-      callback(data.status);
-    }
   });
 }
 

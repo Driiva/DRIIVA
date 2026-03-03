@@ -1,15 +1,13 @@
 /**
  * useBetaEstimate
  * ---------------
- * Subscribes to users/{userId}/betaPricing/currentEstimate.
+ * Subscribes to users/{userId}/betaPricing/currentEstimate via useFirestoreDoc.
  * If the document is missing, calls the callable once to generate it.
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import {
-  subscribeBetaEstimate,
-  calculateBetaEstimateForUser,
-} from '@/lib/firestore';
+import { useEffect, useRef, useCallback } from 'react';
+import { calculateBetaEstimateForUser } from '@/lib/firestore';
+import { useFirestoreDoc } from './useFirestoreDoc';
 import type { BetaEstimateDocument } from '../../../shared/firestore-types';
 
 export interface UseBetaEstimateResult {
@@ -19,73 +17,48 @@ export interface UseBetaEstimateResult {
   refresh: () => Promise<void>;
 }
 
-/**
- * Subscribe to the user's beta estimate. When the document is missing,
- * calls the callable once to generate it (backend may return success: false
- * if age/postcode are missing).
- */
 export function useBetaEstimate(userId: string | null): UseBetaEstimateResult {
-  const [estimate, setEstimate] = useState<BetaEstimateDocument | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const path = userId ? `users/${userId}/betaPricing/currentEstimate` : null;
+  const { data: estimate, loading, error: docError, refresh: refreshDoc } = useFirestoreDoc<BetaEstimateDocument>(path);
+
   const hasRequestedGenerate = useRef(false);
+  const generateErrorRef = useRef<Error | null>(null);
 
-  const requestGenerate = useCallback(async () => {
-    if (!userId) return;
-    try {
-      const result = await calculateBetaEstimateForUser(userId);
-      if (!result.success && result.message) {
-        setError(new Error(result.message));
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error(String(err)));
-    }
-  }, [userId]);
-
+  // Auto-generate estimate when document is missing
   useEffect(() => {
-    if (!userId) {
-      setLoading(false);
-      setEstimate(null);
-      setError(null);
-      return;
-    }
+    if (!userId || loading || estimate !== null || hasRequestedGenerate.current) return;
+    hasRequestedGenerate.current = true;
 
-    setLoading(true);
-    setError(null);
-
-    const unsubscribe = subscribeBetaEstimate(
-      userId,
-      (data) => {
-        setEstimate(data);
-        setLoading(false);
-
-        if (data == null && !hasRequestedGenerate.current) {
-          hasRequestedGenerate.current = true;
-          calculateBetaEstimateForUser(userId).then((result) => {
-            if (!result.success && result.message) {
-              setError(new Error(result.message));
-            }
-          }).catch((err) => {
-            setError(err instanceof Error ? err : new Error(String(err)));
-          });
+    calculateBetaEstimateForUser(userId)
+      .then((result) => {
+        if (!result.success && result.message) {
+          generateErrorRef.current = new Error(result.message);
         }
-      },
-      (err) => {
-        setError(err);
-        setLoading(false);
-      }
-    );
-
-    return () => unsubscribe();
-  }, [userId]);
+      })
+      .catch((err) => {
+        generateErrorRef.current = err instanceof Error ? err : new Error(String(err));
+      });
+  }, [userId, loading, estimate]);
 
   const refresh = useCallback(async () => {
     if (!userId) return;
-    setLoading(true);
     hasRequestedGenerate.current = false;
-    await requestGenerate();
-    setLoading(false);
-  }, [userId, requestGenerate]);
+    generateErrorRef.current = null;
+    refreshDoc();
+    try {
+      const result = await calculateBetaEstimateForUser(userId);
+      if (!result.success && result.message) {
+        generateErrorRef.current = new Error(result.message);
+      }
+    } catch (err) {
+      generateErrorRef.current = err instanceof Error ? err : new Error(String(err));
+    }
+  }, [userId, refreshDoc]);
 
-  return { estimate, loading, error, refresh };
+  return {
+    estimate,
+    loading,
+    error: docError || generateErrorRef.current,
+    refresh,
+  };
 }

@@ -206,6 +206,21 @@ export async function analyzeTrip(
 ): Promise<string | null> {
   const startMs = Date.now();
 
+  // Idempotency: skip if insights already exist and are recent (< 1 hour old)
+  const existingDoc = await db.collection(COLLECTION_NAMES.TRIP_AI_INSIGHTS).doc(tripId).get();
+  if (existingDoc.exists) {
+    const existingData = existingDoc.data();
+    const analyzedAt = existingData?.analyzedAt;
+    if (analyzedAt) {
+      const ageMs = Date.now() - (typeof analyzedAt.toMillis === 'function' ? analyzedAt.toMillis() : 0);
+      const ONE_HOUR = 60 * 60 * 1000;
+      if (ageMs < ONE_HOUR) {
+        functions.logger.info(`[AI] Skipping trip ${tripId}: recent analysis exists (${Math.round(ageMs / 1000)}s old)`);
+        return tripId;
+      }
+    }
+  }
+
   // Guard: skip very short trips (< 0.5 miles / ~0.8 km or < 2 minutes)
   const distanceKm = trip.distanceMeters / 1000;
   const durationMinutes = trip.durationSeconds / 60;
