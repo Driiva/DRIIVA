@@ -25,9 +25,23 @@ function getQueryParam(name: string): string | null {
   return new URLSearchParams(window.location.search).get(name);
 }
 
+// Same allowlist as AuthContext — if user is admin, bail out to dashboard immediately.
+const ADMIN_EMAILS_ENV = (import.meta.env.VITE_ADMIN_EMAILS || "")
+  .split(",")
+  .map((e: string) => e.trim().toLowerCase())
+  .filter(Boolean);
+
 export default function VerifyEmail() {
   const [, setLocation] = useLocation();
   const { user, logout, markEmailVerified } = useAuth();
+
+  // Admin emails never need to verify — send straight to monitoring/dashboard.
+  useEffect(() => {
+    if (!user?.email) return;
+    if (user.isAdmin === true || ADMIN_EMAILS_ENV.includes(user.email.toLowerCase())) {
+      setLocation("/admin/monitoring");
+    }
+  }, [user?.email, user?.isAdmin, setLocation]);
   const { toast } = useToast();
   const { ref: cardRef, style: cardParallaxStyle } = useParallax({ speed: 0.3 });
 
