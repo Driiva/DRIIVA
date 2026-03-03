@@ -44,7 +44,18 @@ async function readOnboardingFromFirestore(uid: string): Promise<boolean> {
   return false;
 }
 
-async function readAdminFlagFromFirestore(uid: string): Promise<boolean> {
+// Emails listed here are granted admin access without needing a Firestore document.
+// Set VITE_ADMIN_EMAILS in Vercel → Settings → Environment Variables.
+// e.g. j.o.adu@hotmail.co.uk,jamal@driiva.co.uk
+const ADMIN_EMAILS_ENV = (import.meta.env.VITE_ADMIN_EMAILS || '')
+  .split(',')
+  .map((e: string) => e.trim().toLowerCase())
+  .filter(Boolean);
+
+async function readAdminFlagFromFirestore(uid: string, email?: string): Promise<boolean> {
+  // Env-var allowlist takes precedence — no Firestore doc required
+  if (email && ADMIN_EMAILS_ENV.includes(email.toLowerCase())) return true;
+
   if (!db) return false;
   try {
     const userSnap = await getDocWithRetry(doc(db, 'users', uid));
@@ -114,7 +125,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               headers: { Authorization: `Bearer ${token}` },
               credentials: "include",
             }),
-            readAdminFlagFromFirestore(firebaseUser.uid),
+            readAdminFlagFromFirestore(firebaseUser.uid, firebaseUser.email ?? undefined),
           ]);
           if (res.ok) {
             const profile = await res.json();
@@ -130,7 +141,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // API unavailable (e.g. no service account key configured) — fall back to Firestore
             const [onboardingComplete, adminFlag] = await Promise.all([
               readOnboardingFromFirestore(firebaseUser.uid),
-              readAdminFlagFromFirestore(firebaseUser.uid),
+              readAdminFlagFromFirestore(firebaseUser.uid, firebaseUser.email ?? undefined),
             ]);
             setUser({
               id: firebaseUser.uid,
@@ -146,7 +157,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Fall back to Firestore instead of defaulting to onboardingComplete: false
           const [onboardingComplete, adminFlag] = await Promise.all([
             readOnboardingFromFirestore(firebaseUser.uid),
-            readAdminFlagFromFirestore(firebaseUser.uid),
+            readAdminFlagFromFirestore(firebaseUser.uid, firebaseUser.email ?? undefined),
           ]);
           setUser({
             id: firebaseUser.uid,
