@@ -233,7 +233,7 @@ export default function QuickOnboarding() {
   };
 
   const goToDashboard = useCallback(() => {
-    setUser(prev => prev ? { ...prev, onboardingComplete: true } : null);
+    if (user) setUser({ ...user, onboardingComplete: true });
     setLocation('/dashboard');
   }, [setLocation, setUser]);
 

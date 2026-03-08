@@ -51,7 +51,9 @@ export function AdminSidebar({ mobileOpen, onClose }: AdminSidebarProps) {
       </div>
 
       <nav className="flex-1 px-3 space-y-0.5">
-        {navItems.map(({ path, label, icon: Icon, exact }) => {
+        {navItems.map((item) => {
+          const { path, label, icon: Icon } = item;
+          const exact = 'exact' in item ? item.exact : undefined;
           const active = isActive(location, path, exact);
           return (
             <button

@@ -72,7 +72,7 @@ class TtlChallengeStore {
   /** Remove expired entries — called on every set() to keep memory bounded. */
   private sweep(): void {
     const now = Date.now();
-    for (const [key, entry] of this.store) {
+    for (const [key, entry] of Array.from(this.store)) {
       if (now > entry.expiresAt) this.store.delete(key);
     }
   }
