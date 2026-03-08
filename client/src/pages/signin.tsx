@@ -77,6 +77,16 @@ export default function SignIn() {
     }
   }, []);
 
+  // Show error toast if AuthContext forced a sign-out due to a reload() failure
+  useEffect(() => {
+    const authError = sessionStorage.getItem('driiva-auth-error');
+    if (authError) {
+      sessionStorage.removeItem('driiva-auth-error');
+      toast({ title: 'Session ended', description: authError, variant: 'destructive' });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Scroll error into view when it appears
   useEffect(() => {
     if (loginError && errorRef.current) {

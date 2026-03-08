@@ -121,9 +121,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Real Firebase user: always clear demo mode so real account and onboarding flow take over
         sessionStorage.removeItem('driiva-demo-mode');
         sessionStorage.removeItem('driiva-demo-user');
+
+        // Reload the Firebase user to pick up fresh emailVerified (and token) state.
+        // Retry once on transient network errors. If both attempts fail we cannot
+        // trust any cached field (especially emailVerified), so force sign-out and
+        // redirect the user to sign-in with an explanatory toast.
         try {
-          // Reload to pick up latest emailVerified state from Firebase servers
           await firebaseUser.reload();
+        } catch (firstReloadErr) {
+          console.warn('[AuthContext] reload() failed, retrying in 500 ms:', firstReloadErr);
+          try {
+            await new Promise<void>(resolve => setTimeout(resolve, 500));
+            await firebaseUser.reload();
+          } catch (secondReloadErr) {
+            console.error('[AuthContext] reload() failed twice — forcing sign out:', secondReloadErr);
+            sessionStorage.setItem('driiva-auth-error', 'Your session could not be verified. Please sign in again.');
+            setLoading(false);
+            try { await signOut(auth!); } catch { /* ignore — onAuthStateChanged(null) will clear state */ }
+            return;
+          }
+        }
+
+        try {
           const refreshedUser = auth!.currentUser!;
           const emailVerified = refreshedUser.emailVerified;
 
@@ -169,7 +188,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             });
           }
         } catch (error) {
+          // reload() succeeded above so auth.currentUser.emailVerified is fresh —
+          // use it instead of the stale pre-reload firebaseUser.emailVerified.
           console.error("[AuthContext] Error fetching profile from API:", error);
+          const freshEmailVerified = auth?.currentUser?.emailVerified ?? false;
           const [onboardingComplete, adminFlag] = await Promise.all([
             readOnboardingFromFirestore(firebaseUser.uid),
             readAdminFlagFromFirestore(firebaseUser.uid, firebaseUser.email ?? undefined),
@@ -179,7 +201,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             email: firebaseUser.email ?? "",
             name: firebaseUser.displayName ?? firebaseUser.email?.split("@")[0] ?? "User",
             onboardingComplete,
-            emailVerified: firebaseUser.emailVerified,
+            emailVerified: freshEmailVerified,
             isAdmin: adminFlag,
           });
         }
