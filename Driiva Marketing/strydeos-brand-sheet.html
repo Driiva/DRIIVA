@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>StrydeOS — Brand Asset Sheet v3.0</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#0B2545;--navy-mid:#132D5E;
+  --blue:#1C54F2;--blue-bright:#2E6BFF;--blue-glow:#4B8BF5;
+  --teal:#0891B2;--purple:#8B5CF6;
+  --cloud:#F2F1EE;--cloud-light:#F9F8F6;--cloud-dark:#E8E6E0;--cream:#FAF9F7;
+  --ink:#111827;--muted:#6B7280;--border:#E2DFDA;
+  --success:#059669;--warning:#F59E0B;--danger:#EF4444;
+  --fh:'DM Serif Display',serif;--fb:'Outfit',sans-serif;
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--fb);background:#080E1A;color:#F2F1EE;-webkit-font-smoothing:antialiased}
+.page{max-width:1320px;margin:0 auto;padding:0 52px}
+section{padding:96px 0;border-bottom:1px solid rgba(255,255,255,0.05)}
+section:last-of-type{border-bottom:none}
+
+/* Cover */
+.cover{
+  min-height:100vh;display:flex;flex-direction:column;justify-content:space-between;
+  padding:64px 52px;position:relative;overflow:hidden;
+  background:radial-gradient(ellipse 70% 55% at 72% 18%,rgba(28,84,242,0.14) 0%,transparent 60%),
+             radial-gradient(ellipse 45% 45% at 8% 82%,rgba(8,145,178,0.1) 0%,transparent 60%),#080E1A;
+}
+.cover::before{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background-image:radial-gradient(circle,rgba(28,84,242,0.13) 1px,transparent 1px);
+  background-size:48px 48px;
+}
+.cover-top,.cover-bottom{display:flex;justify-content:space-between;align-items:center;position:relative;z-index:2}
+.meta{font-size:10.5px;letter-spacing:0.1em;color:rgba(255,255,255,0.22)}
+.cover-center{position:relative;z-index:2;padding:80px 0 60px;display:flex;flex-direction:column;gap:36px}
+.cov-wordmark{font-family:var(--fb);font-weight:700;font-size:58px;letter-spacing:-0.03em;color:white;line-height:1}
+.cov-wordmark span{color:var(--blue)}
+.cov-rule{width:64px;height:2px;background:linear-gradient(90deg,var(--blue),var(--teal))}
+.cov-desc{font-size:17px;color:rgba(255,255,255,0.4);line-height:1.75;max-width:460px}
+.toc a{font-size:11px;color:rgba(255,255,255,0.28);text-decoration:none;letter-spacing:0.07em;transition:color .2s;margin-left:28px}
+.toc a:hover{color:rgba(255,255,255,.7)}
+.bg-mark{position:absolute;right:-20px;top:50%;transform:translateY(-50%);opacity:.04;pointer-events:none}
+
+/* Section headers */
+.s-num{font-size:10px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--blue-glow);margin-bottom:12px}
+.s-title{font-family:var(--fh);font-size:38px;font-weight:400;color:white;line-height:1.05;margin-bottom:12px}
+.s-sub{font-size:14px;color:rgba(255,255,255,.32);line-height:1.75;max-width:500px;margin-bottom:52px}
+
+/* Color cards */
+.clr-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:36px}
+.clr-card{border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,.06)}
+.clr-swatch{height:96px;position:relative}
+.clr-swatch::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.07) 0%,transparent 40%);pointer-events:none}
+.clr-info{padding:14px 16px;background:rgba(255,255,255,.03)}
+.clr-name{font-size:12px;font-weight:600;color:rgba(255,255,255,.68);margin-bottom:3px}
+.clr-hex{font-family:monospace;font-size:11px;color:rgba(255,255,255,.32);margin-bottom:3px}
+.clr-role{font-size:10px;color:rgba(255,255,255,.18);line-height:1.45}
+.clr-row{display:grid;grid-template-columns:repeat(8,1fr);gap:8px}
+.clr-chip{border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,.06)}
+.clr-chip-swatch{height:48px}
+.clr-chip-info{padding:8px 10px;background:rgba(255,255,255,.03)}
+.clr-chip-name{font-size:10px;font-weight:600;color:rgba(255,255,255,.45)}
+.clr-chip-hex{font-family:monospace;font-size:9px;color:rgba(255,255,255,.22)}
+
+/* Logo anatomy */
+.anatomy{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start;margin-bottom:56px}
+.anatomy-canvas{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:20px;padding:56px;display:flex;align-items:center;justify-content:center}
+.anatomy-labels{display:flex;flex-direction:column;gap:18px;padding:32px 0}
+.al-item{display:flex;align-items:flex-start;gap:14px}
+.al-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.al-name{font-size:13px;font-weight:600;color:rgba(255,255,255,.75)}
+.al-desc{font-size:11px;color:rgba(255,255,255,.28);margin-top:3px;line-height:1.55}
+
+/* Size row */
+.sizes{display:flex;align-items:flex-end;gap:44px;padding:48px;background:rgba(255,255,255,.03);border-radius:20px;border:1px solid rgba(255,255,255,.06);margin-bottom:36px}
+.sz-item{display:flex;flex-direction:column;align-items:center;gap:14px}
+.sz-label{font-size:9px;color:rgba(255,255,255,.22);letter-spacing:.1em;text-align:center;line-height:1.5}
+
+/* Lockup row */
+.lockup-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.lk{padding:36px 32px;border-radius:16px;display:flex;flex-direction:column;gap:14px;border:1px solid rgba(255,255,255,.06)}
+.lk.on-dark{background:#080E1A}
+.lk.on-navy{background:var(--navy)}
+.lk.on-light{background:var(--cloud)}
+.lk-label{font-size:9px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.22)}
+.lk.on-light .lk-label{color:rgba(0,0,0,.28)}
+
+/* Typography */
+.type-grid{display:grid;grid-template-columns:1fr 1fr;gap:32px}
+.type-block{padding:40px;border-radius:20px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06)}
+.type-lbl{font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--blue-glow);margin-bottom:24px}
+.type-row{display:flex;align-items:baseline;gap:20px;padding-bottom:18px;border-bottom:1px solid rgba(255,255,255,.05);margin-bottom:18px}
+.type-row:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.type-meta{min-width:110px;font-size:10px;color:rgba(255,255,255,.18);line-height:1.6}
+
+/* Modules */
+.mod-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.mod-card{border-radius:20px;overflow:hidden;border:1px solid rgba(255,255,255,.06)}
+.mod-header{padding:32px;position:relative;overflow:hidden}
+.mod-header::after{content:'';position:absolute;top:-60px;right:-60px;width:180px;height:180px;border-radius:50%;background:currentColor;opacity:.12;pointer-events:none}
+.mod-n{font-size:10px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;opacity:.45;margin-bottom:14px}
+.mod-name{font-family:var(--fh);font-size:23px;font-weight:400;color:white;margin-bottom:7px}
+.mod-tag{font-size:12px;color:rgba(255,255,255,.4)}
+.mod-body{padding:22px 32px 32px;background:rgba(0,0,0,.22)}
+.mod-swatches{display:flex;gap:8px;margin-bottom:18px}
+.mod-swatch{width:28px;height:28px;border-radius:8px}
+.mod-tokens{display:flex;flex-direction:column;gap:5px}
+.mod-token{display:flex;justify-content:space-between;padding:6px 10px;border-radius:6px;background:rgba(255,255,255,.04);font-size:10px}
+.mt-n{color:rgba(255,255,255,.35)}
+.mt-v{font-family:monospace;color:rgba(255,255,255,.55)}
+
+/* Components */
+.comp-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.comp-block{padding:40px;border-radius:20px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06)}
+.comp-lbl{font-size:10px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.22);margin-bottom:28px}
+.btn-row{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:14px}
+.btn{display:inline-flex;align-items:center;gap:7px;border-radius:50px;font-family:var(--fb);cursor:default;font-weight:600;border:none;outline:none}
+.btn-lg{padding:14px 32px;font-size:15px}
+.btn-md{padding:11px 24px;font-size:14px}
+.btn-sm{padding:8px 18px;font-size:12px}
+.btn-primary{background:var(--blue);color:white;box-shadow:0 8px 24px rgba(28,84,242,.4)}
+.btn-secondary{background:rgba(255,255,255,.07);color:rgba(255,255,255,.8);border:1px solid rgba(255,255,255,.12)!important}
+.btn-ghost{background:transparent;color:rgba(255,255,255,.6);border:1.5px solid rgba(255,255,255,.18)!important}
+.btn-outline{background:transparent;color:var(--blue);border:1.5px solid var(--blue)!important}
+.btn-teal{background:var(--teal);color:white;box-shadow:0 8px 24px rgba(8,145,178,.35)}
+.btn-danger{background:var(--danger);color:white}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:50px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.b-dot{width:5px;height:5px;border-radius:50%}
+.b-blue{background:rgba(28,84,242,.15);color:#7BA7FF;border:1px solid rgba(28,84,242,.28)}
+.b-teal{background:rgba(8,145,178,.15);color:#5EC8E0;border:1px solid rgba(8,145,178,.28)}
+.b-purple{background:rgba(139,92,246,.15);color:#C4B5FD;border:1px solid rgba(139,92,246,.28)}
+.b-green{background:rgba(5,150,105,.15);color:#34D399;border:1px solid rgba(5,150,105,.28)}
+.b-amber{background:rgba(245,158,11,.15);color:#FCD34D;border:1px solid rgba(245,158,11,.28)}
+.b-red{background:rgba(239,68,68,.15);color:#FCA5A5;border:1px solid rgba(239,68,68,.28)}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 14px;border-radius:50px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;border:1px solid rgba(28,84,242,.25);background:rgba(28,84,242,.1);color:var(--blue-glow)}
+.kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.kpi-card{padding:18px;border-radius:13px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06)}
+.kpi-lbl{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.28);display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.kpi-val{font-family:var(--fh);font-size:30px;color:white;margin-bottom:8px;line-height:1}
+.kpi-bar{height:3px;border-radius:2px;background:rgba(255,255,255,.08)}
+.kpi-fill{height:100%;border-radius:2px}
+.kpi-dot{width:6px;height:6px;border-radius:50%}
+.input-field{padding:12px 16px;border-radius:12px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.1);color:white;font-family:var(--fb);font-size:14px;outline:none;width:100%;margin-bottom:10px}
+.input-field.focused{border-color:var(--blue);box-shadow:0 0 0 3px rgba(28,84,242,.15)}
+.input-field.errored{border-color:var(--danger)}
+.input-lbl{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:5px;display:block}
+
+/* Spacing */
+.sp-row{display:flex;gap:24px;align-items:flex-end;margin-bottom:48px;flex-wrap:wrap}
+.sp-item{display:flex;flex-direction:column;align-items:center;gap:8px}
+.sp-block{border-radius:4px;background:var(--blue);opacity:.6}
+.sp-lbl{font-size:9px;color:rgba(255,255,255,.28)}
+.rad-row{display:flex;gap:20px;align-items:flex-end;flex-wrap:wrap}
+.rad-item{display:flex;flex-direction:column;align-items:center;gap:10px}
+.rad-block{width:60px;height:60px;background:rgba(28,84,242,.4);border:1px solid rgba(28,84,242,.6)}
+.rad-lbl{font-size:9px;color:rgba(255,255,255,.28);text-align:center;line-height:1.4}
+
+/* Don't rules */
+.rules-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.rule-card{padding:30px;border-radius:16px}
+.rule-card.yes{border:1.5px solid rgba(5,150,105,.22);background:rgba(5,150,105,.04)}
+.rule-card.no{border:1.5px solid rgba(239,68,68,.22);background:rgba(239,68,68,.04)}
+.rule-tag{font-size:10px;font-weight:800;letter-spacing:.15em;text-transform:uppercase;margin-bottom:12px}
+.rule-card.yes .rule-tag{color:#34D399}
+.rule-card.no .rule-tag{color:#FCA5A5}
+.rule-txt{font-size:13px;color:rgba(255,255,255,.45);line-height:1.65}
+</style>
+</head>
+<body>
+
+<!-- ══ COVER ════════════════════════════════════════════════════════════════ -->
+<div class="cover">
+  <div class="bg-mark">
+    <svg width="660" height="660" viewBox="0 0 100 100" fill="none">
+      <defs>
+        <linearGradient id="bg-g" x1="35" y1="8" x2="57" y2="68" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#2E6BFF"/>
+          <stop offset="100%" stop-color="#091D3E"/>
+        </linearGradient>
+        <clipPath id="bg-clip"><rect x="35" y="8" width="22" height="60" rx="5.5"/></clipPath>
+      </defs>
+      <rect x="35" y="8" width="22" height="60" rx="5.5" fill="url(#bg-g)"/>
+      <path d="M35 52 L57 40" stroke="rgba(255,255,255,0.3)" stroke-width="0.8" stroke-linecap="round"/>
+      <g clip-path="url(#bg-clip)">
+        <path d="M40 72 L47.5 64 L55 72" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.15"/>
+        <path d="M40 64 L47.5 56 L55 64" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.35"/>
+        <path d="M40 56 L47.5 48 L55 56" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.65"/>
+      </g>
+    </svg>
+  </div>
+
+  <div class="cover-top">
+    <div class="meta">STRYDEOS · BRAND IDENTITY SYSTEM</div>
+    <div class="meta">v3.0 · ELECTRIC BLUE · FEB 2025 · CONFIDENTIAL</div>
+  </div>
+
+  <div class="cover-center">
+    <!-- Mark -->
+    <svg width="88" height="88" viewBox="0 0 100 100" fill="none">
+      <defs>
+        <linearGradient id="cv-cont" x1="35" y1="8" x2="57" y2="68" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#2E6BFF"/><stop offset="100%" stop-color="#091D3E"/>
+        </linearGradient>
+        <radialGradient id="cv-rad" cx="42%" cy="28%" r="52%">
+          <stop offset="0%" stop-color="#6AABFF" stop-opacity="0.7"/><stop offset="100%" stop-color="#1C54F2" stop-opacity="0"/>
+        </radialGradient>
+        <linearGradient id="cv-face" x1="35" y1="40" x2="57" y2="52" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="white" stop-opacity="0.28"/><stop offset="100%" stop-color="white" stop-opacity="0.04"/>
+        </linearGradient>
+        <linearGradient id="cv-rim" x1="35" y1="0" x2="57" y2="0" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#7ABBFF" stop-opacity="0.5"/>
+          <stop offset="50%" stop-color="#1C54F2" stop-opacity="0.15"/>
+          <stop offset="100%" stop-color="#1C54F2" stop-opacity="0.4"/>
+        </linearGradient>
+        <clipPath id="cv-clip"><rect x="35" y="8" width="22" height="60" rx="5.5"/></clipPath>
+      </defs>
+      <ellipse cx="46" cy="73" rx="13" ry="3.5" fill="#1C54F2" opacity="0.28"/>
+      <rect x="35" y="8" width="22" height="60" rx="5.5" fill="url(#cv-cont)"/>
+      <rect x="35" y="8" width="22" height="60" rx="5.5" fill="url(#cv-rad)"/>
+      <path d="M35 52 L57 40 L57 13.5 Q57 8 51.5 8 L35 8 Z" fill="url(#cv-face)" clip-path="url(#cv-clip)"/>
+      <g clip-path="url(#cv-clip)">
+        <path d="M40 72 L47.5 64 L55 72" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.18"/>
+        <path d="M40 64 L47.5 56 L55 64" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.42"/>
+        <path d="M40 56 L47.5 48 L55 56" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.72"/>
+      </g>
+      <rect x="35" y="8" width="22" height="60" rx="5.5" fill="none" stroke="url(#cv-rim)" stroke-width="0.8"/>
+    </svg>
+    <div class="cov-wordmark">Stryde<span>OS</span></div>
+    <div class="cov-rule"></div>
+    <div class="cov-desc">Brand identity system. Colors, typography, logo anatomy, module system, components, and usage guidelines for StrydeOS v3.0.</div>
+  </div>
+
+  <div class="cover-bottom">
+    <div class="meta">© STRYDEOS LTD · BUILT BY CLINICIANS, FOR CLINICIANS</div>
+    <nav class="toc">
+      <a href="#logo">01 Logo</a>
+      <a href="#colour">02 Colour</a>
+      <a href="#type">03 Type</a>
+      <a href="#modules">04 Modules</a>
+      <a href="#comp">05 Components</a>
+      <a href="#spatial">06 Spatial</a>
+      <a href="#rules">07 Rules</a>
+    </nav>
+  </div>
+</div>
+
+<div class="page">
+
+<!-- ══ 01 — LOGO ════════════════════════════════════════════════════════════ -->
+<section id="logo">
+  <div class="s-num">01 — Logo System</div>
+  <div class="s-title">The Monolith</div>
+  <div class="s-sub">Glass pillar · Diagonal catch-light top face · Three ascending chevrons. All prior marks retired.</div>
+
+  <!-- Anatomy -->
+  <div class="anatomy">
+    <div class="anatomy-canvas">
+      <svg width="280" height="300" viewBox="0 0 280 300" fill="none">
+        <!-- Leader lines (right side) -->
+        <line x1="193" y1="62" x2="226" y2="52" stroke="rgba(255,255,255,0.13)" stroke-width="0.8" stroke-dasharray="3,2"/>
+        <text x="229" y="55" fill="rgba(255,255,255,0.32)" font-family="Outfit,sans-serif" font-size="9" letter-spacing="0.05em">DIAGONAL CUT</text>
+        <text x="229" y="66" fill="rgba(255,255,255,0.16)" font-family="Outfit,sans-serif" font-size="8">TOP FACE CATCH-LIGHT</text>
+        <line x1="193" y1="30" x2="226" y2="18" stroke="rgba(255,255,255,0.13)" stroke-width="0.8" stroke-dasharray="3,2"/>
+        <text x="229" y="21" fill="rgba(255,255,255,0.32)" font-family="Outfit,sans-serif" font-size="9" letter-spacing="0.05em">GLASS PILLAR</text>
+        <text x="229" y="32" fill="rgba(255,255,255,0.16)" font-family="Outfit,sans-serif" font-size="8">CONTAINER · #1C54F2</text>
+        <!-- left side leaders -->
+        <line x1="115" y1="40" x2="62" y2="25" stroke="rgba(255,255,255,0.13)" stroke-width="0.8" stroke-dasharray="3,2"/>
+        <text x="2" y="20" fill="rgba(255,255,255,0.32)" font-family="Outfit,sans-serif" font-size="9" letter-spacing="0.04em">RADIAL LIGHT</text>
+        <text x="2" y="31" fill="rgba(255,255,255,0.16)" font-family="Outfit,sans-serif" font-size="8">SOURCE CX=42% CY=28%</text>
+        <line x1="190" y1="180" x2="226" y2="168" stroke="rgba(255,255,255,0.13)" stroke-width="0.8" stroke-dasharray="3,2"/>
+        <text x="229" y="165" fill="rgba(255,255,255,0.32)" font-family="Outfit,sans-serif" font-size="9" letter-spacing="0.05em">3 ASCENDING ∧</text>
+        <text x="229" y="176" fill="rgba(255,255,255,0.16)" font-family="Outfit,sans-serif" font-size="8">OP 0.18 / 0.42 / 0.72</text>
+        <text x="229" y="187" fill="rgba(255,255,255,0.1)" font-family="Outfit,sans-serif" font-size="8">CLIPPED TO PILLAR</text>
+        <line x1="154" y1="258" x2="62" y2="270" stroke="rgba(255,255,255,0.13)" stroke-width="0.8" stroke-dasharray="3,2"/>
+        <text x="2" y="265" fill="rgba(255,255,255,0.32)" font-family="Outfit,sans-serif" font-size="9" letter-spacing="0.04em">AMBIENT SHADOW</text>
+        <text x="2" y="276" fill="rgba(255,255,255,0.16)" font-family="Outfit,sans-serif" font-size="8">#1C54F2 · ELLIPSE · 25%</text>
+        <!-- Gradient RIM leader -->
+        <line x1="115" y1="142" x2="62" y2="155" stroke="rgba(255,255,255,0.13)" stroke-width="0.8" stroke-dasharray="3,2"/>
+        <text x="2" y="152" fill="rgba(255,255,255,0.32)" font-family="Outfit,sans-serif" font-size="9" letter-spacing="0.04em">GRADIENT RIM</text>
+        <text x="2" y="163" fill="rgba(255,255,255,0.16)" font-family="Outfit,sans-serif" font-size="8">#7ABBFF → #1C54F2</text>
+
+        <!-- Mark centered -->
+        <g transform="translate(90,18) scale(1.72)">
+          <defs>
+            <linearGradient id="an-cont" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#2E6BFF"/><stop offset="100%" stop-color="#091D3E"/>
+            </linearGradient>
+            <radialGradient id="an-rad" cx="42%" cy="28%" r="52%">
+              <stop offset="0%" stop-color="#6AABFF" stop-opacity="0.7"/><stop offset="100%" stop-color="#1C54F2" stop-opacity="0"/>
+            </radialGradient>
+            <linearGradient id="an-face" x1="0" y1="0.65" x2="1" y2="0.35">
+              <stop offset="0%" stop-color="white" stop-opacity="0.28"/><stop offset="100%" stop-color="white" stop-opacity="0.04"/>
+            </linearGradient>
+            <linearGradient id="an-rim" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#7ABBFF" stop-opacity="0.5"/>
+              <stop offset="50%" stop-color="#1C54F2" stop-opacity="0.15"/>
+              <stop offset="100%" stop-color="#1C54F2" stop-opacity="0.4"/>
+            </linearGradient>
+            <clipPath id="an-clip"><rect x="0" y="0" width="22" height="60" rx="5.5"/></clipPath>
+          </defs>
+          <ellipse cx="11" cy="65" rx="13" ry="3.2" fill="#1C54F2" opacity="0.25"/>
+          <rect x="0" y="0" width="22" height="60" rx="5.5" fill="url(#an-cont)"/>
+          <rect x="0" y="0" width="22" height="60" rx="5.5" fill="url(#an-rad)"/>
+          <path d="M0 44 L22 32 L22 5.5 Q22 0 16.5 0 L0 0 Z" fill="url(#an-face)" clip-path="url(#an-clip)"/>
+          <g clip-path="url(#an-clip)">
+            <path d="M5 64 L12.5 56 L20 64" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.18"/>
+            <path d="M5 56 L12.5 48 L20 56" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.42"/>
+            <path d="M5 48 L12.5 40 L20 48" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.72"/>
+          </g>
+          <rect x="0" y="0" width="22" height="60" rx="5.5" fill="none" stroke="url(#an-rim)" stroke-width="0.8"/>
+        </g>
+      </svg>
+    </div>
+
+    <div class="anatomy-labels">
+      <div class="al-item">
+        <div class="al-dot" style="background:#2E6BFF;box-shadow:0 0 8px #1C54F2;"></div>
+        <div><div class="al-name">Glass Pillar Container</div><div class="al-desc">Vertical rect rx=5.5. Gradient #2E6BFF→#091D3E. Radial light at cx=42% cy=28%.</div></div>
+      </div>
+      <div class="al-item">
+        <div class="al-dot" style="background:rgba(255,255,255,0.55);"></div>
+        <div><div class="al-name">Diagonal Top Face</div><div class="al-desc">Path M35,52 → L57,40. Beveled catch-light. White 28%→4% opacity.</div></div>
+      </div>
+      <div class="al-item">
+        <div class="al-dot" style="background:#6AABFF;"></div>
+        <div><div class="al-name">Radial Interior Glow</div><div class="al-desc">Radial gradient overlay clipped to pillar. Top-left light source illusion.</div></div>
+      </div>
+      <div class="al-item">
+        <div class="al-dot" style="background:rgba(255,255,255,0.85);"></div>
+        <div><div class="al-name">Ascending Chevrons ∧∧∧</div><div class="al-desc">Three ∧ marks. Opacity 0.18 / 0.42 / 0.72 — momentum reads bottom to top.</div></div>
+      </div>
+      <div class="al-item">
+        <div class="al-dot" style="background:#7ABBFF;"></div>
+        <div><div class="al-name">Gradient Rim</div><div class="al-desc">#7ABBFF 50% → #1C54F2 15% → #1C54F2 40%. stroke-width=0.8.</div></div>
+      </div>
+      <div class="al-item">
+        <div class="al-dot" style="background:#1C54F2;opacity:0.4;"></div>
+        <div><div class="al-name">Ambient Shadow</div><div class="al-desc">Ellipse beneath. #1C54F2 25% opacity. Grounds the mark.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Size scale -->
+  <div style="font-size:10px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:20px;">Size Scale</div>
+  <div class="sizes">
+    <!-- Reusable defs macro via separate SVG id per size -->
+    <!-- 16px -->
+    <div class="sz-item">
+      <svg width="16" height="16" viewBox="0 0 100 100" fill="none">
+        <defs><linearGradient id="s16" x1="35" y1="8" x2="57" y2="68" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#2E6BFF"/><stop offset="100%" stop-color="#091D3E"/></linearGradient><clipPath id="s16c"><rect x="35" y="8" width="22" height="60" rx="5.5"/></clipPath></defs>
+        <rect x="35" y="8" width="22" height="60" rx="5.5" fill="url(#s16)"/>
+        <g clip-path="url(#s16c)"><path d="M40 56 L47.5 48 L55 56" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.8"/></g>
+      </svg>
+      <div class="sz-label">16px<br/>Favicon</div>
+    </div>
+    <!-- 24px -->
+    <div class="sz-item">
+      <svg width="24" height="24" viewBox="0 0 100 100" fill="none">
+        <defs><linearGradient id="s24" x1="35" y1="8" x2="57" y2="68" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#2E6BFF"/><stop offset="100%" stop-color="#091D3E"/></linearGradient><clipPath id="s24c"><rect x="35" y="8" width="22" height="60" rx="5.5"/></clipPath></defs>
+        <rect x="35" y="8" width="22" height="60" rx="5.5" fill="url(#s24)"/>
+        <g clip-path="url(#s24c)">
+          <path d="M40 64 L47.5 56 L55 64" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.35"/>
+          <path d="M40 56 L47.5 48 L55 56" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.75"/>
+        </g>
+      </svg>
+      <div class="sz-label">24px<br/>App icon</div>
+    </div>
+    <!-- 36px -->
+    <div class="sz-item">
+      <svg width="36" height="36" viewBox="0 0 100 100" fill="none">
+        <defs>
+          <linearGradient id="s36" x1="35" y1="8" x2="57" y2="68" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#2E6BFF"/><stop offset="100%" stop-color="#091D3E"/></linearGradient>
+          <radialGradient id="s36r" cx="42%" cy="28%" r="52%"><stop offset="0%" stop-color="#6AABFF" stop-opacity="0.65"/><stop offset="100%" stop-color="#1C54F2" stop-opacity="0"/></radialGradient>
+          <clipPath id="s36c"><rect x="35" y="8" width="22" height="60" rx="5.5"/></clipPath>
+        </defs>
+        <rect x="35" y="8" width="22" height="60" rx="5.5" fill="url(#s36)"/>
+        <rect x="35" y="8" width="22" height="60" rx="5.5" fill="url(#s36r)"/>
+        <g clip-path="url(#s36c)">
+          <path d="M40 72 L47.5 64 L55 72" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.18"/>
+          <path d="M40 64 L47.5 56 L55 64" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.42"/>
+          <path d="M40 56 L47.5 48 L55 56" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.72"/>
+        </g>
+      </svg>
+      <div class="sz-label">36px<br/>Nav bar</div>
+    </div>
+    <!-- 48px -->
+    <div class="sz-item">
+      <svg width="48" height="48" viewBox="0 0 100 100" fill="none">
+        <defs>
+          <linearGradient id="s48" x1="35" y1="8" x2="57" y2="68" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#2E6BFF"/><stop offset="100%" stop-color="#091D3E"/></linearGradient>
+          <radialGradient id="s48r" cx="42%" cy="28%" r="52%"><stop offset="0%" stop-color="#6AABFF" stop-opacity="0.7"/><stop offset="100%" stop-color="#1C54F2" stop-opacity="0"/></radialGradient>
+          <linearGradient id="s48f" x1="35" y1="40" x2="57" y2="52" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="white" stop-opacity="0.28"/><stop offset="100%" stop-color="white" stop-opacity="0.04"/></linearGradient>
+          <linearGradient id="s48rim" x1="35" y1="0" x2="57" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#7ABBFF" stop-opacity="0.5"/><stop offset="50%" stop-color="#1C54F2" stop-opacity="0.15"/><stop offset="100%" stop-color="#1C54F2" stop-opacity="0.4"/></linearGradient>
+          <clipPath id="s48c"><rect x="35" y="8" width="22" height="60" rx="5.5"/></clipPath>
+        </defs>
+        <ellipse cx="46" cy="73" rx="13" ry="3.2" fill="#1C54F2" opacity="0.25"/>
+        <rect x="35" y="8" width="22" height="60" rx="5.5" fill="url(#s48)"/>
+        <rect x="35" y="8" width="22" height="60" rx="5.5" fill="url(#s48r)"/>
+        <path d="M35 52 L57 40 L57 13.5 Q57 8 51.5 8 L35 8 Z" fill="url(#s48f)" clip-path="url(#s48c)"/>
+        <g clip-path="url(#s48c)">
+          <path d="M40 72 L47.5 64 L55 72" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.18"/>
+          <path d="M40 64 L47.5 56 L55 64" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.42"/>
+          <path d="M40 56 L47.5 48 L55 56" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.72"/>
+        </g>
+        <rect x="35" y="8" width="22" height="60" rx="5.5" fill="none" stroke="url(#s48rim)" stroke-width="0.8"/>
+      </svg>
+      <div class="sz-label">48px<br/>Default</div>
+    </div>
+    <!-- 64px -->
+    <div class="sz-item">
+      <svg width="64" height="64" viewBox="0 0 100 100" fill="none">
+        <defs>
+          <linearGradient id="s64" x1="35" y1="8" x2="57" y2="68" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#2E6BFF"/><stop offset="100%" stop-color="#091D3E"/></linearGradient>
+          <radialGradient id="s64r" cx="42%" cy="28%" r="52%"><stop offset="0%" stop-color="#6AABFF" stop-opacity="0.7"/><stop offset="100%" stop-color="#1C54F2" stop-opacity="0"/></radialGradient>
+          <linearGradient id="s64f" x1="35" y1="40" x2="57" y2="52" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="white" stop-opacity="0.28"/><stop offset="100%" stop-color="white" stop-opacity="0.04"/></linearGradient>
+          <linearGradient id="s64rim" x1="35" y1="0" x2="57" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#7ABBFF" stop-opacity="0.5"/><stop offset="50%" stop-color="#1C54F2" stop-opacity="0.15"/><stop offset="100%" stop-color="#1C54F2" stop-opacity="0.4"/></linearGradient>
+          <clipPath id="s64c"><rect x="35" y="8" width="22" height="60" rx="5.5"/></clipPath>
+        </defs>
+        <ellipse cx="46" cy="73" rx="13" ry="3.5" fill="#1C54F2" opacity="0.25"/>
+        <rect x="35" y="8" width="22" height="60" rx="5.5" fill="url(#s64)"/>
+        <rect x="35" y="8" width="22" height="60" rx="5.5" fill="url(#s64r)"/>
+        <path d="M35 52 L57 40 L57 13.5 Q57 8 51.5 8 L35 8 Z" fill="url(#s64f)" clip-path="url(#s64c)"/>
+        <g clip-path="url(#s64c)">
+          <path d="M40 72 L47.5 64 L55 72" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.18"/>
+          <path d="M40 64 L47.5 56 L55 64" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.42"/>
+          <path d="M40 56 L47.5 48 L55 56" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.72"/>
+        </g>
+        <rect x="35" y="8" width="22" height="60" rx="5.5" fill="none" stroke="url(#s64rim)" stroke-width="0.8"/>
+      </svg>
+      <div class="sz-label">64px<br/>Cards</div>
+    </div>
+    <!-- 96px -->
+    <div class="sz-item">
+      <svg width="96" height="96" viewBox="0 0 100 100" fill="none">
+        <defs>
+          <linearGradient id="s96" x1="35" y1="8" x2="57" y2="68" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#2E6BFF"/><stop offset="100%" stop-color="#091D3E"/></linearGradient>
+          <radialGradient id="s96r" cx="42%" cy="28%" r="52%"><stop offset="0%" stop-color="#6AABFF" stop-opacity="0.7"/><stop offset="100%" stop-color="#1C54F2" stop-opacity="0"/></radialGradient>
+          <linearGradient id="s96f" x1="35" y1="40" x2="57" y2="52" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="white" stop-opacity="0.28"/><stop offset="100%" stop-color="white" stop-opacity="0.04"/></linearGradient>
+          <linearGradient id="s96rim" x1="35" y1="0" x2="57" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#7ABBFF" stop-opacity="0.5"/><stop offset="50%" stop-color="#1C54F2" stop-opacity="0.15"/><stop offset="100%" stop-color="#1C54F2" stop-opacity="0.4"/></linearGradient>
+          <clipPath id="s96c"><rect x="35" y="8" width="22" height="60" rx="5.5"/></clipPath>
+        </defs>
+        <ellipse cx="46" cy="73" rx="13" ry="3.5" fill="#1C54F2" opacity="0.3"/>
+        <rect x="35" y="8" width="22" height="60" rx="5.5" fill="url(#s96)"/>
+        <rect x="35" y="8" width="22" height="60" rx="5.5" fill="url(#s96r)"/>
+        <path d="M35 52 L57 40 L57 13.5 Q57 8 51.5 8 L35 8 Z" fill="url(#s96f)" clip-path="url(#s96c)"/>
+        <g clip-path="url(#s96c)">
+          <path d="M40 72 L47.5 64 L55 72" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.18"/>
+          <path d="M40 64 L47.5 56 L55 64" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.42"/>
+          <path d="M40 56 L47.5 48 L55 56" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.72"/>
+        </g>
+        <rect x="35" y="8" width="22" height="60" rx="5.5" fill="none" stroke="url(#s96rim)" stroke-width="0.8"/>
+      </svg>
+      <div class="sz-label">96px<br/>Hero</div>
+    </div>
+  </div>
+
+  <!-- Background lockups -->
+  <div style="font-size:10px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:20px;">Background Variants</div>
+  <div class="lockup-row">
+    <!-- Dark -->
+    <div class="lk on-dark">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <svg width="44" height="44" viewBox="0 0 100 100" fill="none">
+          <defs><linearGradient id="lk1g" x1="35" y1="8" x2="57" y2="68" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#2E6BFF"/><stop offset="100%" stop-color="#091D3E"/></linearGradient><radialGradient id="lk1r" cx="42%" cy="28%" r="52%"><stop offset="0%" stop-color="#6AABFF" stop-opacity="0.7"/><stop offset="100%" stop-color="#1C54F2" stop-opacity="0"/></radialGradient><linearGradient id="lk1f" x1="35" y1="40" x2="57" y2="52" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="white" stop-opacity="0.28"/><stop offset="100%" stop-color="white" stop-opacity="0.04"/></linearGradient><linearGradient id="lk1rim" x1="35" y1="0" x2="57" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#7ABBFF" stop-opacity="0.5"/><stop offset="50%" stop-color="#1C54F2" stop-opacity="0.15"/><stop offset="100%" stop-color="#1C54F2" stop-opacity="0.4"/></linearGradient><clipPath id="lk1c"><rect x="35" y="8" width="22" height="60" rx="5.5"/></clipPath></defs>
+          <ellipse cx="46" cy="73" rx="13" ry="3.2" fill="#1C54F2" opacity="0.25"/>
+          <rect x="35" y="8" width="22" height="60" rx="5.5" fill="url(#lk1g)"/>
+          <rect x="35" y="8" width="22" height="60" rx="5.5" fill="url(#lk1r)"/>
+          <path d="M35 52 L57 40 L57 13.5 Q57 8 51.5 8 L35 8 Z" fill="url(#lk1f)" clip-path="url(#lk1c)"/>
+          <g clip-path="url(#lk1c)"><path d="M40 72 L47.5 64 L55 72" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.18"/><path d="M40 64 L47.5 56 L55 64" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.42"/><path d="M40 56 L47.5 48 L55 56" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.72"/></g>
+          <rect x="35" y="8" width="22" height="60" rx="5.5" fill="none" stroke="url(#lk1rim)" stroke-width="0.8"/>
+        </svg>
+        <span style="font-family:var(--fb);font-weight:700;font-size:24px;color:white;letter-spacing:-0.025em;">Stryde<span style="color:#1C54F2;">OS</span></span>
+      </div>
+      <div class="lk-label">On deep dark · #080E1A</div>
+    </div>
+    <!-- Navy -->
+    <div class="lk on-navy">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <svg width="44" height="44" viewBox="0 0 100 100" fill="none">
+          <defs><linearGradient id="lk2g" x1="35" y1="8" x2="57" y2="68" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#2E6BFF"/><stop offset="100%" stop-color="#091D3E"/></linearGradient><radialGradient id="lk2r" cx="42%" cy="28%" r="52%"><stop offset="0%" stop-color="#6AABFF" stop-opacity="0.7"/><stop offset="100%" stop-color="#1C54F2" stop-opacity="0"/></radialGradient><linearGradient id="lk2f" x1="35" y1="40" x2="57" y2="52" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="white" stop-opacity="0.28"/><stop offset="100%" stop-color="white" stop-opacity="0.04"/></linearGradient><linearGradient id="lk2rim" x1="35" y1="0" x2="57" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#7ABBFF" stop-opacity="0.5"/><stop offset="50%" stop-color="#1C54F2" stop-opacity="0.15"/><stop offset="100%" stop-color="#1C54F2" stop-opacity="0.4"/></linearGradient><clipPath id="lk2c"><rect x="35" y="8" width="22" height="60" rx="5.5"/></clipPath></defs>
+          <ellipse cx="46" cy="73" rx="13" ry="3.2" fill="#1C54F2" opacity="0.25"/>
+          <rect x="35" y="8" width="22" height="60" rx="5.5" fill="url(#lk2g)"/>
+          <rect x="35" y="8" width="22" height="60" rx="5.5" fill="url(#lk2r)"/>
+          <path d="M35 52 L57 40 L57 13.5 Q57 8 51.5 8 L35 8 Z" fill="url(#lk2f)" clip-path="url(#lk2c)"/>
+          <g clip-path="url(#lk2c)"><path d="M40 72 L47.5 64 L55 72" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.18"/><path d="M40 64 L47.5 56 L55 64" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.42"/><path d="M40 56 L47.5 48 L55 56" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.72"/></g>
+          <rect x="35" y="8" width="22" height="60" rx="5.5" fill="none" stroke="url(#lk2rim)" stroke-width="0.8"/>
+        </svg>
+        <span style="font-family:var(--fb);font-weight:700;font-size:24px;color:white;letter-spacing:-0.025em;">Stryde<span style="color:#4B8BF5;">OS</span></span>
+      </div>
+      <div class="lk-label">On navy · #0B2545 · OS uses glow</div>
+    </div>
+    <!-- Light -->
+    <div class="lk on-light">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <svg width="44" height="44" viewBox="0 0 100 100" fill="none">
+          <defs><linearGradient id="lk3g" x1="35" y1="8" x2="57" y2="68" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#2E6BFF"/><stop offset="100%" stop-color="#091D3E"/></linearGradient><radialGradient id="lk3r" cx="42%" cy="28%" r="52%"><stop offset="0%" stop-color="#6AABFF" stop-opacity="0.7"/><stop offset="100%" stop-color="#1C54F2" stop-opacity="0"/></radialGradient><linearGradient id="lk3f" x1="35" y1="40" x2="57" y2="52" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="white" stop-opacity="0.28"/><stop offset="100%" stop-color="white" stop-opacity="0.04"/></linearGradient><linearGradient id="lk3rim" x1="35" y1="0" x2="57" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#7ABBFF" stop-opacity="0.5"/><stop offset="50%" stop-color="#1C54F2" stop-opacity="0.15"/><stop offset="100%" stop-color="#1C54F2" stop-opacity="0.4"/></linearGradient><clipPath id="lk3c"><rect x="35" y="8" width="22" height="60" rx="5.5"/></clipPath></defs>
+          <ellipse cx="46" cy="73" rx="13" ry="3.2" fill="#1C54F2" opacity="0.18"/>
+          <rect x="35" y="8" width="22" height="60" rx="5.5" fill="url(#lk3g)"/>
+          <rect x="35" y="8" width="22" height="60" rx="5.5" fill="url(#lk3r)"/>
+          <path d="M35 52 L57 40 L57 13.5 Q57 8 51.5 8 L35 8 Z" fill="url(#lk3f)" clip-path="url(#lk3c)"/>
+          <g clip-path="url(#lk3c)"><path d="M40 72 L47.5 64 L55 72" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.18"/><path d="M40 64 L47.5 56 L55 64" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.42"/><path d="M40 56 L47.5 48 L55 56" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.72"/></g>
+          <rect x="35" y="8" width="22" height="60" rx="5.5" fill="none" stroke="url(#lk3rim)" stroke-width="0.8"/>
+        </svg>
+        <span style="font-family:var(--fb);font-weight:700;font-size:24px;color:#0B2545;letter-spacing:-0.025em;">Stryde<span style="color:#1C54F2;">OS</span></span>
+      </div>
+      <div class="lk-label" style="color:rgba(0,0,0,.3);">On light · #F2F1EE · Navy wordmark</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 02 — COLOUR ══════════════════════════════════════════════════════════ -->
+<section id="colour">
+  <div class="s-num">02 — Colour System</div>
+  <div class="s-title">Palette</div>
+  <div class="s-sub">Navy and Electric Blue as the primary surface/identity pair. Teal and Purple are module-exclusive accents only.</div>
+
+  <div style="font-size:10px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:18px;">Core Identity</div>
+  <div class="clr-grid">
+    <div class="clr-card"><div class="clr-swatch" style="background:#080E1A;"></div><div class="clr-info"><div class="clr-name">Deep Black</div><div class="clr-hex">#080E1A</div><div class="clr-role">Page BG · darkest surface</div></div></div>
+    <div class="clr-card"><div class="clr-swatch" style="background:#0B2545;"></div><div class="clr-info"><div class="clr-name">Navy</div><div class="clr-hex">#0B2545</div><div class="clr-role">Dark sections · deep cards</div></div></div>
+    <div class="clr-card"><div class="clr-swatch" style="background:#132D5E;"></div><div class="clr-info"><div class="clr-name">Navy Mid</div><div class="clr-hex">#132D5E</div><div class="clr-role">Secondary surfaces</div></div></div>
+    <div class="clr-card" style="border-color:rgba(28,84,242,.35);">
+      <div class="clr-swatch" style="background:#1C54F2;position:relative;">
+        <div style="position:absolute;top:8px;right:8px;background:white;color:#1C54F2;font-size:8px;font-weight:800;letter-spacing:.12em;padding:2px 8px;border-radius:20px;font-family:Outfit,sans-serif;">PRIMARY</div>
+      </div>
+      <div class="clr-info"><div class="clr-name" style="color:#7BA7FF;">Royal Blue</div><div class="clr-hex">#1C54F2</div><div class="clr-role">CTAs · logo · primary accent</div></div>
+    </div>
+    <div class="clr-card"><div class="clr-swatch" style="background:#2E6BFF;"></div><div class="clr-info"><div class="clr-name">Blue Bright</div><div class="clr-hex">#2E6BFF</div><div class="clr-role">Hover states · gradient highs</div></div></div>
+  </div>
+
+  <div style="font-size:10px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:18px;">Accents & Semantic</div>
+  <div class="clr-grid">
+    <div class="clr-card"><div class="clr-swatch" style="background:#4B8BF5;"></div><div class="clr-info"><div class="clr-name">Blue Glow</div><div class="clr-hex">#4B8BF5</div><div class="clr-role">Charts · chips · section tags</div></div></div>
+    <div class="clr-card"><div class="clr-swatch" style="background:#0891B2;"></div><div class="clr-info"><div class="clr-name">Teal</div><div class="clr-hex">#0891B2</div><div class="clr-role">Continuity module only</div></div></div>
+    <div class="clr-card"><div class="clr-swatch" style="background:#8B5CF6;"></div><div class="clr-info"><div class="clr-name">Intelligence</div><div class="clr-hex">#8B5CF6</div><div class="clr-role">Intelligence module only</div></div></div>
+    <div class="clr-card"><div class="clr-swatch" style="background:#059669;"></div><div class="clr-info"><div class="clr-name">Success</div><div class="clr-hex">#059669</div><div class="clr-role">Status OK · completions</div></div></div>
+    <div class="clr-card"><div class="clr-swatch" style="background:#F59E0B;"></div><div class="clr-info"><div class="clr-name">Warning</div><div class="clr-hex">#F59E0B</div><div class="clr-role">Alerts · metrics below target</div></div></div>
+  </div>
+
+  <div style="font-size:10px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:18px;">Surface Palette (Light Mode)</div>
+  <div class="clr-row">
+    <div class="clr-chip"><div class="clr-chip-swatch" style="background:#F9F8F6;"></div><div class="clr-chip-info"><div class="clr-chip-name" style="color:#777;">Cloud Light</div><div class="clr-chip-hex" style="color:#999;">#F9F8F6</div></div></div>
+    <div class="clr-chip"><div class="clr-chip-swatch" style="background:#F2F1EE;"></div><div class="clr-chip-info"><div class="clr-chip-name" style="color:#777;">Cloud Dancer</div><div class="clr-chip-hex" style="color:#999;">#F2F1EE</div></div></div>
+    <div class="clr-chip"><div class="clr-chip-swatch" style="background:#E8E6E0;"></div><div class="clr-chip-info"><div class="clr-chip-name" style="color:#777;">Cloud Dark</div><div class="clr-chip-hex" style="color:#999;">#E8E6E0</div></div></div>
+    <div class="clr-chip"><div class="clr-chip-swatch" style="background:#FAF9F7;"></div><div class="clr-chip-info"><div class="clr-chip-name" style="color:#777;">Cream</div><div class="clr-chip-hex" style="color:#999;">#FAF9F7</div></div></div>
+    <div class="clr-chip"><div class="clr-chip-swatch" style="background:#E2DFDA;"></div><div class="clr-chip-info"><div class="clr-chip-name" style="color:#777;">Border</div><div class="clr-chip-hex" style="color:#999;">#E2DFDA</div></div></div>
+    <div class="clr-chip"><div class="clr-chip-swatch" style="background:#111827;"></div><div class="clr-chip-info"><div class="clr-chip-name">Ink</div><div class="clr-chip-hex">#111827</div></div></div>
+    <div class="clr-chip"><div class="clr-chip-swatch" style="background:#6B7280;"></div><div class="clr-chip-info"><div class="clr-chip-name">Muted</div><div class="clr-chip-hex">#6B7280</div></div></div>
+    <div class="clr-chip"><div class="clr-chip-swatch" style="background:#EF4444;"></div><div class="clr-chip-info"><div class="clr-chip-name">Danger</div><div class="clr-chip-hex">#EF4444</div></div></div>
+  </div>
+</section>
+
+<!-- ══ 03 — TYPE ════════════════════════════════════════════════════════════ -->
+<section id="type">
+  <div class="s-num">03 — Typography</div>
+  <div class="s-title">Type System</div>
+  <div class="s-sub">DM Serif Display for all headings — weight 400 only. Outfit for all UI. Never substitute, never add a third typeface.</div>
+
+  <div class="type-grid">
+    <div class="type-block">
+      <div class="type-lbl">DM Serif Display — Headings</div>
+      <div class="type-row">
+        <div class="type-meta">72px / 400<br/><span style="font-size:9px;color:rgba(255,255,255,.12);">Display XL</span></div>
+        <div style="font-family:var(--fh);font-size:72px;font-weight:400;line-height:1;color:white;">The OS</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">52px / 400<br/><span style="font-size:9px;color:rgba(255,255,255,.12);">Display</span></div>
+        <div style="font-family:var(--fh);font-size:52px;font-weight:400;line-height:1.05;color:white;">Every clinic</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">40px / 400<br/><span style="font-size:9px;color:rgba(255,255,255,.12);">H1</span></div>
+        <div style="font-family:var(--fh);font-size:40px;font-weight:400;line-height:1.1;color:white;">Full visibility</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">32px / 400<br/><span style="font-size:9px;color:rgba(255,255,255,.12);">H2</span></div>
+        <div style="font-family:var(--fh);font-size:32px;font-weight:400;line-height:1.2;color:white;">One platform.</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">24px / 400 <em>ital</em><br/><span style="font-size:9px;color:rgba(255,255,255,.12);">H3 / Quote</span></div>
+        <div style="font-family:var(--fh);font-size:24px;font-weight:400;font-style:italic;line-height:1.3;color:rgba(255,255,255,.7);">"It changed everything."</div>
+      </div>
+    </div>
+
+    <div class="type-block">
+      <div class="type-lbl">Outfit — Interface & Body</div>
+      <div class="type-row">
+        <div class="type-meta">18px / 400<br/><span style="font-size:9px;color:rgba(255,255,255,.12);">Body L</span></div>
+        <div style="font-size:18px;font-weight:400;line-height:1.7;color:rgba(255,255,255,.65);max-width:260px;">Built by clinicians for private practice.</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">15px / 600<br/><span style="font-size:9px;color:rgba(255,255,255,.12);">CTA / UI</span></div>
+        <div style="font-size:15px;font-weight:600;color:rgba(255,255,255,.85);">Get Early Access →</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">14px / 600<br/><span style="font-size:9px;color:rgba(255,255,255,.12);">Label</span></div>
+        <div style="font-size:14px;font-weight:600;color:rgba(255,255,255,.85);">Follow-up Rate</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">13px / 400<br/><span style="font-size:9px;color:rgba(255,255,255,.12);">Caption</span></div>
+        <div style="font-size:13px;color:rgba(255,255,255,.35);">vs 61% industry average</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">10px / 700<br/><span style="font-size:9px;color:rgba(255,255,255,.12);">Chip / Tag</span></div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--blue-glow);">StrydeOS Receptionist</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">11px mono<br/><span style="font-size:9px;color:rgba(255,255,255,.12);">Token</span></div>
+        <div style="font-size:11px;font-family:monospace;color:rgba(255,255,255,.35);">#1C54F2 · colors.blue</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 04 — MODULES ══════════════════════════════════════════════════════════ -->
+<section id="modules">
+  <div class="s-num">04 — Module System</div>
+  <div class="s-title">Three modules. One platform.</div>
+  <div class="s-sub">Each module owns a dedicated accent color. Never swap. Never use module colors outside their product context.</div>
+
+  <div class="mod-grid">
+    <div class="mod-card">
+      <div class="mod-header" style="background:linear-gradient(135deg,#0B1A38,#0E2150);color:var(--blue);">
+        <div class="mod-n">01 · StrydeOS</div>
+        <div class="mod-name">Receptionist</div>
+        <div class="mod-tag">Catches every patient at the door</div>
+      </div>
+      <div class="mod-body">
+        <div class="mod-swatches">
+          <div class="mod-swatch" style="background:#1C54F2;"></div>
+          <div class="mod-swatch" style="background:#2E6BFF;"></div>
+          <div class="mod-swatch" style="background:#4B8BF5;"></div>
+          <div class="mod-swatch" style="background:rgba(28,84,242,.2);border:1px solid rgba(28,84,242,.35);"></div>
+        </div>
+        <div class="mod-tokens">
+          <div class="mod-token"><span class="mt-n">Primary</span><span class="mt-v">#1C54F2</span></div>
+          <div class="mod-token"><span class="mt-n">Bright</span><span class="mt-v">#2E6BFF</span></div>
+          <div class="mod-token"><span class="mt-n">Glow</span><span class="mt-v">#4B8BF5</span></div>
+          <div class="mod-token"><span class="mt-n">Tint</span><span class="mt-v">rgba(28,84,242,.12)</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="mod-card">
+      <div class="mod-header" style="background:linear-gradient(135deg,#061A22,#082535);color:var(--teal);">
+        <div class="mod-n">02 · StrydeOS</div>
+        <div class="mod-name">Continuity</div>
+        <div class="mod-tag">Keeps patients in care, longer</div>
+      </div>
+      <div class="mod-body">
+        <div class="mod-swatches">
+          <div class="mod-swatch" style="background:#0891B2;"></div>
+          <div class="mod-swatch" style="background:#22A9CC;"></div>
+          <div class="mod-swatch" style="background:#5EC8E0;"></div>
+          <div class="mod-swatch" style="background:rgba(8,145,178,.2);border:1px solid rgba(8,145,178,.35);"></div>
+        </div>
+        <div class="mod-tokens">
+          <div class="mod-token"><span class="mt-n">Primary</span><span class="mt-v">#0891B2</span></div>
+          <div class="mod-token"><span class="mt-n">Bright</span><span class="mt-v">#22A9CC</span></div>
+          <div class="mod-token"><span class="mt-n">Glow</span><span class="mt-v">#5EC8E0</span></div>
+          <div class="mod-token"><span class="mt-n">Tint</span><span class="mt-v">rgba(8,145,178,.12)</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="mod-card">
+      <div class="mod-header" style="background:linear-gradient(135deg,#130B26,#1C1040);color:#A78BFA;">
+        <div class="mod-n">03 · StrydeOS</div>
+        <div class="mod-name">Intelligence</div>
+        <div class="mod-tag">Shows you how it's all performing</div>
+      </div>
+      <div class="mod-body">
+        <div class="mod-swatches">
+          <div class="mod-swatch" style="background:#8B5CF6;"></div>
+          <div class="mod-swatch" style="background:#A37BF8;"></div>
+          <div class="mod-swatch" style="background:#C4B5FD;"></div>
+          <div class="mod-swatch" style="background:rgba(139,92,246,.2);border:1px solid rgba(139,92,246,.35);"></div>
+        </div>
+        <div class="mod-tokens">
+          <div class="mod-token"><span class="mt-n">Primary</span><span class="mt-v">#8B5CF6</span></div>
+          <div class="mod-token"><span class="mt-n">Bright</span><span class="mt-v">#A37BF8</span></div>
+          <div class="mod-token"><span class="mt-n">Glow</span><span class="mt-v">#C4B5FD</span></div>
+          <div class="mod-token"><span class="mt-n">Tint</span><span class="mt-v">rgba(139,92,246,.12)</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 05 — COMPONENTS ═══════════════════════════════════════════════════════ -->
+<section id="comp">
+  <div class="s-num">05 — Components</div>
+  <div class="s-title">UI Components</div>
+  <div class="s-sub">50px radius for pill/CTA shapes. 12–20px for cards. Transition 0.3s ease throughout. Shadows carry brand blue.</div>
+
+  <div class="comp-grid">
+    <!-- Buttons -->
+    <div class="comp-block">
+      <div class="comp-lbl">Buttons</div>
+      <div class="btn-row">
+        <button class="btn btn-primary btn-lg">Get Early Access</button>
+        <button class="btn btn-ghost btn-lg">See how it works</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary btn-md">Book a demo</button>
+        <button class="btn btn-outline btn-md">See pricing</button>
+        <button class="btn btn-secondary btn-md">Cancel</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary btn-sm">Save changes</button>
+        <button class="btn btn-teal btn-sm">Continuity</button>
+        <button class="btn btn-danger btn-sm">Delete</button>
+      </div>
+      <div style="margin-top:20px;padding-top:18px;border-top:1px solid rgba(255,255,255,.06);">
+        <div style="font-size:10px;color:rgba(255,255,255,.18);margin-bottom:10px;letter-spacing:.07em;text-transform:uppercase;">Disabled</div>
+        <button class="btn btn-primary btn-md" style="opacity:.3;pointer-events:none;">Get Early Access</button>
+      </div>
+    </div>
+
+    <!-- Badges & Chips -->
+    <div class="comp-block">
+      <div class="comp-lbl">Badges & Status</div>
+      <div class="btn-row">
+        <span class="badge b-blue"><span class="b-dot" style="background:#7BA7FF;"></span>Active</span>
+        <span class="badge b-teal"><span class="b-dot" style="background:#5EC8E0;"></span>Live</span>
+        <span class="badge b-purple"><span class="b-dot" style="background:#C4B5FD;"></span>Tracking</span>
+      </div>
+      <div class="btn-row">
+        <span class="badge b-green"><span class="b-dot" style="background:#34D399;"></span>On target</span>
+        <span class="badge b-amber"><span class="b-dot" style="background:#FCD34D;"></span>Review</span>
+        <span class="badge b-red"><span class="b-dot" style="background:#FCA5A5;"></span>Alert</span>
+      </div>
+      <div class="btn-row" style="margin-top:8px;">
+        <span class="chip"><svg width="6" height="6" viewBox="0 0 6 6"><circle cx="3" cy="3" r="3" fill="#059669"/></svg> Now in early access</span>
+      </div>
+      <div class="btn-row">
+        <span class="chip" style="color:#5EC8E0;border-color:rgba(8,145,178,.3);background:rgba(8,145,178,.1);">StrydeOS Continuity</span>
+        <span class="chip" style="color:#C4B5FD;border-color:rgba(139,92,246,.3);background:rgba(139,92,246,.1);">Intelligence</span>
+      </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="comp-block">
+      <div class="comp-lbl">KPI Dashboard Cards</div>
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-lbl">Follow-up<div class="kpi-dot" style="background:#F59E0B;box-shadow:0 0 6px #F59E0B;"></div></div>
+          <div class="kpi-val">78%</div>
+          <div class="kpi-bar"><div class="kpi-fill" style="width:78%;background:linear-gradient(90deg,#F59E0B,#FCD34D);"></div></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-lbl">Utilisation<div class="kpi-dot" style="background:#10B981;box-shadow:0 0 6px #10B981;"></div></div>
+          <div class="kpi-val">91%</div>
+          <div class="kpi-bar"><div class="kpi-fill" style="width:91%;background:linear-gradient(90deg,#0891B2,#4B8BF5);"></div></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-lbl">DNA Rate<div class="kpi-dot" style="background:#10B981;box-shadow:0 0 6px #10B981;"></div></div>
+          <div class="kpi-val">4.2%</div>
+          <div class="kpi-bar"><div class="kpi-fill" style="width:42%;background:linear-gradient(90deg,#0891B2,#4B8BF5);"></div></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-lbl">Completion<div class="kpi-dot" style="background:#10B981;box-shadow:0 0 6px #10B981;"></div></div>
+          <div class="kpi-val">84%</div>
+          <div class="kpi-bar"><div class="kpi-fill" style="width:84%;background:linear-gradient(90deg,#1C54F2,#4B8BF5);"></div></div>
+        </div>
+        <div class="kpi-card" style="border-color:rgba(139,92,246,.22);">
+          <div class="kpi-lbl" style="color:#A78BFA;">HEP Compliance<div class="kpi-dot" style="background:#A78BFA;box-shadow:0 0 6px #8B5CF6;"></div></div>
+          <div class="kpi-val" style="font-size:26px;">100%</div>
+          <div class="kpi-bar"><div class="kpi-fill" style="width:100%;background:linear-gradient(90deg,#8B5CF6,#C4B5FD);"></div></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-lbl">Rev/Session<div class="kpi-dot" style="background:#10B981;box-shadow:0 0 6px #10B981;"></div></div>
+          <div class="kpi-val">£84</div>
+          <div class="kpi-bar"><div class="kpi-fill" style="width:70%;background:linear-gradient(90deg,#059669,#34D399);"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Inputs -->
+    <div class="comp-block">
+      <div class="comp-lbl">Form Inputs</div>
+      <label class="input-lbl">Clinic Name — Default</label>
+      <input class="input-field" placeholder="e.g. Spires MSK Physiotherapy" readonly />
+      <label class="input-lbl">Email — Focused state</label>
+      <input class="input-field focused" placeholder="andrew@spiresmsk.co.uk" readonly />
+      <label class="input-lbl">Code — Error state</label>
+      <input class="input-field errored" placeholder="STRYDE25" readonly />
+      <div style="font-size:11px;color:#FCA5A5;margin-top:-6px;margin-bottom:10px;padding-left:2px;">Invalid code. Please try again.</div>
+      <label class="input-lbl">Disabled</label>
+      <input class="input-field" placeholder="Not editable" disabled style="opacity:.3;" />
+    </div>
+  </div>
+</section>
+
+<!-- ══ 06 — SPATIAL ══════════════════════════════════════════════════════════ -->
+<section id="spatial">
+  <div class="s-num">06 — Spatial System</div>
+  <div class="s-title">Spacing & Radius</div>
+  <div class="s-sub">4px base unit. All spacing is multiples of 4. Radius scales from 8px (inputs) to 50px (pill/CTA). No halves.</div>
+
+  <div style="font-size:10px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:20px;">Spacing Scale</div>
+  <div class="sp-row">
+    <div class="sp-item"><div class="sp-block" style="width:4px;height:4px;"></div><div class="sp-lbl">4px</div></div>
+    <div class="sp-item"><div class="sp-block" style="width:8px;height:8px;"></div><div class="sp-lbl">8px</div></div>
+    <div class="sp-item"><div class="sp-block" style="width:12px;height:12px;"></div><div class="sp-lbl">12px</div></div>
+    <div class="sp-item"><div class="sp-block" style="width:16px;height:16px;"></div><div class="sp-lbl">16px</div></div>
+    <div class="sp-item"><div class="sp-block" style="width:24px;height:24px;"></div><div class="sp-lbl">24px</div></div>
+    <div class="sp-item"><div class="sp-block" style="width:32px;height:32px;"></div><div class="sp-lbl">32px</div></div>
+    <div class="sp-item"><div class="sp-block" style="width:48px;height:48px;"></div><div class="sp-lbl">48px</div></div>
+    <div class="sp-item"><div class="sp-block" style="width:64px;height:64px;"></div><div class="sp-lbl">64px</div></div>
+    <div class="sp-item"><div class="sp-block" style="width:96px;height:96px;"></div><div class="sp-lbl">96px</div></div>
+  </div>
+
+  <div style="font-size:10px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:20px;">Border Radius</div>
+  <div class="rad-row">
+    <div class="rad-item"><div class="rad-block" style="border-radius:4px;"></div><div class="rad-lbl">4px<br/>Tag</div></div>
+    <div class="rad-item"><div class="rad-block" style="border-radius:8px;"></div><div class="rad-lbl">8px<br/>Input</div></div>
+    <div class="rad-item"><div class="rad-block" style="border-radius:12px;"></div><div class="rad-lbl">12px<br/>Chip</div></div>
+    <div class="rad-item"><div class="rad-block" style="border-radius:16px;"></div><div class="rad-lbl">16px<br/>Card SM</div></div>
+    <div class="rad-item"><div class="rad-block" style="border-radius:20px;"></div><div class="rad-lbl">20px<br/>Card MD</div></div>
+    <div class="rad-item"><div class="rad-block" style="border-radius:24px;"></div><div class="rad-lbl">24px<br/>Card LG</div></div>
+    <div class="rad-item"><div class="rad-block" style="border-radius:50px;"></div><div class="rad-lbl">50px<br/>Pill / CTA</div></div>
+  </div>
+</section>
+
+<!-- ══ 07 — USAGE RULES ══════════════════════════════════════════════════════ -->
+<section id="rules">
+  <div class="s-num">07 — Usage Rules</div>
+  <div class="s-title">Do / Don't</div>
+  <div class="s-sub">Non-negotiable. These protect the mark, the system, and the brand's legibility at all sizes and contexts.</div>
+
+  <div class="rules-grid">
+    <div class="rule-card yes"><div class="rule-tag">✓ Do</div><div class="rule-txt">Use The Monolith as the sole logo. It is complete and final. No other marks represent StrydeOS.</div></div>
+    <div class="rule-card no"><div class="rule-tag">✗ Don't</div><div class="rule-txt">Use the old double-chevron stride mark or any A-frame/triangle variant. They are retired. Delete the asset files.</div></div>
+    <div class="rule-card yes"><div class="rule-tag">✓ Do</div><div class="rule-txt">Use #1C54F2 as the primary blue on all CTAs, logo containers, and links. This is the v3.0 electric blue.</div></div>
+    <div class="rule-card no"><div class="rule-tag">✗ Don't</div><div class="rule-txt">Use the old #1648BC anywhere in production. All assets have migrated to #1C54F2. Run a global find-replace if unsure.</div></div>
+    <div class="rule-card yes"><div class="rule-tag">✓ Do</div><div class="rule-txt">Use DM Serif Display at weight 400 only. Use italic sparingly for hero copy and pull quotes.</div></div>
+    <div class="rule-card no"><div class="rule-tag">✗ Don't</div><div class="rule-txt">Bold DM Serif Display. It ships at 400 only. Adding bold destroys its character and breaks typographic hierarchy.</div></div>
+    <div class="rule-card yes"><div class="rule-tag">✓ Do</div><div class="rule-txt">Place the mark on #080E1A, #0B2545, or #F2F1EE. The glassmorphic gradient reads on all three backgrounds.</div></div>
+    <div class="rule-card no"><div class="rule-tag">✗ Don't</div><div class="rule-txt">Place the mark on a solid blue background — the container disappears. Don't add halos, boxes, or rings around it.</div></div>
+    <div class="rule-card yes"><div class="rule-tag">✓ Do</div><div class="rule-txt">Use Teal for Continuity and Purple for Intelligence — as accent colors within those modules only.</div></div>
+    <div class="rule-card no"><div class="rule-tag">✗ Don't</div><div class="rule-txt">Use Teal or Purple as global brand accents. They are module-exclusive. Breaking this destroys the product system's legibility.</div></div>
+  </div>
+
+  <!-- Wordmark rules -->
+  <div style="margin-top:40px;padding:40px;border-radius:20px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);">
+    <div style="font-size:10px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:24px;">Wordmark Rules</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center;">
+      <div>
+        <p style="font-size:13px;color:rgba(255,255,255,.45);line-height:1.75;margin-bottom:14px;">"StrydeOS" is always one word. The "OS" suffix carries electric blue on dark. On light, it takes full primary blue #1C54F2.</p>
+        <p style="font-size:13px;color:rgba(255,255,255,.45);line-height:1.75;">Never: "Stryde OS" (space), "strydeos" (all lower), "STRYDEOS" (all caps). Never italicise the wordmark.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:18px;">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div style="width:18px;height:18px;border-radius:50%;background:rgba(5,150,105,.2);border:1.5px solid #059669;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1.5 4.5l2 2 4-4" stroke="#34D399" stroke-width="1.4" stroke-linecap="round"/></svg>
+          </div>
+          <span style="font-family:var(--fb);font-weight:700;font-size:22px;color:white;letter-spacing:-0.025em;">Stryde<span style="color:#1C54F2;">OS</span></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div style="width:18px;height:18px;border-radius:50%;background:rgba(239,68,68,.2);border:1.5px solid #EF4444;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M2.5 2.5l4 4M6.5 2.5l-4 4" stroke="#FCA5A5" stroke-width="1.4" stroke-linecap="round"/></svg>
+          </div>
+          <span style="font-family:var(--fb);font-size:22px;color:rgba(255,255,255,.28);">Stryde OS</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div style="width:18px;height:18px;border-radius:50%;background:rgba(239,68,68,.2);border:1.5px solid #EF4444;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M2.5 2.5l4 4M6.5 2.5l-4 4" stroke="#FCA5A5" stroke-width="1.4" stroke-linecap="round"/></svg>
+          </div>
+          <span style="font-family:var(--fb);font-size:22px;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.18em;">STRYDEOS</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ FOOTER ════════════════════════════════════════════════════════════════ -->
+<div style="padding:56px 0 80px;display:flex;justify-content:space-between;align-items:flex-end;border-top:1px solid rgba(255,255,255,.05);">
+  <div style="display:flex;align-items:center;gap:12px;">
+    <svg width="30" height="30" viewBox="0 0 100 100" fill="none">
+      <defs><linearGradient id="ftg" x1="35" y1="8" x2="57" y2="68" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#2E6BFF"/><stop offset="100%" stop-color="#091D3E"/></linearGradient><clipPath id="ftc"><rect x="35" y="8" width="22" height="60" rx="5.5"/></clipPath></defs>
+      <rect x="35" y="8" width="22" height="60" rx="5.5" fill="url(#ftg)"/>
+      <g clip-path="url(#ftc)"><path d="M40 72 L47.5 64 L55 72" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.18"/><path d="M40 64 L47.5 56 L55 64" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.42"/><path d="M40 56 L47.5 48 L55 56" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.72"/></g>
+    </svg>
+    <span style="font-family:var(--fb);font-weight:700;font-size:14px;color:rgba(255,255,255,.4);letter-spacing:-0.02em;">Stryde<span style="color:#1C54F2;">OS</span></span>
+  </div>
+  <div style="text-align:right;font-size:11px;color:rgba(255,255,255,.14);line-height:1.7;">
+    Brand Identity v3.0 · Electric Blue Release · Feb 2025<br/>
+    © StrydeOS Ltd. All rights reserved.
+  </div>
+</div>
+
+</div><!-- /page -->
+</body>
+</html>
