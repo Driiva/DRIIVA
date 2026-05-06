@@ -1,4 +1,6 @@
-# Driiva — Claude Code Configuration
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Context
 
@@ -23,13 +25,134 @@ Solo founder build. Pre-raise. Demo-prep phase with Keith Cheng.
 
 ---
 
+## Repository Layout
+
+This is a **monorepo with three deploy targets** sharing one root `package.json`:
+
+- **`client/`** — React 18 + Vite SPA (alias `@/*`). Entry `client/index.html` → `client/src/main.tsx` → `App.tsx`. Routing via Wouter. Pages in `client/src/pages/`, design components in `client/src/components/`, Firebase SDK init + Firestore helpers in `client/src/lib/`.
+- **`server/`** — Express API (TypeScript, ESM via `tsx` in dev, esbuild bundle in prod). `server/index.ts` is the dev entry; `server/app.ts` is the bundled handler that Vercel imports through `api/index.ts`. Routes registered in `server/routes.ts`; security/rate-limit middleware in `server/middleware/`; business logic (telematics, scoring, AI insights, refund maths, Stripe) in `server/lib/`.
+- **`functions/`** — Firebase Cloud Functions (Node 20, **own `package.json` and `tsconfig`**). Triggers in `functions/src/triggers/`, scheduled jobs in `functions/src/scheduled/`, HTTP callables in `functions/src/http/`. `functions/src/index.ts` is the only public entry — read its top comment block for the canonical list of exported triggers/jobs.
+- **`shared/`** — Cross-runtime TypeScript (alias `@shared/*`). **Canonical source for trip metric maths** (`tripProcessor.ts`) and refund maths (`refundCalculator.ts`). Drizzle/Postgres schema in `schema.ts`. **Cloud Functions cannot import from `shared/` at runtime** — `functions/package.json` has a `prebuild` script that copies `shared/tripProcessor.ts` and `shared/refundCalculator.ts` into `functions/src/shared/`. Edit only the originals; the copy is regenerated.
+- **`mobile/`** — Expo / React Native app (own `package.json`). Tokens at `mobile/components/ui/theme.ts` are the **source of truth for the mobile/instrument design system**. See `mobile/DESIGN_SYSTEM.md`.
+- **`api/`** — Vercel serverless wrapper. `api/index.ts` dynamically imports the bundled `api/_server.js` (produced by the build) and forwards requests. The build command in `vercel.json` produces this bundle.
+- **`functions-python/`** (referenced by ARCHITECTURE.md) — Python Stop-Go-Classifier; called over HTTP from `functions/src/http/classifier.ts` via `CLASSIFIER_URL`.
+- **`migrations/`** — Drizzle SQL migrations. Generated from `shared/schema.ts`, applied to Neon Postgres.
+- **`marketing-site/`** — Static `index.html` mirror of the live Framer site (live site has no write API). Treat as the editorial source; manually mirror into Framer.
+- **`design-system/`** — Brand tokens (colours, type, gradient stops, logo assets). Authoritative for marketing-mode visuals.
+- **`scripts/`** — Ops helpers (Doppler audit/clean, DB verify, Stripe webhook listen, load test, Firebase test users, admin grant, etc.).
+
+Vite path aliases (`vite.config.ts`, `tsconfig.json`): `@/*` → `client/src/*`, `@shared/*` → `shared/*`, `@assets/*` → `attached_assets/*`.
+
+---
+
+## Common Commands
+
+All from repo root unless noted.
+
+**Develop:**
+- `npm run dev` — Express + Vite dev server on `PORT` (default 3001). Vite middleware serves the client.
+- `npm run dev:staging` — same, but loads `.env.staging`.
+
+**Build / typecheck:**
+- `npm run check` — `tsc --noEmit` across `client/`, `server/`, `shared/`, `api/` (root `tsconfig.json`).
+- `npm run build` — Vite build of client → `dist/public`, then esbuild bundle of `server/index.ts` → `dist/`.
+- `npm run build:staging` — same, with `--mode staging` for Vite env loading.
+- `npm start` — runs the production build (`node dist/index.js`).
+
+**Test (Vitest, jsdom):**
+- `npm test` — runs all tests in `client/src/**/*.test.{ts,tsx}`, `server/**/*.test.ts`, `functions/src/**/*.test.ts`, `shared/**/*.test.ts` (one test is excluded; see `vitest.config.ts`).
+- `npm run test:watch` / `npm run test:coverage`.
+- Single file: `npx vitest run path/to/file.test.ts`. Single name: `npx vitest run -t "test name substring"`.
+- Coverage thresholds in `vitest.config.ts` are intentionally low (lines 4, branches 7) — do not raise them in unrelated PRs.
+
+**Cloud Functions** (run inside `functions/`):
+- `npm run build` — runs `prebuild` (copies `shared/tripProcessor.ts` + `shared/refundCalculator.ts` into `functions/src/shared/`) then `tsc`. **Always run from `functions/`, never copy these files manually.**
+- `npm run serve` — Firebase emulators (functions on 5001, firestore on 8080, auth on 9099, UI on 4000; see `firebase.json`).
+- `npm test` — Vitest for functions only.
+- `npm run deploy` — `firebase deploy --only functions` (CI usually does this; do not deploy from a dev box without explicit approval).
+
+**Database (Drizzle / Neon Postgres):**
+- `npm run db:push` — push `shared/schema.ts` to the DB at `DATABASE_URL`.
+- `npm run db:schema` — runs `scripts/run-schema.ts`.
+- `npm run verify:db` — sanity check connection + table presence.
+
+**Other scripts of note:** `npm run create-firebase-test-users`, `npm run load-test`, `npm run test:root-api`, `npm run test:auth`, `scripts/audit-doppler-pollution.sh`, `scripts/clean-doppler-pollution.sh`.
+
+**Mobile:** `cd mobile && npm start` (Expo). EAS build via `npm run build:ios|android`.
+
+---
+
+## Architecture Essentials
+
+Read `ARCHITECTURE.md` for the full data model and scoring spec; the points below are the parts you can't infer from a single file.
+
+### Two backends, one frontend
+
+Driiva ships **both** an Express API (Vercel) and Firebase Cloud Functions, and they overlap on purpose:
+
+- **Express (`server/`) on Vercel** — the SPA's REST API. Handles auth gating, profile, trip submission, Stripe webhooks, GDPR endpoints. All routes mount under `/api/*` (`vercel.json` rewrites). Auth is **always derived from the Firebase ID token**, never from request headers — see `verifyFirebaseAuth` in `server/middleware/auth.ts` and the doc-comment at the top of `server/routes.ts`.
+- **Firebase Cloud Functions (`functions/`)** — Firestore triggers and scheduled jobs. The trip lifecycle, pool finalisation, leaderboard rebuilds, AI analysis, and Damoov sync run here. See the JSDoc block at the top of `functions/src/index.ts` for the canonical list.
+
+When adding a feature, decide which side owns it: synchronous request/response from the SPA → Express; reactive-on-write or scheduled → Functions. Don't duplicate business logic across both — extract into `shared/` (and remember the `prebuild` copy step for Functions).
+
+### Storage split
+
+- **Firestore** is the runtime store for trips, GPS points, pool shares, leaderboard, user profiles. Rules in `firestore.rules` enforce that aggregated/computed collections (`driver_stats`, `communityPool`, `leaderboard`, `poolShares`, `tripSegments`) are **read-only for clients** — only Cloud Functions (Admin SDK) write them.
+- **Neon Postgres** (via Drizzle ORM, `shared/schema.ts`) is used by the Express server for user accounts, Stripe linkage, and structured records that benefit from SQL. Both stores coexist; do not assume one is canonical for a given entity without checking.
+
+### Trip → score → refund pipeline (canonical)
+
+1. Client batches GPS points and writes to `tripPoints/{tripId}` (Firestore). Long trips spill into `tripPoints/{tripId}/batches/{i}`.
+2. `onTripStatusChange` (Functions) runs when a trip moves `recording → processing`; calls `computeTripMetrics()` and `detectDrivingEvents()` from `functions/src/utils/helpers.ts`.
+3. The Python Stop-Go-Classifier filters non-driving segments (walking, dwelling) — invoked over HTTP from `functions/src/http/classifier.ts`.
+4. `computeDrivingScore()` produces a deterministic 0–100 score with weights **Speed 25 / Braking 25 / Acceleration 20 / Cornering 20 / Phone 10**. Phone is hard-coded to 100 until phone-pickup detection lands.
+5. `updateDriverProfileAndPoolShare()` writes the user's profile and the matching `poolShares/{period_userId}` doc.
+6. Refund maths (`shared/refundCalculator.ts` and `server/lib/telematics.ts::calculateRefund`): 80% personal + 20% community weighted score; 5% rate at 70 → 15% rate at 100, scaled by pool safety factor, capped at `premium × 15%`.
+
+**Hard rules** (enforced by tests; do not break without a written ADR):
+- Distance in **metres**, duration in **seconds**, money in **integer cents**. Timestamps ISO 8601.
+- `shared/tripProcessor.ts` is the **single source of truth** for trip metrics — Cloud Functions, Express, and offline tools all derive from it. Changes need unit tests in `shared/__tests__/`.
+- Scoring is **deterministic and historic-write-once**: same inputs produce the same score, and stored scores are not silently rewritten.
+- Sensitive/financial documents must include `createdBy` / `updatedBy` audit fields.
+
+### Express request pipeline
+
+`server/app.ts` wires, in order: `securityHeaders` → CORS allowlist (`CORS_ORIGINS` env, comma-separated) → `apiLimiter` → `sanitizeInput` → **raw-body** parsers for `/api/webhooks/stripe` and `/api/webhooks/root` (must come before `express.json()` for signature verification) → `express.json({ limit: '5mb' })` for `/api/trips`, `1mb` elsewhere. Routes are registered async via `registerRoutes(app)` and the resulting `ready` promise gates startup. The Vercel handler awaits it before forwarding the first request.
+
+### Auth
+
+Firebase Auth client-side. Server verifies the Firebase ID token via Admin SDK (`server/middleware/auth.ts`). **Identity comes from the token only** — never trust user IDs from headers, query strings, or bodies. Resource-scoped routes additionally use `requireResourceOwner` so user A cannot access user B's data. `requireAdmin` checks a custom claim. WebAuthn/passkey backend lives at `server/webauthn.ts` (UI pending).
+
+### Frontend
+
+- React 18 + TypeScript + Vite. Routing: **Wouter** (not React Router). State: **TanStack Query** for server state, React Context for auth/feature flags.
+- Styling: Tailwind 4 + shadcn/Radix primitives (`components.json`). Glassmorphism utilities in `client/src/styles/glass.css`.
+- Animation: Framer Motion variants centralised in `client/src/lib/animations.ts` — prefer reusing variants over inline ad-hoc animations. Respect `prefers-reduced-motion`.
+- Maps: Leaflet + React-Leaflet (OpenStreetMap), no API key.
+- Performance traces and Sentry init in `client/src/lib/performanceTraces.ts` and `client/src/lib/sentry.ts`.
+
+---
+
+## Stack Reference
+
+- **Frontend:** React 18 / TypeScript / Vite (Wouter, TanStack Query, Tailwind 4, Radix, Framer Motion, Leaflet)
+- **Backend:** Express on Vercel (`server/`) + Firebase Cloud Functions Node 20 (`functions/`)
+- **Auth:** Firebase Auth (known issue: ~27s signup delay — fix before demo). WebAuthn/Passkeys backend complete, UI pending.
+- **Database:** Firebase Firestore (runtime) + Neon Postgres (relational) via Drizzle ORM
+- **Payments:** Stripe (deps installed, webhook handler exists, full flows pending)
+- **Insurance Platform:** Root Insurance Platform API (scaffolded, credentials pending)
+- **AI:** Anthropic Claude Sonnet 4 for trip analysis (feature-flagged, not on critical path)
+- **Classifier:** Python Stop-Go-Classifier called over HTTP from TS Functions
+- **Mobile:** Expo / React Native (separate workspace)
+- **Deploy:** Vercel (web + API) + Firebase (Firestore rules/indexes + Functions) + Cloudflare DNS
+
+---
+
 ## Skill Router
 
 The `skill-router` skill governs all dispatch in this project. On every task, check the skill
 registry below and load the appropriate SKILL.md before responding. Never answer from general
 knowledge when a purpose-built skill exists.
-
----
 
 ## Skill Registry
 
@@ -146,22 +269,10 @@ knowledge when a purpose-built skill exists.
 
 ---
 
-## Stack Reference
-
-- **Frontend:** Next.js / TypeScript
-- **Auth:** Firebase Auth (known issue: ~27s signup delay — fix before demo)
-- **Database:** Firebase Firestore + Neon DB
-- **ORM:** Drizzle ORM
-- **Payments:** Stripe
-- **Insurance Platform:** Root Insurance Platform API
-- **Deploy:** Vercel + Cloudflare
-- **PWA:** Under consideration
-- **Auth Enhancement:** WebAuthn / Passkeys (backend done, UI pending)
-
 ## Design System (canonical)
 
-- **Location:** `design-system/` at repo root. Authoritative for all brand + UI decisions.
-- **Tokens:** `design-system/colors_and_type.css` — ink ladder `#050509→#222238`, brand gradient (amber `#d4850a` → burnt `#a04c2a` → violet `#6b3fa0` → indigo `#3b2d8b`), iris accent `#6366f1`, score-tier green/teal/amber/red at 80/70/50/<50.
+- **Location:** `design-system/` at repo root for marketing tokens; `mobile/components/ui/theme.ts` for instrument-mode tokens. Web tokens are duplicated as CSS custom properties in `client/src/index.css` and Tailwind utilities in `tailwind.config.ts` — there is no token-transform pipeline, so changes must be mirrored. See `.figma/design-system-rules.md` and `mobile/DESIGN_SYSTEM.md`.
+- **Tokens:** ink ladder `#050509→#222238`, brand gradient (amber `#d4850a` → burnt `#a04c2a` → violet `#6b3fa0` → indigo `#3b2d8b`), iris accent `#6366f1`, score-tier green/teal/amber/red at 80/70/50/<50.
 - **Two visual modes — never mix:**
   - **Marketing mode** (driiva.co.uk) — glassmorphism, `rgba(30,41,59,0.60)` + `blur(20px) saturate(180%)`, animated gradient halos, pill CTAs.
   - **Instrument mode** (mobile + client SPA) — solid dark surfaces `#12111f` on `#0a0a14`, single accent `#5b4dc9`, 16px radius, tabular figures, 270° arc gauges. No glass except hero.
@@ -180,6 +291,14 @@ knowledge when a purpose-built skill exists.
 - **Adding/rotating a secret:** set in Doppler prd → Doppler → Vercel sync propagates within ~30s → push a trivial commit to trigger rebuild, or `vercel redeploy`.
 - **NEVER `vercel env pull` or `doppler secrets download` to disk for inspection** — audit via `scripts/audit-doppler-pollution.sh` (value-free: key name + length + pollution flag only). Never echo secret values to stdout/chat/logs.
 - **Known pattern:** paste pollution leaves a literal 2-char `\n` escape at value ends, silently breaks Firebase Installations (400 INVALID_ARGUMENT), CORS matching, WebAuthn origin matching. Re-run `scripts/clean-doppler-pollution.sh driiva prd` if symptoms return.
+- **Client-side env vars must be `VITE_`-prefixed** (bundled into the browser — public). Anything sensitive must be unprefixed and read server-side only. The PR template and `secret-safety.yml` workflow scan for leaks; do not bypass.
+
+## CI / Deploy
+
+- `.github/workflows/ci.yml` runs `lint-and-typecheck` (`tsc --noEmit`), `build` (root), `functions-build` (functions only, includes its own tests), and `test` (root vitest + coverage) on every PR and push to main. Staging deploys (`deploy-staging`) auto-run on push to `main`; production (`deploy-production`) requires either a `v*` tag or manual `workflow_dispatch` and is gated by the `production` GitHub Environment (required reviewer).
+- The build step injects placeholder `VITE_FIREBASE_*` values so Vite can build without real credentials — keep these placeholders in mind when debugging "works locally, fails in CI" issues.
+- `.github/workflows/secret-safety.yml` scans for hardcoded secrets and validates `.env.example` coverage on every PR; it also runs weekly to flag stale Firebase service-account keys.
+- `.github/workflows/claude-review.yml` triggers Claude PR reviews. `neon_workflow.yml` handles Neon branching for previews.
 
 ## Known Blockers
 
