@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Driiva — Brand statement</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Inter+Tight:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: #0d0d14;
+        color: #fafafa;
+        font-family: "Inter", sans-serif;
+      }
+
+      [data-composition-id="brand-statement"] {
+        position: relative;
+        width: 1920px;
+        height: 1080px;
+        background: #0d0d14;
+        overflow: hidden;
+      }
+
+      [data-composition-id="brand-statement"] .scene {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 28px;
+        padding: 120px;
+        box-sizing: border-box;
+        background: #0d0d14;
+        opacity: 0;
+      }
+
+      [data-composition-id="brand-statement"] .statement {
+        font-family: "Inter", sans-serif;
+        font-weight: 300;
+        font-size: 72px;
+        letter-spacing: 0.05em;
+        color: #fafafa;
+        margin: 0;
+        text-align: center;
+        line-height: 1.15;
+      }
+
+      [data-composition-id="brand-statement"] .pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 8px 20px;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        border-radius: 100px;
+        font-family: "Inter", sans-serif;
+        font-weight: 500;
+        font-size: 14px;
+        color: #fafafa;
+        letter-spacing: 0.02em;
+        opacity: 0;
+      }
+
+      [data-composition-id="brand-statement"] .logo {
+        height: 48px;
+        width: auto;
+        display: block;
+        opacity: 0;
+      }
+
+      [data-composition-id="brand-statement"] .tagline {
+        font-family: "Inter", sans-serif;
+        font-weight: 400;
+        font-size: 22px;
+        line-height: 1.5;
+        color: #fafafa;
+        max-width: 600px;
+        text-align: center;
+        margin: 0;
+        opacity: 0;
+      }
+
+      [data-composition-id="brand-statement"] .url {
+        font-family: "Inter", sans-serif;
+        font-weight: 400;
+        font-size: 18px;
+        color: #4ecdc4;
+        opacity: 0;
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- AUDIO: would load assets/jazz-ambient.mp3 @ volume 0.4, fade in 2s, fade out last 2s -->
+    <div
+      data-composition-id="brand-statement"
+      data-width="1920"
+      data-height="1080"
+      data-start="0"
+      data-duration="12"
+      data-track-index="0"
+    >
+      <div class="scene" id="scene-1">
+        <h1 class="statement" id="s1-line">Drive well.</h1>
+      </div>
+
+      <div class="scene" id="scene-2">
+        <h1 class="statement" id="s2-line">Get money back.</h1>
+        <div class="pill" id="s2-pill">Up to 15% refunded annually</div>
+      </div>
+
+      <div class="scene" id="scene-3">
+        <img
+          src="assets/driiva-logo-white.png"
+          alt="Driiva"
+          class="logo"
+          id="s3-logo"
+        />
+        <p class="tagline" id="s3-tagline">
+          Insurance that remembers the 364 days you drove well.
+        </p>
+        <p class="url" id="s3-url">driiva.co.uk</p>
+      </div>
+
+      <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+      <script>
+        window.__timelines = window.__timelines || {};
+        const tl = gsap.timeline({ paused: true });
+
+        // Scene 1 — "Drive well." 0s to 4s
+        // Crossfade IN at 0.5s over 0.6s; holds until 3.8s; crossfade OUT to scene 2 over 0.4s
+        tl.to("#scene-1", { opacity: 1, duration: 0.6, ease: "power2.inOut" }, 0.5);
+        tl.from(
+          "#s1-line",
+          { y: 16, opacity: 0, duration: 0.9, ease: "expo.out" },
+          0.5
+        );
+
+        // Cross-dissolve scene 1 -> scene 2 (3.8s - 4.2s overlap window)
+        tl.to("#scene-1", { opacity: 0, duration: 0.4, ease: "power2.inOut" }, 3.8);
+        tl.to("#scene-2", { opacity: 1, duration: 0.4, ease: "power2.inOut" }, 3.8);
+
+        // Scene 2 — "Get money back." starts fully visible by 4.2s
+        tl.from(
+          "#s2-line",
+          { y: 20, opacity: 0, duration: 0.8, ease: "power3.out" },
+          4.0
+        );
+        // Pill appears at t=5.5s with subtle upward translate
+        tl.to(
+          "#s2-pill",
+          { opacity: 1, duration: 0.4, ease: "power2.out" },
+          5.5
+        );
+        tl.from(
+          "#s2-pill",
+          { y: 8, duration: 0.4, ease: "power2.out" },
+          5.5
+        );
+
+        // Cross-dissolve scene 2 -> scene 3 (7.8s - 8.2s overlap window)
+        tl.to("#scene-2", { opacity: 0, duration: 0.4, ease: "power2.inOut" }, 7.8);
+        tl.to("#scene-3", { opacity: 1, duration: 0.4, ease: "power2.inOut" }, 7.8);
+
+        // Scene 3 — logo fades in at t=8.5s (0.5s into scene)
+        tl.to(
+          "#s3-logo",
+          { opacity: 1, duration: 0.6, ease: "power2.out" },
+          8.5
+        );
+        tl.from(
+          "#s3-logo",
+          { y: 12, duration: 0.6, ease: "power3.out" },
+          8.5
+        );
+
+        // Tagline at t=9.5s
+        tl.to(
+          "#s3-tagline",
+          { opacity: 1, duration: 0.7, ease: "power2.out" },
+          9.5
+        );
+        tl.from(
+          "#s3-tagline",
+          { y: 14, duration: 0.7, ease: "expo.out" },
+          9.5
+        );
+
+        // URL at t=11s — final teal text at 0.7 opacity
+        tl.to(
+          "#s3-url",
+          { opacity: 0.7, duration: 0.6, ease: "power2.out" },
+          11
+        );
+        tl.from(
+          "#s3-url",
+          { y: 10, duration: 0.6, ease: "power2.out" },
+          11
+        );
+
+        window.__timelines["brand-statement"] = tl;
+      </script>
+    </div>
+  </body>
+</html>

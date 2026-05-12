@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Driiva — Controlled Chaos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800;900&family=Inter+Tight:wght@700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: #000000;
+        overflow: hidden;
+      }
+
+      [data-composition-id="controlled-chaos"] {
+        position: relative;
+        width: 1080px;
+        height: 1920px;
+        background: #000000;
+        overflow: hidden;
+        font-family: "Inter", sans-serif;
+      }
+
+      [data-composition-id="controlled-chaos"] .stage {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 0 108px;
+        box-sizing: border-box;
+        gap: 40px;
+        /* shift slightly above centre */
+        transform: translateY(-80px);
+      }
+
+      [data-composition-id="controlled-chaos"] .line {
+        font-family: "Inter", sans-serif;
+        font-weight: 800;
+        font-size: 52px;
+        line-height: 1.2;
+        text-align: center;
+        max-width: 864px; /* 80% of 1080 */
+        letter-spacing: -0.01em;
+        will-change: transform, opacity;
+      }
+
+      [data-composition-id="controlled-chaos"] .line-1 {
+        color: #ffffff;
+      }
+
+      [data-composition-id="controlled-chaos"] .line-2 {
+        color: #4ecdc4;
+      }
+
+      [data-composition-id="controlled-chaos"] .flash {
+        position: absolute;
+        inset: 0;
+        background: #ffffff;
+        opacity: 0;
+        pointer-events: none;
+        will-change: opacity;
+      }
+
+      [data-composition-id="controlled-chaos"] .logo-wrap {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        will-change: opacity, transform;
+      }
+
+      [data-composition-id="controlled-chaos"] .logo-wrap img {
+        height: 40px;
+        width: auto;
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- AUDIO: would load assets/impact-sfx.mp3 single bass hit @ volume 0.7 at t=0 -->
+    <div
+      data-composition-id="controlled-chaos"
+      data-width="1080"
+      data-height="1920"
+      data-start="0"
+      data-duration="3"
+      data-track-index="0"
+    >
+      <div class="stage">
+        <div class="line line-1">Your insurer doesn&rsquo;t care how well you drive.</div>
+        <div class="line line-2">We do.</div>
+      </div>
+
+      <div class="flash"></div>
+
+      <div class="logo-wrap">
+        <img src="assets/driiva-logo-white.png" alt="Driiva" />
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+
+      // Pre-hide both lines
+      tl.set(".line-1", { opacity: 0, scale: 1.6 }, 0);
+      tl.set(".line-2", { opacity: 0, scale: 1.6 }, 0);
+
+      // [0s] First line slams in: scale 1.6 -> 1.0 with overshoot via back.out(3)
+      tl.to(
+        ".line-1",
+        {
+          opacity: 1,
+          scale: 1.0,
+          duration: 0.15,
+          ease: "back.out(3)",
+        },
+        0,
+      );
+
+      // [1.2s] Second line slams in
+      tl.to(
+        ".line-2",
+        {
+          opacity: 1,
+          scale: 1.0,
+          duration: 0.15,
+          ease: "back.out(3)",
+        },
+        1.2,
+      );
+
+      // [2.2s] Flash frame — opacity 0 -> 1 -> 0 across ~2 frames
+      tl.to(
+        ".flash",
+        {
+          opacity: 1,
+          duration: 0.033,
+          ease: "none",
+        },
+        2.2,
+      );
+      tl.to(
+        ".flash",
+        {
+          opacity: 0,
+          duration: 0.033,
+          ease: "none",
+        },
+        2.233,
+      );
+
+      // [2.4s] Logo fades in fast over 0.2s
+      tl.fromTo(
+        ".logo-wrap",
+        { opacity: 0, scale: 0.96 },
+        {
+          opacity: 1,
+          scale: 1,
+          duration: 0.2,
+          ease: "power3.out",
+        },
+        2.4,
+      );
+
+      window.__timelines["controlled-chaos"] = tl;
+    </script>
+  </body>
+</html>

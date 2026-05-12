@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Driiva — login hero</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@500;600;700&family=JetBrains+Mono:wght@500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: #0a0a14;
+        font-family: "Inter", system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      [data-composition-id="login-hero"] {
+        position: relative;
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+        background: #0a0a14;
+        color: #f8fafc;
+      }
+
+      /* Animated gradient background */
+      .bg-gradient {
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(120% 90% at 15% 95%, rgba(180, 80, 20, 0.9) 0%, rgba(180, 80, 20, 0) 55%),
+          radial-gradient(110% 85% at 85% 5%, rgba(40, 10, 80, 0.9) 0%, rgba(40, 10, 80, 0) 55%),
+          linear-gradient(135deg, #160a1e 0%, #0a0a14 60%, #0a0a14 100%);
+        z-index: 0;
+      }
+      .bg-warmth {
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(80% 60% at 25% 90%, rgba(210, 110, 35, 0.35) 0%, rgba(210, 110, 35, 0) 55%),
+          radial-gradient(70% 55% at 80% 10%, rgba(70, 25, 120, 0.35) 0%, rgba(70, 25, 120, 0) 55%);
+        mix-blend-mode: screen;
+        opacity: 0;
+        z-index: 1;
+      }
+      .bg-cool {
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(90% 70% at 20% 95%, rgba(90, 50, 140, 0.35) 0%, rgba(90, 50, 140, 0) 55%),
+          radial-gradient(80% 60% at 85% 5%, rgba(30, 20, 90, 0.45) 0%, rgba(30, 20, 90, 0) 55%);
+        mix-blend-mode: screen;
+        opacity: 0;
+        z-index: 1;
+      }
+
+      /* Beta eyebrow label above card */
+      .beta-label {
+        position: absolute;
+        top: 220px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        font-size: 18px;
+        font-weight: 500;
+        letter-spacing: 0.3em;
+        text-transform: uppercase;
+        color: #f8fafc;
+        opacity: 0;
+        z-index: 5;
+        white-space: nowrap;
+      }
+
+      /* Card stage (perspective container) */
+      .card-stage {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 778px;
+        height: 1640px;
+        perspective: 1200px;
+        z-index: 3;
+      }
+
+      .app-screen {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        background: #12111f;
+        border-radius: 56px;
+        overflow: hidden;
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        transform: rotateY(-4deg) rotateX(2deg);
+        transform-origin: center center;
+        display: flex;
+        flex-direction: column;
+        padding: 32px 56px 72px 56px;
+        opacity: 0;
+      }
+
+      /* Status bar */
+      .status-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: #8b8b9e;
+        font-family: "Inter", sans-serif;
+        font-size: 22px;
+        font-weight: 500;
+        padding: 8px 8px 0 8px;
+      }
+      .status-bar .bars {
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+      }
+      .status-bar .bar {
+        display: inline-block;
+        width: 6px;
+        border-radius: 2px;
+        background: #8b8b9e;
+      }
+      .status-bar .bar.b1 { height: 6px; }
+      .status-bar .bar.b2 { height: 10px; }
+      .status-bar .bar.b3 { height: 14px; }
+      .status-bar .bar.b4 { height: 18px; }
+      .status-bar .battery {
+        width: 36px;
+        height: 16px;
+        border: 2px solid #8b8b9e;
+        border-radius: 4px;
+        position: relative;
+        margin-left: 8px;
+      }
+      .status-bar .battery::after {
+        content: "";
+        position: absolute;
+        right: -5px;
+        top: 3px;
+        width: 3px;
+        height: 6px;
+        background: #8b8b9e;
+        border-radius: 0 2px 2px 0;
+      }
+      .status-bar .battery::before {
+        content: "";
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        bottom: 2px;
+        width: 72%;
+        background: #8b8b9e;
+        border-radius: 2px;
+      }
+
+      .gap-80 { height: 80px; }
+      .gap-60 { height: 60px; }
+      .gap-40 { height: 40px; }
+      .gap-24 { height: 24px; }
+      .gap-16 { height: 16px; }
+      .gap-12 { height: 12px; }
+      .gap-8  { height: 8px; }
+
+      .wordmark {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 56px;
+      }
+      .wordmark .mark {
+        width: 260px;
+        height: 56px;
+        background-image: url("assets/driiva-logo-white.png");
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: contain;
+      }
+
+      .welcome {
+        text-align: center;
+        font-family: "Inter Tight", sans-serif;
+        font-weight: 600;
+        font-size: 44px;
+        color: #f8fafc;
+        letter-spacing: -0.01em;
+        line-height: 1.1;
+      }
+      .subline {
+        text-align: center;
+        font-family: "Inter", sans-serif;
+        font-size: 22px;
+        color: #8b8b9e;
+        font-weight: 400;
+      }
+
+      .input {
+        background: #241f40;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 18px;
+        padding: 22px 24px;
+        color: #8b8b9e;
+        font-family: "Inter", sans-serif;
+        font-size: 22px;
+        font-weight: 400;
+      }
+
+      .btn-primary {
+        background: #5b4dc9;
+        color: #ffffff;
+        border-radius: 18px;
+        padding: 24px;
+        text-align: center;
+        font-family: "Inter", sans-serif;
+        font-size: 22px;
+        font-weight: 500;
+        letter-spacing: 0.01em;
+      }
+
+      .passkey {
+        text-align: center;
+        font-family: "Inter", sans-serif;
+        font-size: 20px;
+        color: #8b8b9e;
+        text-decoration: underline;
+        text-underline-offset: 4px;
+      }
+
+      .spacer-flex { flex: 1 1 auto; }
+
+      .connected-wrap {
+        display: flex;
+        justify-content: center;
+        position: relative;
+      }
+      .connected {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        border: 1px solid rgba(78, 205, 196, 0.3);
+        border-radius: 100px;
+        padding: 10px 18px;
+        font-family: "Inter", sans-serif;
+        font-size: 18px;
+        color: #4ecdc4;
+        font-weight: 500;
+        background: rgba(78, 205, 196, 0.05);
+      }
+      .connected .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #4ecdc4;
+        box-shadow: 0 0 8px rgba(78, 205, 196, 0.6);
+      }
+
+      .connected-glow {
+        position: absolute;
+        bottom: 56px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 220px;
+        height: 90px;
+        pointer-events: none;
+        background: radial-gradient(
+          50% 50% at 50% 50%,
+          rgba(78, 205, 196, 0.45) 0%,
+          rgba(78, 205, 196, 0.18) 40%,
+          rgba(78, 205, 196, 0) 75%
+        );
+        filter: blur(6px);
+        opacity: 0;
+        z-index: 4;
+      }
+
+      /* Text beneath card */
+      .tagline {
+        position: absolute;
+        bottom: 220px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-family: "Inter", sans-serif;
+        font-size: 34px;
+        font-weight: 600;
+        color: #f8fafc;
+        opacity: 0;
+        text-align: center;
+        letter-spacing: -0.01em;
+        white-space: nowrap;
+        z-index: 5;
+      }
+
+      /* Bottom logo */
+      .driiva-logo {
+        position: absolute;
+        bottom: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        height: 48px;
+        width: auto;
+        opacity: 0;
+        z-index: 5;
+      }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  </head>
+  <body>
+    <div
+      data-composition-id="login-hero"
+      data-width="1080"
+      data-height="1920"
+      data-start="0"
+      data-duration="10"
+      data-track-index="0"
+    >
+      <div class="bg-gradient"></div>
+      <div class="bg-warmth"></div>
+      <div class="bg-cool"></div>
+
+      <div class="beta-label">Beta is live.</div>
+
+      <div class="card-stage">
+        <div class="app-screen">
+          <div class="status-bar">
+            <span class="time">09:41</span>
+            <span class="bars">
+              <span class="bar b1"></span>
+              <span class="bar b2"></span>
+              <span class="bar b3"></span>
+              <span class="bar b4"></span>
+              <span class="battery"></span>
+            </span>
+          </div>
+
+          <div class="gap-80"></div>
+
+          <div class="wordmark">
+            <div class="mark" role="img" aria-label="Driiva"></div>
+          </div>
+
+          <div class="gap-60"></div>
+
+          <div class="welcome">Welcome back.</div>
+          <div class="gap-8"></div>
+          <div class="subline">Sign in to continue.</div>
+
+          <div class="gap-40"></div>
+
+          <div class="input">you@email.com</div>
+          <div class="gap-12"></div>
+          <div class="input">••••••••</div>
+
+          <div class="gap-24"></div>
+
+          <div class="btn-primary">Continue</div>
+
+          <div class="gap-16"></div>
+
+          <div class="passkey">Use passkey instead</div>
+
+          <div class="spacer-flex"></div>
+
+          <div class="connected-wrap">
+            <div class="connected">
+              <span class="dot"></span>
+              <span>Connected</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="connected-glow"></div>
+      </div>
+
+      <div class="tagline">500 spots. iOS only. No catch.</div>
+
+      <img src="assets/driiva-logo-white.png" alt="Driiva" class="driiva-logo" />
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+
+      // [0-10s] Background warmth/cool slow shift
+      // amber bleeds warmer (0 -> ~4s), then cools back (4 -> 10s)
+      tl.fromTo(
+        ".bg-warmth",
+        { opacity: 0 },
+        { opacity: 1, duration: 4, ease: "sine.inOut" },
+        0
+      );
+      tl.to(
+        ".bg-warmth",
+        { opacity: 0.25, duration: 6, ease: "sine.inOut" },
+        4
+      );
+      tl.fromTo(
+        ".bg-cool",
+        { opacity: 0 },
+        { opacity: 0.9, duration: 6, ease: "sine.inOut" },
+        4
+      );
+
+      // [1s] Card fades in, slight scale
+      tl.fromTo(
+        ".app-screen",
+        { opacity: 0, scale: 0.95 },
+        { opacity: 1, scale: 1, duration: 0.8, ease: "power2.out" },
+        1.0
+      );
+
+      // [2.5s -> 5s] Card flattens rotateY/rotateX to 0 over 2.5s
+      tl.to(
+        ".app-screen",
+        {
+          rotateY: 0,
+          rotateX: 0,
+          duration: 2.5,
+          ease: "power2.inOut",
+        },
+        2.5
+      );
+
+      // [4s] Beta label appears above card, fade 0.4s
+      tl.fromTo(
+        ".beta-label",
+        { opacity: 0, y: 10 },
+        { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" },
+        4.0
+      );
+
+      // [6s] Teal Connected glow fade in 0.4s, then one subtle pulse
+      tl.fromTo(
+        ".connected-glow",
+        { opacity: 0, scale: 0.9 },
+        { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" },
+        6.0
+      );
+      tl.to(
+        ".connected-glow",
+        { opacity: 0.65, scale: 1.12, duration: 0.7, ease: "sine.inOut" },
+        6.6
+      );
+      tl.to(
+        ".connected-glow",
+        { opacity: 1, scale: 1, duration: 0.7, ease: "sine.inOut" },
+        7.3
+      );
+
+      // [7.5s] Tagline "500 spots. iOS only. No catch." fade in
+      tl.fromTo(
+        ".tagline",
+        { opacity: 0, y: 20 },
+        { opacity: 0.9, y: 0, duration: 0.6, ease: "expo.out" },
+        7.5
+      );
+
+      // [9s] Driiva logo bottom fade in
+      tl.fromTo(
+        ".driiva-logo",
+        { opacity: 0, y: 12 },
+        { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" },
+        9.0
+      );
+
+      window.__timelines["login-hero"] = tl;
+    </script>
+  </body>
+</html>

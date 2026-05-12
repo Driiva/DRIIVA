@@ -38,3 +38,9 @@ Driiva Marketing/
 ANTIGRAVITY_AGENTS_DRIIVA.md
 DRIVING_BEHAVIOR_PROCESSING.md
 RUNBOOK.md
+
+# Local screenshots + tooling caches
+/driiva-*.png
+.playwright-mcp/
+driiva-design-system/
+CONTEXT.md

@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Driiva — Community Refund Pool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Inter+Tight:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #000;
+  }
+
+  [data-composition-id="refund-pool"] {
+    position: relative;
+    width: 1080px;
+    height: 1920px;
+    overflow: hidden;
+    background: linear-gradient(180deg, #0b0b1e 0%, #2a0a4a 100%);
+    font-family: "Inter", system-ui, sans-serif;
+    color: #fff;
+  }
+
+  /* [0-2s] HOW IT WORKS eyebrow */
+  .eyebrow {
+    position: absolute;
+    top: 120px;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 16px;
+    font-weight: 500;
+    letter-spacing: 0.3em;
+    color: #ffffff;
+    opacity: 0.5;
+    text-transform: uppercase;
+  }
+
+  /* Avatar row — centred vertically around y = 35% of frame */
+  .avatar-row {
+    position: absolute;
+    top: 35%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    justify-content: center;
+  }
+  .avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255,255,255,0.3);
+    box-sizing: border-box;
+  }
+  .avatar.a1 { background: #d4850a; }
+  .avatar.a2 { background: #6b3fa0; }
+  .avatar.a3 { background: #6366f1; }
+  .avatar.a4 { background: #a04c2a; }
+  .avatar.a5 { background: #818cf8; }
+
+  /* Ripple ring — centred on avatar row */
+  .ripple {
+    position: absolute;
+    top: 35%;
+    left: 50%;
+    width: 80px;
+    height: 80px;
+    margin-left: -40px;
+    margin-top: -40px;
+    border-radius: 50%;
+    border: 2px solid rgba(80,200,150,0.6);
+    box-sizing: border-box;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* Headline (first + second lines occupy the same slot below avatars) */
+  .headline-slot {
+    position: absolute;
+    top: calc(35% + 90px);
+    left: 0;
+    width: 100%;
+    text-align: center;
+    font-family: "Inter Tight", "Inter", sans-serif;
+    font-weight: 700;
+    color: #ffffff;
+  }
+  .headline-1,
+  .headline-2 {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    font-size: 36px;
+    line-height: 1.2;
+    opacity: 0;
+  }
+
+  /* Glass card */
+  .card {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%;
+    padding: 40px;
+    border-radius: 24px;
+    background: rgba(255,255,255,0.07);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.12);
+    box-sizing: border-box;
+    opacity: 0;
+    text-align: left;
+  }
+  .card-label {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    color: #ffffff;
+    opacity: 0.6;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .card-amount {
+    font-family: "Inter Tight", "Inter", sans-serif;
+    font-size: 64px;
+    font-weight: 700;
+    color: #ffffff;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    margin-bottom: 20px;
+  }
+  .card-sub {
+    font-family: "Inter", sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    color: #ffffff;
+    opacity: 0.7;
+    line-height: 1.4;
+  }
+
+  /* Closing lines */
+  .close-head {
+    position: absolute;
+    top: calc(50% - 40px);
+    left: 0;
+    width: 100%;
+    text-align: center;
+    font-family: "Inter Tight", "Inter", sans-serif;
+    font-size: 40px;
+    font-weight: 700;
+    color: #ffffff;
+    opacity: 0;
+  }
+  .close-sub {
+    position: absolute;
+    top: calc(50% + 30px);
+    left: 0;
+    width: 100%;
+    text-align: center;
+    font-family: "Inter", sans-serif;
+    font-size: 20px;
+    font-weight: 400;
+    color: #ffffff;
+    opacity: 0;
+  }
+
+  /* Logo + URL */
+  .logo-wrap {
+    position: absolute;
+    bottom: 100px;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    opacity: 0;
+  }
+  .logo-wrap img {
+    display: block;
+    height: 36px;
+    width: auto;
+    margin: 0 auto;
+  }
+  .logo-url {
+    margin-top: 16px;
+    font-family: "Inter", sans-serif;
+    font-size: 16px;
+    color: #ffffff;
+    opacity: 0.7;
+  }
+
+  /* Final-scene fade veil */
+  .final-veil {
+    position: absolute;
+    inset: 0;
+    background: #0b0b1e;
+    opacity: 0;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+<!-- AUDIO: would load assets/solo-piano.mp3 @ volume 0.45, fade out last 2s -->
+
+<div
+  data-composition-id="refund-pool"
+  data-width="1080"
+  data-height="1920"
+  data-start="0"
+  data-duration="15"
+  data-track-index="0"
+>
+  <div class="eyebrow" id="eyebrow">HOW IT WORKS</div>
+
+  <div class="avatar-row" id="avatar-row">
+    <div class="avatar a1"></div>
+    <div class="avatar a2"></div>
+    <div class="avatar a3"></div>
+    <div class="avatar a4"></div>
+    <div class="avatar a5"></div>
+  </div>
+
+  <div class="ripple" id="ripple"></div>
+
+  <div class="headline-slot">
+    <div class="headline-1" id="head1">You drive well.</div>
+    <div class="headline-2" id="head2">So do they.</div>
+  </div>
+
+  <div class="card" id="card">
+    <div class="card-label">COMMUNITY REFUND POOL</div>
+    <div class="card-amount">£4,200</div>
+    <div class="card-sub">Distributed at year end to safe drivers.</div>
+  </div>
+
+  <div class="close-head" id="close-head">Premium for everyone.</div>
+  <div class="close-sub" id="close-sub">Starting from your first trip.</div>
+
+  <div class="logo-wrap" id="logo-wrap">
+    <img src="assets/driiva-logo-white.png" alt="Driiva" />
+    <div class="logo-url">driiva.co.uk</div>
+  </div>
+
+  <div class="final-veil" id="final-veil"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+<script>
+  window.__timelines = window.__timelines || {};
+  const tl = gsap.timeline({ paused: true });
+
+  // [0-2s] eyebrow fade in
+  tl.from("#eyebrow", {
+    opacity: 0,
+    y: -10,
+    duration: 0.9,
+    ease: "power2.inOut"
+  }, 0.2);
+
+  // [1.5s] avatars scale in, staggered
+  tl.from(".avatar", {
+    scale: 0.6,
+    opacity: 0,
+    duration: 0.5,
+    ease: "back.out(1.5)",
+    stagger: 0.1,
+    transformOrigin: "50% 50%"
+  }, 1.5);
+
+  // [3s] "You drive well." fade in
+  tl.to("#head1", {
+    opacity: 1,
+    duration: 0.5,
+    ease: "power3.out"
+  }, 3.0);
+
+  // [4.5s] cross-dissolve to "So do they."
+  tl.to("#head1", {
+    opacity: 0,
+    duration: 0.4,
+    ease: "power2.inOut"
+  }, 4.5);
+  tl.to("#head2", {
+    opacity: 1,
+    duration: 0.5,
+    ease: "power3.out"
+  }, 4.55);
+
+  // [5.5s] ripple ring — expand 80 -> 600px over 1.2s, opacity 0.8 -> 0
+  tl.fromTo("#ripple", {
+    scale: 1,
+    opacity: 0.8
+  }, {
+    scale: 7.5,      // 80 * 7.5 = 600
+    opacity: 0,
+    duration: 1.2,
+    ease: "expo.out",
+    transformOrigin: "50% 50%"
+  }, 5.5);
+
+  // [6.5s] glass card slides up + fades in
+  // Hide head2 and avatars before card appears (not strictly exit — they must yield the frame)
+  // Per rule: transition IS the exit; here the card IS the next scene, so we
+  // let previous elements remain until card entrance establishes the new focus.
+  tl.from("#card", {
+    y: 60,
+    opacity: 0,
+    duration: 0.6,
+    ease: "power3.out"
+  }, 6.5);
+
+  // [9.5s] card fades out (scene transition to closing scene)
+  tl.to("#card", {
+    opacity: 0,
+    y: -20,
+    duration: 0.5,
+    ease: "power2.inOut"
+  }, 9.5);
+
+  // Clear lingering hero elements so closing scene reads clean
+  tl.to(["#head2", "#avatar-row", "#eyebrow"], {
+    opacity: 0,
+    duration: 0.5,
+    ease: "power2.inOut"
+  }, 9.5);
+
+  // [9.7s] "Premium for everyone."
+  tl.to("#close-head", {
+    opacity: 1,
+    duration: 0.6,
+    ease: "power3.out"
+  }, 9.7);
+  tl.from("#close-head", {
+    y: 30,
+    duration: 0.6,
+    ease: "power3.out"
+  }, 9.7);
+
+  // [11s] subline
+  tl.to("#close-sub", {
+    opacity: 0.7,
+    duration: 0.5,
+    ease: "power2.out"
+  }, 11.0);
+  tl.from("#close-sub", {
+    y: 20,
+    duration: 0.5,
+    ease: "power2.out"
+  }, 11.0);
+
+  // [13s] logo + url
+  tl.to("#logo-wrap", {
+    opacity: 1,
+    duration: 0.6,
+    ease: "power2.out"
+  }, 13.0);
+  tl.from("#logo-wrap", {
+    y: 20,
+    duration: 0.6,
+    ease: "power2.out"
+  }, 13.0);
+
+  // [14-15s] final fade (allowed — final scene only)
+  tl.to("#final-veil", {
+    opacity: 0.5,
+    duration: 1.0,
+    ease: "power2.inOut"
+  }, 14.0);
+
+  window.__timelines["refund-pool"] = tl;
+</script>
+</body>
+</html>

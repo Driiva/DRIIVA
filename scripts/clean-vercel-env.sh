@@ -1,54 +1,69 @@
 #!/usr/bin/env bash
-# Strips trailing "\n" literal from every Vercel env var on the driiva project.
-#
-# Background: paste-pollution left every production env var with a 2-char "\n"
-# escape glued to the end of its value, which broke Firebase Installations
-# (INVALID_ARGUMENT), CORS matching, WebAuthn RP ID matching, etc.
+# Strip trailing \n / \r literal-escape pollution from Vercel env vars directly.
+# Use this when Doppler → Vercel sync is broken or absent.
+# Never prints secret values. Temp file is deleted on exit.
 #
 # Usage: bash scripts/clean-vercel-env.sh <environment>
-#   where <environment> is one of: production | preview | development
-#
-# Requires: logged-in `vercel` CLI pointing at prj_9gZV7nWkWvtts3C6Tjvab7sZ4EoL
+#   environment: production | preview | development
 
 set -euo pipefail
 
 ENV="${1:-production}"
-TMPFILE=".env.vercel.clean.$$"
-trap 'rm -f "$TMPFILE"' EXIT
+TMPFILE="$(mktemp /tmp/vercel-env-audit.XXXXXX)"
+trap 'rm -f "$TMPFILE"' EXIT INT TERM
 
 echo "Pulling $ENV env from Vercel..."
-vercel env pull "$TMPFILE" --environment="$ENV" --yes >/dev/null
+vercel env pull "$TMPFILE" --environment="$ENV" --yes >/dev/null 2>&1
 
 POLLUTED=0
 CLEAN=0
-FIXED=()
+FIXED_KEYS=""
 
-while IFS= read -r line; do
-  [[ -z "$line" || "$line" =~ ^# ]] && continue
-  key="${line%%=*}"
-  raw="${line#*=}"
-  # Strip surrounding double quotes
-  [[ "$raw" == \"*\" ]] && raw="${raw:1:-1}"
-  # Check for literal \n or \r escape at end
-  if [[ "$raw" == *'\n' || "$raw" == *'\r' ]]; then
-    clean="${raw%\\n}"
-    clean="${clean%\\r}"
-    echo "  ⚠ $key — stripping trailing escape (len $((${#raw})) → ${#clean})"
-    # Remove + re-add
-    vercel env rm "$key" "$ENV" --yes >/dev/null 2>&1 || true
-    printf "%s" "$clean" | vercel env add "$key" "$ENV" >/dev/null 2>&1
-    FIXED+=("$key")
-    POLLUTED=$((POLLUTED + 1))
-  else
-    CLEAN=$((CLEAN + 1))
-  fi
-done < "$TMPFILE"
+# Use python for safe, portable parsing — no shell variable value exposure.
+# Output: one line per polluted key, format "POLLUTED KEY NEW_VAL_LEN"
+python3 - "$TMPFILE" <<'PY' | while IFS= read -r line; do
+import os, re, sys, shlex
+path = sys.argv[1]
+with open(path, "r") as f:
+    for raw in f:
+        raw = raw.rstrip("\n")
+        if not raw or raw.startswith("#"):
+            continue
+        m = re.match(r'^([A-Z_][A-Z0-9_]*)="(.*)"\s*$', raw)
+        if not m:
+            continue
+        key, val = m.group(1), m.group(2)
+        # Strip trailing literal \n / \r escape (possibly repeated)
+        cleaned = re.sub(r'(\\n|\\r)+$', '', val)
+        if cleaned != val:
+            print(f"POLLUTED {key} {len(cleaned)}")
+PY
+  set -- $line
+  status="$1"; key="$2"; new_len="$3"
+  [[ "$status" != "POLLUTED" ]] && continue
+
+  # Read cleaned value from the file again (never print it)
+  clean_val="$(python3 -c "
+import re, sys
+with open('$TMPFILE') as f:
+    for ln in f:
+        m = re.match(r'^$key=\"(.*)\"\s*$', ln.rstrip('\n'))
+        if m:
+            v = re.sub(r'(\\\\n|\\\\r)+$', '', m.group(1))
+            sys.stdout.write(v)
+            break
+")"
+
+  # Remove old, add clean value via stdin
+  vercel env rm "$key" "$ENV" --yes >/dev/null 2>&1 || true
+  printf "%s" "$clean_val" | vercel env add "$key" "$ENV" >/dev/null 2>&1
+  unset clean_val
+
+  printf "✓ %-40s → len=%s\n" "$key" "$new_len"
+  POLLUTED=$((POLLUTED + 1))
+  FIXED_KEYS="$FIXED_KEYS $key"
+done
 
 echo
-echo "Result: $POLLUTED polluted, $CLEAN already clean"
-if [[ ${#FIXED[@]} -gt 0 ]]; then
-  echo "Fixed keys:"
-  printf '  - %s\n' "${FIXED[@]}"
-fi
-echo
-echo "Next: push any commit to main to trigger a fresh Vercel deploy with cleaned env."
+echo "Fixed $POLLUTED polluted keys in $ENV."
+echo "Trigger a Vercel redeploy to rebuild with clean env."

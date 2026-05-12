@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1920, initial-scale=1" />
+  <title>Driiva — LinkedIn statement</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #0a0a18;
+      font-family: "Inter", sans-serif;
+      color: #ffffff;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    [data-composition-id="linkedin-statement"] {
+      position: relative;
+      width: 1920px;
+      height: 1080px;
+      background: #0a0a18;
+      overflow: hidden;
+    }
+
+    .scene {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      will-change: opacity, transform;
+    }
+
+    .scene-text {
+      font-family: "Inter", sans-serif;
+      font-weight: 400;
+      font-size: 44px;
+      line-height: 1.4;
+      color: #ffffff;
+      max-width: 800px;
+      text-align: center;
+      letter-spacing: -0.01em;
+    }
+
+    .scene-headline {
+      font-family: "Inter Tight", sans-serif;
+      font-weight: 700;
+      font-size: 56px;
+      line-height: 1.2;
+      color: #ffffff;
+      text-align: center;
+      letter-spacing: -0.02em;
+    }
+
+    /* Scene 4 — stats card */
+    .stats-card {
+      width: 1200px;
+      padding: 60px;
+      border-radius: 24px;
+      background: rgba(255, 255, 255, 0.07);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      backdrop-filter: blur(20px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      gap: 40px;
+    }
+
+    .stat {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      opacity: 0;
+      will-change: opacity, transform;
+    }
+
+    .stat-number {
+      font-family: "Inter Tight", sans-serif;
+      font-weight: 700;
+      font-size: 48px;
+      line-height: 1;
+      color: #ffffff;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.02em;
+    }
+
+    .stat-number.teal {
+      color: #4ecdc4;
+    }
+
+    .stat-label {
+      font-family: "Inter", sans-serif;
+      font-weight: 400;
+      font-size: 14px;
+      line-height: 1.3;
+      color: #ffffff;
+      opacity: 0.7;
+      text-align: center;
+      letter-spacing: 0.01em;
+    }
+
+    /* Scene 5 — logo + URL */
+    #scene5 {
+      flex-direction: column;
+      gap: 40px;
+    }
+
+    #scene5 img {
+      height: 48px;
+      width: auto;
+      display: block;
+    }
+
+    .scene5-url {
+      font-family: "Inter", sans-serif;
+      font-weight: 400;
+      font-size: 20px;
+      color: #ffffff;
+      opacity: 0.7;
+      text-align: center;
+      letter-spacing: 0.01em;
+    }
+
+    /* Final fade overlay */
+    #final-fade {
+      position: absolute;
+      inset: 0;
+      background: #000000;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+  <!-- AUDIO: would load assets/timeless-score.mp3 @ volume 0.35, fade out last 3s -->
+
+  <div
+    data-composition-id="linkedin-statement"
+    data-width="1920"
+    data-height="1080"
+    data-start="0"
+    data-duration="18"
+    data-track-index="0"
+  >
+    <!-- Scene 1 -->
+    <div class="scene" id="scene1">
+      <div class="scene-text">Car insurance in the UK is a &pound;16 billion market.</div>
+    </div>
+
+    <!-- Scene 2 -->
+    <div class="scene" id="scene2">
+      <div class="scene-text">Most of it is priced on who you are, not how you drive.</div>
+    </div>
+
+    <!-- Scene 3 -->
+    <div class="scene" id="scene3">
+      <div class="scene-headline">We&rsquo;re changing that.</div>
+    </div>
+
+    <!-- Scene 4 — stats card -->
+    <div class="scene" id="scene4">
+      <div class="stats-card">
+        <div class="stat" id="stat-left">
+          <div class="stat-number teal">92%</div>
+          <div class="stat-label">fraud detection accuracy</div>
+        </div>
+        <div class="stat" id="stat-centre">
+          <div class="stat-number">15%</div>
+          <div class="stat-label">max annual refund</div>
+        </div>
+        <div class="stat" id="stat-right">
+          <div class="stat-number">500</div>
+          <div class="stat-label">beta drivers</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scene 5 — logo + URL -->
+    <div class="scene" id="scene5">
+      <img src="assets/driiva-logo-white.png" alt="Driiva" />
+      <div class="scene5-url">driiva.co.uk &mdash; beta now open</div>
+    </div>
+
+    <!-- Final fade to black -->
+    <div id="final-fade"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    window.__timelines = window.__timelines || {};
+    const tl = gsap.timeline({ paused: true });
+
+    // Scene 1 (0.0 – 3.0s): fade in at 0.3s, hold, crossfade out 2.7–3.3
+    tl.to("#scene1", { opacity: 1, duration: 0.6, ease: "power2.inOut" }, 0.3);
+    tl.to("#scene1", { opacity: 0, duration: 0.6, ease: "power2.inOut" }, 2.7);
+    tl.set("#scene1", { visibility: "hidden" }, 3.3);
+
+    // Scene 2 (3.0 – 6.0s)
+    tl.to("#scene2", { opacity: 1, duration: 0.6, ease: "power2.inOut" }, 2.7);
+    tl.to("#scene2", { opacity: 0, duration: 0.6, ease: "power2.inOut" }, 5.7);
+    tl.set("#scene2", { visibility: "hidden" }, 6.3);
+
+    // Scene 3 (6.0 – 9.0s)
+    tl.to("#scene3", { opacity: 1, duration: 0.6, ease: "power3.out" }, 5.7);
+    tl.to("#scene3", { opacity: 0, duration: 0.6, ease: "power2.inOut" }, 8.7);
+    tl.set("#scene3", { visibility: "hidden" }, 9.3);
+
+    // Scene 4 (9.0 – 13.0s) — stats card, longer hold for stagger
+    // Card entrance: fade in + subtle y translate at scene 4 start
+    tl.fromTo(
+      "#scene4",
+      { opacity: 0, y: 20 },
+      { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" },
+      8.7
+    );
+
+    // Staggered stats scale-in
+    tl.fromTo(
+      "#stat-left",
+      { opacity: 0, scale: 0.9 },
+      { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(1.5)" },
+      9.0 + 0.2
+    );
+    tl.fromTo(
+      "#stat-centre",
+      { opacity: 0, scale: 0.9 },
+      { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(1.5)" },
+      9.0 + 0.5
+    );
+    tl.fromTo(
+      "#stat-right",
+      { opacity: 0, scale: 0.9 },
+      { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(1.5)" },
+      9.0 + 0.8
+    );
+
+    // Scene 4 crossfade out 12.7–13.3
+    tl.to("#scene4", { opacity: 0, duration: 0.6, ease: "power2.inOut" }, 12.7);
+    tl.set("#scene4", { visibility: "hidden" }, 13.3);
+
+    // Scene 5 (13.0 – 18.0s): logo fade in at scene start, URL at +1s
+    tl.fromTo(
+      "#scene5",
+      { opacity: 0 },
+      { opacity: 1, duration: 0.6, ease: "expo.out" },
+      12.7
+    );
+    // URL element starts at opacity 0.7 per spec — fade it in from 0 to 0.7
+    tl.fromTo(
+      "#scene5 .scene5-url",
+      { opacity: 0, y: 10 },
+      { opacity: 0.7, y: 0, duration: 0.6, ease: "power2.out" },
+      14.0
+    );
+
+    // Final fade to black: t=16s onward, opacity 1 → 0 over 2s on whole scene
+    tl.to("#final-fade", { opacity: 1, duration: 2.0, ease: "power2.inOut" }, 16.0);
+
+    window.__timelines["linkedin-statement"] = tl;
+  </script>
+</body>
+</html>

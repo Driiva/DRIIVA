@@ -1,6 +1,6 @@
 # Driiva — Current sprint (tickets)
 
-**Last updated:** 31 March 2026
+**Last updated:** 18 April 2026
 **Product Lead:** Keith Cheng  
 **External memory for AI sessions:** Work on the next unchecked ticket only; update this list when done.
 
@@ -81,6 +81,9 @@ These are known gaps that don't have tickets yet:
 - [x] **Achievements backend** — 8 definitions, unlock logic in Cloud Functions, frontend wired to real Firestore data.
 - [ ] **WebAuthn/Passkey login** — `server/webauthn.ts` is scaffolded but not exposed as a real login flow in the frontend.
 - [ ] **Staging environment** — `driiva-staging` project provisioned; manual steps remain (Blaze plan, deploy functions, Vercel staging). Recommended before any production payments go live.
+- [ ] **Marketing site sync** — live site runs on Framer (no automation API); local `marketing-site/index.html` is the canonical source for editorial hero + waitlist copy. Decide path: (a) manually paste CSS changes into Framer code overrides, (b) migrate the live site off Framer to Vercel (the `marketing-site/` build is deployable as-is), or (c) keep Framer for visual, and serve `/early-access` from the Next app. Current blocker: Framer has no write MCP/API available in this session.
+- [x] **Design system canonicalized** — `design-system/` at repo root now holds `colors_and_type.css` (ink ladder, brand gradient, glass, radii, shadows, motion, type stack), `README.md` (voice/tone/visual rules), `source/` (Figma rules + Instrument philosophy), `assets/` (14 brand PNGs). Marketing site + client DriivaLogo component switched to canonical v3 white wordmark. Mobile app theme already aligned to canonical "instrument" mode. Follow-up: rename client Vite CSS variables to match canonical token names.
+- [ ] **Client SPA token alignment** — `client/` still uses legacy variable names (`--color-accent-primary` etc.) instead of canonical (`--brand-iris`, `--glass-bg`, etc.). One-pass rename across `client/src/**/*.css` + `tailwind.config.ts` to converge on `design-system/colors_and_type.css`.
 
 ## Sprint: "Code Quality & UX Fixes" (Week 9–10)
 

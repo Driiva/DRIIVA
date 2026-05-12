@@ -1,4 +1,4 @@
-import driivaLogoPath from '@/assets/driiva-logo-CLEAR-FINAL.png';
+import driivaLogoPath from '@/assets/logo-wordmark-white-v3.png';
 
 interface DriivaLogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';

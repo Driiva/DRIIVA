@@ -1,0 +1,573 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Driiva — April 2026 monthly brief</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Inter+Tight:wght@500;600;700&family=JetBrains+Mono:wght@500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: #0a0a14;
+        color: #ffffff;
+        font-family: "Inter", sans-serif;
+      }
+
+      [data-composition-id="april-brief"] {
+        position: relative;
+        width: 1920px;
+        height: 1080px;
+        background: #0a0a14;
+        overflow: hidden;
+      }
+
+      [data-composition-id="april-brief"] .scene {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+        opacity: 0;
+      }
+
+      /* ---------- TITLE ---------- */
+      [data-composition-id="april-brief"] .title-scene {
+        background:
+          radial-gradient(
+            120% 80% at 30% 40%,
+            rgba(212, 133, 10, 0.55) 0%,
+            rgba(160, 76, 42, 0.45) 25%,
+            rgba(107, 63, 160, 0.55) 55%,
+            rgba(59, 45, 139, 0.85) 100%
+          ),
+          #0a0a14;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 36px;
+        padding: 200px;
+      }
+      [data-composition-id="april-brief"] .title-logo {
+        height: 110px;
+        width: auto;
+        display: block;
+        opacity: 0;
+      }
+      [data-composition-id="april-brief"] .title-eyebrow {
+        font-family: "JetBrains Mono", monospace;
+        font-weight: 500;
+        font-size: 24px;
+        letter-spacing: 0.32em;
+        color: rgba(255, 255, 255, 0.85);
+        text-transform: uppercase;
+        margin: 0;
+        opacity: 0;
+      }
+
+      /* ---------- WINS ---------- */
+      [data-composition-id="april-brief"] .wins-stage {
+        background: #0a0a14;
+        display: block;
+      }
+      [data-composition-id="april-brief"] .card {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 180px 220px;
+        gap: 28px;
+        background: #12111f;
+        opacity: 0;
+        box-sizing: border-box;
+      }
+      [data-composition-id="april-brief"] .card-index {
+        font-family: "JetBrains Mono", monospace;
+        font-weight: 600;
+        font-size: 22px;
+        letter-spacing: 0.18em;
+        color: #a89bff;
+        text-transform: uppercase;
+        margin: 0;
+      }
+      [data-composition-id="april-brief"] .card-eyebrow {
+        font-family: "JetBrains Mono", monospace;
+        font-weight: 500;
+        font-size: 24px;
+        letter-spacing: 0.22em;
+        color: rgba(255, 255, 255, 0.55);
+        text-transform: uppercase;
+        margin: 0;
+      }
+      [data-composition-id="april-brief"] .card-display {
+        font-family: "Inter Tight", sans-serif;
+        font-weight: 600;
+        font-size: 96px;
+        line-height: 1.02;
+        letter-spacing: -0.025em;
+        color: #ffffff;
+        margin: 0;
+        max-width: 1480px;
+      }
+      [data-composition-id="april-brief"] .card-underline {
+        height: 3px;
+        width: 220px;
+        background: #5b4dc9;
+        transform-origin: left center;
+        transform: scaleX(0);
+        margin-top: 4px;
+      }
+      [data-composition-id="april-brief"] .card-support {
+        font-family: "Inter", sans-serif;
+        font-weight: 400;
+        font-size: 30px;
+        line-height: 1.4;
+        letter-spacing: -0.005em;
+        color: rgba(255, 255, 255, 0.6);
+        margin: 0;
+        max-width: 1480px;
+        white-space: nowrap;
+      }
+      [data-composition-id="april-brief"] .card-meta {
+        position: absolute;
+        bottom: 80px;
+        left: 220px;
+        right: 220px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-family: "JetBrains Mono", monospace;
+        font-weight: 500;
+        font-size: 20px;
+        letter-spacing: 0.14em;
+        color: rgba(255, 255, 255, 0.7);
+        text-transform: uppercase;
+      }
+      [data-composition-id="april-brief"] .card-meta-pill {
+        color: #a89bff;
+      }
+
+      /* ---------- SHIFT ---------- */
+      [data-composition-id="april-brief"] .shift-scene {
+        background: #0a0a14;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 220px 220px;
+        gap: 36px;
+      }
+      [data-composition-id="april-brief"] .shift-eyebrow {
+        font-family: "JetBrains Mono", monospace;
+        font-weight: 600;
+        font-size: 24px;
+        letter-spacing: 0.32em;
+        color: #5b4dc9;
+        text-transform: uppercase;
+        margin: 0;
+      }
+      [data-composition-id="april-brief"] .shift-display {
+        font-family: "Inter Tight", sans-serif;
+        font-weight: 600;
+        font-size: 124px;
+        line-height: 1.0;
+        letter-spacing: -0.03em;
+        color: #ffffff;
+        margin: 0;
+        max-width: 1500px;
+      }
+      [data-composition-id="april-brief"] .shift-rule {
+        height: 2px;
+        width: 600px;
+        background: #6366f1;
+        transform-origin: left center;
+        transform: scaleX(0);
+      }
+      [data-composition-id="april-brief"] .shift-support {
+        font-family: "Inter", sans-serif;
+        font-weight: 400;
+        font-size: 36px;
+        line-height: 1.3;
+        letter-spacing: -0.005em;
+        color: rgba(255, 255, 255, 0.6);
+        margin: 0;
+        max-width: 1500px;
+      }
+
+      /* ---------- NEXT ---------- */
+      [data-composition-id="april-brief"] .next-scene {
+        background: #0a0a14;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 220px;
+        gap: 28px;
+      }
+      [data-composition-id="april-brief"] .next-eyebrow {
+        font-family: "JetBrains Mono", monospace;
+        font-weight: 600;
+        font-size: 24px;
+        letter-spacing: 0.34em;
+        color: #5b4dc9;
+        text-transform: uppercase;
+        margin: 0;
+      }
+      [data-composition-id="april-brief"] .next-display {
+        font-family: "Inter Tight", sans-serif;
+        font-weight: 600;
+        font-size: 156px;
+        line-height: 1.0;
+        letter-spacing: -0.03em;
+        color: #ffffff;
+        margin: 0;
+      }
+
+      /* ---------- CLOSE ---------- */
+      [data-composition-id="april-brief"] .close-scene {
+        background:
+          radial-gradient(
+            120% 80% at 30% 40%,
+            rgba(212, 133, 10, 0.55) 0%,
+            rgba(160, 76, 42, 0.45) 25%,
+            rgba(107, 63, 160, 0.55) 55%,
+            rgba(59, 45, 139, 0.9) 100%
+          ),
+          #0a0a14;
+        display: block;
+      }
+      [data-composition-id="april-brief"] .close-lockup {
+        position: absolute;
+        bottom: 110px;
+        left: 140px;
+        font-family: "Inter Tight", sans-serif;
+        font-weight: 600;
+        font-size: 110px;
+        letter-spacing: -0.04em;
+        color: #ffffff;
+        margin: 0;
+        opacity: 0;
+      }
+    </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  </head>
+
+  <body>
+    <div
+      data-composition-id="april-brief"
+      data-width="1920"
+      data-height="1080"
+      data-start="0"
+      data-duration="15"
+    >
+      <!-- TITLE 0.0 - 1.0 -->
+      <div class="scene title-scene" id="title-scene">
+        <img
+          src="assets/logo-wordmark-white-v3.png"
+          alt="Driiva"
+          class="title-logo"
+          id="title-logo"
+        />
+        <p class="title-eyebrow" id="title-eyebrow">April 2026 · Monthly brief</p>
+      </div>
+
+      <!-- WINS STAGE 1.0 - 11.5 -->
+      <div class="scene wins-stage" id="wins-stage">
+        <!-- Card 01 -->
+        <div class="card" id="card-1">
+          <p class="card-index">01 / 07</p>
+          <p class="card-eyebrow">Product lead</p>
+          <h2 class="card-display">Keith Cheng on board.</h2>
+          <div class="card-underline"></div>
+          <p class="card-support">Insurtech operator. Investor-grade signal.</p>
+          <div class="card-meta">
+            <span>Driiva · Apr 2026</span>
+            <span class="card-meta-pill">Win 01</span>
+          </div>
+        </div>
+
+        <!-- Card 02 -->
+        <div class="card" id="card-2">
+          <p class="card-index">02 / 07</p>
+          <p class="card-eyebrow">Mobile app</p>
+          <h2 class="card-display">Native build in flight.</h2>
+          <div class="card-underline"></div>
+          <p class="card-support">Expo plus Damoov. App Store in 8 to 12 weeks.</p>
+          <div class="card-meta">
+            <span>Driiva · Apr 2026</span>
+            <span class="card-meta-pill">Win 02</span>
+          </div>
+        </div>
+
+        <!-- Card 03 -->
+        <div class="card" id="card-3">
+          <p class="card-index">03 / 07</p>
+          <p class="card-eyebrow">Telematics</p>
+          <h2 class="card-display">Damoov live end-to-end.</h2>
+          <div class="card-underline"></div>
+          <p class="card-support">Signup to daily sync. GDPR-clean.</p>
+          <div class="card-meta">
+            <span>Driiva · Apr 2026</span>
+            <span class="card-meta-pill">Win 03</span>
+          </div>
+        </div>
+
+        <!-- Card 04 -->
+        <div class="card" id="card-4">
+          <p class="card-index">04 / 07</p>
+          <p class="card-eyebrow">Payments</p>
+          <h2 class="card-display">Stripe wired.</h2>
+          <div class="card-underline"></div>
+          <p class="card-support">Premiums and pool contributions, live.</p>
+          <div class="card-meta">
+            <span>Driiva · Apr 2026</span>
+            <span class="card-meta-pill">Win 04</span>
+          </div>
+        </div>
+
+        <!-- Card 05 -->
+        <div class="card" id="card-5">
+          <p class="card-index">05 / 07</p>
+          <p class="card-eyebrow">Brand</p>
+          <h2 class="card-display">Design system canonical.</h2>
+          <div class="card-underline"></div>
+          <p class="card-support">One source across marketing, app, product.</p>
+          <div class="card-meta">
+            <span>Driiva · Apr 2026</span>
+            <span class="card-meta-pill">Win 05</span>
+          </div>
+        </div>
+
+        <!-- Card 06 -->
+        <div class="card" id="card-6">
+          <p class="card-index">06 / 07</p>
+          <p class="card-eyebrow">Demo-ready</p>
+          <h2 class="card-display">Auth fixed, sub-second.</h2>
+          <div class="card-underline"></div>
+          <p class="card-support">27s to under 1s. Server hardening alongside.</p>
+          <div class="card-meta">
+            <span>Driiva · Apr 2026</span>
+            <span class="card-meta-pill">Win 06</span>
+          </div>
+        </div>
+
+        <!-- Card 07 -->
+        <div class="card" id="card-7">
+          <p class="card-index">07 / 07</p>
+          <p class="card-eyebrow">Marketing</p>
+          <h2 class="card-display">Top-of-funnel running.</h2>
+          <div class="card-underline"></div>
+          <p class="card-support">First live campaign. Waitlist growing.</p>
+          <div class="card-meta">
+            <span>Driiva · Apr 2026</span>
+            <span class="card-meta-pill">Win 07</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- SHIFT 11.5 - 13.5 -->
+      <div class="scene shift-scene" id="shift-scene">
+        <p class="shift-eyebrow" id="shift-eyebrow">Strategic</p>
+        <h2 class="shift-display" id="shift-display">Raise deferred. Broker first.</h2>
+        <div class="shift-rule" id="shift-rule"></div>
+        <p class="shift-support" id="shift-support">One LOI re-rates every conversation.</p>
+      </div>
+
+      <!-- NEXT 13.5 - 14.2 -->
+      <div class="scene next-scene" id="next-scene">
+        <p class="next-eyebrow" id="next-eyebrow">Next</p>
+        <h2 class="next-display" id="next-display">Broker LOI.</h2>
+      </div>
+
+      <!-- CLOSE 14.2 - 15.0 -->
+      <div class="scene close-scene" id="close-scene">
+        <h2 class="close-lockup" id="close-lockup">driiva.</h2>
+      </div>
+
+      <script>
+        window.__timelines = window.__timelines || {};
+        const tl = gsap.timeline({ paused: true });
+
+        const REVEAL = "cubic-bezier(0.22, 1, 0.36, 1)";
+        const SPRING = "cubic-bezier(0.34, 1.56, 0.64, 1)";
+
+        // ===== TITLE 0.0 - 1.0 =====
+        tl.set("#title-scene", { opacity: 1 }, 0);
+        tl.from(
+          "#title-logo",
+          { y: 18, opacity: 0, duration: 0.5, ease: REVEAL },
+          0.05
+        );
+        tl.from(
+          "#title-eyebrow",
+          { y: 8, opacity: 0, duration: 0.35, ease: REVEAL },
+          0.3
+        );
+        // title -> wins crossfade at 0.85 - 1.05
+        tl.to(
+          "#title-scene",
+          { opacity: 0, duration: 0.2, ease: "power2.inOut" },
+          0.85
+        );
+        tl.set("#wins-stage", { opacity: 1 }, 0.85);
+
+        // ===== WIN CARDS 1.0 - 11.5 =====
+        // 7 cards x 1.5s each. Each card slides in from right (60px),
+        // underline sweeps, holds, then slides out left (-60px) as next enters.
+        const cards = [
+          { id: "#card-1", t: 1.0 },
+          { id: "#card-2", t: 2.5 },
+          { id: "#card-3", t: 4.0 },
+          { id: "#card-4", t: 5.5 },
+          { id: "#card-5", t: 7.0 },
+          { id: "#card-6", t: 8.5 },
+          { id: "#card-7", t: 10.0 },
+        ];
+
+        cards.forEach((c, i) => {
+          // Enter: slide+fade in 0.0 - 0.45 of card window
+          tl.set(c.id, { x: 80 }, c.t);
+          tl.to(
+            c.id,
+            { opacity: 1, duration: 0.35, ease: "power2.out" },
+            c.t
+          );
+          tl.to(
+            c.id,
+            { x: 0, duration: 0.55, ease: REVEAL },
+            c.t
+          );
+          // Index + eyebrow stagger
+          tl.from(
+            c.id + " .card-index",
+            { y: 14, opacity: 0, duration: 0.4, ease: REVEAL },
+            c.t + 0.05
+          );
+          tl.from(
+            c.id + " .card-eyebrow",
+            { y: 14, opacity: 0, duration: 0.4, ease: REVEAL },
+            c.t + 0.12
+          );
+          // Display headline
+          tl.from(
+            c.id + " .card-display",
+            { y: 24, opacity: 0, duration: 0.55, ease: REVEAL },
+            c.t + 0.18
+          );
+          // Underline sweep
+          tl.to(
+            c.id + " .card-underline",
+            { scaleX: 1, duration: 0.55, ease: "expo.out" },
+            c.t + 0.4
+          );
+          // Support line
+          tl.from(
+            c.id + " .card-support",
+            { y: 14, opacity: 0, duration: 0.45, ease: "power3.out" },
+            c.t + 0.45
+          );
+          // Meta row
+          tl.from(
+            c.id + " .card-meta",
+            { opacity: 0, duration: 0.35, ease: "power2.out" },
+            c.t + 0.55
+          );
+
+          // Exit transition into next card (slide out left)
+          // Last card exits into shift scene (handled below)
+          if (i < cards.length - 1) {
+            tl.to(
+              c.id,
+              { x: -80, opacity: 0, duration: 0.4, ease: "power2.inOut" },
+              c.t + 1.4
+            );
+          }
+        });
+
+        // Card 7 exit + shift entrance crossfade at 11.4 - 11.6
+        tl.to(
+          "#card-7",
+          { x: -80, opacity: 0, duration: 0.35, ease: "power2.inOut" },
+          11.4
+        );
+        tl.to(
+          "#wins-stage",
+          { opacity: 0, duration: 0.2, ease: "power2.inOut" },
+          11.4
+        );
+
+        // ===== SHIFT 11.5 - 13.5 =====
+        tl.set("#shift-scene", { opacity: 1 }, 11.5);
+        tl.from(
+          "#shift-eyebrow",
+          { y: 18, opacity: 0, duration: 0.45, ease: REVEAL },
+          11.55
+        );
+        tl.from(
+          "#shift-display",
+          { y: 36, opacity: 0, duration: 0.7, ease: REVEAL },
+          11.7
+        );
+        tl.to(
+          "#shift-rule",
+          { scaleX: 1, duration: 0.5, ease: "expo.out" },
+          12.2
+        );
+        tl.from(
+          "#shift-support",
+          { y: 18, opacity: 0, duration: 0.55, ease: "power3.out" },
+          12.4
+        );
+
+        // shift -> next at 13.4 - 13.55
+        tl.to(
+          "#shift-scene",
+          { opacity: 0, duration: 0.2, ease: "power2.inOut" },
+          13.4
+        );
+
+        // ===== NEXT 13.5 - 14.2 =====
+        tl.set("#next-scene", { opacity: 1 }, 13.5);
+        tl.from(
+          "#next-eyebrow",
+          { y: 12, opacity: 0, duration: 0.3, ease: REVEAL },
+          13.55
+        );
+        tl.from(
+          "#next-display",
+          { y: 28, opacity: 0, duration: 0.5, ease: SPRING },
+          13.65
+        );
+
+        // next -> close at 14.1 - 14.25
+        tl.to(
+          "#next-scene",
+          { opacity: 0, duration: 0.2, ease: "power2.inOut" },
+          14.1
+        );
+
+        // ===== CLOSE 14.2 - 15.0 =====
+        tl.set("#close-scene", { opacity: 1 }, 14.2);
+        tl.from(
+          "#close-lockup",
+          { y: 14, opacity: 0, duration: 0.4, ease: REVEAL },
+          14.3
+        );
+        // hold full stop, fade close at 14.85
+        tl.to(
+          "#close-scene",
+          { opacity: 0, duration: 0.15, ease: "power2.inOut" },
+          14.85
+        );
+
+        window.__timelines["april-brief"] = tl;
+      </script>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8" />
+<title>Driiva — Weekly Score</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;600;700&family=Inter:wght@400;500&family=JetBrains+Mono:wght@500&display=swap"
+  rel="stylesheet"
+/>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #050509;
+    color: #fff;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  [data-composition-id="weekly-score"] {
+    position: relative;
+    width: 1080px;
+    height: 1920px;
+    overflow: hidden;
+    background: #1a0533;
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* Animated radial gradient background */
+  .bg-gradient {
+    position: absolute;
+    inset: -10%;
+    background:
+      radial-gradient(
+        ellipse 70% 60% at 50% 45%,
+        #c45c13 0%,
+        #7a2f1f 35%,
+        #3a1a3a 65%,
+        #1a0533 100%
+      );
+    transform-origin: 50% 45%;
+    will-change: transform, filter;
+  }
+
+  .bg-vignette {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      ellipse 80% 80% at 50% 50%,
+      rgba(0, 0, 0, 0) 40%,
+      rgba(0, 0, 0, 0.45) 100%
+    );
+    pointer-events: none;
+  }
+
+  /* Scene content container — fills the scene, padding pushes content in */
+  .scene-content {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    padding: 320px 80px 200px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    box-sizing: border-box;
+    z-index: 2;
+  }
+
+  /* Glassmorphic card */
+  .score-card {
+    width: 100%;
+    max-width: 820px;
+    padding: 80px 72px 88px;
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.07);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow:
+      0 20px 60px rgba(0, 0, 0, 0.35),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 28px;
+    box-sizing: border-box;
+    will-change: opacity, transform, filter;
+  }
+
+  .score-label {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 18px;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #ffffff;
+    opacity: 0.6;
+    margin: 0;
+  }
+
+  .score-number {
+    font-family: 'Inter Tight', 'Inter', sans-serif;
+    font-size: 220px;
+    font-weight: 700;
+    line-height: 1;
+    color: #ffffff;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.04em;
+    margin: 8px 0 4px;
+    will-change: filter;
+  }
+
+  .score-rule {
+    width: 60%;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.15);
+    border: 0;
+    margin: 4px 0 8px;
+  }
+
+  .score-primary {
+    font-family: 'Inter', sans-serif;
+    font-size: 34px;
+    font-weight: 500;
+    color: #ffffff;
+    margin: 0;
+    text-align: center;
+    letter-spacing: -0.01em;
+  }
+
+  .score-subline {
+    font-family: 'Inter', sans-serif;
+    font-size: 26px;
+    font-weight: 400;
+    color: #ffffff;
+    opacity: 0.72;
+    margin: 0;
+    text-align: center;
+    letter-spacing: -0.005em;
+  }
+
+  /* Driiva logo */
+  .logo {
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    height: 32px;
+    width: auto;
+    opacity: 1;
+    z-index: 3;
+    will-change: opacity, transform;
+  }
+</style>
+</head>
+<body>
+
+<div
+  data-composition-id="weekly-score"
+  data-width="1080"
+  data-height="1920"
+  data-start="0"
+  data-duration="8"
+  data-track-index="0"
+>
+  <div class="bg-gradient" id="bg-gradient"></div>
+  <div class="bg-vignette"></div>
+
+  <div class="scene-content">
+    <div class="score-card" id="score-card">
+      <p class="score-label">Community safety score</p>
+      <div class="score-number" id="score-number">0</div>
+      <hr class="score-rule" />
+      <p class="score-primary">Your cohort this week.</p>
+      <p class="score-subline">Top 12% of all UK telematics drivers.</p>
+    </div>
+  </div>
+
+  <img
+    class="logo"
+    id="logo"
+    src="assets/driiva-logo-white.png"
+    alt="Driiva"
+  />
+
+  <!-- AUDIO: would load assets/solo-piano.mp3 @ volume 0.5, fade out last 1.5s -->
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+
+      // ---- Background: slow pulse loop (finite, matches 8s duration) ----
+      // One pulse cycle = 4s, so 2 cycles fit in the 8s composition.
+      const cycleDuration = 4;
+      const totalDuration = 8;
+      const pulseRepeats = Math.ceil(totalDuration / cycleDuration) - 1; // 1 repeat => 2 plays
+
+      tl.fromTo(
+        "#bg-gradient",
+        { scale: 1.0, filter: "brightness(0.85) saturate(1.0)" },
+        {
+          scale: 1.08,
+          filter: "brightness(1.1) saturate(1.15)",
+          duration: cycleDuration,
+          ease: "sine.inOut",
+          yoyo: true,
+          repeat: pulseRepeats,
+        },
+        0
+      );
+
+      // ---- Card: fade + lift in at 0.5s over 0.8s ----
+      tl.from(
+        "#score-card",
+        {
+          opacity: 0,
+          y: 30,
+          duration: 0.8,
+          ease: "power3.out",
+        },
+        0.5
+      );
+
+      // ---- Number: count 0 -> 87 starting at 1.5s over 1.5s ----
+      const counter = { val: 0 };
+      const numberEl = document.getElementById("score-number");
+      tl.to(
+        counter,
+        {
+          val: 87,
+          duration: 1.5,
+          ease: "power2.out",
+          onUpdate: function () {
+            if (numberEl) {
+              numberEl.textContent = Math.round(counter.val);
+            }
+          },
+        },
+        1.5
+      );
+
+      // ---- Logo: fade in at 3s ----
+      tl.from(
+        "#logo",
+        {
+          opacity: 0,
+          y: 12,
+          duration: 0.7,
+          ease: "power2.out",
+        },
+        3.0
+      );
+
+      // ---- Number glow pulse at 5s ----
+      // Expand a cool-blue drop-shadow, then release.
+      tl.fromTo(
+        "#score-number",
+        {
+          filter:
+            "drop-shadow(0 0 0px rgba(100,200,255,0.0)) drop-shadow(0 0 0px rgba(100,200,255,0.0))",
+        },
+        {
+          filter:
+            "drop-shadow(0 0 24px rgba(100,200,255,0.65)) drop-shadow(0 0 60px rgba(100,200,255,0.35))",
+          duration: 0.5,
+          ease: "power2.out",
+        },
+        5.0
+      );
+      tl.to(
+        "#score-number",
+        {
+          filter:
+            "drop-shadow(0 0 0px rgba(100,200,255,0.0)) drop-shadow(0 0 0px rgba(100,200,255,0.0))",
+          duration: 0.9,
+          ease: "power2.in",
+        },
+        5.5
+      );
+
+      // ---- Final scene fade-out (last 0.6s) ----
+      tl.to(
+        ["#score-card", "#logo"],
+        {
+          opacity: 0,
+          duration: 0.6,
+          ease: "power2.in",
+        },
+        7.4
+      );
+
+      window.__timelines["weekly-score"] = tl;
+    })();
+  </script>
+</div>
+
+</body>
+</html>

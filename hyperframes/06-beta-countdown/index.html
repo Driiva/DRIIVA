@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Driiva — Beta Countdown</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #0d0d1a;
+    font-family: 'Inter', sans-serif;
+    color: #ffffff;
+  }
+
+  [data-composition-id="beta-countdown"] {
+    position: relative;
+    width: 1080px;
+    height: 1080px;
+    background: #0d0d1a;
+    overflow: hidden;
+  }
+
+  .grid-overlay {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+
+  .centre-stack {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    padding: 0 40px;
+    box-sizing: border-box;
+  }
+
+  .count-number {
+    font-family: 'Inter Tight', sans-serif;
+    font-weight: 700;
+    font-size: 120px;
+    line-height: 1;
+    color: #ffffff;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+
+  .count-label {
+    margin-top: 24px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 500;
+    font-size: 18px;
+    color: #ffffff;
+    opacity: 0.6;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  .divider {
+    margin-top: 24px;
+    width: 800px;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  .remaining {
+    margin-top: 24px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 32px;
+    color: #4ecdc4;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .bottom-text {
+    position: absolute;
+    bottom: 80px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    font-size: 14px;
+    color: #ffffff;
+    opacity: 0.5;
+  }
+
+  .logo {
+    position: absolute;
+    right: 32px;
+    bottom: 32px;
+    height: 28px;
+    width: auto;
+  }
+</style>
+</head>
+<body>
+  <div data-composition-id="beta-countdown" data-width="1080" data-height="1080" data-start="0" data-duration="6" data-track-index="0">
+    <div class="grid-overlay"></div>
+
+    <div class="centre-stack">
+      <div class="count-number" id="count-number">0</div>
+      <div class="count-label" id="count-label">beta spots claimed</div>
+      <div class="divider" id="divider"></div>
+      <div class="remaining" id="remaining">188 remaining.</div>
+    </div>
+
+    <div class="bottom-text" id="bottom-text">iOS only &middot; UK only &middot; First come, first served.</div>
+
+    <img class="logo" id="logo" src="assets/driiva-logo-white.png" alt="Driiva" />
+
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+
+      // Count-up proxy — number element starts at "0", animates val 0 → 312 over 1.5s
+      const counter = { val: 0 };
+      const countEl = document.getElementById("count-number");
+
+      // Entrance: count number fades/scales in slightly before counter begins
+      tl.from("#count-number", {
+        opacity: 0,
+        scale: 0.92,
+        duration: 0.4,
+        ease: "power2.out"
+      }, 0.5);
+
+      // Count up 0 → 312 with ease-out
+      tl.to(counter, {
+        val: 312,
+        duration: 1.5,
+        ease: "power3.out",
+        onUpdate: () => {
+          countEl.textContent = Math.round(counter.val);
+        }
+      }, 0.5);
+
+      // Label fades in
+      tl.from("#count-label", {
+        opacity: 0,
+        y: 10,
+        duration: 0.5,
+        ease: "power2.out"
+      }, 1.0);
+
+      // Divider fades in with expo ease
+      tl.from("#divider", {
+        opacity: 0,
+        scaleX: 0.6,
+        transformOrigin: "center center",
+        duration: 0.7,
+        ease: "expo.out"
+      }, 2.0);
+
+      // Remaining teal text — fade in with y translate
+      tl.from("#remaining", {
+        opacity: 0,
+        y: 15,
+        duration: 0.6,
+        ease: "power3.out"
+      }, 2.5);
+
+      // Bottom small text at 3.5s
+      tl.from("#bottom-text", {
+        opacity: 0,
+        duration: 0.6,
+        ease: "power2.out"
+      }, 3.5);
+
+      // Logo entrance at 5s with back.out
+      tl.from("#logo", {
+        opacity: 0,
+        scale: 0.85,
+        duration: 0.5,
+        ease: "back.out(1.5)"
+      }, 5.0);
+
+      window.__timelines["beta-countdown"] = tl;
+    </script>
+  </div>
+</body>
+</html>

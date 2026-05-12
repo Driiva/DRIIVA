@@ -5,6 +5,29 @@
 
 ## Entries
 
+### 2026-04-18 – Design System Canonicalized + Marketing Editorial Pass
+
+- New `design-system/` directory at repo root is now the canonical source for Driiva brand + UI tokens:
+  - `design-system/colors_and_type.css` — ink ladder, brand gradient, glass surfaces, radii, shadows, motion, type stack (Inter Tight / Inter / JetBrains Mono). Matches `.h-display`, `.hero-sub`, `.eyebrow` spec used by marketing-site.
+  - `design-system/README.md` — voice/tone rules (sentence case, em dashes, UK spelling, no exclamation marks/emoji), visual foundations (two philosophies: marketing glass vs. product instrument), animation curves (`--spring`, `--ease-fast`), iconography (Lucide, currentColor, 24×24, stroke-width 2).
+  - `design-system/source/` — `Driiva_Figma_Design_System_Rules.md`, `Driiva_Instrument_Philosophy.md`.
+  - `design-system/assets/` — 14 brand PNGs (gradient + white wordmarks v1/v2/v3, ii-mark, d-mark, app-icon-artifact, gradient background 1563×1563).
+- Logo propagation:
+  - `marketing-site/assets/driiva-logo.png` → swapped to canonical `logo-wordmark-gradient.png` (already matching — confirmed identical bytes).
+  - `marketing-site/assets/gradient-background.png` → canonical 1563×1563 brand gradient.
+  - `client/src/assets/logo-wordmark-white-v3.png`, `logo-wordmark-gradient.png`, `logo-ii-mark.png` added.
+  - `client/src/components/DriivaLogo.tsx` → imports `logo-wordmark-white-v3.png` (replaces legacy `driiva-logo-CLEAR-FINAL.png`).
+- Marketing hero editorial pass (`marketing-site/index.html`):
+  - Hero logo `max-width 280px → 200px`, `width 60% → 42%`, `margin-bottom 40px → 28px`; nav logo `height 28px → 24px`.
+  - Vertical rhythm rebalanced: logo→eyebrow 28px, eyebrow→h1 28px, h1→sub 20px, sub→form 36px.
+  - `.hero h1` and `.hero-sub` type specs now inherit from canonical global (`clamp(2.5rem, 6vw, 4.25rem) / -0.035em / 1.02` for h1; `clamp(1rem, 1.6vw, 1.15rem) / 1.55` for sub) — earlier tighter overrides reverted to stay within canonical `.h-display` / `.hero-sub`.
+
+**Not yet pushed to the live Framer site** — Framer has no automation API available here. See ROADMAP → "Marketing site sync".
+
+**Not touched yet** — mobile app theme tokens in `mobile/theme.ts` already conform to canonical "instrument" mode per design system (solid dark surfaces, single `#5b4dc9` accent). Client Vite SPA theme still uses its own variable names — a follow-up task is to align client CSS variables to `design-system/colors_and_type.css` names without breaking existing shadcn usages.
+
+---
+
 ### 2026-03-31 – Notification Bell Fix + Post-Merge Test Alignment
 
 - Fixed dashboard notification bell button (had no onClick handler — was a dead button)
