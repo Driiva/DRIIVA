@@ -11,6 +11,7 @@ import { useFonts } from 'expo-font';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { Colors } from '@/constants/theme';
+import { isExpoGo } from '@/lib/firebase';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -31,12 +32,17 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     if (loading) return;
 
     const inAuthGroup = segments[0] === '(auth)';
+    const inOnboarding = segments[0] === 'onboarding';
+
+    // Expo Go preview: skip auth, drop the mock user straight into onboarding.
+    if (isExpoGo) {
+      if (!inOnboarding) router.replace('/onboarding');
+      return;
+    }
 
     if (!user && !inAuthGroup) {
-      // Not logged in, redirect to sign-in
       router.replace('/(auth)/signin');
     } else if (user && inAuthGroup) {
-      // Logged in, redirect to main app
       if (user.onboardingComplete) {
         router.replace('/(tabs)/dashboard');
       } else {

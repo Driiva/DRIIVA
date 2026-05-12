@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import firestore from '@react-native-firebase/firestore';
+import { firestore } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Colors, Spacing, FontSize, BorderRadius, scoreColor } from '@/constants/theme';
 

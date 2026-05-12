@@ -8,7 +8,7 @@ import {
   View, Text, ScrollView, RefreshControl, StyleSheet, Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import firestore from '@react-native-firebase/firestore';
+import { firestore } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Colors, Spacing, FontSize, BorderRadius, scoreColor } from '@/constants/theme';
 

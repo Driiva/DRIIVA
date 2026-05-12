@@ -3,8 +3,7 @@
  * Uses @react-native-firebase/auth instead of the web Firebase SDK.
  */
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
-import firestore from '@react-native-firebase/firestore';
+import { auth, firestore, FirebaseUser } from '@/lib/firebase';
 import * as SecureStore from 'expo-secure-store';
 
 interface User {
@@ -23,6 +22,7 @@ interface AuthContextType {
   signup: (email: string, password: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  markOnboardingComplete: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Listen to Firebase auth state
   useEffect(() => {
-    const unsubscribe = auth().onAuthStateChanged(async (firebaseUser: FirebaseAuthTypes.User | null) => {
+    const unsubscribe = auth().onAuthStateChanged(async (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
         const userData = await resolveUser(firebaseUser);
         setUser(userData);
@@ -85,8 +85,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await auth().sendPasswordResetEmail(email);
   }, []);
 
+  const markOnboardingComplete = useCallback(async () => {
+    const fbUser = auth().currentUser;
+    if (!fbUser) return;
+    await firestore().collection('users').doc(fbUser.uid).update({
+      onboardingComplete: true,
+      'onboarding.completedAt': firestore.FieldValue.serverTimestamp(),
+    });
+    setUser(prev => {
+      if (!prev) return null;
+      const updated = { ...prev, onboardingComplete: true };
+      SecureStore.setItemAsync(AUTH_CACHE_KEY, JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout, resetPassword }}>
+    <AuthContext.Provider value={{ user, loading, login, signup, logout, resetPassword, markOnboardingComplete }}>
       {children}
     </AuthContext.Provider>
   );
@@ -99,7 +114,7 @@ export function useAuth() {
 }
 
 // Resolve Firebase user to Driiva user shape
-async function resolveUser(fbUser: FirebaseAuthTypes.User): Promise<User> {
+async function resolveUser(fbUser: FirebaseUser): Promise<User> {
   const doc = await firestore().collection('users').doc(fbUser.uid).get();
   const data = doc.data();
 
