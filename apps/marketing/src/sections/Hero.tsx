@@ -60,10 +60,10 @@ export function Hero() {
     for (const g of ghostEls) g.style.opacity = '0';
     animate(ghostEls, {
       opacity: (el: HTMLElement) => {
-        if (el.classList.contains('wm-g1')) return [0, 0.5];
-        if (el.classList.contains('wm-g2')) return [0, 0.32];
-        if (el.classList.contains('wm-g3')) return [0, 0.18];
-        return [0, 0.1];
+        if (el.classList.contains('wm-g1')) return [0, 0.32];
+        if (el.classList.contains('wm-g2')) return [0, 0.2];
+        if (el.classList.contains('wm-g3')) return [0, 0.11];
+        return [0, 0.05];
       },
       duration: 900,
       ease: 'cubicBezier(0.16, 1, 0.3, 1)',
@@ -155,6 +155,10 @@ export function Hero() {
     <header className="hero" data-section="hero">
       <div className="container">
         <p ref={eyebrowRef} className="hero-eyebrow-line" style={{ opacity: 0 }}>
+          <span className="trust-chip" data-testid="trust-chip">
+            117+ drivers on the waitlist · UK beta launching soon
+          </span>
+          <br />
           Insurance, simplified.
         </p>
 

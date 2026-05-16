@@ -30,27 +30,30 @@ export function Nav() {
   }
 
   return (
-    <>
-      <a href="#" className="nav-mark" aria-label="Driiva home" onClick={(e) => handleAnchor(e, '#')}>
-        <img src="/brand/logo-ii-mark.png" alt="" />
+    <nav className="nav-pill" aria-label="Primary">
+      <a
+        href="#"
+        className="nav-pill-logo"
+        aria-label="Driiva home"
+        onClick={(e) => handleAnchor(e, '#')}
+      >
+        <img src="/brand/logo-wordmark-white-v3.png" alt="Driiva" />
       </a>
-      <nav className="nav" aria-label="Primary">
-        <div className="nav-links">
-          {LINKS.map((l) => (
-            <a key={l.href} href={l.href} className="nav-link" onClick={(e) => handleAnchor(e, l.href)}>
-              {l.label}
-            </a>
-          ))}
-        </div>
-      </nav>
+      <div className="nav-links">
+        {LINKS.map((l) => (
+          <a key={l.href} href={l.href} className="nav-link" onClick={(e) => handleAnchor(e, l.href)}>
+            {l.label}
+          </a>
+        ))}
+      </div>
       <a
         href="#cta-final"
-        className="nav-cta-right"
+        className="nav-pill-cta"
         onClick={(e) => handleAnchor(e, '#cta-final')}
         data-testid="nav-cta"
       >
         Join Waitlist
       </a>
-    </>
+    </nav>
   );
 }
