@@ -1,0 +1,191 @@
+@import './tokens.css';
+
+@import '@fontsource/inter-tight/400.css';
+@import '@fontsource/inter-tight/500.css';
+@import '@fontsource/inter-tight/600.css';
+@import '@fontsource/inter-tight/700.css';
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/jetbrains-mono/400.css';
+@import '@fontsource/jetbrains-mono/500.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    background: var(--ink);
+    color: var(--text-1);
+    font-family: var(--font-ui);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    overflow-x: hidden;
+  }
+
+  ::selection {
+    background: var(--accent-glow);
+    color: var(--white);
+  }
+
+  /* Tabular figures for numerals across the site */
+  .tabular {
+    font-feature-settings: 'tnum' 1, 'lnum' 1;
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+
+  .mono {
+    font-family: var(--font-mono);
+    letter-spacing: -0.01em;
+  }
+
+  /* Hairline divider helper */
+  .hairline {
+    border-color: var(--hairline-hi);
+  }
+}
+
+@layer components {
+  .gradient-layer {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background-image: url('/brand/gradient-bg.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    will-change: transform;
+  }
+
+  .ink-layer {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(180deg, rgba(5, 5, 9, 0.55) 0%, rgba(5, 5, 9, 0.85) 100%);
+    pointer-events: none;
+  }
+
+  .glass {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--hairline-hi);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+  }
+
+  .surface {
+    background: #12111f;
+    border: 1px solid var(--hairline);
+  }
+
+  .ghost-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.875rem 1.5rem;
+    border-radius: var(--r);
+    border: 1px solid var(--hairline-bright);
+    background: rgba(255, 255, 255, 0.02);
+    color: var(--text-1);
+    font-family: var(--font-ui);
+    font-size: 0.9375rem;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+    cursor: pointer;
+    transition:
+      background 200ms var(--ease-out-quint),
+      border-color 200ms var(--ease-out-quint),
+      transform 240ms var(--ease-out-quint);
+  }
+
+  .ghost-cta:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.24);
+  }
+
+  .ghost-cta:active {
+    transform: scale(0.98);
+  }
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--text-3);
+  }
+
+  .display-1 {
+    font-family: var(--font-display);
+    font-size: clamp(2.5rem, 7vw, 5.25rem);
+    font-weight: 500;
+    line-height: 1.02;
+    letter-spacing: -0.03em;
+  }
+
+  .display-2 {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 500;
+    line-height: 1.04;
+    letter-spacing: -0.025em;
+  }
+
+  .lede {
+    font-family: var(--font-ui);
+    font-size: clamp(1.0625rem, 1.6vw, 1.25rem);
+    line-height: 1.5;
+    color: var(--text-2);
+    max-width: 60ch;
+  }
+}
+
+/* Cursor follower */
+.cursor-follower {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--white);
+  pointer-events: none;
+  z-index: 9999;
+  mix-blend-mode: difference;
+  transform: translate3d(-100px, -100px, 0);
+  will-change: transform;
+}
+
+@media (hover: none), (pointer: coarse) {
+  .cursor-follower {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .cursor-follower {
+    display: none;
+  }
+}

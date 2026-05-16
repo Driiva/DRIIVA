@@ -44,3 +44,7 @@ RUNBOOK.md
 .playwright-mcp/
 driiva-design-system/
 CONTEXT.md
+
+# Overnight build run logs (transient, not artifacts)
+.overnight-logs/
+apps/*/lighthouse.json

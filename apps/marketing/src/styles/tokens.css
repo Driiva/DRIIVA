@@ -1,0 +1,32 @@
+:root {
+  --ink: #050509;
+  --plum: #1a0f1f;
+  --white: #fafafa;
+  --text-1: #fafafa;
+  --text-2: rgba(250, 250, 250, 0.72);
+  --text-3: rgba(250, 250, 250, 0.48);
+  --accent: #6b5fdc;
+  --accent-iris: #6366f1;
+  --accent-glow: rgba(107, 95, 220, 0.4);
+  --ok: #10b981;
+  --teal: #2dd4bf;
+  --warn: #f59e0b;
+  --err: #ef4444;
+  --b-amber: #d4850a;
+  --b-burnt: #a04c2a;
+  --b-violet: #6b3fa0;
+  --b-indigo: #3b2d8b;
+  --hairline: rgba(255, 255, 255, 0.06);
+  --hairline-hi: rgba(255, 255, 255, 0.10);
+  --hairline-bright: rgba(255, 255, 255, 0.16);
+  --r-sm: 10px;
+  --r: 14px;
+  --r-lg: 18px;
+  --r-xl: 24px;
+  --font-display: 'Inter Tight', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out-quint: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
