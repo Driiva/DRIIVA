@@ -1,107 +1,136 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { animate, createTimeline, prefersReducedMotion } from '@/lib/motion';
 
+type Status = 'idle' | 'submitting' | 'success' | 'error';
+
+function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+}
+
 export function Hero() {
-  const wordmarkRef = useRef<HTMLImageElement | null>(null);
-  const subheadRef = useRef<HTMLParagraphElement | null>(null);
-  const ctaRef = useRef<HTMLAnchorElement | null>(null);
-  const noiseRef = useRef<SVGSVGElement | null>(null);
+  const logoRef = useRef<HTMLDivElement | null>(null);
+  const eyebrowRef = useRef<HTMLDivElement | null>(null);
+  const h1Ref = useRef<HTMLHeadingElement | null>(null);
+  const subRef = useRef<HTMLParagraphElement | null>(null);
+  const formRef = useRef<HTMLFormElement | null>(null);
+  const guaranteeRef = useRef<HTMLDivElement | null>(null);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const [email, setEmail] = useState('');
+  const [status, setStatus] = useState<Status>('idle');
+  const [message, setMessage] = useState('');
 
   useEffect(() => {
-    const wordmark = wordmarkRef.current;
-    const subhead = subheadRef.current;
-    const cta = ctaRef.current;
-    const noise = noiseRef.current;
-    if (!wordmark || !subhead || !cta) return;
-
+    const refs = [logoRef, eyebrowRef, h1Ref, subRef, formRef, guaranteeRef];
+    const targets: HTMLElement[] = [];
+    for (const r of refs) {
+      if (r.current) targets.push(r.current);
+    }
+    if (targets.length === 0) return;
     if (prefersReducedMotion()) {
-      for (const el of [wordmark, subhead, cta]) {
+      for (const el of targets) {
         el.style.opacity = '1';
         el.style.transform = 'none';
       }
       return;
     }
-
     const tl = createTimeline({
-      defaults: { ease: 'cubicBezier(0.16, 1, 0.3, 1)', duration: 1100 },
+      defaults: { ease: 'cubicBezier(0.22, 1, 0.36, 1)', duration: 900 },
     });
-    tl.add(wordmark, {
+    tl.add(logoRef.current as Element, {
       opacity: [0, 1],
-      scale: [1.05, 1],
-      translateX: [-12, 0],
+      translateY: [20, 0],
+      scale: [0.95, 1],
+      duration: 1000,
     })
-      .add(
-        subhead,
-        { opacity: [0, 1], translateY: [16, 0], duration: 800 },
-        '-=300',
-      )
-      .add(
-        cta,
-        { opacity: [0, 1], translateY: [12, 0], duration: 700 },
-        '-=400',
-      );
-
-    let noiseHandle: ReturnType<typeof animate> = null;
-    if (noise) {
-      noiseHandle = animate(noise, {
-        translateX: [-20, 20],
-        translateY: [-10, 10],
-        duration: 60000,
-        ease: 'inOutSine',
-        loop: true,
-        direction: 'alternate',
-      });
-    }
-
-    return () => {
-      noiseHandle?.pause?.();
-    };
+      .add(eyebrowRef.current as Element, { opacity: [0, 1], translateY: [20, 0] }, '-=700')
+      .add(h1Ref.current as Element, { opacity: [0, 1], translateY: [20, 0] }, '-=750')
+      .add(subRef.current as Element, { opacity: [0, 1], translateY: [20, 0] }, '-=750')
+      .add(formRef.current as Element, { opacity: [0, 1], translateY: [20, 0] }, '-=750')
+      .add(guaranteeRef.current as Element, { opacity: [0, 1], translateY: [20, 0] }, '-=750');
   }, []);
 
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setMessage('');
+    if (!isValidEmail(email)) {
+      setStatus('error');
+      setMessage("That email doesn't look right. Give it another go.");
+      return;
+    }
+    setStatus('submitting');
+    window.setTimeout(() => {
+      setStatus('success');
+      setMessage("You're on the list. We'll be in touch soon.");
+      setEmail('');
+      const btn = buttonRef.current;
+      if (btn && !prefersReducedMotion()) {
+        animate(btn, {
+          scale: [1, 1.04, 1],
+          duration: 380,
+          ease: 'cubicBezier(0.22, 1, 0.36, 1)',
+        });
+      }
+    }, 800);
+  }
+
   return (
-    <section
-      data-section="hero"
-      className="relative flex min-h-screen flex-col items-center justify-center px-6 py-24"
-    >
-      <svg
-        ref={noiseRef}
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.05]"
-      >
-        <filter id="hero-noise">
-          <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" />
-          <feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.6 0" />
-        </filter>
-        <rect width="100%" height="100%" filter="url(#hero-noise)" />
-      </svg>
-
-      <img
-        ref={wordmarkRef}
-        src="/brand/driiva-wordmark.png"
-        alt="driiva"
-        className="block h-auto w-full max-w-[min(72vw,920px)] select-none"
-        style={{ opacity: 0 }}
-        draggable={false}
-        {...({ fetchpriority: 'high' } as Record<string, string>)}
-      />
-
-      <p
-        ref={subheadRef}
-        className="lede mt-10 text-center"
-        style={{ opacity: 0 }}
-      >
-        AI-powered. Community-driven.
-      </p>
-
-      <a
-        ref={ctaRef}
-        href="#waitlist"
-        className="ghost-cta mt-12"
-        style={{ opacity: 0 }}
-      >
-        join the waitlist
-        <span aria-hidden="true" className="mono">→</span>
-      </a>
-    </section>
+    <header className="hero" data-section="hero">
+      <div className="container hero-inner">
+        <div ref={logoRef} className="hero-logo" style={{ opacity: 0 }}>
+          <img src="/brand/driiva-logo.png" alt="Driiva" />
+        </div>
+        <div ref={eyebrowRef} className="hero-eyebrow" style={{ opacity: 0 }}>
+          <span className="eyebrow">117+ drivers on the waitlist · UK beta launching soon</span>
+        </div>
+        <h1 ref={h1Ref} style={{ opacity: 0 }}>
+          Drive well. <span className="accent-gradient">Get money back.</span>
+        </h1>
+        <p ref={subRef} className="hero-sub" style={{ opacity: 0 }}>
+          Join 500 early drivers testing AI-powered telematics insurance that rewards safe driving with
+          real cash refunds, not points, not vouchers.
+        </p>
+        <form
+          ref={formRef}
+          className="waitlist-form"
+          onSubmit={handleSubmit}
+          noValidate
+          style={{ opacity: 0 }}
+          data-testid="hero-form"
+        >
+          <input
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            required
+            aria-label="Email address"
+            placeholder="your@email.co.uk"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            disabled={status === 'submitting' || status === 'success'}
+          />
+          <button
+            ref={buttonRef}
+            type="submit"
+            disabled={status === 'submitting' || status === 'success'}
+          >
+            {status === 'submitting' ? 'Adding you…' : status === 'success' ? "You're in" : 'Claim a beta spot'}
+          </button>
+        </form>
+        <div
+          className={`form-status${message ? ' visible' : ''}${status === 'error' ? ' error' : ''}`}
+          role="status"
+          aria-live="polite"
+        >
+          {message}
+        </div>
+        <div ref={guaranteeRef} className="hero-guarantee" style={{ opacity: 0 }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M9 12l2 2 4-4" />
+            <path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z" />
+          </svg>
+          Early Refund Guarantee: if our models don't deliver, we refund early.
+        </div>
+      </div>
+    </header>
   );
 }
