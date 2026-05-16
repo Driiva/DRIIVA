@@ -38,6 +38,15 @@ describe('Hero', () => {
     expect(screen.getByText(/Community-driven\./i)).toHaveClass('italic');
   });
 
+  it('places the wordmark above the headline so the headline reads as the wordmark sub-claim', () => {
+    render(<Hero />);
+    const wordmark = screen.getByTestId('hero-wordmark');
+    const headline = screen.getByRole('heading', { level: 1 });
+    const order = wordmark.compareDocumentPosition(headline);
+    // DOCUMENT_POSITION_FOLLOWING = 4, headline must come after the wordmark
+    expect(order & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('renders the motion-blur wordmark with five layered images', () => {
     render(<Hero />);
     const wordmark = screen.getByTestId('hero-wordmark');
