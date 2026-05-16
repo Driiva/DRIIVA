@@ -23,7 +23,7 @@ if (typeof window !== 'undefined' && !window.matchMedia) {
   });
 }
 
-// IntersectionObserver mock — tests can spy on the registered callbacks
+// IntersectionObserver mock, tests can spy on the registered callbacks
 class IOMock {
   callback: IntersectionObserverCallback;
   static instances: IOMock[] = [];

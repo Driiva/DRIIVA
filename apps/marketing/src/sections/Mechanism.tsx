@@ -87,7 +87,7 @@ export function Mechanism() {
       </h2>
       <p className="lede mb-16">
         Premium flows into a community pool. Claims pay out of the pool.
-        Surplus, the bit nobody used, comes back to safe drivers.
+        Surplus, the bit nobody used, comes back to drivers.
       </p>
 
       <div className="surface relative overflow-hidden rounded-xl p-8">

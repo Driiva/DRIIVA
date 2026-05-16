@@ -90,7 +90,7 @@ export function Hero() {
         className="lede mt-10 text-center"
         style={{ opacity: 0 }}
       >
-        Safe drivers, systematically mispriced. We fix that.
+        AI-powered. Community-driven.
       </p>
 
       <a

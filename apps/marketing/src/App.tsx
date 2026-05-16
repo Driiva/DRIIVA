@@ -11,10 +11,10 @@ import { Footer } from '@/sections/Footer';
 export default function App() {
   useLenis();
   useCursor();
+  // gradient-layer and ink-layer are rendered statically in index.html so they
+  // paint immediately on CSS resolve, before this bundle executes. Helps LCP.
   return (
     <>
-      <div className="gradient-layer" aria-hidden="true" />
-      <div className="ink-layer" aria-hidden="true" />
       <main>
         <Hero />
         <Problem />

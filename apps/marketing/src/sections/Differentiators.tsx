@@ -54,9 +54,9 @@ const PILLARS: readonly Pillar[] = [
     icon: IconPhone,
   },
   {
-    id: 'transparent',
-    title: 'Transparent',
-    body: 'You can see exactly why your premium moves. Every signal, every score.',
+    id: 'explainable-ai',
+    title: 'Explainable AI',
+    body: 'Every signal scored, every adjustment shown. You see why your premium moves, not just the result.',
     icon: IconEye,
   },
   {
@@ -68,7 +68,7 @@ const PILLARS: readonly Pillar[] = [
   {
     id: 'community-pool',
     title: 'Community-pool',
-    body: 'Premium funds claims. Surplus comes back to safe drivers, not shareholders.',
+    body: 'Premium funds claims. Surplus comes back to drivers, not shareholders.',
     icon: IconPool,
   },
 ] as const;

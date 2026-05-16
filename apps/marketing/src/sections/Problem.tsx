@@ -13,7 +13,7 @@ interface Stat {
 const STATS: readonly Stat[] = [
   { value: 75, suffix: '%', claim: 'of young UK drivers pay more than their risk justifies.' },
   { prefix: '£', value: 16.8, suffix: 'B', decimals: 1, claim: 'in motor premiums paid by UK drivers last year.' },
-  { value: 0, claim: 'mainstream insurers refund the safe-driving surplus today.' },
+  { value: 0, claim: 'mainstream insurers return premium surplus to their community.' },
 ] as const;
 
 function formatStat(value: number, stat: Stat): string {

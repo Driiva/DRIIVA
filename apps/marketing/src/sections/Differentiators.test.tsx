@@ -40,7 +40,7 @@ describe('Differentiators', () => {
   it('renders the four pillars', () => {
     render(<Differentiators />);
     expect(screen.getByTestId('pillar-no-hardware')).toBeInTheDocument();
-    expect(screen.getByTestId('pillar-transparent')).toBeInTheDocument();
+    expect(screen.getByTestId('pillar-explainable-ai')).toBeInTheDocument();
     expect(screen.getByTestId('pillar-shariah-compliant')).toBeInTheDocument();
     expect(screen.getByTestId('pillar-community-pool')).toBeInTheDocument();
   });

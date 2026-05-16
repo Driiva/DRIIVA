@@ -39,7 +39,7 @@ describe('Hero', () => {
     render(<Hero />);
     expect(screen.getByAltText('driiva')).toBeInTheDocument();
     expect(
-      screen.getByText(/safe drivers, systematically mispriced/i),
+      screen.getByText(/AI-powered\. Community-driven\./i),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('link', { name: /join the waitlist/i }),
