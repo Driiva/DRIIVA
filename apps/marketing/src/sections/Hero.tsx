@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { animate, createTimeline, prefersReducedMotion } from '@/lib/motion';
+import { LiveStrip } from './LiveStrip';
+import { PhoneFrame } from './PhoneFrame';
 
 type Status = 'idle' | 'submitting' | 'success' | 'error';
 
@@ -8,6 +10,7 @@ function isValidEmail(email: string): boolean {
 }
 
 export function Hero() {
+  const liveStripRef = useRef<HTMLDivElement | null>(null);
   const eyebrowRef = useRef<HTMLParagraphElement | null>(null);
   const wordmarkRef = useRef<HTMLDivElement | null>(null);
   const ghostsRef = useRef<HTMLDivElement | null>(null);
@@ -16,26 +19,28 @@ export function Hero() {
   const formRef = useRef<HTMLFormElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const guaranteeRef = useRef<HTMLDivElement | null>(null);
-  const formRevealedRef = useRef(false);
 
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<Status>('idle');
   const [message, setMessage] = useState('');
 
-  // Cinematic hero entrance with anime.js. Order matches the canonical
-  // composition: eyebrow first, then the wordmark scales and fades in
-  // as the anchor, then the headline lands tightly underneath, then
-  // the subhead. The form + guarantee stay hidden until the user
-  // begins to scroll, so the wordmark gets a moment to breathe.
+  // Hero entrance: live strip → eyebrow → wordmark → headline → form stack.
+  // The phone frame self-reveals via its own IntersectionObserver, on a
+  // parallel track so the right column lands at roughly the same moment
+  // as the wordmark settles.
   useEffect(() => {
+    const liveStrip = liveStripRef.current;
     const eyebrow = eyebrowRef.current;
     const wordmark = wordmarkRef.current;
     const ghosts = ghostsRef.current;
     const headline = headlineRef.current;
-    if (!eyebrow || !wordmark || !ghosts || !headline) return;
+    const sub = subRef.current;
+    const form = formRef.current;
+    const guarantee = guaranteeRef.current;
+    if (!liveStrip || !eyebrow || !wordmark || !ghosts || !headline) return;
 
     if (prefersReducedMotion()) {
-      for (const el of [eyebrow, wordmark, headline, subRef.current, formRef.current, guaranteeRef.current]) {
+      for (const el of [liveStrip, eyebrow, wordmark, headline, sub, form, guarantee]) {
         if (el) {
           el.style.opacity = '1';
           el.style.transform = 'none';
@@ -46,8 +51,9 @@ export function Hero() {
       return;
     }
 
-    const tl = createTimeline({ defaults: { ease: 'cubicBezier(0.16, 1, 0.3, 1)', duration: 800 } });
-    tl.add(eyebrow, { opacity: [0, 1], translateY: [16, 0] })
+    const tl = createTimeline({ defaults: { ease: 'cubicBezier(0.16, 1, 0.3, 1)', duration: 750 } });
+    tl.add(liveStrip, { opacity: [0, 1], translateY: [12, 0] })
+      .add(eyebrow, { opacity: [0, 1], translateY: [16, 0] }, '-=350')
       .add(
         wordmark,
         { opacity: [0, 1], translateY: [28, 0], scale: [0.92, 1], duration: 1100 },
@@ -55,7 +61,15 @@ export function Hero() {
       )
       .add(headline, { opacity: [0, 1], translateY: [22, 0], duration: 850 }, '-=550');
 
-    // Motion-blur ghost trail eases in after the wordmark lands
+    const formStack: HTMLElement[] = [];
+    if (sub) formStack.push(sub);
+    if (form) formStack.push(form);
+    if (guarantee) formStack.push(guarantee);
+    if (formStack.length > 0) {
+      tl.add(formStack, { opacity: [0, 1], translateY: [18, 0], duration: 800 }, '-=350');
+    }
+
+    // Motion-blur ghost trail eases in after the wordmark lands.
     const ghostEls = Array.from(ghosts.querySelectorAll<HTMLImageElement>('.wm-ghost'));
     for (const g of ghostEls) g.style.opacity = '0';
     animate(ghostEls, {
@@ -69,62 +83,6 @@ export function Hero() {
       ease: 'cubicBezier(0.16, 1, 0.3, 1)',
       delay: (_: unknown, i: number) => 1000 + i * 110,
     } as never);
-  }, []);
-
-  // Scroll-triggered reveal of the form + sub + guarantee, anime.js driven.
-  useEffect(() => {
-    function revealFormStack() {
-      if (formRevealedRef.current) return;
-      const sub = subRef.current;
-      const form = formRef.current;
-      const guarantee = guaranteeRef.current;
-      const targets: Element[] = [];
-      if (sub) targets.push(sub);
-      if (form) targets.push(form);
-      if (guarantee) targets.push(guarantee);
-      if (targets.length === 0) return;
-      formRevealedRef.current = true;
-      if (prefersReducedMotion()) {
-        for (const el of targets) {
-          if (el instanceof HTMLElement) {
-            el.style.opacity = '1';
-            el.style.transform = 'none';
-          }
-        }
-        return;
-      }
-      animate(targets, {
-        opacity: [0, 1],
-        translateY: [40, 0],
-        duration: 900,
-        ease: 'cubicBezier(0.16, 1, 0.3, 1)',
-        delay: (_: unknown, i: number) => i * 110,
-      } as never);
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('wheel', onScroll);
-      window.removeEventListener('touchmove', onScroll);
-      window.removeEventListener('keydown', onKey);
-    }
-    function onScroll() {
-      revealFormStack();
-    }
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'PageDown' || e.key === 'ArrowDown' || e.key === ' ' || e.key === 'End') {
-        revealFormStack();
-      }
-    }
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('wheel', onScroll, { passive: true });
-    window.addEventListener('touchmove', onScroll, { passive: true });
-    window.addEventListener('keydown', onKey);
-    const fallback = window.setTimeout(revealFormStack, 3600);
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('wheel', onScroll);
-      window.removeEventListener('touchmove', onScroll);
-      window.removeEventListener('keydown', onKey);
-      window.clearTimeout(fallback);
-    };
   }, []);
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -154,11 +112,9 @@ export function Hero() {
   return (
     <header className="hero" data-section="hero">
       <div className="container">
+        <LiveStrip ref={liveStripRef} />
+
         <p ref={eyebrowRef} className="hero-eyebrow-line" style={{ opacity: 0 }}>
-          <span className="trust-chip" data-testid="trust-chip">
-            117+ drivers on the waitlist · UK beta launching soon
-          </span>
-          <br />
           Insurance, simplified.
         </p>
 
@@ -187,63 +143,75 @@ export function Hero() {
           AI-Powered. <span className="italic">Community-driven.</span>
         </h1>
 
-        <p ref={subRef} className="hero-sub" style={{ opacity: 0 }}>
-          Ready for insurance that rewards you?
-          <br />
-          Enter your email for early access.
-        </p>
+        <div className="hero-grid">
+          <div className="hero-grid-left">
+            <p ref={subRef} className="hero-sub" style={{ opacity: 0 }}>
+              Ready for insurance that rewards you?
+              <br />
+              Enter your email for early access.
+            </p>
 
-        <form
-          ref={formRef}
-          className="waitlist-form"
-          onSubmit={handleSubmit}
-          noValidate
-          style={{ opacity: 0 }}
-          data-testid="hero-form"
-        >
-          <input
-            type="email"
-            inputMode="email"
-            autoComplete="email"
-            required
-            aria-label="Email address"
-            placeholder="your@email.co.uk"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            disabled={status === 'submitting' || status === 'success'}
-          />
-          <button
-            ref={buttonRef}
-            type="submit"
-            disabled={status === 'submitting' || status === 'success'}
-          >
-            {status === 'submitting' ? 'Adding you' : status === 'success' ? "You're in" : 'Get Early Access'}
-          </button>
-        </form>
-        <div
-          className={`form-status ${status === 'error' ? 'err' : status === 'success' ? 'ok' : ''}`}
-          role="status"
-          aria-live="polite"
-        >
-          {message}
-        </div>
+            <form
+              ref={formRef}
+              className="waitlist-form"
+              onSubmit={handleSubmit}
+              noValidate
+              style={{ opacity: 0 }}
+              data-testid="hero-form"
+            >
+              <input
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                required
+                aria-label="Email address"
+                placeholder="your@email.co.uk"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={status === 'submitting' || status === 'success'}
+              />
+              <button
+                ref={buttonRef}
+                type="submit"
+                disabled={status === 'submitting' || status === 'success'}
+              >
+                {status === 'submitting'
+                  ? 'Adding you'
+                  : status === 'success'
+                  ? "You're in"
+                  : 'Get Early Access'}
+              </button>
+            </form>
+            <div
+              className={`form-status ${status === 'error' ? 'err' : status === 'success' ? 'ok' : ''}`}
+              role="status"
+              aria-live="polite"
+            >
+              {message}
+            </div>
 
-        <div ref={guaranteeRef} className="hero-guarantee" style={{ opacity: 0 }}>
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M9 12l2 2 4-4" />
-            <path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9c2.3 0 4.4.86 6 2.28" />
-          </svg>
-          Early Refund Guarantee. If our models don't deliver, we refund early.
+            <div ref={guaranteeRef} className="hero-guarantee" style={{ opacity: 0 }}>
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M9 12l2 2 4-4" />
+                <path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9c2.3 0 4.4.86 6 2.28" />
+              </svg>
+              Early Refund Guarantee. If our models don't deliver, we refund early.
+            </div>
+          </div>
+
+          <div className="hero-grid-right">
+            <PhoneFrame />
+          </div>
         </div>
       </div>
     </header>

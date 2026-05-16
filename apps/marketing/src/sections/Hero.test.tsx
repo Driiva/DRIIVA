@@ -15,6 +15,16 @@ vi.mock('animejs', () => {
 
 import { Hero } from './Hero';
 
+class FakeIntersectionObserver {
+  observe = vi.fn();
+  disconnect = vi.fn();
+  unobserve = vi.fn();
+  takeRecords = vi.fn(() => []);
+  root: Element | null = null;
+  rootMargin = '';
+  thresholds: ReadonlyArray<number> = [];
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   vi.useFakeTimers();
@@ -28,14 +38,31 @@ beforeEach(() => {
     removeEventListener: vi.fn(),
     dispatchEvent: vi.fn(),
   })) as typeof window.matchMedia;
+  // jsdom doesn't ship IntersectionObserver; PhoneFrame needs it on mount.
+  (globalThis as unknown as { IntersectionObserver: unknown }).IntersectionObserver =
+    FakeIntersectionObserver;
+  (window as unknown as { IntersectionObserver: unknown }).IntersectionObserver =
+    FakeIntersectionObserver;
 });
 
 describe('Hero', () => {
   it('renders the canonical eyebrow line and italic headline', () => {
     render(<Hero />);
     expect(screen.getByText(/Insurance, simplified\./i)).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/AI-Powered\. Community-driven\./i);
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      /AI-Powered\. Community-driven\./i,
+    );
     expect(screen.getByText(/Community-driven\./i)).toHaveClass('italic');
+  });
+
+  it('renders the live driver metrics strip with three traction pills', () => {
+    render(<Hero />);
+    const strip = screen.getByTestId('live-strip');
+    expect(strip).toBeInTheDocument();
+    expect(strip.querySelectorAll('.live-pill').length).toBe(3);
+    expect(strip).toHaveTextContent(/117/);
+    expect(strip).toHaveTextContent(/84\/100/);
+    expect(strip).toHaveTextContent(/£18\.4k/i);
   });
 
   it('places the wordmark above the headline so the headline reads as the wordmark sub-claim', () => {
@@ -54,6 +81,16 @@ describe('Hero', () => {
     expect(imgs.length).toBe(5);
   });
 
+  it('renders the phone frame product preview with a tier label and score ring', () => {
+    render(<Hero />);
+    const phone = screen.getByTestId('phone-frame');
+    expect(phone).toBeInTheDocument();
+    expect(phone).toHaveTextContent(/Tier 3/);
+    expect(phone.querySelector('.phone-ring')).toBeTruthy();
+    expect(phone.querySelector('.phone-ring-value')).toBeTruthy();
+    expect(phone.querySelector('.phone-ring-fill')).toBeTruthy();
+  });
+
   it('renders the canonical sub-headline and the Get Early Access CTA', () => {
     render(<Hero />);
     expect(screen.getByText(/Ready for insurance that rewards you\?/i)).toBeInTheDocument();
@@ -62,7 +99,9 @@ describe('Hero', () => {
 
   it('rejects an invalid email submission with an inline error', () => {
     render(<Hero />);
-    fireEvent.change(screen.getByLabelText(/email address/i), { target: { value: 'not-an-email' } });
+    fireEvent.change(screen.getByLabelText(/email address/i), {
+      target: { value: 'not-an-email' },
+    });
     fireEvent.submit(screen.getByTestId('hero-form'));
     expect(screen.getByRole('status')).toHaveTextContent(/doesn't look right/i);
   });
