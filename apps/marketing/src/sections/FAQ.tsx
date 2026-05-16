@@ -7,32 +7,24 @@ interface Q {
 
 const QS: readonly Q[] = [
   {
-    q: 'How does the refund pool work?',
-    a: 'Your premium feeds a shared pool alongside other drivers’ premiums. Roughly 60–70% covers claims. When the pool performs well, because safe drivers keep claims low, the SURPLUS gets distributed back as refunds, weighted 80% by your personal score and 20% by community performance. Refunds are paid annually, up to 15%.',
+    q: 'Will this really be cheaper than my current insurance?',
+    a: "For safe drivers, yes, demonstrably. Our modelling shows the top 40% of drivers save 8 to 15% versus their current renewal. If you drive aggressively, we're not for you, and that's deliberate.",
   },
   {
-    q: 'What if other drivers are reckless?',
-    a: "They don't drain the pool. Our underwriting prices high-risk drivers at higher premiums upfront, so they contribute more. If their score stays below 70 they receive ZERO refunds. Only safe drivers earn cashback. The model protects the pot, not the reckless.",
+    q: 'What counts as a "safe" trip?',
+    a: 'We score five factors: smooth acceleration, gentle braking, calm cornering, speed discipline, and phone-free driving. Every factor is weighted and published in the app in real time. You see the score change as you drive.',
   },
   {
-    q: 'What data do you collect?',
-    a: "Only what's needed to score driving: GPS speed, accelerometer (braking, cornering, acceleration), gyroscope (phone handling), trip timing. We NEVER sell location data. Encrypted at rest and in transit. You can delete your account and data at any time.",
+    q: 'What happens if I have an accident?',
+    a: 'Your claim is paid immediately and in full by our reinsurance capital. Score refunds are separate from claim protection. One bad week does not bankrupt you.',
   },
   {
-    q: 'Do I need any hardware?',
-    a: 'No. Your phone is the sensor. No OBD dongle, no dashcam, nothing to install in your car. Drop it in a pocket or cup holder and the app detects trips automatically.',
+    q: 'Is this legal? Are you FCA-regulated?',
+    a: 'Application in progress with the FCA Regulatory Sandbox, underwritten by a PRA-regulated UK reinsurer. We cannot sell policies yet, that is why this is a waitlist, not a checkout.',
   },
   {
-    q: 'How is my score calculated?',
-    a: 'Four factors, weighted and visible: SPEED (speeding vs posted limits), BRAKING (harshness), ACCELERATION (smoothness), CORNERING (G-force). Each factor scored 0–100, aggregated into your trip and 30-day average scores. Every trip includes a plain-English breakdown.',
-  },
-  {
-    q: 'Is Driiva regulated?',
-    a: "Motor insurance in the UK must be FCA-authorised. Our FCA Sandbox application is in progress, meaning we will operate under full regulatory oversight and consumer-duty obligations from the moment we write policies. We'll publish our authorisation status transparently when granted.",
-  },
-  {
-    q: "What's the Early Refund Guarantee?",
-    a: 'A commitment to beta participants: if our underwriting model underperforms expectations and your cohort would otherwise receive no refund, we top up from reserves. Subject to eligibility criteria, caps, and FCA guidance. Not a guaranteed profit scheme. This exists to prove the model works, not to promise returns.',
+    q: 'Do I need to install a dashcam or OBD dongle?',
+    a: 'No. Your phone does everything. No hardware to buy, install, or forget to plug back in.',
   },
 ] as const;
 
@@ -42,26 +34,28 @@ export function FAQ() {
     <section ref={ref} id="faq" data-section="faq">
       <div className="container">
         <div className="section-head reveal-init">
-          <span className="eyebrow">Questions</span>
-          <h2>The important stuff, answered.</h2>
-          <p>
-            If we've missed one, email{' '}
-            <a href="mailto:hello@driiva.co.uk" style={{ color: 'var(--brand-lilac)', textDecoration: 'none' }}>
-              hello@driiva.co.uk
-            </a>
-            .
-          </p>
+          <span className="eyebrow-mini">Questions, answered</span>
+          <h2>You asked. We answered.</h2>
         </div>
         <div className="faq-list reveal-init">
           {QS.map((qa, i) => (
-            <details key={i} className="faq-item" data-testid={`faq-${i + 1}`}>
+            <details key={i} className="glass faq" data-testid={`faq-${i + 1}`}>
               <summary>
                 {qa.q}
-                <span className="faq-toggle" aria-hidden="true">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                    <path d="M12 5v14M5 12h14" />
-                  </svg>
-                </span>
+                <svg
+                  className="chev"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
               </summary>
               <div className="faq-body">{qa.a}</div>
             </details>

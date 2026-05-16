@@ -31,17 +31,24 @@ beforeEach(() => {
 });
 
 describe('Hero', () => {
-  it('renders the canonical headline and the gradient accent span', () => {
+  it('renders the canonical eyebrow line and italic headline', () => {
     render(<Hero />);
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/Drive well\. Get money back\./i);
-    expect(screen.getByText(/Get money back\./i)).toHaveClass('accent-gradient');
+    expect(screen.getByText(/Insurance, simplified\./i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/AI-Powered\. Community-driven\./i);
+    expect(screen.getByText(/Community-driven\./i)).toHaveClass('italic');
   });
 
-  it('renders the waitlist eyebrow, sub-headline and form CTA', () => {
+  it('renders the motion-blur wordmark with five layered images', () => {
     render(<Hero />);
-    expect(screen.getByText(/117\+ drivers on the waitlist/i)).toBeInTheDocument();
-    expect(screen.getByText(/AI-powered telematics insurance/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /claim a beta spot/i })).toBeInTheDocument();
+    const wordmark = screen.getByTestId('hero-wordmark');
+    const imgs = wordmark.querySelectorAll('img');
+    expect(imgs.length).toBe(5);
+  });
+
+  it('renders the canonical sub-headline and the Get Early Access CTA', () => {
+    render(<Hero />);
+    expect(screen.getByText(/Ready for insurance that rewards you\?/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /get early access/i })).toBeInTheDocument();
   });
 
   it('rejects an invalid email submission with an inline error', () => {

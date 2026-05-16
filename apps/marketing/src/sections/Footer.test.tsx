@@ -3,15 +3,13 @@ import { render, screen } from '@testing-library/react';
 import { Footer } from './Footer';
 
 describe('Footer', () => {
-  it('renders the wordmark, contact link, social links and copyright', () => {
+  it('renders the wordmark, contact link and copyright', () => {
     render(<Footer />);
-    expect(screen.getByAltText('Driiva')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /contact/i })).toHaveAttribute(
+    expect(screen.getByAltText('driiva')).toBeInTheDocument();
+    expect(screen.getByText(/© 2026 Driiva Technologies Ltd/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /hello@driiva\.co\.uk/i })).toHaveAttribute(
       'href',
       'mailto:hello@driiva.co.uk',
     );
-    expect(screen.getByRole('link', { name: /x \/ twitter/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /linkedin/i })).toBeInTheDocument();
-    expect(screen.getByText(/Registered in England/i)).toBeInTheDocument();
   });
 });

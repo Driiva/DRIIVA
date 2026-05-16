@@ -1,66 +1,54 @@
 :root {
   /* ── Surface ladder ─────────────────────────────────────── */
   --ink: #050509;
-  --ink-1: #0a0a12;
-  --ink-2: #0f0f1b;
+  --ink-2: #0a0a12;
+  --ink-3: #141420;
   --plum: #1a0f1f;
+  --plum-2: #241228;
 
   /* ── Text ladder ────────────────────────────────────────── */
-  --white: #fafafa;
   --fg-1: #ffffff;
-  --fg-2: rgba(255, 255, 255, 0.9);
-  --fg-3: rgba(255, 255, 255, 0.7);
-  --fg-4: rgba(255, 255, 255, 0.5);
+  --fg-2: rgba(255, 255, 255, 0.7);
+  --fg-3: rgba(255, 255, 255, 0.5);
+  --fg-4: rgba(255, 255, 255, 0.35);
+
+  /* ── Brand iris stack ───────────────────────────────────── */
+  --iris: #6366f1;
+  --iris-2: #818cf8;
+  --iris-3: #a78bfa;
 
   /* ── Brand gradient stops ───────────────────────────────── */
-  --brand-gold: #fbbf24;
-  --brand-amber: #f59e0b;
-  --brand-burnt: #a04c2a;
-  --brand-lilac: #a78bfa;
-  --brand-violet: #8b5cf6;
-  --brand-iris: #6366f1;
-  --brand-iris-light: #818cf8;
-  --brand-purple: #8b5cf6;
-  --brand-indigo: #3b2d8b;
+  --amber: #fbbf24;
+  --amber-2: #f59e0b;
+  --amber-3: #d4850a;
+  --burnt: #a04c2a;
+  --violet: #6b3fa0;
+  --indigo: #3b2d8b;
 
-  /* ── Single accent for chrome ───────────────────────────── */
-  --accent: #6366f1;
-  --accent-soft: rgba(99, 102, 241, 0.15);
-  --accent-glow: rgba(99, 102, 241, 0.4);
+  /* ── Brand gradients (canonical) ────────────────────────── */
+  --grad-brand: linear-gradient(135deg, #fbbf24 0%, #a04c2a 30%, #6b3fa0 65%, #3b2d8b 100%);
+  --grad-cta: linear-gradient(180deg, #fbbf24 0%, #f59e0b 55%, #d4850a 100%);
+  --cta-amber: #f59e0b;
 
   /* ── Semantic ───────────────────────────────────────────── */
   --ok: #10b981;
   --warn: #f59e0b;
   --err: #ef4444;
 
-  /* ── Hairlines / glass ──────────────────────────────────── */
-  --hairline: rgba(255, 255, 255, 0.06);
-  --hairline-hi: rgba(255, 255, 255, 0.14);
-  --hairline-bright: rgba(255, 255, 255, 0.2);
-  --glass-bg: rgba(30, 41, 59, 0.6);
-  --glass-bg-hover: rgba(30, 41, 59, 0.75);
-  --glass-bg-nav: rgba(20, 15, 30, 0.55);
-  --glass-border: rgba(255, 255, 255, 0.2);
-  --glass-border-hover: rgba(255, 255, 255, 0.35);
-
-  /* ── Radii ──────────────────────────────────────────────── */
-  --r-xs: 6px;
-  --r-sm: 10px;
-  --r: 14px;
-  --r-lg: 18px;
-  --r-xl: 24px;
-  --r-pill: 100px;
+  /* ── Glass ──────────────────────────────────────────────── */
+  --glass-tint: rgba(30, 41, 59, 0.6);
+  --glass-br: rgba(255, 255, 255, 0.2);
+  --glass-blur: blur(20px) saturate(180%);
 
   /* ── Elevation ──────────────────────────────────────────── */
   --shadow-md: 0 8px 32px rgba(0, 0, 0, 0.37);
   --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.5);
-  --shadow-cta: inset 0 1px 0 rgba(255, 255, 255, 0.2), inset 0 -1px 0 rgba(0, 0, 0, 0.15),
-    0 4px 16px rgba(99, 102, 241, 0.4);
+  --shadow-cta: inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18), 0 6px 20px rgba(245, 158, 11, 0.38);
 
   /* ── Motion ─────────────────────────────────────────────── */
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
   --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --ease-fast: cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 
   /* ── Type stack ─────────────────────────────────────────── */
   --font-display: 'Inter Tight', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -68,7 +56,6 @@
   --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 
   /* ── Layout ─────────────────────────────────────────────── */
-  --max-width: 1140px;
+  --max-width: 1200px;
   --section-pad-y: 120px;
-  --nav-height: 72px;
 }

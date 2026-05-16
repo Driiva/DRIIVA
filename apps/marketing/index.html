@@ -4,42 +4,40 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#1a0f1f" />
-    <title>Driiva: Drive well. Get money back.</title>
-    <meta name="description" content="AI-powered telematics car insurance that rewards safe drivers with real cash refunds, up to 15% annually. Join 500 beta drivers in the UK." />
+    <title>Driiva. AI-Powered. Community-driven motor insurance.</title>
+    <meta
+      name="description"
+      content="AI-powered, community-driven motor insurance for UK drivers. Pooled premiums, surplus returned, no hardware. Join the beta waitlist."
+    />
 
-    <meta property="og:title" content="Driiva: Drive well. Get money back." />
-    <meta property="og:description" content="AI-powered telematics insurance that rewards safe drivers with real cash refunds. Join the UK beta." />
-    <meta property="og:image" content="/brand/driiva-logo.png" />
+    <meta property="og:title" content="Driiva. AI-Powered. Community-driven motor insurance." />
+    <meta property="og:description" content="AI-powered, community-driven motor insurance for UK drivers." />
+    <meta property="og:image" content="/brand/logo-wordmark-gradient.png" />
     <meta property="og:url" content="https://driiva.co.uk" />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
 
-    <link rel="icon" type="image/png" href="/brand/driiva-logo-white.png" />
-    <link rel="apple-touch-icon" href="/brand/driiva-logo.png" />
+    <link rel="icon" type="image/png" href="/brand/logo-ii-mark.png" />
+    <link rel="apple-touch-icon" href="/brand/logo-wordmark-gradient.png" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
 
     <link rel="preload" as="image" href="/brand/gradient-background.jpg" type="image/jpeg" fetchpriority="high" />
-    <link rel="preload" as="image" href="/brand/driiva-logo.png" fetchpriority="high" />
+    <link rel="preload" as="image" href="/brand/logo-wordmark-white-v3.png" fetchpriority="high" />
   </head>
   <body>
-    <div class="bg-gradient" aria-hidden="true"></div>
-    <div class="bg-pulse" aria-hidden="true"></div>
-    <div class="bg-overlay" aria-hidden="true"></div>
-    <div class="bg-darken" aria-hidden="true"></div>
-    <svg class="bg-noise" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-      <filter id="noise-filter">
-        <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch" />
-        <feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.6 0" />
-      </filter>
-      <rect width="100%" height="100%" filter="url(#noise-filter)" />
-    </svg>
-
+    <div class="bg-root" aria-hidden="true">
+      <div class="bg-image"></div>
+      <div class="bg-mesh"></div>
+      <div class="bg-noise"></div>
+      <div class="bg-halo a"></div>
+      <div class="bg-halo b"></div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

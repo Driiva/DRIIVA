@@ -14,7 +14,6 @@ export function FinalCTA() {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<Status>('idle');
   const [message, setMessage] = useState('');
-  const [spotsLeft, setSpotsLeft] = useState(383);
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -27,9 +26,8 @@ export function FinalCTA() {
     setStatus('submitting');
     window.setTimeout(() => {
       setStatus('success');
-      setMessage("You're on the list. We'll be in touch soon.");
+      setMessage("You're on the list. We'll email when the beta opens.");
       setEmail('');
-      setSpotsLeft((n) => Math.max(n - 1, 1));
       const btn = buttonRef.current;
       if (btn && !prefersReducedMotion()) {
         animate(btn, {
@@ -42,15 +40,16 @@ export function FinalCTA() {
   }
 
   return (
-    <section ref={ref} id="cta-final" data-section="cta-final">
+    <section ref={ref} id="cta-final" data-section="cta-final" className="cta-final">
       <div className="container">
-        <div className="cta-final reveal-init">
+        <div className="reveal-init">
           <h2>
-            Contribute to ethical insurance
-            <br />
-            in just 30 seconds.
+            Ready to drive well, <span className="accent">and get money back?</span>
           </h2>
-          <p className="sub">Drop your email. We'll reach out when your beta slot opens.</p>
+          <p>
+            Join the 117 UK drivers on the waitlist for the first refund-first motor insurance that means
+            it.
+          </p>
           <form onSubmit={handleSubmit} noValidate className="waitlist-form" data-testid="cta-form">
             <input
               type="email"
@@ -69,25 +68,18 @@ export function FinalCTA() {
               disabled={status === 'submitting' || status === 'success'}
             >
               {status === 'submitting'
-                ? 'Adding you…'
+                ? 'Adding you'
                 : status === 'success'
                 ? "You're in"
                 : 'Get Early Access'}
             </button>
           </form>
           <div
-            className={`form-status${message ? ' visible' : ''}${status === 'error' ? ' error' : ''}`}
+            className={`form-status ${status === 'error' ? 'err' : status === 'success' ? 'ok' : ''}`}
             role="status"
             aria-live="polite"
           >
             {message}
-          </div>
-          <div className="cta-spots">
-            500 beta spots · <span data-testid="spots-left">{spotsLeft}</span> remaining
-          </div>
-          <div className="cta-compliance">
-            Early Refund Guarantee applies to beta participants only, subject to eligibility criteria and
-            caps. Not a guaranteed profit scheme. Driiva Ltd is working toward FCA authorisation.
           </div>
         </div>
       </div>
