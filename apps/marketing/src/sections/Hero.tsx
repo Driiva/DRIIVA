@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { animate, createTimeline, prefersReducedMotion } from '@/lib/motion';
+import { joinWaitlist } from '@/lib/api';
+import { trackEvent } from '@/lib/analytics';
 import { LiveStrip } from './LiveStrip';
 import { PhoneFrame } from './PhoneFrame';
 
@@ -85,7 +87,7 @@ export function Hero() {
     } as never);
   }, []);
 
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setMessage('');
     if (!isValidEmail(email)) {
@@ -94,19 +96,38 @@ export function Hero() {
       return;
     }
     setStatus('submitting');
-    window.setTimeout(() => {
-      setStatus('success');
-      setMessage("You're on the list. We'll email when the beta opens.");
-      setEmail('');
-      const btn = buttonRef.current;
-      if (btn && !prefersReducedMotion()) {
-        animate(btn, {
-          scale: [1, 1.04, 1],
-          duration: 380,
-          ease: 'cubicBezier(0.22, 1, 0.36, 1)',
-        });
-      }
-    }, 800);
+    const result = await joinWaitlist(email, 'hero');
+    if (!result.ok) {
+      trackEvent('waitlist_error', { source: 'hero', error: result.error ?? 'unknown' });
+      setStatus('error');
+      setMessage(
+        result.error === 'invalid_email'
+          ? "That email doesn't look right. Give it another go."
+          : 'Something broke on our end. Try again in a moment?',
+      );
+      return;
+    }
+    trackEvent('waitlist_success', {
+      source: 'hero',
+      already_on_list: result.alreadyOnList === true,
+    });
+    setStatus('success');
+    setMessage(
+      result.alreadyOnList
+        ? `Already on the list — you're #${result.position ?? '—'}.`
+        : result.position
+        ? `You're #${result.position}. We'll email when the beta opens.`
+        : "You're on the list. We'll email when the beta opens.",
+    );
+    setEmail('');
+    const btn = buttonRef.current;
+    if (btn && !prefersReducedMotion()) {
+      animate(btn, {
+        scale: [1, 1.04, 1],
+        duration: 380,
+        ease: 'cubicBezier(0.22, 1, 0.36, 1)',
+      });
+    }
   }
 
   return (

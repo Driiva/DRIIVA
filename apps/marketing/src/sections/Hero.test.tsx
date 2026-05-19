@@ -13,6 +13,11 @@ vi.mock('animejs', () => {
   };
 });
 
+const joinWaitlistMock = vi.fn();
+vi.mock('@/lib/api', () => ({
+  joinWaitlist: (...args: unknown[]) => joinWaitlistMock(...args),
+}));
+
 import { Hero } from './Hero';
 
 class FakeIntersectionObserver {
@@ -27,6 +32,8 @@ class FakeIntersectionObserver {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  joinWaitlistMock.mockReset();
+  joinWaitlistMock.mockResolvedValue({ ok: true, position: 118 });
   vi.useFakeTimers();
   window.matchMedia = ((q: string) => ({
     matches: false,
@@ -113,8 +120,11 @@ describe('Hero', () => {
     });
     fireEvent.submit(screen.getByTestId('hero-form'));
     await act(async () => {
-      vi.advanceTimersByTime(1000);
+      await Promise.resolve();
+      vi.advanceTimersByTime(50);
     });
+    expect(joinWaitlistMock).toHaveBeenCalledWith('driver@example.co.uk', 'hero');
     expect(screen.getByRole('button')).toHaveTextContent(/you're in/i);
+    expect(screen.getByRole('status')).toHaveTextContent(/#118/);
   });
 });

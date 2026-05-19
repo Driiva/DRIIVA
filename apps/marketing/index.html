@@ -29,6 +29,15 @@
 
     <link rel="preload" as="image" href="/brand/gradient-background.jpg" type="image/jpeg" fetchpriority="high" />
     <link rel="preload" as="image" href="/brand/logo-wordmark-white-v3.png" fetchpriority="high" />
+
+    <!-- Cookieless, GDPR-friendly analytics. No effect until the script
+         resolves against a real Plausible site once the domain is verified. -->
+    <script defer data-domain="driiva.co.uk" src="https://plausible.io/js/script.js"></script>
+    <script>
+      window.plausible = window.plausible || function () {
+        (window.plausible.q = window.plausible.q || []).push(arguments);
+      };
+    </script>
   </head>
   <body>
     <div class="bg-root" aria-hidden="true">

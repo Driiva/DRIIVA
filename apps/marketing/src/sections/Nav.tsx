@@ -1,4 +1,5 @@
 import { type MouseEvent } from 'react';
+import { useLocation } from 'wouter';
 
 interface NavLink {
   href: string;
@@ -24,30 +25,54 @@ function smoothScrollTo(target: string) {
 }
 
 export function Nav() {
+  const [location, setLocation] = useLocation();
+  const onHome = location === '/';
+
   function handleAnchor(e: MouseEvent<HTMLAnchorElement>, href: string) {
     e.preventDefault();
+    if (!onHome) {
+      // From any other route, jump home with the hash so the browser
+      // scrolls to the section on load.
+      setLocation('/');
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          const target = href.startsWith('#') ? href : '#' + href;
+          smoothScrollTo(target);
+        });
+      });
+      return;
+    }
     smoothScrollTo(href);
+  }
+
+  function handleHome(e: MouseEvent<HTMLAnchorElement>) {
+    e.preventDefault();
+    if (!onHome) {
+      setLocation('/');
+      return;
+    }
+    smoothScrollTo('#');
   }
 
   return (
     <nav className="nav-pill" aria-label="Primary">
-      <a
-        href="#"
-        className="nav-pill-logo"
-        aria-label="Driiva home"
-        onClick={(e) => handleAnchor(e, '#')}
-      >
+      <a href="/" className="nav-pill-logo" aria-label="Driiva home" onClick={handleHome}>
         <img src="/brand/logo-wordmark-white-v3.png" alt="Driiva" />
       </a>
       <div className="nav-links">
         {LINKS.map((l) => (
-          <a key={l.href} href={l.href} className="nav-link" onClick={(e) => handleAnchor(e, l.href)}>
+          <a
+            key={l.href}
+            href={onHome ? l.href : '/' + l.href}
+            className="nav-link"
+            onClick={(e) => handleAnchor(e, l.href)}
+          >
             {l.label}
           </a>
         ))}
       </div>
       <a
-        href="#cta-final"
+        href={onHome ? '#cta-final' : '/#cta-final'}
         className="nav-pill-cta"
         onClick={(e) => handleAnchor(e, '#cta-final')}
         data-testid="nav-cta"
