@@ -24,7 +24,7 @@ export function Privacy() {
         </li>
         <li>
           <strong>Site analytics:</strong> aggregated page views and basic device/browser data via
-          Plausible. No cookies, no IP storage, no cross-site tracking.
+          Vercel Web Analytics. No cookies, no IP storage, no cross-site tracking.
         </li>
         <li>
           <strong>Error logs:</strong> anonymised exception data via Sentry to keep the site

@@ -58,4 +58,12 @@
   /* ── Layout ─────────────────────────────────────────────── */
   --max-width: 1200px;
   --section-pad-y: 120px;
+
+  /* ── Radii (mirrors design-system/colors_and_type.css) ──── */
+  --r-xs: 6px;
+  --r-sm: 10px;
+  --r: 14px;
+  --r-lg: 18px;
+  --r-xl: 24px;
+  --r-pill: 100px;
 }

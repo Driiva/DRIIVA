@@ -15,8 +15,9 @@ export function Cookies() {
           choice about analytics and your dismissal of this banner. No third party sees it.
         </li>
         <li>
-          <strong>Analytics (Plausible):</strong> cookieless. Plausible counts page views in
-          aggregate without setting cookies, storing IPs, or tracking you across sites.
+          <strong>Analytics (Vercel Web Analytics):</strong> cookieless. Counts page views and
+          custom events in aggregate without setting cookies, storing IPs, or tracking you across
+          sites.
         </li>
       </ul>
 

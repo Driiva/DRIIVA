@@ -1,29 +1,25 @@
 /**
- * Privacy-first analytics shim. The Plausible script is mounted in
- * index.html with a `defer` and `data-domain="driiva.co.uk"`; no cookies,
- * no IPs stored, no cross-site identifiers. This module exposes a thin
- * helper for custom event tracking (e.g. waitlist submits, CTA clicks).
+ * Privacy-first analytics shim backed by Vercel Web Analytics.
+ *
+ * `<Analytics />` is mounted at the app root in App.tsx and handles
+ * pageviews automatically. This module exposes a thin helper for
+ * custom event tracking (waitlist submits, CTA clicks). It never
+ * throws to the host page.
  */
+import { track } from '@vercel/analytics';
 
-declare global {
-  interface Window {
-    plausible?: (event: string, options?: { props?: Record<string, string | number | boolean> }) => void;
-  }
-}
+type Props = Record<string, string | number | boolean | null>;
 
-export function trackEvent(
-  event: string,
-  props?: Record<string, string | number | boolean>,
-): void {
+export function trackEvent(event: string, props?: Props): void {
   try {
     if (typeof window === 'undefined') return;
-    if (typeof window.plausible !== 'function') return;
-    window.plausible(event, props ? { props } : undefined);
+    track(event, props);
   } catch {
     /* analytics never throws to the host page */
   }
 }
 
 export function trackPageView(): void {
-  trackEvent('pageview');
+  // No-op: Vercel Analytics auto-tracks pageviews via the <Analytics />
+  // component. Kept as a public symbol so callers do not need to change.
 }

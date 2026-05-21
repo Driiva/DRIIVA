@@ -185,7 +185,7 @@ main {
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 100px;
+  border-radius: var(--r-lg);
   z-index: 50;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
   max-width: calc(100% - 32px);
@@ -215,7 +215,7 @@ main {
   font-size: 13px;
   font-weight: 500;
   letter-spacing: -0.005em;
-  border-radius: 100px;
+  border-radius: 10px;
   transition: background 0.2s, color 0.2s;
   white-space: nowrap;
 }
@@ -233,7 +233,7 @@ main {
   font-size: 13px;
   font-weight: 600;
   letter-spacing: -0.005em;
-  border-radius: 100px;
+  border-radius: var(--r);
   display: inline-flex;
   align-items: center;
   border: 1px solid rgba(255, 255, 255, 0.14);
@@ -343,7 +343,7 @@ main {
   padding: 6px 14px 6px 12px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 100px;
+  border-radius: 10px;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   font-family: var(--font-ui);
@@ -409,13 +409,13 @@ main {
 }
 
 /* ─────────────────────────────────────────────────────────
-   PHONE FRAME, tilted product preview with ScoreRing
+   PHONE FRAME, vertical product preview with ScoreRing
    ───────────────────────────────────────────────────────── */
 .phone-frame {
   position: relative;
   width: min(280px, 92vw);
   aspect-ratio: 9 / 18.5;
-  transform: rotate(-10deg) translateY(36px);
+  transform: translateY(36px);
   opacity: 0;
   filter: drop-shadow(0 30px 60px rgba(0, 0, 0, 0.55))
     drop-shadow(0 0 80px rgba(99, 102, 241, 0.22));
@@ -423,7 +423,7 @@ main {
 }
 .phone-frame.is-played {
   opacity: 1;
-  transform: rotate(-8deg) translateY(0);
+  transform: translateY(0);
 }
 .phone-glow {
   position: absolute;
@@ -541,7 +541,7 @@ main {
   color: #a78bfa;
   background: rgba(167, 139, 250, 0.12);
   padding: 4px 11px;
-  border-radius: 100px;
+  border-radius: 6px;
   border: 1px solid rgba(167, 139, 250, 0.22);
 }
 .phone-app-title {
@@ -634,7 +634,7 @@ main {
   padding: 7px 16px 7px 14px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 100px;
+  border-radius: 10px;
   font-family: var(--font-ui);
   font-size: 12px;
   font-weight: 500;
@@ -789,7 +789,7 @@ main {
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 100px;
+  border-radius: var(--r-lg);
   box-shadow: var(--shadow-md);
   transition: border-color 0.2s, box-shadow 0.2s;
 }
@@ -821,7 +821,7 @@ main {
   font-size: 14px;
   letter-spacing: -0.005em;
   border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 100px;
+  border-radius: var(--r);
   cursor: pointer;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 10px 30px rgba(0, 0, 0, 0.45);
   white-space: nowrap;
@@ -889,7 +889,7 @@ section {
   padding: 6px 14px;
   background: rgba(167, 139, 250, 0.12);
   border: 1px solid rgba(167, 139, 250, 0.25);
-  border-radius: 100px;
+  border-radius: 6px;
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 600;
@@ -902,8 +902,8 @@ section {
   font-family: var(--font-display);
   font-size: clamp(36px, 4.5vw, 56px);
   font-weight: 600;
-  line-height: 1.1;
-  letter-spacing: -0.03em;
+  line-height: 1.08;
+  letter-spacing: -0.022em;
   margin-bottom: 16px;
 }
 .section-head p {
@@ -940,7 +940,7 @@ section {
 .step-title {
   font-family: var(--font-display);
   font-size: 22px;
-  font-weight: 700;
+  font-weight: 600;
   margin-bottom: 8px;
   letter-spacing: -0.02em;
   color: var(--fg-1);
@@ -1125,7 +1125,7 @@ section {
 .trust-title {
   font-family: var(--font-display);
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 600;
   margin-bottom: 6px;
 }
 .trust-body {
@@ -1854,7 +1854,7 @@ footer {
   font-size: 14px;
   letter-spacing: -0.005em;
   border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 100px;
+  border-radius: var(--r);
   text-decoration: none;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 8px 22px rgba(0, 0, 0, 0.4);
   transition: transform 0.2s var(--ease), border-color 0.2s var(--ease);
@@ -1958,7 +1958,7 @@ footer {
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 100px;
+  border-radius: var(--r-lg);
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
 }
 .sticky-cta-dot {
@@ -1988,7 +1988,7 @@ footer {
   font-weight: 600;
   font-size: 13px;
   border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 100px;
+  border-radius: var(--r);
   cursor: pointer;
   transition: transform 0.2s var(--ease), border-color 0.2s var(--ease);
 }
@@ -2079,7 +2079,7 @@ footer {
 .cookie-banner-secondary {
   flex: 1;
   height: 36px;
-  border-radius: 100px;
+  border-radius: var(--r);
   font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;

@@ -1,4 +1,5 @@
 import { Route, Switch } from 'wouter';
+import { Analytics } from '@vercel/analytics/react';
 import { useLenis } from '@/hooks/useLenis';
 import { Nav } from '@/sections/Nav';
 import { Footer } from '@/sections/Footer';
@@ -41,6 +42,7 @@ export default function App() {
       <Footer />
       <StickyCta />
       <CookieBanner />
+      <Analytics />
     </>
   );
 }
