@@ -4,7 +4,6 @@ import { useLenis } from '@/hooks/useLenis';
 import { Nav } from '@/sections/Nav';
 import { Footer } from '@/sections/Footer';
 import { StickyCta } from '@/components/StickyCta';
-import { CookieBanner } from '@/components/CookieBanner';
 import { Home } from '@/routes/Home';
 import { Privacy } from '@/routes/Privacy';
 import { Terms } from '@/routes/Terms';
@@ -41,7 +40,6 @@ export default function App() {
       </Switch>
       <Footer />
       <StickyCta />
-      <CookieBanner />
       <Analytics />
     </>
   );

@@ -2,22 +2,19 @@ import { LegalPage } from './LegalPage';
 
 export function Cookies() {
   return (
-    <LegalPage title="Cookies" updated="2026-05-19">
+    <LegalPage title="Cookies" updated="2026-05-27">
       <p className="legal-lede">
-        We use the smallest possible amount of cookies and tracking. This page lists what runs on
-        the site, why, and how to opt out.
+        We set no cookies. This page lists the little that does run on the site, why, and how to
+        control it.
       </p>
 
       <h2>1. What we use</h2>
       <ul>
         <li>
-          <strong>Strictly necessary:</strong> a single first-party preference cookie storing your
-          choice about analytics and your dismissal of this banner. No third party sees it.
-        </li>
-        <li>
           <strong>Analytics (Vercel Web Analytics):</strong> cookieless. Counts page views and
           custom events in aggregate without setting cookies, storing IPs, or tracking you across
-          sites.
+          sites. Because it sets no cookies and stores nothing on your device, it needs no consent
+          under UK PECR, so there is no cookie banner.
         </li>
       </ul>
 
@@ -28,13 +25,7 @@ export function Cookies() {
         <li>No cross-site identifiers.</li>
       </ul>
 
-      <h2>3. Manage your preference</h2>
-      <p>
-        Open this page on any device to update your choice. You can also clear the
-        <code>driiva.cookie.consent</code> entry from your browser's site data to be re-prompted.
-      </p>
-
-      <h2>4. Browser controls</h2>
+      <h2>3. Browser controls</h2>
       <p>
         Every modern browser lets you clear or block cookies for any site. The Information
         Commissioner's Office (ico.org.uk) publishes plain-English guidance on how to do this in
