@@ -4,6 +4,7 @@ import { useLenis } from '@/hooks/useLenis';
 import { Nav } from '@/sections/Nav';
 import { Footer } from '@/sections/Footer';
 import { StickyCta } from '@/components/StickyCta';
+import { DriivaShaderBackground } from '@/components/DriivaShaderBackground';
 import { Home } from '@/routes/Home';
 import { Privacy } from '@/routes/Privacy';
 import { Terms } from '@/routes/Terms';
@@ -28,6 +29,7 @@ export default function App() {
   useLenis();
   return (
     <>
+      <DriivaShaderBackground />
       <Nav />
       <Switch>
         <Route path="/" component={Home} />

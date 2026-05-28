@@ -62,16 +62,6 @@ describe('Hero', () => {
     expect(screen.getByText(/Community-driven\./i)).toHaveClass('italic');
   });
 
-  it('renders the live driver metrics strip with three traction pills', () => {
-    render(<Hero />);
-    const strip = screen.getByTestId('live-strip');
-    expect(strip).toBeInTheDocument();
-    expect(strip.querySelectorAll('.live-pill').length).toBe(3);
-    expect(strip).toHaveTextContent(/117/);
-    expect(strip).toHaveTextContent(/84\/100/);
-    expect(strip).toHaveTextContent(/£18\.4k/i);
-  });
-
   it('places the wordmark above the headline so the headline reads as the wordmark sub-claim', () => {
     render(<Hero />);
     const wordmark = screen.getByTestId('hero-wordmark');

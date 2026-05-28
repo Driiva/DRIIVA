@@ -2,7 +2,6 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { animate, createTimeline, prefersReducedMotion } from '@/lib/motion';
 import { joinWaitlist } from '@/lib/api';
 import { trackEvent } from '@/lib/analytics';
-import { LiveStrip } from './LiveStrip';
 import { PhoneFrame } from './PhoneFrame';
 
 type Status = 'idle' | 'submitting' | 'success' | 'error';
@@ -12,7 +11,6 @@ function isValidEmail(email: string): boolean {
 }
 
 export function Hero() {
-  const liveStripRef = useRef<HTMLDivElement | null>(null);
   const eyebrowRef = useRef<HTMLParagraphElement | null>(null);
   const wordmarkRef = useRef<HTMLDivElement | null>(null);
   const ghostsRef = useRef<HTMLDivElement | null>(null);
@@ -31,7 +29,6 @@ export function Hero() {
   // parallel track so the right column lands at roughly the same moment
   // as the wordmark settles.
   useEffect(() => {
-    const liveStrip = liveStripRef.current;
     const eyebrow = eyebrowRef.current;
     const wordmark = wordmarkRef.current;
     const ghosts = ghostsRef.current;
@@ -39,10 +36,10 @@ export function Hero() {
     const sub = subRef.current;
     const form = formRef.current;
     const guarantee = guaranteeRef.current;
-    if (!liveStrip || !eyebrow || !wordmark || !ghosts || !headline) return;
+    if (!eyebrow || !wordmark || !ghosts || !headline) return;
 
     if (prefersReducedMotion()) {
-      for (const el of [liveStrip, eyebrow, wordmark, headline, sub, form, guarantee]) {
+      for (const el of [eyebrow, wordmark, headline, sub, form, guarantee]) {
         if (el) {
           el.style.opacity = '1';
           el.style.transform = 'none';
@@ -54,8 +51,7 @@ export function Hero() {
     }
 
     const tl = createTimeline({ defaults: { ease: 'cubicBezier(0.16, 1, 0.3, 1)', duration: 750 } });
-    tl.add(liveStrip, { opacity: [0, 1], translateY: [12, 0] })
-      .add(eyebrow, { opacity: [0, 1], translateY: [16, 0] }, '-=350')
+    tl.add(eyebrow, { opacity: [0, 1], translateY: [16, 0] })
       .add(
         wordmark,
         { opacity: [0, 1], translateY: [28, 0], scale: [0.92, 1], duration: 1100 },
@@ -133,8 +129,6 @@ export function Hero() {
   return (
     <header className="hero" data-section="hero">
       <div className="container">
-        <LiveStrip ref={liveStripRef} />
-
         <p ref={eyebrowRef} className="hero-eyebrow-line" style={{ opacity: 0 }}>
           Insurance, simplified.
         </p>

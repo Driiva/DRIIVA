@@ -57,7 +57,7 @@ export function Nav() {
   return (
     <nav className="nav-pill" aria-label="Primary">
       <a href="/" className="nav-pill-logo" aria-label="Driiva home" onClick={handleHome}>
-        <img src="/brand/logo-wordmark-white-v3.png" alt="Driiva" />
+        <img src="/brand/logo-ii-mark.png" alt="Driiva" />
       </a>
       <div className="nav-links">
         {LINKS.map((l) => (
