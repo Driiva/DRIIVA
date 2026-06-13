@@ -119,7 +119,7 @@ export class AIRiskScoringEngine {
       return result;
     } catch (error) {
       console.error('AI Risk Scoring Engine Error:', error);
-      throw new Error(`AI model calculation failed: ${(error as Error).message}`);
+      throw new Error(`AI model calculation failed: ${(error as Error).message}`, { cause: error });
     }
   }
 
@@ -234,7 +234,7 @@ export class AIRiskScoringEngine {
 
   private gradientBoostingModel(features: MachineLearningFeatures, pattern: DriverBehaviorPattern): number {
     // Enhanced Gradient Boosting with sequential weak learners
-    let predictions: number[] = [];
+    const predictions: number[] = [];
     let currentPrediction = 0.4; // Base prediction
     
     // Weak learner 1: Behavioral patterns
@@ -642,7 +642,7 @@ export class AIRiskScoringEngine {
     const dataQuality = this.assessDataQuality(features);
     const patternStability = this.assessPatternStability(pattern);
     
-    let weights = {
+    const weights = {
       rf: 0.35,
       gb: 0.30,
       nn: 0.20,
@@ -824,7 +824,7 @@ export class AIRiskScoringEngine {
 
   private predictClaimProbability(features: MachineLearningFeatures, riskScore: number, pattern: DriverBehaviorPattern): number {
     // Advanced claim probability model using actuarial science principles
-    let baseProbability = 0.05; // 5% base annual claim rate
+    const baseProbability = 0.05; // 5% base annual claim rate
     
     // Risk score multiplier (exponential relationship)
     const riskMultiplier = 1 + Math.pow(riskScore, 1.5) * 3;

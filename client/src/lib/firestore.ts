@@ -797,9 +797,10 @@ function getCurrentPeriodForType(periodType: string): string {
   const now = new Date();
   
   switch (periodType) {
-    case 'weekly':
+    case 'weekly': {
       const weekNum = getWeekNumber(now);
       return `${now.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+    }
     case 'monthly':
       return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     case 'all_time':
