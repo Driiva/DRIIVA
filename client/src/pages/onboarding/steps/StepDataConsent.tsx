@@ -27,8 +27,8 @@ export function StepDataConsent({
       transition={{ duration: 0.3 }}
       className="text-center"
     >
-      <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center">
-        <Shield className="w-12 h-12 text-indigo-400" />
+      <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-[#5b4dc9]/20 to-[#5b4dc9]/20 flex items-center justify-center">
+        <Shield className="w-12 h-12 text-[#818cf8]" />
       </div>
 
       <h1 className="text-2xl font-bold text-white mb-3">Your Data, Your Control</h1>
@@ -46,7 +46,7 @@ export function StepDataConsent({
             { label: 'Trip metadata', detail: 'Start/end time, duration, distance' },
           ].map((item) => (
             <li key={item.label} className="flex items-start gap-2.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-1.5 flex-shrink-0" />
+              <div className="w-1.5 h-1.5 rounded-full bg-[#818cf8] mt-1.5 flex-shrink-0" />
               <div>
                 <span className="text-white text-sm">{item.label}</span>
                 <span className="text-white/40 text-sm"> — {item.detail}</span>
@@ -57,12 +57,12 @@ export function StepDataConsent({
 
         <div className="mt-4 pt-3 border-t border-white/10 grid grid-cols-2 gap-3">
           <div>
-            <div className="text-xs text-indigo-300 font-medium">Retention</div>
+            <div className="text-xs text-[#a5b4fc] font-medium">Retention</div>
             <div className="text-white/60 text-xs">Raw GPS: 90 days rolling</div>
             <div className="text-white/60 text-xs">Scores: policy lifetime</div>
           </div>
           <div>
-            <div className="text-xs text-indigo-300 font-medium">Who sees it</div>
+            <div className="text-xs text-[#a5b4fc] font-medium">Who sees it</div>
             <div className="text-white/60 text-xs">Driiva + underwriting partner</div>
             <div className="text-white/60 text-xs">Never sold to third parties</div>
           </div>
@@ -71,7 +71,7 @@ export function StepDataConsent({
 
       <button
         onClick={() => setLocation('/trust')}
-        className="text-indigo-400 hover:text-indigo-300 text-xs font-medium mb-5 block mx-auto"
+        className="text-[#818cf8] hover:text-[#a5b4fc] text-xs font-medium mb-5 block mx-auto"
       >
         Read full Trust Centre →
       </button>
@@ -86,7 +86,7 @@ export function StepDataConsent({
           />
           <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${
             dataConsentGiven
-              ? 'bg-indigo-500 border-indigo-500'
+              ? 'bg-[#5b4dc9] border-[#5b4dc9]'
               : 'border-white/30 bg-transparent hover:border-white/50'
           }`}>
             {dataConsentGiven && <Check className="w-4 h-4 text-white" />}
@@ -109,7 +109,7 @@ export function StepDataConsent({
           disabled={!dataConsentGiven}
           className={`flex-1 font-semibold py-4 rounded-xl transition-colors flex items-center justify-center gap-2 ${
             dataConsentGiven
-              ? 'bg-indigo-500 hover:bg-indigo-600 text-white'
+              ? 'bg-[#5b4dc9] hover:bg-[#4d40b3] text-white'
               : 'bg-white/10 text-white/40 cursor-not-allowed'
           }`}
         >

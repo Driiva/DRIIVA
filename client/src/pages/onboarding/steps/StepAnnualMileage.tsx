@@ -22,8 +22,8 @@ export function StepAnnualMileage({
       transition={{ duration: 0.3 }}
       className="text-center"
     >
-      <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-blue-500/20 to-indigo-500/20 flex items-center justify-center">
-        <Car className="w-12 h-12 text-blue-400" />
+      <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-[#5b4dc9]/20 to-[#5b4dc9]/20 flex items-center justify-center">
+        <Car className="w-12 h-12 text-[#818cf8]" />
       </div>
 
       <h1 className="text-2xl font-bold text-white mb-3">How much do you drive?</h1>
@@ -38,7 +38,7 @@ export function StepAnnualMileage({
             onClick={() => setAnnualMileage(option)}
             className={`w-full py-3.5 px-4 rounded-xl text-sm font-medium text-left transition-all border ${
               annualMileage === option
-                ? 'bg-emerald-500/20 border-emerald-400/60 text-emerald-300'
+                ? 'bg-[#5b4dc9]/20 border-[#818cf8]/60 text-[#a5b4fc]'
                 : 'bg-white/5 border-white/15 text-white/70 hover:bg-white/10 hover:text-white'
             }`}
           >
@@ -56,7 +56,7 @@ export function StepAnnualMileage({
         </button>
         <button
           onClick={nextStep}
-          className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-4 rounded-xl transition-colors flex items-center justify-center gap-2"
+          className="flex-1 bg-[#5b4dc9] hover:bg-[#4d40b3] text-white font-semibold py-4 rounded-xl transition-colors flex items-center justify-center gap-2"
         >
           {annualMileage ? 'Continue' : 'Skip'}
           <ChevronRight className="w-5 h-5" />

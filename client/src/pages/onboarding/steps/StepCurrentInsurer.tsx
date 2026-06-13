@@ -37,7 +37,7 @@ export function StepCurrentInsurer({
           value={currentInsurer}
           onChange={(e) => setCurrentInsurer(e.target.value)}
           placeholder="e.g. Admiral, Aviva, Direct Line..."
-          className="w-full px-4 py-4 rounded-xl bg-white/5 border border-white/20 text-white placeholder-white/30 focus:outline-none focus:border-emerald-400/60 focus:bg-white/10 transition-all text-sm"
+          className="w-full px-4 py-4 rounded-xl bg-white/5 border border-white/20 text-white placeholder-white/30 focus:outline-none focus:border-[#818cf8]/60 focus:bg-white/10 transition-all text-sm"
         />
       </div>
 
@@ -57,7 +57,7 @@ export function StepCurrentInsurer({
         </button>
         <button
           onClick={nextStep}
-          className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-4 rounded-xl transition-colors flex items-center justify-center gap-2"
+          className="flex-1 bg-[#5b4dc9] hover:bg-[#4d40b3] text-white font-semibold py-4 rounded-xl transition-colors flex items-center justify-center gap-2"
         >
           Continue
           <ChevronRight className="w-5 h-5" />

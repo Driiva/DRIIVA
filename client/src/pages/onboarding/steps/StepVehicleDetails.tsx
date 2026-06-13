@@ -83,7 +83,7 @@ export function StepVehicleDetails({
         </button>
         <button
           onClick={nextStep}
-          className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-4 rounded-xl transition-colors flex items-center justify-center gap-2"
+          className="flex-1 bg-[#5b4dc9] hover:bg-[#4d40b3] text-white font-semibold py-4 rounded-xl transition-colors flex items-center justify-center gap-2"
         >
           {vehicleMake || vehicleModel || vehicleYear ? 'Continue' : 'Skip'}
           <ChevronRight className="w-5 h-5" />

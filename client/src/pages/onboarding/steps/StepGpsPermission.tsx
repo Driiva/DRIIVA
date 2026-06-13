@@ -24,8 +24,8 @@ export function StepGpsPermission({
       transition={{ duration: 0.3 }}
       className="text-center"
     >
-      <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-emerald-500/20 to-blue-500/20 flex items-center justify-center">
-        <MapPin className="w-12 h-12 text-emerald-400" />
+      <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-[#5b4dc9]/20 to-[#5b4dc9]/20 flex items-center justify-center">
+        <MapPin className="w-12 h-12 text-[#818cf8]" />
       </div>
 
       <h1 className="text-2xl font-bold text-white mb-3">Enable Location Access</h1>
@@ -38,7 +38,7 @@ export function StepGpsPermission({
       {gpsStatus === 'idle' && (
         <button
           onClick={testGpsPermission}
-          className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-4 rounded-xl transition-colors flex items-center justify-center gap-2 mb-4"
+          className="w-full bg-[#5b4dc9] hover:bg-[#4d40b3] text-white font-semibold py-4 rounded-xl transition-colors flex items-center justify-center gap-2 mb-4"
         >
           <Navigation className="w-5 h-5" />
           Test Location Access
@@ -47,14 +47,14 @@ export function StepGpsPermission({
 
       {gpsStatus === 'testing' && (
         <div className="bg-white/5 border border-white/10 rounded-xl p-6 mb-4">
-          <Loader2 className="w-8 h-8 text-emerald-400 animate-spin mx-auto mb-3" />
+          <Loader2 className="w-8 h-8 text-[#818cf8] animate-spin mx-auto mb-3" />
           <p className="text-white/60">Testing GPS access...</p>
         </div>
       )}
 
       {gpsStatus === 'success' && gpsResult && (
-        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-6 mb-4">
-          <div className="flex items-center justify-center gap-2 text-emerald-400 mb-3">
+        <div className="bg-[#5b4dc9]/10 border border-[#5b4dc9]/30 rounded-xl p-6 mb-4">
+          <div className="flex items-center justify-center gap-2 text-[#818cf8] mb-3">
             <Check className="w-6 h-6" />
             <span className="font-medium">GPS Working!</span>
           </div>
@@ -73,7 +73,7 @@ export function StepGpsPermission({
           <p className="text-white/60 text-sm mb-4">{gpsResult.error}</p>
           <button
             onClick={testGpsPermission}
-            className="text-emerald-400 hover:text-emerald-300 text-sm font-medium"
+            className="text-[#818cf8] hover:text-[#a5b4fc] text-sm font-medium"
           >
             Try Again
           </button>
@@ -96,7 +96,7 @@ export function StepGpsPermission({
           onClick={nextStep}
           className={`flex-1 font-semibold py-4 rounded-xl transition-colors flex items-center justify-center gap-2 ${
             gpsStatus === 'success'
-              ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
+              ? 'bg-[#5b4dc9] hover:bg-[#4d40b3] text-white'
               : 'bg-white/10 hover:bg-white/15 text-white/80'
           }`}
         >

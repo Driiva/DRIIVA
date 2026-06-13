@@ -245,18 +245,18 @@ export default function QuickOnboarding() {
   // Show loading only while AuthContext is resolving (typically instant after signup)
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-blue-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-[#050509] via-[#0a0a14] to-[#0a0a14] flex items-center justify-center">
         <div className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen pt-safe bg-gradient-to-br from-gray-900 via-purple-900 to-blue-900 flex flex-col relative overflow-hidden">
+    <div className="min-h-screen pt-safe bg-gradient-to-br from-[#050509] via-[#0a0a14] to-[#0a0a14] flex flex-col relative overflow-hidden">
       {/* Background orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 -left-20 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-blue-500/20 rounded-full blur-3xl" />
+        <div className="absolute top-1/4 -left-20 w-80 h-80 bg-[#d4850a]/12 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-[#6366f1]/16 rounded-full blur-3xl" />
       </div>
 
       <div className="relative z-10 flex-1 flex flex-col p-6 max-w-lg mx-auto w-full">
@@ -269,7 +269,7 @@ export default function QuickOnboarding() {
                   key={i}
                   className={`h-1.5 rounded-full transition-all duration-300 ${
                     i + 1 <= currentStep
-                      ? 'bg-emerald-500 w-5'
+                      ? 'bg-[#5b4dc9] w-5'
                       : 'bg-white/20 w-3.5'
                   }`}
                 />
@@ -280,7 +280,7 @@ export default function QuickOnboarding() {
         )}
 
         {/* Step content */}
-        <div className="flex-1 flex flex-col justify-center">
+        <div className="flex-1 flex flex-col justify-start pt-1">
           <AnimatePresence mode="wait">
             {currentStep === 1 && (
               <StepWelcome nextStep={nextStep} />
