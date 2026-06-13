@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "type": "module",
   "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "NODE_ENV=development doppler run -- tsx server/index.ts",
     "dev:staging": "NODE_ENV=development tsx --env-file=.env.staging server/index.ts",
