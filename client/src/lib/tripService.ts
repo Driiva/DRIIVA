@@ -15,13 +15,13 @@ import {
   collection,
   doc,
   setDoc,
-  updateDoc,
   addDoc,
   writeBatch,
   serverTimestamp,
   Timestamp,
 } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from './firebase';
+import { updateTripStatus } from './firestore';
 import {
   COLLECTION_NAMES,
   TripDocument,
@@ -92,6 +92,8 @@ export class TripPointStreamer {
   private flushInterval: NodeJS.Timeout | null = null;
   private isActive: boolean = false;
   private onError?: (error: Error) => void;
+  /** Serialises flushes so an auto-flush and the interval flush never overlap. */
+  private flushInFlight: Promise<void> = Promise.resolve();
 
   constructor(
     tripId: string,
@@ -165,9 +167,27 @@ export class TripPointStreamer {
   }
 
   /**
-   * Flush buffer to Firestore
+   * Flush buffer to Firestore.
+   *
+   * Flushes are serialised behind a single in-flight promise so that a
+   * buffer-full auto-flush (addPoint) and the periodic interval flush can never
+   * run concurrently and capture the same batchIndex. Without this guard, two
+   * overlapping flushes would write batches/{sameIndex} and one would silently
+   * overwrite a full window of GPS points.
    */
-  private async flush(): Promise<void> {
+  private flush(): Promise<void> {
+    const next = this.flushInFlight.then(() => this.flushOnce());
+    // Keep the chain alive even if this flush rejects, so a single failed flush
+    // does not block every subsequent flush. The error is still surfaced to
+    // this flush's own caller via the returned promise.
+    this.flushInFlight = next.catch(() => undefined);
+    return next;
+  }
+
+  /**
+   * Perform a single buffer flush. Only ever runs one at a time (see flush()).
+   */
+  private async flushOnce(): Promise<void> {
     if (this.buffer.length === 0) return;
     if (!isFirebaseConfigured || !db) {
       console.warn('[TripPointStreamer] Firestore not configured, skipping flush');
@@ -177,24 +197,26 @@ export class TripPointStreamer {
     const pointsToWrite = [...this.buffer];
     this.buffer = [];
 
+    // Reserve the batch index synchronously, before any await, so overlapping
+    // writes can never collide on the same batches/{index} document.
+    const idx = this.batchIndex++;
+
     try {
       // Write to tripPoints/{tripId}/batches/{batchIndex}
       const tripPointsRef = doc(db, COLLECTION_NAMES.TRIP_POINTS, this.tripId);
-      const batchRef = doc(collection(tripPointsRef, 'batches'), String(this.batchIndex));
+      const batchRef = doc(collection(tripPointsRef, 'batches'), String(idx));
 
       await setDoc(batchRef, {
         tripId: this.tripId,
         userId: this.userId,
-        batchIndex: this.batchIndex,
+        batchIndex: idx,
         startOffset: pointsToWrite[0]?.t ?? 0,
         endOffset: pointsToWrite[pointsToWrite.length - 1]?.t ?? 0,
         points: pointsToWrite,
         createdAt: serverTimestamp(),
       });
-
-      this.batchIndex++;
     } catch (error) {
-      // Put points back in buffer on error
+      // Put points back in buffer on error so the next flush retries them.
       this.buffer = [...pointsToWrite, ...this.buffer];
       throw error;
     }
@@ -275,11 +297,17 @@ export async function startTrip(input: TripStartInput): Promise<ActiveTrip> {
     pointsCount: 0,
   };
 
-  await setDoc(tripRef, tripData);
-
-  // Also create the tripPoints parent document
+  // The tripPoints parent document must exist alongside the trip: later point
+  // writes require get(tripPoints/{tripId}) in the security rules, and endTrip
+  // updates this metadata. Write both in a single batch so they commit
+  // atomically. If they were separate writes and the second failed, the trip
+  // would be stuck in 'recording' with no tripPoints parent, denying every
+  // later point write and leaving the trip unrecoverable.
   const tripPointsRef = doc(db!, COLLECTION_NAMES.TRIP_POINTS, tripId);
-  await setDoc(tripPointsRef, {
+
+  const batch = writeBatch(db!);
+  batch.set(tripRef, tripData);
+  batch.set(tripPointsRef, {
     tripId,
     userId: input.userId,
     points: [], // Points will be in batches subcollection
@@ -288,6 +316,7 @@ export async function startTrip(input: TripStartInput): Promise<ActiveTrip> {
     compressedSize: 0,
     createdAt: now,
   });
+  await batch.commit();
 
   return {
     tripId,
@@ -341,18 +370,18 @@ export async function endTrip(
 }
 
 /**
- * Cancel a trip - deletes trip and points documents
+ * Cancel a trip during recording.
+ *
+ * Routes through the cancelTrip Cloud Function (via firestore.updateTripStatus,
+ * which invokes it for the 'failed' status). The Cloud Function runs under the
+ * Admin SDK, so it can set the trip status to 'failed' AND purge the tripPoints
+ * parent and its batches subcollection. A client cannot do that cleanup itself:
+ * firestore.rules forbid deletes on trips, tripPoints and batches, so a
+ * client-side status flip would leave every GPS batch orphaned.
  */
 export async function cancelTrip(tripId: string): Promise<void> {
   assertFirestore();
-
-  // Note: In production, you might want to mark as 'cancelled' instead of deleting
-  const tripRef = doc(db!, COLLECTION_NAMES.TRIPS, tripId);
-  
-  await updateDoc(tripRef, {
-    status: 'failed',
-    processedAt: serverTimestamp(),
-  });
+  await updateTripStatus(tripId, 'failed');
 }
 
 /**
