@@ -1,12 +1,14 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Shield, Check, ChevronRight } from 'lucide-react';
 import { useLocation } from 'wouter';
+import { useToast } from '@/hooks/use-toast';
 import type { OnboardingStepProps } from '../types';
 
 interface StepDataConsentProps extends OnboardingStepProps {
   dataConsentGiven: boolean;
   setDataConsentGiven: (value: boolean) => void;
-  persistDataConsent: () => void;
+  persistDataConsent: () => Promise<boolean>;
 }
 
 export function StepDataConsent({
@@ -17,6 +19,25 @@ export function StepDataConsent({
   persistDataConsent,
 }: StepDataConsentProps) {
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const [saving, setSaving] = useState(false);
+
+  // Only advance once consent is safely persisted. If the write fails we keep
+  // the user here and surface a toast rather than progressing on a silent error.
+  const handleContinue = async () => {
+    setSaving(true);
+    const ok = await persistDataConsent();
+    setSaving(false);
+    if (!ok) {
+      toast({
+        title: "Couldn't save your consent",
+        description: 'Something went wrong. Check your connection and try again.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    nextStep();
+  };
 
   return (
     <motion.div
@@ -105,15 +126,15 @@ export function StepDataConsent({
           Back
         </button>
         <button
-          onClick={() => { persistDataConsent(); nextStep(); }}
-          disabled={!dataConsentGiven}
+          onClick={handleContinue}
+          disabled={!dataConsentGiven || saving}
           className={`flex-1 font-semibold py-4 rounded-xl transition-colors flex items-center justify-center gap-2 ${
-            dataConsentGiven
+            dataConsentGiven && !saving
               ? 'bg-[#5b4dc9] hover:bg-[#4d40b3] text-white'
               : 'bg-white/10 text-white/40 cursor-not-allowed'
           }`}
         >
-          Continue
+          {saving ? 'Saving...' : 'Continue'}
           <ChevronRight className="w-5 h-5" />
         </button>
       </div>
