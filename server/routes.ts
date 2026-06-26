@@ -175,10 +175,14 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  app.post("/api/auth/webauthn/register/start", authLimiter, async (req, res) => {
+  // Passkey ENROLMENT is an authenticated action: a logged-in user binds a new
+  // authenticator to their OWN account. The email comes from the verified Firebase
+  // token, never the request body — otherwise anyone could enrol a passkey on any
+  // account by submitting a victim's email and complete a full account takeover.
+  app.post("/api/auth/webauthn/register/start", authLimiter, requireAuth, async (req: AuthRequest, res) => {
     try {
-      const { email } = req.body;
-      if (!email) return res.status(400).json({ message: "email required" });
+      const email = req.auth?.email;
+      if (!email) return res.status(400).json({ message: "Authenticated account has no email" });
       const userAgent = req.headers['user-agent'];
       const options = await webauthnService.generateRegistrationOptions(email, userAgent);
       res.json(options);
@@ -188,10 +192,12 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  app.post("/api/auth/webauthn/register/complete", authLimiter, async (req, res) => {
+  app.post("/api/auth/webauthn/register/complete", authLimiter, requireAuth, async (req: AuthRequest, res) => {
     try {
-      const { email, credential } = req.body;
-      if (!email || !credential) return res.status(400).json({ message: "email and credential required" });
+      const email = req.auth?.email;
+      const { credential } = req.body;
+      if (!email) return res.status(400).json({ message: "Authenticated account has no email" });
+      if (!credential) return res.status(400).json({ message: "credential required" });
       const userAgent = req.headers['user-agent'];
       const result = await webauthnService.verifyRegistration(email, credential, userAgent);
       if (result.verified) {
@@ -1034,9 +1040,11 @@ export async function registerRoutes(app: Express): Promise<void> {
       return res.status(400).json({ message: `Webhook Error: ${err.message}` });
     }
 
-    // Acknowledge immediately — process asynchronously
-    res.json({ received: true });
-
+    // Process BEFORE acknowledging. A payment that binds a policy is a critical
+    // side effect: if it throws we must return a non-2xx so Stripe redelivers the
+    // event. ACKing first (200) and processing async means a failed bind — Firestore
+    // down, Admin not initialised, transient Root error — is dropped forever with no
+    // retry, leaving a charged customer with no cover (money-in / no-cover).
     try {
       switch (event.type) {
         case 'invoice.payment_succeeded': {
@@ -1079,8 +1087,12 @@ export async function registerRoutes(app: Express): Promise<void> {
         default:
           // Unhandled event type — ignore silently
       }
+      // All handled (or intentionally ignored) without throwing → acknowledge.
+      res.json({ received: true });
     } catch (err) {
-      console.error("[Stripe webhook] Handler error:", err);
+      // Do NOT swallow: a 5xx tells Stripe to redeliver so the side effect retries.
+      console.error("[Stripe webhook] Handler error, returning 500 for Stripe retry:", err);
+      res.status(500).json({ message: "Webhook handler failed; will be retried" });
     }
   });
 

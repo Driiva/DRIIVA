@@ -316,15 +316,18 @@ export async function endTrip(
   // Use batch write for atomicity
   const batch = writeBatch(db!);
 
-  // Update trip document
+  // Update trip document.
+  // NOTE: score, scoreBreakdown and events are intentionally NOT written here.
+  // firestore.rules locks those fields on a client recording→processing update
+  // (unchanged('score') etc.); the onTripStatusChange Cloud Function computes
+  // them from the GPS points via finalizeTripFromPoints. Writing them client-side
+  // gets the whole batch rejected with permission-denied, leaving the trip stuck
+  // in 'recording' and never scored.
   batch.update(tripRef, {
     endedAt: now,
     endLocation: input.endLocation,
     distanceMeters: Math.round(input.distanceMeters),
-    score: input.score,
-    scoreBreakdown: input.scoreBreakdown,
-    events: input.events,
-    status: 'processing', // Cloud Function will change to 'completed'
+    status: 'processing', // Cloud Function computes score, then sets 'completed'
     pointsCount,
   });
 
