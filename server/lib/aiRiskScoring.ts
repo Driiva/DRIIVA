@@ -517,8 +517,14 @@ export class AIRiskScoringEngine {
   }
 
   private estimateWeatherConditions(date: Date): number {
-    // Placeholder - integrate with weather API
-    return Math.random() * 0.5; // 0-0.5 risk factor
+    // Placeholder - integrate with weather API.
+    // Must be deterministic: the identical trip has to score identically every
+    // run for an audited insurance pricing path, so never use Math.random()
+    // here. Derive a stable 0-0.5 risk factor seeded from the trip date.
+    const yearStart = new Date(date.getFullYear(), 0, 0).getTime();
+    const dayOfYear = Math.floor((date.getTime() - yearStart) / 86_400_000);
+    const seed = (dayOfYear * 31 + date.getHours() * 7) % 100;
+    return (seed / 100) * 0.5; // 0-0.5 risk factor
   }
 
   private estimateTrafficDensity(gpsPoint: any, date: Date): number {

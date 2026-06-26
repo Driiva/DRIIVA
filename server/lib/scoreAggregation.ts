@@ -1,6 +1,6 @@
 import { db } from "../db";
 import { trips, drivingProfiles } from "@shared/schema";
-import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
+import { eq, and, gte, lt, lte, sql, desc } from "drizzle-orm";
 
 export interface AggregatedScore {
   period: 'weekly' | 'monthly';
@@ -75,8 +75,12 @@ export class ScoreAggregationService {
         .where(
           and(
             eq(trips.userId, userId),
+            // Bucket each trip by a single column (startTime) so a drive that
+            // crosses the window boundary (e.g. over midnight) lands in exactly
+            // one period instead of vanishing from every aggregate. Half-open
+            // [startDate, endDate) avoids double-counting the boundary instant.
             gte(trips.startTime, startDate),
-            lte(trips.endTime, endDate)
+            lt(trips.startTime, endDate)
           )
         );
 
@@ -142,8 +146,12 @@ export class ScoreAggregationService {
         .where(
           and(
             eq(trips.userId, userId),
+            // Bucket each trip by a single column (startTime) so a drive that
+            // crosses the window boundary (e.g. over midnight) lands in exactly
+            // one period instead of vanishing from every aggregate. Half-open
+            // [startDate, endDate) avoids double-counting the boundary instant.
             gte(trips.startTime, startDate),
-            lte(trips.endTime, endDate)
+            lt(trips.startTime, endDate)
           )
         )
         .groupBy(dateTruncExpr)
