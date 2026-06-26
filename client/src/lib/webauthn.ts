@@ -9,6 +9,8 @@
  * to establish a real Firebase session before any protected route is accessed.
  */
 
+import { auth } from './firebase';
+
 // ---------------------------------------------------------------------------
 // Encoding helpers
 // ---------------------------------------------------------------------------
@@ -80,9 +82,17 @@ export async function registerBiometricCredential(email: string): Promise<{
   error?: string;
 }> {
   try {
+    // Enrolment is an authenticated action — the server now gates register/* with
+    // requireAuth and derives the account email from the verified token. Attach the
+    // current user's Firebase ID token; refuse if there is no live session.
+    const idToken = await auth?.currentUser?.getIdToken();
+    if (!idToken) {
+      return { success: false, error: 'You must be signed in to register a passkey.' };
+    }
+
     const startRes = await fetch('/api/auth/webauthn/register/start', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
       body: JSON.stringify({ email }),
     });
     if (!startRes.ok) {
@@ -108,7 +118,7 @@ export async function registerBiometricCredential(email: string): Promise<{
 
     const verifyRes = await fetch('/api/auth/webauthn/register/complete', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
       body: JSON.stringify({
         email,
         credential: {

@@ -47,6 +47,12 @@ export interface IStorage {
   
   // Trip operations
   createTrip(trip: InsertTrip): Promise<Trip>;
+  recordTripAtomic(params: {
+    trip: InsertTrip;
+    profileUpdate?: Partial<InsertDrivingProfile>;
+    leaderboardScore?: number;
+    leaderboardPeriod?: string;
+  }): Promise<{ trip: Trip; profile?: DrivingProfile }>;
   getUserTrips(userId: number, limit?: number, offset?: number): Promise<Trip[]>;
   getTrips(userId: number, limit?: number, offset?: number): Promise<Trip[]>;
   getTripById(id: number): Promise<Trip | undefined>;
@@ -185,6 +191,44 @@ export class DatabaseStorage implements IStorage {
   async createTrip(trip: InsertTrip): Promise<Trip> {
     const [newTrip] = await db.insert(trips).values(trip).returning();
     return newTrip;
+  }
+
+  /**
+   * Persist a trip and its derived aggregates atomically. The trip insert, the
+   * driving-profile update and the leaderboard upsert either all commit or all
+   * roll back together. A partial write here would corrupt the running aggregates
+   * (currentScore is recomputed from totalTrips on the next trip, so a trip row
+   * without its matching profile increment permanently skews the average).
+   */
+  async recordTripAtomic(params: {
+    trip: InsertTrip;
+    profileUpdate?: Partial<InsertDrivingProfile>;
+    leaderboardScore?: number;
+    leaderboardPeriod?: string;
+  }): Promise<{ trip: Trip; profile?: DrivingProfile }> {
+    return await db.transaction(async (tx) => {
+      const [newTrip] = await tx.insert(trips).values(params.trip).returning();
+
+      let profile: DrivingProfile | undefined;
+      if (params.profileUpdate) {
+        [profile] = await tx.update(drivingProfiles)
+          .set({ ...params.profileUpdate, lastUpdated: new Date() })
+          .where(eq(drivingProfiles.userId, params.trip.userId))
+          .returning();
+      }
+
+      if (params.leaderboardScore !== undefined) {
+        const period = params.leaderboardPeriod ?? 'weekly';
+        await tx.insert(leaderboard)
+          .values({ userId: params.trip.userId, score: params.leaderboardScore, period, rank: 1 })
+          .onConflictDoUpdate({
+            target: [leaderboard.userId, leaderboard.period],
+            set: { score: params.leaderboardScore, lastUpdated: new Date() }
+          });
+      }
+
+      return { trip: newTrip, profile };
+    });
   }
 
   async getUserTrips(userId: number, limit: number = 10, offset: number = 0): Promise<Trip[]> {

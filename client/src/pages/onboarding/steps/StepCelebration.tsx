@@ -98,7 +98,7 @@ export function StepCelebration({ onContinue, userName, userEmail }: StepCelebra
           transition={{ type: 'spring', stiffness: 400, damping: 20, delay: 0.6 }}
           className="absolute inset-0 flex items-center justify-center"
         >
-          <Check className="w-12 h-12 text-emerald-400" />
+          <Check className="w-12 h-12 text-[#818cf8]" />
         </motion.div>
       </motion.div>
 
@@ -119,7 +119,7 @@ export function StepCelebration({ onContinue, userName, userEmail }: StepCelebra
             initial={{ opacity: 0 }}
             animate={{ opacity: [0, 1, 0.6, 1] }}
             transition={{ delay: 0.8, duration: 1.5 }}
-            className="flex items-center gap-2 mt-4 text-emerald-400"
+            className="flex items-center gap-2 mt-4 text-[#818cf8]"
           >
             <Sparkles className="w-5 h-5" />
             <span className="text-sm font-medium">Loading your dashboard...</span>
@@ -137,8 +137,8 @@ export function StepCelebration({ onContinue, userName, userEmail }: StepCelebra
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex flex-col items-center gap-2">
-            <div className="w-14 h-14 rounded-2xl bg-blue-500/15 border border-blue-400/30 flex items-center justify-center mb-1">
-              <ShieldCheck className="w-7 h-7 text-blue-400" />
+            <div className="w-14 h-14 rounded-2xl bg-[#5b4dc9]/15 border border-[#818cf8]/30 flex items-center justify-center mb-1">
+              <ShieldCheck className="w-7 h-7 text-[#818cf8]" />
             </div>
             <h2 className="text-xl font-bold text-white">
               {passkeyDone ? 'Passkey enabled!' : 'Enable Face ID / Touch ID?'}
@@ -155,7 +155,7 @@ export function StepCelebration({ onContinue, userName, userEmail }: StepCelebra
               <button
                 onClick={handleSetupPasskey}
                 disabled={isRegistering}
-                className="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white font-semibold flex items-center justify-center gap-2 transition-colors"
+                className="w-full py-3.5 rounded-xl bg-[#4d40b3] hover:bg-[#5b4dc9] disabled:opacity-60 text-white font-semibold flex items-center justify-center gap-2 transition-colors"
               >
                 {isRegistering ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
@@ -177,7 +177,7 @@ export function StepCelebration({ onContinue, userName, userEmail }: StepCelebra
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="flex items-center justify-center gap-2 text-emerald-400"
+              className="flex items-center justify-center gap-2 text-[#818cf8]"
             >
               <Check className="w-5 h-5" />
               <span className="text-sm font-medium">Taking you to your dashboard\u2026</span>

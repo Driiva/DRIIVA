@@ -6,6 +6,11 @@ import { log } from "./logger";
 
 const app = express();
 
+// Behind Vercel/Cloudflare there is exactly one proxy hop in front of us, so
+// trust the first X-Forwarded-For entry. Without this req.ip resolves to the
+// proxy address and every client collapses into a single rate-limit bucket.
+app.set('trust proxy', 1);
+
 app.use(securityHeaders);
 
 const CORS_ORIGINS = (process.env.CORS_ORIGINS ?? "http://localhost:5173,http://localhost:3000,http://localhost:3001,http://localhost:3002,http://127.0.0.1:5173,http://127.0.0.1:3000,http://127.0.0.1:3001,http://127.0.0.1:3002")
@@ -31,7 +36,6 @@ app.use((req, res, next) => {
 });
 
 app.use('/api/', apiLimiter);
-app.use(sanitizeInput);
 // Stripe webhook requires raw body for signature verification — must come before express.json()
 app.use('/api/webhooks/stripe', express.raw({ type: 'application/json' }));
 app.use('/api/webhooks/root', express.raw({ type: 'application/json' }));
@@ -40,6 +44,19 @@ app.use('/api/webhooks/root', express.raw({ type: 'application/json' }));
 app.use('/api/trips', express.json({ limit: '5mb' }));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: false, limit: '1mb' }));
+
+// Input sanitisation must run AFTER the body parsers so req.body is populated —
+// running it before leaves body sanitisation dead and only the query string is
+// cleaned. The raw webhook paths are skipped because their body is a Buffer
+// kept byte-intact for Stripe/Root signature verification.
+const RAW_BODY_PATHS = ['/api/webhooks/stripe', '/api/webhooks/root'];
+app.use((req, res, next) => {
+  if (RAW_BODY_PATHS.some((p) => req.path.startsWith(p))) {
+    next();
+    return;
+  }
+  sanitizeInput(req, res, next);
+});
 
 app.use((req, res, next) => {
   const start = Date.now();

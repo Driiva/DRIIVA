@@ -635,10 +635,25 @@ import { dirname, join } from 'node:path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// A request awaiting the worker. The original args are retained so a crash or
+// timeout can recover the request on the main thread instead of hanging it.
+interface PendingEntry {
+  resolve: (v: DrivingMetrics) => void;
+  reject: (e: any) => void;
+  timer: ReturnType<typeof setTimeout>;
+  telematicsData: TelematicsData | TripJSON;
+  userId: number;
+  existingTrips?: Array<{ startTime: Date; endTime: Date; distance: number }>;
+  phonePickupCount?: number;
+}
+
 class WorkerBackedProcessor extends TelematicsProcessor {
   private worker: Worker | null = null;
-  private pending = new Map<number, { resolve: (v: any) => void; reject: (e: any) => void }>();
+  private pending = new Map<number, PendingEntry>();
   private nextId = 0;
+  // Stop waiting on the worker after this long and recover on the main thread,
+  // so a wedged or silent worker can't leave a POST /api/trips hung forever.
+  private static readonly REQUEST_TIMEOUT_MS = 30_000;
 
   private getWorker(): Worker | null {
     if (this.worker) return this.worker;
@@ -648,15 +663,38 @@ class WorkerBackedProcessor extends TelematicsProcessor {
         const p = this.pending.get(msg.id);
         if (!p) return;
         this.pending.delete(msg.id);
+        clearTimeout(p.timer);
         if (msg.error) p.reject(new Error(msg.error));
         else p.resolve(msg.result);
       });
-      this.worker.on('error', () => { this.worker = null; });
-      this.worker.on('exit', () => { this.worker = null; });
+      // On a worker crash (error) or unexpected exit every in-flight request is
+      // lost. Drain the pending map and recover each one on the main thread so
+      // no awaiting promise hangs and the map can't grow unbounded.
+      this.worker.on('error', () => this.drainPending());
+      this.worker.on('exit', () => this.drainPending());
       return this.worker;
     } catch {
       return null;
     }
+  }
+
+  // Reset the worker and re-run every pending request on the main thread so the
+  // next processTrip call respawns a fresh worker.
+  private drainPending(): void {
+    this.worker = null;
+    const entries = Array.from(this.pending.values());
+    this.pending.clear();
+    for (const entry of entries) {
+      clearTimeout(entry.timer);
+      this.runOnMainThread(entry);
+    }
+  }
+
+  // Process a single pending request on the main thread and settle its promise.
+  private runOnMainThread(entry: PendingEntry): void {
+    super
+      .processTrip(entry.telematicsData, entry.userId, entry.existingTrips, entry.phonePickupCount)
+      .then(entry.resolve, entry.reject);
   }
 
   override async processTrip(
@@ -672,8 +710,22 @@ class WorkerBackedProcessor extends TelematicsProcessor {
     }
 
     const id = this.nextId++;
-    return new Promise((resolve, reject) => {
-      this.pending.set(id, { resolve, reject });
+    return new Promise<DrivingMetrics>((resolve, reject) => {
+      const entry: PendingEntry = {
+        resolve,
+        reject,
+        telematicsData,
+        userId,
+        existingTrips,
+        phonePickupCount,
+        timer: setTimeout(() => {
+          // Worker didn't answer in time — drop the entry and recover on the
+          // main thread rather than leaving the request hung.
+          if (!this.pending.delete(id)) return;
+          this.runOnMainThread(entry);
+        }, WorkerBackedProcessor.REQUEST_TIMEOUT_MS),
+      };
+      this.pending.set(id, entry);
       worker.postMessage({ id, telematicsData, userId, existingTrips, phonePickupCount });
     });
   }

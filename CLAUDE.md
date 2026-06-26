@@ -1,5 +1,7 @@
 # Driiva — Claude Code Configuration
 
+> Last updated: 2026-06-08. Canonical Driiva repo: `~/Documents/DriivaMVP` (remote `mrshippers/Driiva`). `~/DRIIVA` (uppercase) is a stale abandoned copy — ignore it. Current working branch: `feat/marketing-site-v1` (unmerged to `main`).
+
 ## Project Context
 
 Driiva Ltd is a telematics insurtech app targeting young UK drivers. Core proposition: telematics-driven cashback premiums, postcode penalty reduction, fraud mitigation. Sharia-compliant angle — targets young drivers and Muslim communities. Solo founder build. Pre-raise. Demo-prep phase with Keith Cheng.
@@ -154,9 +156,10 @@ The `skill-router` skill governs all dispatch in this project. On every task, ch
 - **Insurance Platform:** Root Insurance Platform API
 - **Deploy:** Vercel + Cloudflare
 - **Auth Enhancement:** WebAuthn / Passkeys (backend done, UI pending)
-- **Marketing site:** `marketing-site/index.html` (canonical editorial) + Framer (live render)
+- **Marketing site:** `apps/marketing/` — the live driiva.co.uk SPA (Vite + React 18 + wouter + animejs + Lenis), with its own serverless waitlist API (Firebase Admin + Resend), legal routes, and hyperframe video sections. Legacy `marketing-site/index.html` + Framer are superseded.
 - **CI Sentinel:** `claude-sentinel/` agent-driven QA harness
-- **Build:** Tailwind v4 (CSS-first config, migrated commit `e90290d`); rolldown for bundling
+- **Build:** Tailwind **v4** for the root product (CSS-first config, migrated `e90290d`); the `apps/marketing/` SPA uses **Tailwind v3.4** (`tailwind.config.js`). rolldown for bundling.
+- **Analytics:** `@vercel/analytics` (swapped from Plausible, `dae8f6b`) — do not reintroduce Plausible.
 
 ---
 
@@ -171,7 +174,8 @@ The `skill-router` skill governs all dispatch in this project. On every task, ch
 - `migrations/` — Drizzle migrations
 - `design-system/` — canonical brand + UI tokens (authoritative — see Design System below)
 - `driiva-design-system/` — packaged design-system module
-- `marketing-site/` — canonical editorial source (Framer mirrors this by hand)
+- `apps/marketing/` — **active driiva.co.uk marketing SPA** (Vite + React + wouter; Tailwind v3.4; waitlist API via Firebase Admin + Resend; legal pages /privacy /terms /cookies /complaints /uk-survey)
+- `marketing-site/` — **legacy** editorial source, superseded by `apps/marketing/` (Framer split-brain resolved — see Known Blockers)
 - `hyperframes/` — branded video compositions (canonical, shipped May 2026, commit `37012a6`)
 - `Driiva Marketing/` — marketing collateral
 - `claude-sentinel/` — agent-driven QA harness
@@ -200,6 +204,11 @@ npm run test:auth         # node test-auth.js
 
 # Mobile
 cd mobile && npm start    # Expo Go preview
+
+# Marketing site (apps/marketing — driiva.co.uk)
+cd apps/marketing && npm run dev        # Vite dev
+cd apps/marketing && npm run build      # production build
+cd apps/marketing && npm run preview    # preview the build
 ```
 
 Pre-commit hooks run secret scanning + lint. Don't bypass with `--no-verify`.
@@ -254,8 +263,9 @@ Pre-commit hooks run secret scanning + lint. Don't bypass with `--no-verify`.
 2. **CI pipeline failures** — Firebase org policy blocking SA key creation.
 3. **WebAuthn UI** — backend complete, frontend pending.
 4. **Waitlist** — exists but not actively driven to 1,000 target.
-5. **Marketing site split-brain** — live site is on Framer (no write API available to Claude). Canonical editorial source is `marketing-site/index.html`; changes must be mirrored into Framer by hand, or the live site migrated off Framer.
+5. **Marketing site** — the live driiva.co.uk is now the `apps/marketing/` Vite SPA (Vercel), which **supersedes** the old Framer + `marketing-site/index.html` split-brain. Edit `apps/marketing/`; treat `marketing-site/` and Framer as legacy.
 6. **Public GitHub repo** — `github.com/mrshippers/Driiva` is public. Reconcile against the "Private repos" rule below: either flip to private, or confirm no secrets have ever been committed + scrub history. Doppler now ensures future secrets don't land in git, but historical commits may need audit.
+7. **Working branch** — the past month of work (marketing-site rebuild) lives on `feat/marketing-site-v1`, **not yet merged to `main`**. Branch from / build on `feat/marketing-site-v1` until it lands.
 
 ---
 
@@ -268,6 +278,19 @@ Pre-commit hooks run secret scanning + lint. Don't bypass with `--no-verify`.
 - **Exit thesis:** Aviva, Admiral, LV pay for distribution + clean telematics data
 
 ---
+
+## Operator Ecosystem (sibling projects)
+
+Driiva runs under Jamal's **Shippers** operator brand (GitHub/HF: `mrshippers`) alongside StrydeOS, TradeMind, and the shippers-tt operator dashboard. Shared conventions: Doppler "Driiva Stryde" workspace, UK English, no em dashes, ship-don't-ask. Each repo has its own CLAUDE.md.
+
+| Project | Path | What it is |
+|---|---|---|
+| **Driiva** (this repo) | `~/Documents/DriivaMVP` | Telematics insurtech for young UK drivers. |
+| **StrydeOS** | `~/Desktop/StrydeOS` | Clinical performance SaaS for UK private physio. Flagship. |
+| **TradeMind** | `~/Downloads/AI/Shippers/TradeMind` | Mobile AI for UK electricians. Client deliverable. |
+| **shippers-tt** | `~/Projects/shippers-tt` | Personal operator system that tracks all ventures. |
+
+⚠ `~/DRIIVA` (uppercase) is a stale abandoned copy of this project — different remote (`mrshippers/DRIIVA.git`), last commit 12 Apr, outdated CLAUDE.md + a 96 MB committed zip. Don't open or act on it; archive/delete when convenient.
 
 ## Constraints
 

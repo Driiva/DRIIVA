@@ -22,8 +22,8 @@ export function StepCurrentPremium({
       transition={{ duration: 0.3 }}
       className="text-center"
     >
-      <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-emerald-500/20 to-teal-500/20 flex items-center justify-center">
-        <Wallet className="w-12 h-12 text-emerald-400" />
+      <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-[#5b4dc9]/20 to-teal-500/20 flex items-center justify-center">
+        <Wallet className="w-12 h-12 text-[#818cf8]" />
       </div>
 
       <h1 className="text-2xl font-bold text-white mb-3">What's your current premium?</h1>
@@ -39,7 +39,7 @@ export function StepCurrentPremium({
           onChange={(e) => setCurrentPremiumPounds(e.target.value)}
           placeholder="e.g. 1200"
           min="0"
-          className="w-full pl-8 pr-4 py-4 rounded-xl bg-white/5 border border-white/20 text-white placeholder-white/30 focus:outline-none focus:border-emerald-400/60 focus:bg-white/10 transition-all text-sm"
+          className="w-full pl-8 pr-4 py-4 rounded-xl bg-white/5 border border-white/20 text-white placeholder-white/30 focus:outline-none focus:border-[#818cf8]/60 focus:bg-white/10 transition-all text-sm"
         />
       </div>
 
@@ -59,7 +59,7 @@ export function StepCurrentPremium({
         </button>
         <button
           onClick={nextStep}
-          className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-4 rounded-xl transition-colors flex items-center justify-center gap-2"
+          className="flex-1 bg-[#5b4dc9] hover:bg-[#4d40b3] text-white font-semibold py-4 rounded-xl transition-colors flex items-center justify-center gap-2"
         >
           Continue
           <ChevronRight className="w-5 h-5" />

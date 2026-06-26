@@ -34,8 +34,8 @@ export function StepWelcome({ nextStep }: StepWelcomeProps) {
       {/* Feature cards */}
       <div className="space-y-3 mb-8">
         <div className="flex items-center gap-4 bg-white/5 backdrop-blur-sm border border-white/10 p-4 rounded-xl text-left">
-          <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
-            <Shield className="w-6 h-6 text-emerald-400" />
+          <div className="w-12 h-12 rounded-xl bg-[#5b4dc9]/20 flex items-center justify-center flex-shrink-0">
+            <Shield className="w-6 h-6 text-[#818cf8]" />
           </div>
           <div>
             <h3 className="text-white font-medium">AI-Powered Safety</h3>
@@ -44,8 +44,8 @@ export function StepWelcome({ nextStep }: StepWelcomeProps) {
         </div>
 
         <div className="flex items-center gap-4 bg-white/5 backdrop-blur-sm border border-white/10 p-4 rounded-xl text-left">
-          <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center flex-shrink-0">
-            <Wallet className="w-6 h-6 text-blue-400" />
+          <div className="w-12 h-12 rounded-xl bg-[#5b4dc9]/20 flex items-center justify-center flex-shrink-0">
+            <Wallet className="w-6 h-6 text-[#818cf8]" />
           </div>
           <div>
             <h3 className="text-white font-medium">Earn Refunds</h3>
@@ -55,8 +55,8 @@ export function StepWelcome({ nextStep }: StepWelcomeProps) {
         </div>
 
         <div className="flex items-center gap-4 bg-white/5 backdrop-blur-sm border border-white/10 p-4 rounded-xl text-left">
-          <div className="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center flex-shrink-0">
-            <Users className="w-6 h-6 text-purple-400" />
+          <div className="w-12 h-12 rounded-xl bg-[#5b4dc9]/20 flex items-center justify-center flex-shrink-0">
+            <Users className="w-6 h-6 text-[#818cf8]" />
           </div>
           <div>
             <h3 className="text-white font-medium">Community Pool</h3>
@@ -67,7 +67,7 @@ export function StepWelcome({ nextStep }: StepWelcomeProps) {
 
       <button
         onClick={nextStep}
-        className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-4 rounded-xl transition-colors flex items-center justify-center gap-2"
+        className="w-full bg-[#5b4dc9] hover:bg-[#4d40b3] text-white font-semibold py-4 rounded-xl transition-colors flex items-center justify-center gap-2"
       >
         Continue
         <ChevronRight className="w-5 h-5" />

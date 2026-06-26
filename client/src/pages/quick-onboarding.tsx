@@ -17,7 +17,9 @@
  *   11. Confirm — User acknowledges "drive to earn rewards" concept
  *   12. Celebration
  *
- * On completion, sets `onboardingCompleted: true` in Firestore.
+ * On completion, writes onboardingComplete to PostgreSQL (authoritative) first,
+ * then mirrors it to Firestore. Partial progress is drafted to localStorage so
+ * the flow can resume after a closed tab.
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -26,6 +28,7 @@ import { useLocation } from 'wouter';
 import { auth, db, isFirebaseConfigured } from '../lib/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 import type { GpsTestResult } from './onboarding/types';
 
 // Step components
@@ -47,9 +50,13 @@ const TOTAL_STEPS = 12;
 export default function QuickOnboarding() {
   const [, setLocation] = useLocation();
   const { user, loading: authLoading, setUser } = useAuth();
+  const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
+  // Tracks whether the saved draft (if any) has been restored, so the persist
+  // effect below does not overwrite a stored draft before it is hydrated.
+  const [draftHydrated, setDraftHydrated] = useState(false);
 
   // GPS state
   const [gpsStatus, setGpsStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
@@ -97,21 +104,91 @@ export default function QuickOnboarding() {
     // Otherwise, user needs onboarding — let them through
   }, [user, authLoading, setLocation]);
 
-  /**
-   * Persist GDPR data consent to Firestore when user grants it.
-   */
-  const persistDataConsent = async () => {
-    const firebaseUser = auth?.currentUser;
-    if (firebaseUser && isFirebaseConfigured && db) {
-      try {
-        await setDoc(doc(db, 'users', firebaseUser.uid), {
-          dataConsentGiven: true,
-          dataConsentTimestamp: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        }, { merge: true });
-      } catch (err) {
-        console.error('[QuickOnboarding] Failed to persist data consent:', err);
+  // Draft is scoped per user so a shared device never leaks one person's
+  // partial answers into another account's onboarding.
+  const draftKey = user ? `driiva-onboarding-draft-${user.id}` : null;
+
+  // Hydrate any saved draft once the user resolves, so closing the tab mid-flow
+  // does not lose entered answers. Restores field values and the saved step
+  // (never the celebration step, which only follows a successful save).
+  useEffect(() => {
+    if (draftHydrated || !draftKey) return;
+    try {
+      const raw = localStorage.getItem(draftKey);
+      if (raw) {
+        const draft = JSON.parse(raw);
+        if (typeof draft.dataConsentGiven === 'boolean') setDataConsentGiven(draft.dataConsentGiven);
+        if (typeof draft.annualMileage === 'string') setAnnualMileage(draft.annualMileage);
+        if (typeof draft.age === 'string') setAge(draft.age);
+        if (typeof draft.postcode === 'string') setPostcode(draft.postcode);
+        if (typeof draft.vehicleMake === 'string') setVehicleMake(draft.vehicleMake);
+        if (typeof draft.vehicleModel === 'string') setVehicleModel(draft.vehicleModel);
+        if (typeof draft.vehicleYear === 'string') setVehicleYear(draft.vehicleYear);
+        if (typeof draft.noClaimsYears === 'number') setNoClaimsYears(draft.noClaimsYears);
+        if (typeof draft.referralSource === 'string') setReferralSource(draft.referralSource);
+        if (typeof draft.currentInsurer === 'string') setCurrentInsurer(draft.currentInsurer);
+        if (typeof draft.currentPremiumPounds === 'string') setCurrentPremiumPounds(draft.currentPremiumPounds);
+        if (typeof draft.currentStep === 'number' && draft.currentStep >= 1 && draft.currentStep < TOTAL_STEPS) {
+          setCurrentStep(draft.currentStep);
+        }
       }
+    } catch (err) {
+      console.warn('[QuickOnboarding] Failed to restore onboarding draft:', err);
+    }
+    setDraftHydrated(true);
+  }, [draftKey, draftHydrated]);
+
+  // Persist the draft on every change once hydrated. The celebration step is
+  // excluded so a completed flow does not re-save a stale draft.
+  useEffect(() => {
+    if (!draftHydrated || !draftKey || currentStep >= TOTAL_STEPS) return;
+    try {
+      localStorage.setItem(draftKey, JSON.stringify({
+        currentStep,
+        dataConsentGiven,
+        annualMileage,
+        age,
+        postcode,
+        vehicleMake,
+        vehicleModel,
+        vehicleYear,
+        noClaimsYears,
+        referralSource,
+        currentInsurer,
+        currentPremiumPounds,
+      }));
+    } catch (err) {
+      // Quota or private-mode errors are non-critical — the terminal write still persists everything.
+      console.warn('[QuickOnboarding] Failed to save onboarding draft:', err);
+    }
+  }, [
+    draftHydrated, draftKey, currentStep, dataConsentGiven, annualMileage, age, postcode,
+    vehicleMake, vehicleModel, vehicleYear, noClaimsYears, referralSource, currentInsurer,
+    currentPremiumPounds,
+  ]);
+
+  /**
+   * Persist GDPR data consent to Firestore when user grants it. Returns true
+   * when the consent (and its step-2 timestamp) is safely stored, or when there
+   * is no Firestore to write to. Returns false on a write failure so the caller
+   * can keep the user on the consent step rather than advancing silently.
+   */
+  const persistDataConsent = async (): Promise<boolean> => {
+    const firebaseUser = auth?.currentUser;
+    if (!firebaseUser || !isFirebaseConfigured || !db) {
+      // Nothing to persist to (e.g. Firebase not configured) — let the user continue.
+      return true;
+    }
+    try {
+      await setDoc(doc(db, 'users', firebaseUser.uid), {
+        dataConsentGiven: true,
+        dataConsentTimestamp: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }, { merge: true });
+      return true;
+    } catch (err) {
+      console.error('[QuickOnboarding] Failed to persist data consent:', err);
+      return false;
     }
   };
 
@@ -169,36 +246,61 @@ export default function QuickOnboarding() {
 
   /**
    * Persist onboarding completion to backend, then advance to celebration step.
+   *
+   * PostgreSQL is the authoritative store that AuthContext's slow path reconciles
+   * against, so it must be written successfully BEFORE we mark Firestore complete
+   * or advance. If the authoritative write fails we keep the user on the confirm
+   * step (no data lost) and surface a toast, rather than navigating to a dashboard
+   * that the slow path would immediately bounce them out of.
    */
   const handleComplete = async () => {
     if (!confirmed) return;
 
-    setIsLoading(true);
-
     const firebaseUser = auth?.currentUser;
-    if (firebaseUser) {
-      try {
-        const token = await firebaseUser.getIdToken();
-        await fetch('/api/profile/me', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          credentials: 'include',
-          body: JSON.stringify({ onboardingComplete: true }),
-        });
-      } catch (err) {
-        console.error('[QuickOnboarding] Failed to update onboarding in PostgreSQL:', err);
-      }
+    if (!firebaseUser) {
+      toast({
+        title: "Couldn't finish setup",
+        description: 'You appear to be signed out. Please sign in again and retry.',
+        variant: 'destructive',
+      });
+      return;
     }
 
+    setIsLoading(true);
+
+    // 1. Authoritative write — must succeed before we advance.
     try {
-      if (firebaseUser && isFirebaseConfigured && db) {
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch('/api/profile/me', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        credentials: 'include',
+        body: JSON.stringify({ onboardingComplete: true }),
+      });
+      if (!res.ok) throw new Error(`Profile update failed (${res.status})`);
+    } catch (err) {
+      console.error('[QuickOnboarding] Failed to update onboarding in PostgreSQL:', err);
+      setIsLoading(false);
+      toast({
+        title: "Couldn't save your details",
+        description: 'Something went wrong saving your onboarding. Check your connection and try again.',
+        variant: 'destructive',
+      });
+      return; // Stay on the confirm step — nothing entered is lost.
+    }
+
+    // 2. Mirror to Firestore (the AuthContext fast-path source). Best-effort:
+    //    the authoritative write already succeeded, so a Firestore hiccup here
+    //    must not strand the user. The slow path reconciles from PostgreSQL.
+    //    Note: dataConsentTimestamp is intentionally NOT re-stamped here — the
+    //    real consent moment is recorded at step 2 by persistDataConsent.
+    try {
+      if (isFirebaseConfigured && db) {
         const userDocRef = doc(db, 'users', firebaseUser.uid);
         await setDoc(userDocRef, {
-          onboardingCompleted: true,
           onboardingComplete: true,
           gpsPermissionGranted: gpsStatus === 'success',
           dataConsentGiven: dataConsentGiven,
-          dataConsentTimestamp: dataConsentGiven ? new Date().toISOString() : null,
           annualMileage: annualMileage || null,
           age: age ? Number(age) : null,
           postcode: postcode ? postcode.trim().toUpperCase() : null,
@@ -215,7 +317,16 @@ export default function QuickOnboarding() {
         }, { merge: true });
       }
     } catch (err) {
-      console.error('[QuickOnboarding] Failed to update Firestore:', err);
+      console.error('[QuickOnboarding] Failed to mirror onboarding to Firestore:', err);
+    }
+
+    // Onboarding is persisted — clear the resume draft and advance to celebration.
+    if (draftKey) {
+      try {
+        localStorage.removeItem(draftKey);
+      } catch {
+        // Non-critical.
+      }
     }
 
     setIsLoading(false);
@@ -245,18 +356,18 @@ export default function QuickOnboarding() {
   // Show loading only while AuthContext is resolving (typically instant after signup)
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-blue-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-[#050509] via-[#0a0a14] to-[#0a0a14] flex items-center justify-center">
         <div className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen pt-safe bg-gradient-to-br from-gray-900 via-purple-900 to-blue-900 flex flex-col relative overflow-hidden">
+    <div className="min-h-screen pt-safe bg-gradient-to-br from-[#050509] via-[#0a0a14] to-[#0a0a14] flex flex-col relative overflow-hidden">
       {/* Background orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 -left-20 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-blue-500/20 rounded-full blur-3xl" />
+        <div className="absolute top-1/4 -left-20 w-80 h-80 bg-[#d4850a]/12 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-[#6366f1]/16 rounded-full blur-3xl" />
       </div>
 
       <div className="relative z-10 flex-1 flex flex-col p-6 max-w-lg mx-auto w-full">
@@ -269,7 +380,7 @@ export default function QuickOnboarding() {
                   key={i}
                   className={`h-1.5 rounded-full transition-all duration-300 ${
                     i + 1 <= currentStep
-                      ? 'bg-emerald-500 w-5'
+                      ? 'bg-[#5b4dc9] w-5'
                       : 'bg-white/20 w-3.5'
                   }`}
                 />
@@ -280,7 +391,7 @@ export default function QuickOnboarding() {
         )}
 
         {/* Step content */}
-        <div className="flex-1 flex flex-col justify-center">
+        <div className="flex-1 flex flex-col justify-start pt-1">
           <AnimatePresence mode="wait">
             {currentStep === 1 && (
               <StepWelcome nextStep={nextStep} />

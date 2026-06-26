@@ -26,7 +26,7 @@ export function StepAgePostcode({
       transition={{ duration: 0.3 }}
       className="text-center"
     >
-      <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center">
+      <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-cyan-500/20 to-[#5b4dc9]/20 flex items-center justify-center">
         <UserRound className="w-12 h-12 text-cyan-400" />
       </div>
 
@@ -70,7 +70,7 @@ export function StepAgePostcode({
         </button>
         <button
           onClick={nextStep}
-          className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-4 rounded-xl transition-colors flex items-center justify-center gap-2"
+          className="flex-1 bg-[#5b4dc9] hover:bg-[#4d40b3] text-white font-semibold py-4 rounded-xl transition-colors flex items-center justify-center gap-2"
         >
           {age || postcode ? 'Continue' : 'Skip'}
           <ChevronRight className="w-5 h-5" />

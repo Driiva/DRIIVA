@@ -119,7 +119,7 @@ export class AIRiskScoringEngine {
       return result;
     } catch (error) {
       console.error('AI Risk Scoring Engine Error:', error);
-      throw new Error(`AI model calculation failed: ${(error as Error).message}`);
+      throw new Error(`AI model calculation failed: ${(error as Error).message}`, { cause: error });
     }
   }
 
@@ -234,7 +234,7 @@ export class AIRiskScoringEngine {
 
   private gradientBoostingModel(features: MachineLearningFeatures, pattern: DriverBehaviorPattern): number {
     // Enhanced Gradient Boosting with sequential weak learners
-    let predictions: number[] = [];
+    const predictions: number[] = [];
     let currentPrediction = 0.4; // Base prediction
     
     // Weak learner 1: Behavioral patterns
@@ -517,8 +517,14 @@ export class AIRiskScoringEngine {
   }
 
   private estimateWeatherConditions(date: Date): number {
-    // Placeholder - integrate with weather API
-    return Math.random() * 0.5; // 0-0.5 risk factor
+    // Placeholder - integrate with weather API.
+    // Must be deterministic: the identical trip has to score identically every
+    // run for an audited insurance pricing path, so never use Math.random()
+    // here. Derive a stable 0-0.5 risk factor seeded from the trip date.
+    const yearStart = new Date(date.getFullYear(), 0, 0).getTime();
+    const dayOfYear = Math.floor((date.getTime() - yearStart) / 86_400_000);
+    const seed = (dayOfYear * 31 + date.getHours() * 7) % 100;
+    return (seed / 100) * 0.5; // 0-0.5 risk factor
   }
 
   private estimateTrafficDensity(gpsPoint: any, date: Date): number {
@@ -642,7 +648,7 @@ export class AIRiskScoringEngine {
     const dataQuality = this.assessDataQuality(features);
     const patternStability = this.assessPatternStability(pattern);
     
-    let weights = {
+    const weights = {
       rf: 0.35,
       gb: 0.30,
       nn: 0.20,
@@ -824,7 +830,7 @@ export class AIRiskScoringEngine {
 
   private predictClaimProbability(features: MachineLearningFeatures, riskScore: number, pattern: DriverBehaviorPattern): number {
     // Advanced claim probability model using actuarial science principles
-    let baseProbability = 0.05; // 5% base annual claim rate
+    const baseProbability = 0.05; // 5% base annual claim rate
     
     // Risk score multiplier (exponential relationship)
     const riskMultiplier = 1 + Math.pow(riskScore, 1.5) * 3;

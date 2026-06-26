@@ -167,7 +167,7 @@ if (isFirebaseConfigured) {
     console.log(`✓ Firebase initialized — project="${projectId}"`);
   } catch (error) {
     console.error('❌ Firebase initialization failed:', error);
-    throw new Error(`Firebase initialization failed: ${error}`);
+    throw new Error(`Firebase initialization failed: ${error}`, { cause: error });
   }
 }
 
