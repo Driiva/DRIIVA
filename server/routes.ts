@@ -17,7 +17,7 @@ import { crypto } from "./lib/crypto";
 import { telematicsProcessor, TelematicsData, TripJSON } from "./lib/telematics";
 import { aiInsightsEngine } from "./lib/aiInsights";
 import { scoreAggregation } from "./lib/scoreAggregation";
-import { insertTripSchema, insertIncidentSchema } from "@shared/schema";
+import { insertTripSchema, insertIncidentSchema, type InsertDrivingProfile } from "@shared/schema";
 import { z } from "zod";
 import { webauthnService } from "./webauthn";
 import { authLimiter, tripDataLimiter, webhookLimiter, coachLimiter } from "./middleware/security";
@@ -50,6 +50,27 @@ function setCachedLeaderboard(key: string, data: unknown): void {
 
 function invalidateLeaderboardCache(): void {
   leaderboardCache.clear();
+}
+
+/**
+ * Server-side allow-list of Stripe Price IDs a client may reference directly.
+ * Without this a user could substitute a cheaper Stripe Price in create-subscription's
+ * legacy branch or in create-checkout. The list is sourced from server env only —
+ * never from the request body. STRIPE_MONTHLY_PRICE_ID is always included when set;
+ * STRIPE_ALLOWED_PRICE_IDS is an optional comma-separated list for any additional
+ * prices (e.g. one-off add-on Prices used by create-checkout).
+ */
+function allowedStripePriceIds(): Set<string> {
+  const ids = new Set<string>();
+  const monthly = process.env.STRIPE_MONTHLY_PRICE_ID;
+  if (monthly) ids.add(monthly);
+  const extra = process.env.STRIPE_ALLOWED_PRICE_IDS;
+  if (extra) {
+    for (const id of extra.split(',').map(s => s.trim()).filter(Boolean)) {
+      ids.add(id);
+    }
+  }
+  return ids;
 }
 
 export async function registerRoutes(app: Express): Promise<void> {
@@ -363,6 +384,19 @@ export async function registerRoutes(app: Express): Promise<void> {
         });
       }
 
+      // Reject duplicate trips outright. Persisting a duplicate would double-count
+      // its miles, trip count and score into the running aggregates and the
+      // leaderboard — a fraud and data-integrity gap. This must happen BEFORE any
+      // write so no aggregate is mutated. Impossible-speed / GPS-jump anomalies are
+      // not rejected: they are kept and already soft-penalised in metrics.score by
+      // the processor, so we persist them rather than silently lose the trip.
+      if (metrics.anomalies.isDuplicate) {
+        return res.status(409).json({
+          message: "Duplicate trip rejected",
+          anomalies: metrics.anomalies
+        });
+      }
+
       // Require a real encryption key — no insecure fallback in production
       const encryptionKey = process.env.ENCRYPTION_KEY;
       if (!encryptionKey) {
@@ -370,31 +404,17 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(500).json({ message: 'Server configuration error' });
       }
 
-      // Create trip with processed metrics (distance in km)
-      const trip = await storage.createTrip({
-        ...tripData,
-        score: metrics.score,
-        hardBrakingEvents: metrics.hardBrakingEvents,
-        harshAcceleration: metrics.harshAccelerationEvents,
-        speedViolations: metrics.speedViolations,
-        nightDriving: metrics.nightDriving,
-        sharpCorners: metrics.sharpCorners,
-        distance: metrics.distanceKm.toString(), // Store in km
-        duration: metrics.duration,
-        telematicsData: crypto.encrypt(
-          JSON.stringify(telematicsDataOrJSON),
-          encryptionKey
-        )
-      });
-
-      // Update user's driving profile
+      // Read the current profile and compute the next aggregate values. The read
+      // stays outside the transaction; the three writes below commit atomically.
       const profile = await storage.getDrivingProfile(tripData.userId);
+      let newCurrentScore: number | undefined;
+      let profileUpdate: Partial<InsertDrivingProfile> | undefined;
       if (profile) {
         const currentScore = profile.currentScore || 0;
         const totalTrips = profile.totalTrips || 0;
-        const newCurrentScore = Math.round((currentScore * totalTrips + metrics.score) / (totalTrips + 1));
+        newCurrentScore = Math.round((currentScore * totalTrips + metrics.score) / (totalTrips + 1));
 
-        const updatedProfile = await storage.updateDrivingProfile(tripData.userId, {
+        profileUpdate = {
           currentScore: newCurrentScore,
           hardBrakingScore: (profile.hardBrakingScore || 0) + metrics.hardBrakingEvents,
           accelerationScore: (profile.accelerationScore || 0) + metrics.harshAccelerationEvents,
@@ -403,10 +423,33 @@ export async function registerRoutes(app: Express): Promise<void> {
           corneringScore: (profile.corneringScore || 0) + metrics.sharpCorners,
           totalTrips: totalTrips + 1,
           totalMiles: (Number(profile.totalMiles) + metrics.distanceKm * 0.621371).toString() // Convert km to miles
-        });
+        };
+      }
 
-        // Update leaderboard and bust cache
-        await storage.updateLeaderboard(tripData.userId, newCurrentScore);
+      // Persist trip + profile + leaderboard atomically (all-or-nothing). A partial
+      // write would corrupt the running aggregates the next trip is computed from.
+      const { trip } = await storage.recordTripAtomic({
+        trip: {
+          ...tripData,
+          score: metrics.score,
+          hardBrakingEvents: metrics.hardBrakingEvents,
+          harshAcceleration: metrics.harshAccelerationEvents,
+          speedViolations: metrics.speedViolations,
+          nightDriving: metrics.nightDriving,
+          sharpCorners: metrics.sharpCorners,
+          distance: metrics.distanceKm.toString(), // Store in km
+          duration: metrics.duration,
+          telematicsData: crypto.encrypt(
+            JSON.stringify(telematicsDataOrJSON),
+            encryptionKey
+          )
+        },
+        profileUpdate,
+        leaderboardScore: profile ? newCurrentScore : undefined
+      });
+
+      // Bust the leaderboard cache only when the leaderboard actually changed.
+      if (profile) {
         invalidateLeaderboardCache();
       }
 
@@ -908,8 +951,14 @@ export async function registerRoutes(app: Express): Promise<void> {
         };
         subscriptionMeta.annualPremiumCents = String(annualPremiumCents);
       } else {
-        // Legacy fallback: use the pre-created monthly Price ID
-        const priceId = req.body.priceId || process.env.STRIPE_MONTHLY_PRICE_ID;
+        // Legacy fallback: use the pre-created monthly Price ID. If the client
+        // supplies a priceId it MUST be in the server allow-list — otherwise a user
+        // could substitute a cheaper Stripe Price than the one we intend to charge.
+        const requestedPriceId: string | undefined = req.body.priceId;
+        if (requestedPriceId && !allowedStripePriceIds().has(requestedPriceId)) {
+          return res.status(400).json({ message: "Invalid priceId" });
+        }
+        const priceId = requestedPriceId || process.env.STRIPE_MONTHLY_PRICE_ID;
         if (!priceId) {
           return res.status(400).json({ message: "STRIPE_PRODUCT_ID or STRIPE_MONTHLY_PRICE_ID is required" });
         }
@@ -957,6 +1006,12 @@ export async function registerRoutes(app: Express): Promise<void> {
       const uid = req.auth!.uid;
       const { priceId, successUrl, cancelUrl } = req.body;
       if (!priceId) return res.status(400).json({ message: "priceId is required" });
+      // Allow-list the priceId server-side: a client must not be able to check out
+      // against an arbitrary (cheaper) Stripe Price. Configure one-off add-on Prices
+      // via STRIPE_ALLOWED_PRICE_IDS.
+      if (!allowedStripePriceIds().has(priceId)) {
+        return res.status(400).json({ message: "Invalid priceId" });
+      }
 
       const user = await storage.getUserByFirebaseUid(uid);
       if (!user) return res.status(404).json({ message: "User not found" });
@@ -1023,10 +1078,21 @@ export async function registerRoutes(app: Express): Promise<void> {
    * Stripe webhook endpoint.
    * Raw body is required for signature verification (app.ts registers express.raw for this path).
    * Events handled:
-   *   invoice.payment_succeeded  → trigger Root policy bind if no active policy
-   *   invoice.payment_failed     → log + notify user
-   *   customer.subscription.deleted → mark policy cancelled
-   *   checkout.session.completed → handle one-time purchases
+   *   invoice.payment_succeeded      → write a Firestore pendingPayment so the app /
+   *                                    Root binds cover (the money-in / cover path).
+   *   invoice.payment_failed         → resolve the user + structured warn so ops can
+   *                                    act. No past_due flag is persisted yet: this
+   *                                    service has no subscription/policy status store
+   *                                    (the policy lifecycle lives in Firestore/Root).
+   *                                    TODO: persist past_due + notify the customer.
+   *   customer.subscription.deleted  → resolve the user + structured log. No policy
+   *                                    cancellation is performed: there is no
+   *                                    cancellation primitive on this service, the
+   *                                    policy lifecycle is owned by Firestore/Root.
+   *                                    TODO: cancel the bound policy via Root/Firestore.
+   *   checkout.session.completed     → structured log of the one-off purchase. No
+   *                                    fulfilment path exists for one-time checkouts.
+   *                                    TODO: fulfil add-on purchases once defined.
    */
   app.post("/api/webhooks/stripe", webhookLimiter, async (req, res) => {
     let event: any;
@@ -1068,20 +1134,63 @@ export async function registerRoutes(app: Express): Promise<void> {
         }
         case 'invoice.payment_failed': {
           const invoice = event.data.object;
-          console.warn(`[Stripe webhook] Payment FAILED for customer ${invoice.customer}`, {
+          const customerId = invoice.customer as string;
+          // Resolve the user for an actionable log. Guard the lookup: this branch has
+          // no critical side effect, so a transient DB failure must not bubble up and
+          // trigger a 500 + Stripe retry storm for a logging-only event.
+          let driivUserId: number | undefined;
+          let firebaseUid: string | undefined;
+          try {
+            const user = await storage.getUserByStripeCustomerId(customerId);
+            driivUserId = user?.id;
+            firebaseUid = user?.firebaseUid ?? undefined;
+          } catch (lookupErr) {
+            console.warn('[Stripe webhook] payment_failed user lookup failed:', lookupErr);
+          }
+          console.warn(`[Stripe webhook] Payment FAILED for customer ${customerId}`, {
             invoiceId: invoice.id,
+            subscriptionId: invoice.subscription,
             attemptCount: invoice.attempt_count,
+            driivUserId,
+            firebaseUid,
           });
+          // TODO: persist a past_due flag + notify the customer. No subscription /
+          // policy status store exists on this service yet (the policy lifecycle is
+          // owned by Firestore/Root), so we cannot mark past_due here.
           break;
         }
         case 'customer.subscription.deleted': {
           const sub = event.data.object;
-          console.log(`[Stripe webhook] Subscription deleted: ${sub.id}`);
+          const customerId = sub.customer as string;
+          let driivUserId: number | undefined;
+          let firebaseUid: string | undefined;
+          try {
+            const user = await storage.getUserByStripeCustomerId(customerId);
+            driivUserId = user?.id;
+            firebaseUid = user?.firebaseUid ?? undefined;
+          } catch (lookupErr) {
+            console.warn('[Stripe webhook] subscription.deleted user lookup failed:', lookupErr);
+          }
+          console.warn(`[Stripe webhook] Subscription deleted: ${sub.id}`, {
+            customerId,
+            driivUserId,
+            firebaseUid,
+          });
+          // TODO: cancel the bound policy. This service has no policy-cancellation
+          // primitive — the policy lifecycle is owned by Firestore/Root, so the
+          // cancellation must go through that path (intentionally not done here).
           break;
         }
         case 'checkout.session.completed': {
           const session = event.data.object;
-          console.log(`[Stripe webhook] Checkout completed: ${session.id}`);
+          console.log(`[Stripe webhook] Checkout completed: ${session.id}`, {
+            customerId: session.customer ?? undefined,
+            firebaseUid: session.metadata?.firebaseUid,
+            mode: session.mode,
+            amountTotal: session.amount_total,
+          });
+          // TODO: fulfil one-off purchases (add-ons). No fulfilment path exists for
+          // one-time checkouts yet; map products to entitlements here once defined.
           break;
         }
         default:
