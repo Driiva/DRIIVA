@@ -151,6 +151,10 @@ export function calculateRefund(
 
     let refundPercentage = 0;
     if (qualifiesForRefund) {
+      // NOTE: this is the post-trip CASHBACK/refund model (5-15% at score 70+),
+      // a deliberately separate concept from the quote-time premium discount in
+      // pricingEngine (scoreFactor / scoreDiscountPercent, a symmetric +/-15%
+      // around score 75). They are not interchangeable — do not unify them.
       // AI Model formula: min[15%, 0.7 × personal_score + 0.3 × (Pool Safety Factor × 100)]
       // Simplified for MVP: Scale refund from 5% to 15% based on score (70-100)
       const scoreRange = Math.max(0, safePersonal - 70);

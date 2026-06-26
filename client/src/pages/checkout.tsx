@@ -34,6 +34,7 @@ import {
   calculateAnnualPremium,
   calculateMonthlyPremium,
   formatGbp,
+  scoreDiscountPercent,
   DEMO_PRICING_INPUTS,
   type PricingInputs,
 } from '@/lib/pricingEngine';
@@ -411,7 +412,11 @@ export default function Checkout() {
         setPricingInputs(inputs);
         setAnnualPremiumGbp(calculateAnnualPremium(inputs));
 
-        // Attempt to get a Root Platform quoteId (non-blocking — quoteId is optional)
+        // Attempt to get an authoritative quote from the Root Platform.
+        // When Root responds, its premium is the source of truth and replaces the
+        // client estimate above — the user must be shown and bound to the same
+        // premium the policy is priced at. The client estimate is only a fallback
+        // for when Root is unavailable.
         try {
           const { getFunctions, httpsCallable } = await import('firebase/functions');
           const fns = getFunctions();
@@ -419,9 +424,13 @@ export default function Checkout() {
           const getInsuranceQuote = httpsCallable<{ coverageType: string }, QuoteResult>(fns, 'getInsuranceQuote');
           const result = await getInsuranceQuote({ coverageType: 'standard' });
           if (result.data?.quoteId) setQuoteId(result.data.quoteId);
+          if (typeof result.data?.premiumCents === 'number' && result.data.premiumCents > 0) {
+            setAnnualPremiumGbp(result.data.premiumCents / 100);
+          }
         } catch {
-          // Root not configured or unavailable — proceed without quoteId; policy bind
-          // will fall back to the most recent quote for this user in Firestore.
+          // Root not configured or unavailable — proceed with the client estimate
+          // above; policy bind will fall back to the most recent quote for this
+          // user in Firestore.
         }
       } catch (err: any) {
         setQuoteError(err.message || 'Failed to load your quote. Please try again.');
@@ -434,11 +443,10 @@ export default function Checkout() {
 
   const monthlyGbp = annualPremiumGbp != null ? calculateMonthlyPremium(annualPremiumGbp) : null;
 
-  // Discount percentage shown in quote summary (from driving score)
+  // Discount percentage shown in quote summary — derived from the same score
+  // factor applied to the premium, so the figure shown matches what is charged.
   const rawScore = pricingInputs?.drivingScore ?? (isDemoMode ? 82 : null);
-  const discountPct = rawScore != null && rawScore >= 70
-    ? Math.round(Math.max(0, Math.min(30, (rawScore - 50) * 0.6)))
-    : 0;
+  const discountPct = scoreDiscountPercent(rawScore);
 
   if (success) {
     return (
