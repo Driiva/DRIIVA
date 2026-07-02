@@ -212,6 +212,80 @@ STILL OPEN / DEFERRED (need a decision or cross-file work, not done in this wave
 - **DEAD-ON-ARRIVAL: `POST /api/trips` cannot succeed over HTTP JSON.** `insertTripSchema = createInsertSchema(trips)` (shared/schema.ts:266) has no date coercion → `startTime`/`endTime` are `z.date()`; JSON delivers strings → every request throws ZodError → swallowed into generic `500 "Error processing trip"` (routes.ts:345-349). The duplicate-409, ENCRYPTION_KEY gate, and `recordTripAtomic` transaction are unreachable over HTTP. Confirms Firestore tripService is the only live trip ingestion; the Neon endpoint is legacy in fact, not just in comment (P1-8).
 - **DEAD-ON-ARRIVAL: Neon user auto-provisioning.** `verifyFirebaseAuth` (server/middleware/auth.ts:59-66) deliberately treats a valid Firebase token with no Neon `users` row as unauthenticated → `requireAuth` 401s. So `GET /api/profile/me`'s `getOrCreateUserByFirebase` bootstrap branch can never run, and a fresh Firebase user 401s on EVERY AUTH endpoint — including `PATCH /api/profile/me`, which onboarding completion is gated on (June fix 9acbb60). Whatever creates Neon rows, it is not this API. Rebuild must define the identity-provisioning path explicitly. (How web onboarding currently survives this: audit-auth report to confirm.)
 - The doc-comment atop routes.ts names `POST /api/auth/login` and `POST /api/auth/register` as public routes — neither exists.
+- **Pricing engine calendar quirk** (client/src/lib/pricingEngine.ts:42): `vehicleFactor` uses `new Date().getFullYear()` — identical inputs reprice every 1 January (a 2023 car drops from ×1.28 to ×1.10 at 2027-01-01). Pinned with a frozen clock in pricing-engine.characterisation.test.ts.
+- **Pricing engine postcode over-match** (pricingEngine.ts:93-104): longest-prefix matching falls back to single letters, so ANY unlisted outward code starting with N/E/W/S/B/M/L/G gets the +20% metro loading — NG (Nottingham) prices as N (London), BA (Bath) as B (Birmingham), GL (Gloucester) as G (Glasgow). Direct tension with the "postcode penalty reduction" proposition; rebuild must decide the intended postcode model. Pinned in tests.
+
+## 0.5 CRITICAL cross-audit findings (2026-07-02 fan-out — full reports in docs/rebuild/)
+1. **firestore.rules has an unresolved git merge conflict on main** (lines 212-215, since commit 6f6b280; VERIFIED). The committed rules cannot deploy → what is enforced in prod Firestore is unknowable from the repo. Blocks emulator rules-testing until fixed. [audit-auth AUTH-15, audit-data 6.1]
+2. **No evidence Cloud Functions have EVER been deployed to production** — CI's production-deploy job has structurally never run (zero v* tags, zero workflow_dispatch in last 100 runs), ROADMAP deploy items unchecked, staging deploy step is continue-on-error. The entire scoring pipeline may not execute in prod. [audit-functions]
+3. **Scoring double-fire**: every non-flagged completed trip runs updateDriverProfileAndPoolShare + checkAchievementsAsync TWICE (racing invocations) — totalTrips/miles/streaks double-counted, weighted average skewed, duplicate pushes. [audit-functions FN-02 deep-trace]
+4. **Toast system structurally dead**: `<Toaster/>` never mounted; 22+ files dispatch toasts nobody sees — every success/error message incl. account-deletion confirmation is silent. [audit-web]
+5. **Dashboard renders the refund 100× too large** (pence as pounds, dashboard.tsx:908/928) while the pool card above shows the right figure. /policy shows two different refund formulas side by side; /rewards hardcodes projectedRefund=0. Three surfaces, three different money answers. [audit-web]
+6. **PolicyDownload fabricates a regulatory line** ("Authorised and regulated by the FCA. Registration number: DRV123456") in a user-downloadable policy document, with fake dates/fallback names. FCA-adjacent landmine. [audit-web WEB-17]
+7. **Admin panel likely fully broken in prod**: all six admin pages read Firestore client-side against collections whose committed rules deny reads (feedback, systemLogs, aiUsageTracking) and NO admin bypass exists in rules; every failure renders as empty/zero so it looks like "no data". AI-spend £0.00 is indistinguishable from broken. [audit-web, audit-data 6.8]
+8. **Top-level `achievements` collection has no rules block** → catch-all deny → the badge catalogue is permission-denied for every client, always. [audit-data 6.9]
+9. **GDPR erasure split-brain**: the shipped UI deletes Firestore+Auth only; Postgres rows survive forever; Stripe/Root/Damoov never notified. The Express Postgres-side delete exists but its only trigger is an orphaned component hardcoded to userId 2. [audit-data 6.12, audit-edges]
+10. **Retired Anthropic model `claude-sonnet-4-20250514` hardcoded in TWO places** (functions/src/ai/tripAnalysis.ts:56, server/routes.ts:776) — same failure class as the 16-day StrydeOutreach outage; the existing mocked test fixture hardcodes the same retired id so CI can't catch it. [audit-edges EDGE-04]
+11. **Root currency unresolved**: ZAR-cents sandbox comment vs hardcoded 'gbp' Stripe charge with zero conversion code — quote-to-charge could be off by the ZAR/GBP rate. [audit-edges EDGE-02]
+12. **Mobile is a shell on an unbuildable base**: no eas.json, no Firebase native config, ios/ not git-tracked, local build fails (gRPC/Xcode) and even Expo Go runs a fully mocked Firebase. Dashboard reads a field nothing writes (overallSafetyScore vs currentScore) → score 0 forever. [audit-mobile]
+13. **Dev-server killer (FIXED tonight as harness-enabling)**: server/vite.ts customLogger called process.exit(1) on any forwarded browser console.error — any page error killed the entire dev server. Neutered (dev-only file, prod never loads it).
+14. **Staging cannot exercise signup**: Email/Password provider not enabled on driiva-staging (auth/configuration-not-found, shown RAW to the user — unmapped error). Blocks all authenticated-flow E2E until enabled.
+
+---
+
+# PHASE 1c — COVERAGE REPORT (suite vs flow map, 2026-07-02)
+
+## Suite inventory (ALL GREEN against current code)
+- **Unit/integration (vitest): 412 passed + 2 todo, 25 files.** New tonight: server API contract (43 — API-01..36 incl. both webhooks + auth gating matrix), rate-limit 429 contract (1), pricing engine (18 — incl. calendar + postcode quirks), trip service (12 — streamer batching, endTrip rule-lock, default scoring weights). Plus 90 pre-existing tests unlocked by the vitest JSX fix (P1-11) — auth-flow, signin, trip-recording, feedback, legal pages.
+- **E2E (Playwright vs staging dev server): 25 tests ×2 viewports (desktop+mobile Chrome), 49 passing + 1 skipped-with-unblock-condition.** Files: smoke, public-pages, auth-gating, demo-mode, signup-onboarding.
+- **Mobile (Maestro): 6 flows AUTHORED, execution blocked** (mobile/.maestro/ + README with unblock conditions).
+
+## Flow coverage matrix
+| Flow | Covered by | Status |
+|---|---|---|
+| FLOW-01 signup→onboarding | signup-onboarding.spec (staging-reality leg) + full walker SKIPPED | ⚠ blocked: enable Email/Password on driiva-staging, then unskip (walker also probes the §0.4 PATCH-401 wall) |
+| FLOW-02 sign-in | negative path E2E ✓; positive 3-state legs | ⚠ needs seeded verified users (script exists; needs FIREBASE_SERVICE_ACCOUNT_KEY for staging) |
+| FLOW-03 Google sign-in | — | MANUAL-VERIFY (real OAuth popup) |
+| FLOW-04 passkey sign-in | server contract tests ✓ (register-gated, verified-flag, custom-token bridge) | client leg automatable later via CDP virtual authenticator |
+| FLOW-05 forgot password | E2E ✓ (anti-enumeration property pinned; staging shows generic FAILURE not success — pinned) | ✓ |
+| FLOW-06 email-verification link | — | needs Auth emulator (real oobCode) — next wave |
+| FLOW-07 verification skip | sessionStorage seam documented | trivial once FLOW-02 unblocked |
+| FLOW-08 demo walkthrough | E2E ✓ dashboard/trips(dead taps)/leaderboard/policy(error card)/permissions(cosmetic)/checkout(fake pay, 0 API calls, £1,210+4%-off cross-check) | ✓ richest covered flow |
+| FLOW-09 trip recording | tripService unit suite ✓ (streamer/endTrip contract); browser GPS leg | ⚠ needs authed user + setGeolocation — next wave |
+| FLOW-10/11 trips list/detail/AI coach | API contract tests ✓ (trips GET quirks, coach 400/503) | UI legs need seeded trips |
+| FLOW-12 profile edit | — | needs authed user |
+| FLOW-13 account deletion | — | needs authed throwaway user (assert side effects, NOT toasts — dead) |
+| FLOW-14/15 passkeys+feedback in settings | API contract ✓ (credentials endpoints) | UI legs need authed user |
+| FLOW-16 checkout real path | payments contract tests ✓ (allow-list 400s, cents range, portal 404, webhook sig + stubs + pendingPayment write) | UI leg needs authed user + Stripe test card |
+| FLOW-17/18 admin panel | — | ⚠ BLOCKED on finding #7 (rules contradiction) — verify deployed rules first, else tests assert broken behaviour |
+| API-01..36 | api-contract + rate-limit suites | ✓ every endpoint pinned incl. dead-on-arrival paths |
+| Scoring maths | pricing-engine + trip-service + existing scoring/trip-metrics suites | ✓ client-side; Functions-side computeTripMetrics has existing trigger tests |
+| Firestore rules | — | ⚠ BLOCKED by merge conflict (finding #1); then @firebase/rules-unit-testing |
+| MOB-T01..T13 | 6 Maestro flows authored | ⚠ BLOCKED: no buildable iOS app from source + no Firebase native config |
+
+## MANUAL-VERIFY LIST (cannot be honestly automated — one line each; full detail docs/rebuild/audit-edges.md)
+1. Root sandbox: one real POST /quotes with valid key → resolves ZAR-vs-GBP definitively.
+2. Root: capture a real webhook payload (field names currently guessed).
+3. Root: confirm ROOT_PRODUCT_MODULE_KEY maps to a live product module.
+4. Stripe: real card decline / 3-D Secure in test-mode checkout.
+5. Stripe: dashboard lifecycle vs app state after payment_failed / subscription.deleted (stubs today).
+6. Anthropic: confirm claude-sonnet-4-20250514 still resolves (both call sites) — mocks can't catch retirement.
+7. Perplexity: confirm sonar-pro still valid.
+8. Google sign-in: real signInWithPopup consent flow.
+9. FCM: real on-device push delivery.
+10. Sentry: trigger a real error in a deployed env; confirm capture (both DSNs).
+11. Leaflet/Carto tiles render without free-tier throttling.
+12. Damoov: real creds + response shape; (mobile SDK integration must be BUILT, not verified).
+13. Classifier: is any Python classifier deployed at any CLASSIFIER_URL?
+14. `firebase firestore:rules get` — diff DEPLOYED rules vs the merge-conflicted repo file (unblocks rules tests + admin-panel truth).
+15. Confirm whether Cloud Functions are deployed to prod driiva project at all.
+16. Firebase/Vercel Analytics + Performance consoles: is any of it consumed?
+17. Scope decision (Jamal): should GDPR erasure propagate to Stripe/Root/Damoov?
+
+## NEEDS-INPUT (one human action each, then automation proceeds)
+- Enable Email/Password provider on driiva-staging → unskips the FLOW-01 walker.
+- Provide staging FIREBASE_SERVICE_ACCOUNT_KEY (or run scripts/create-firebase-test-users.ts once) → unlocks all authenticated-flow E2E (FLOW-02/07/09/10/12/13/14/15/16).
+- Decide finding #1 handling (fix the rules merge conflict = 3-line change, but it's product-repo state — rebuild branch or main hotfix?).
 
 ## 0.4b Characterisation inputs already banked (from the June mission)
 - Structural register P0–P3 + logic-gap runtime defect register (above) = a quirks catalogue. Notable behaviours the suite must CAPTURE AS-IS (they are current behaviour, not bugs to fix during characterisation): Stripe handler stubs for subscription.deleted/payment_failed/checkout.session.completed (console.log only); phonePickupCount permanently neutral at 100; ±15% discount helper (post-June-fix); duplicate-trip 409 rejection; onboarding completion gated on PATCH success.

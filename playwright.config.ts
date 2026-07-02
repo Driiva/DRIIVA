@@ -9,10 +9,14 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
+  // The webServer is a DEV server (tsx + Vite middleware): first navigation to
+  // each route triggers an on-demand transform that can take >10s cold. Keep
+  // worker count low and timeouts generous or parallel cold-compiles time out.
+  workers: 1,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
+  retries: process.env.CI ? 2 : 1,
   reporter: [['list'], ['html', { open: 'never' }]],
-  timeout: 30_000,
+  timeout: 60_000,
   use: {
     baseURL: 'http://localhost:4310',
     trace: 'on-first-retry',

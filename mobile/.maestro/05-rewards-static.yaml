@@ -1,0 +1,8 @@
+# MOB-T11 — STUB-LOCK: rewards tab is a fully static 5-tier list, every item
+# permanently locked regardless of score/unlock state.
+appId: com.driiva.app
+---
+- launchApp
+- tapOn: "Rewards"
+- assertVisible: ".*[Rr]ewards.*"
+- assertVisible: ".*[Ll]ocked.*"

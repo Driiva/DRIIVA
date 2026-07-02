@@ -25,7 +25,11 @@ export async function setupVite(app: Express, server: Server) {
       ...viteLogger,
       error: (msg, options) => {
         viteLogger.error(msg, options);
-        process.exit(1);
+        // Do NOT exit here. Vite 8 forwards *browser* console.error output
+        // through this logger, so the template's original process.exit(1)
+        // meant any client-side console.error (e.g. a Firestore
+        // permission-denied surfaced by a page) killed the entire dev
+        // server mid-session. Dev-only file — Vercel prod never loads it.
       },
     },
     server: serverOptions,

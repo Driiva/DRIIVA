@@ -1,0 +1,14 @@
+# MOB-T12 — STUB-LOCK: all 9 profile menu rows are onPress no-ops; only
+# Sign Out works. Tapping Settings must do nothing (screen unchanged).
+appId: com.driiva.app
+---
+- launchApp
+- tapOn: "Profile"
+- assertVisible: ".*Settings.*"
+- tapOn: "Settings"
+# No navigation happened — still on the profile screen with the menu visible
+- assertVisible: ".*Vehicle.*"
+- assertVisible: ".*Sign Out.*"
+- tapOn: "Sign Out"
+# Real action: signs out and returns to the auth group
+- assertVisible: ".*[Ss]ign [Ii]n.*"

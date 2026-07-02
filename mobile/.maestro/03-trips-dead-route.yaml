@@ -1,0 +1,16 @@
+# MOB-T09 — REGRESSION-LOCK on a known dead end: tapping a trip row pushes
+# /trips/{id}, a route declared in the root Stack with NO file behind it.
+# expo-router renders its unmatched-route fallback. Highest-value mobile lock.
+# Requires: a signed-in test account with >=1 completed trip seeded in Firestore.
+appId: com.driiva.app
+---
+- launchApp
+- tapOn: "Trips"
+- assertVisible: ".*[Tt]rips.*"
+# Tap the first trip card (data-driven list)
+- tapOn:
+    index: 0
+    text: ".*mi.*"
+    optional: true
+# Dead-end: unmatched route fallback appears instead of a trip detail screen
+- assertVisible: ".*(doesn't exist|not found|Unmatched).*"
