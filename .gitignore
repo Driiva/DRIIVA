@@ -48,3 +48,7 @@ CONTEXT.md
 # Overnight build run logs (transient, not artifacts)
 .overnight-logs/
 apps/*/lighthouse.json
+
+# Playwright (characterisation E2E)
+playwright-report/
+test-results/
