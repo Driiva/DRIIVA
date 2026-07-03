@@ -18,6 +18,7 @@
 - Money is integer pence end-to-end with a typed `Money` value object; a displayed figure must be derived from the charged figure by one shared function (kills findings §0.5 #5).
 - Deterministic scoring: same inputs → same score, property-tested; server-side authority only.
 - No new secrets outside Doppler.
+- **Deploy isolation (harness finding H2):** rebuild functions/rules/indexes deploy ONLY to the emulator and `driiva-staging` until the named cutover task of the relevant module; the ONLY permitted prod Firebase deploy before cutover is the D13 rules hotfix. `.firebaserc` defaults `firebase deploy` to prod — every deploy command in module plans must carry an explicit `--project staging` (or run inside the emulator) until cutover.
 
 ## DECISION POINTS — sign-off needed before Phase 2 (defaults proposed; silence = default)
 
@@ -36,6 +37,22 @@
 | D11 | Claims / "GAP claim integrations" | **NEEDS YOUR DEFINITION** (findings §0.3 gap 3): no claims flow, no GAP code exists to characterise. M8 blocked | — |
 | D12 | `/production-bug-hunter` | **Substitute = code-reviewer skill + logic-gap-harness sweep per module** — the named skill doesn't exist on this machine | Name a different gate |
 | D13 | firestore.rules merge conflict on main | **Hotfix main now** (3-line fix + `firebase deploy --only firestore:rules` after diffing deployed rules) — it's a live-prod unknowability, shouldn't wait for the rebuild | Fix only on rebuild branch |
+| D14 | Sharia-compliance requirements (§0.3 gap 10) | **NEEDS YOUR DEFINITION** — core proposition with zero documented product requirements; no module can own it until defined | — |
+| D15 | FCA operating model (§0.3 gap 5) | **NEEDS CONFIRMATION IN WRITING from Root** — "under Root's licence" is an assumption; M4's policy lifecycle and what the app may display depend on it | — |
+| D16 | Device/browser support matrix (§0.3 gap 4) | **Propose: last-2 evergreen Chrome/Safari/Firefox + iOS 16+/Android 10+** — confirm or replace; becomes the Playwright/EAS test matrix in M0 CI | — |
+
+## Migration & cutover workstream (harness finding H1 — runs THROUGH every module, not a module of its own)
+
+The plan rebuilds writers; this workstream moves the existing production corpus. Per module, the module plan MUST include:
+1. **Corpus sampling task (starts in M0):** export a sample of live prod docs per entity and run them through the module's zod schemas BEFORE the module builds on them — the dossier pinned shapes from code, and its own follow-ups admit unaudited variants (mobile-vs-web signup docs, two policy shapes by bind path, `onboardingCompleted` legacy fields).
+2. **Versioned-read or backfill decision per entity:** either the new reader tolerates old shapes behind a version discriminator, or an Admin-SDK backfill rewrites them (Admin SDK bypasses rules, so immutable-by-rule collections like tripPoints are migratable — but it must be a PLANNED task, incl. a rules relaxation window if a client-visible shape changes).
+3. **Cutover task per module:** a named, sign-off-gated step that flips real traffic from old path to new (feature flag or route switch), with the rollback being the flag flip back. No module is "done" while its cutover task is unexecuted or its rollback untested on staging.
+4. **Parallel-run proof where money/score is involved (M2, M3, M4):** run old and new pipelines side by side on staging for a defined window and diff outputs before cutover.
+5. **Live-store continuity check:** `webauthn_credentials`/`webauthn_challenges` currently live in Postgres and are LIVE (passkey users exist) — D1/D2's "Postgres becomes analytics-only" default must NOT strand them; M1 owns their fate explicitly (keep the Postgres store, or migrate credentials with their counters intact).
+
+## Launch gate (owns what no single module owns)
+
+Module completion ≠ launch. The launch gate = TECH_ROADMAP's public-beta bar (findings §0.2): pen test, code security audit, load test (1,000+ concurrent), ICO registration, FCA/Root licence confirmation (D15), staging environment complete, incident-response procedures, the §1c manual-verify list executed and signed, and the §0.3 gaps each resolved by a decision (not by silence). This gate is a checklist reviewed with Jamal after M5 — it cannot be satisfied by any suite being green.
 
 ## Strangler module order
 
@@ -110,6 +127,15 @@ Scope: EAS properly configured (eas.json, per-env googleServicesFile), consume `
 Scope: undefined until the claims/GAP definition lands. Placeholder port: `ClaimsProvider` interface in contracts so M4's policy model doesn't paint us into a corner.
 
 ---
+
+## Ownership patches (from the harness's unverified-but-accepted titles)
+- Premium-payments → pool-contributions wiring (§0.2 flow 8's second half): owned by the **M3/M4 seam** — M4's payment outbox emits a pool-contribution event; M3's ledger consumes it. Neither module closes without the joint integration test.
+- DPIA refresh + Damoov Art.28 DPA verification + cookie consent + retention config (§0.3 gap 6 remainder): owned by **M5**, explicitly listed in its scope.
+- Push notifications (FCM) end-to-end + feedback widget: owned by **M6** (engagement layer), with stale-token pruning (audit EDGE-08) in scope.
+- Stripe decline/3-D Secure UX: owned by **M4** (manual-verify item 4 becomes an M4 acceptance step with Stripe test cards).
+
+## Logic-gap harness status (Phase 1d gate)
+Run wf_d1f926df-487 (2 Jul): find phase complete — 35 raw findings; verify panel confirmed 2 HIGH (both folded in above: migration workstream H1, deploy isolation H2) and refuted 33; ~10 findings' verification was cut off by the session token limit (resets 01:40). The unverified titles were triaged by hand into the Ownership patches + D14-D16 + Launch gate sections above. To re-run the remaining verifiers from cache: `Workflow({scriptPath:"~/.claude/workflows/logic-gap-harness.js", resumeFromRunId:"wf_d1f926df-487", args:<same>})`.
 
 ## Self-review notes
 - Spec coverage: every findings-§0.2 flow maps to a module (auth/onboarding→M1, trips/scoring→M2, dashboard/leaderboard/pool→M3, payments/insurance→M4, GDPR→M5, rewards/achievements/AI→M6, mobile→M7, claims→M8); §0.3 gaps surface as D6/D8/D11 decision points rather than invented answers.
