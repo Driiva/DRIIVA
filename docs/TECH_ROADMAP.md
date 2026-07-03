@@ -41,7 +41,7 @@ This document provides a complete picture of what has been built, what was updat
 | AI engine | Anthropic Claude Sonnet 4 | Integrated, feature-flagged |
 | Insurance API | Root Platform | Scaffolded (needs credentials) |
 | Maps | Leaflet | Integrated |
-| Mobile support | Progressive Web App (manifest) | Partial |
+| Mobile support | Expo SDK 52 native app (`mobile/`) | Live - 16-screen onboarding shipped May 2026. PWA path superseded. |
 
 ---
 
@@ -275,5 +275,5 @@ Hosting:         Firebase Hosting (configured)
 
 ---
 
-*Last updated: 7 February 2026*
+*Last updated: 29 June 2026*
 *Document owner: Engineering*
