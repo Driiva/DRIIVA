@@ -8,11 +8,11 @@ Prepare a ground-up rebuild of Driiva (React+Vite web, Expo mobile — actual SD
 
 ## Phases
 - [x] **Phase 0 — Roadmap extraction** — market-ready definition pulled from docs/TECH_ROADMAP.md + ROADMAP.md + CLAUDE.md + CONTEXT.md; under-specification gaps listed in findings.md §Rebuild for Jamal's sign-off. DO NOT invent the bar.
-- [ ] **Phase 1a — Characterisation audit** — code-auditor pass via Sonnet explorer subagents: every user-facing flow, API contract, auth path, data shape → findings.md flow map.
-- [ ] **Phase 1b — Characterisation suite** — unit + integration + E2E (Playwright web, Maestro mobile). Tests MUST PASS against current code; quirks captured as behaviour, not fixed.
-- [ ] **Phase 1c — Coverage report** — every flow in the flow map has ≥1 E2E; third-party edges that can't be automated (Root/GAP claim integrations, external auth) → manual-verify list, never silently skipped.
-- [ ] **Phase 1d — Rebuild plan** — /superpowers:writing-plans → rebuild_plan.md (target architecture with per-workstream stack proposals + one-line justifications; strangler module order; per-module done-when = its suite slice green + 1 new integration test + bug-hunt pass). Then /logic-gap-harness the plan.
-- [ ] **GATE — Jamal sign-off on suite + plan** (and on the Phase 0 gap list).
+- [x] **Phase 1a — Characterisation audit** — DONE: 7-domain fan-out, verbatim dossier in docs/rebuild/, distilled to findings.md §0.4-0.5.
+- [x] **Phase 1b — Characterisation suite** — DONE, ALL GREEN vs current code: vitest 412+2 todo (25 files), Playwright 25 tests ×2 viewports, Maestro 6 flows authored (execution blocked: iOS unbuildable from source + no Firebase native config — mobile/.maestro/README.md).
+- [x] **Phase 1c — Coverage report** — DONE: findings.md §1c (flow×suite matrix, 17-item manual-verify list, 3-item needs-input list).
+- [x] **Phase 1d — Rebuild plan** — DONE: rebuild_plan.md (decision points D1-D16, strangler M0-M8, migration+cutover workstream, launch gate). Logic-gap harness: 2 HIGH confirmed + folded in; verify pass partial (token limit) — status + resume command in-plan. (/production-bug-hunter doesn't exist on this machine → D12 substitute.)
+- [ ] **GATE — Jamal sign-off** on findings.md §0.3 gaps + the suite + rebuild_plan.md D1-D16. ← **YOU ARE HERE**
 - [ ] **Phase 2 — Execution (BLOCKED on gate)** — /goal module-by-module, TDD for new code, feature branches only, commit per module, code-review per module before merge to the rebuild branch.
 
 ## Hard rules
@@ -28,4 +28,4 @@ Prepare a ground-up rebuild of Driiva (React+Vite web, Expo mobile — actual SD
 | session-catchup.py missing from skill dir | 1 | Skipped; recovered context by reading existing planning files directly |
 
 ## Current step
-Phase 1a: dispatching audit subagents; baseline `npm test` running in background.
+Phase 1 COMPLETE (3 Jul, overnight). Waiting on Jamal's sign-off (rebuild_plan.md D1-D16 + findings §0.3). Phase 2 starts at M0 once signed. Needs-input before authenticated E2E: enable Email/Password on driiva-staging; staging Admin creds for test-user seeding.
