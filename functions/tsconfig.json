@@ -14,8 +14,9 @@
     "declarationMap": true,
     "baseUrl": ".",
     "paths": {
-      "@driiva/contracts": ["../packages/contracts/src/index.ts"]
-    }
+      "@driiva/contracts": ["../packages/contracts/dist/index.d.ts"]
+    },
+    "rootDir": "src"
   },
   "compileOnSave": true,
   "include": [

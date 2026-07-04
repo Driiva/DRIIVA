@@ -112,11 +112,23 @@ describe('provisionUser', () => {
     expect(collectionsWritten).not.toContain('usernames');
   });
 
-  it('derives displayName from the email local part when displayName is absent (Google-shaped input)', async () => {
+  // M1 T7 fix: this used to derive a fallback from the email local part,
+  // which permanently wrote the wrong name for email/password signup (the
+  // Auth onCreate trigger fires before the client's un-awaited
+  // updateProfile lands). Writing null lets the UI's existing fallback
+  // chain (`|| user?.name || 'Driver'`) resolve to the real name instead.
+  it('writes displayName as null when the Auth record has none, instead of deriving the email local part', async () => {
     await provisionUser(fakeUserRecord({ displayName: undefined as unknown as string }));
 
     const [userDoc] = mockSet.mock.calls.map((call: unknown[]) => call[0]);
-    expect(userDoc.displayName).toBe('jamal');
+    expect(userDoc.displayName).toBeNull();
+  });
+
+  it('still writes the real displayName verbatim when the Auth record provides one (e.g. Google)', async () => {
+    await provisionUser(fakeUserRecord({ displayName: 'Ada Google' }));
+
+    const [userDoc] = mockSet.mock.calls.map((call: unknown[]) => call[0]);
+    expect(userDoc.displayName).toBe('Ada Google');
   });
 
   it('is idempotent: a second call for the same uid does not create a second policy, re-increment the counter, or overwrite the user doc', async () => {

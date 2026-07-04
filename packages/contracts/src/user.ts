@@ -63,7 +63,15 @@ export const UserSettingsSchema = z.object({
 export const UserDocumentSchema = z.object({
   uid: z.string(),
   email: z.string(),
-  displayName: z.string(),
+  /**
+   * Nullable (M1 T7 fix): provisionUserOnSignup writes null rather than
+   * deriving a fallback name when the Auth record has none yet (see
+   * functions/src/utils/provisionUser.ts's deriveDisplayName). Every reader
+   * of this field (dashboard.tsx, useDashboardData.ts, profile.tsx) already
+   * falls back with `|| user?.name || 'Driver'`, so null resolves correctly
+   * client-side instead of being permanently baked into Firestore.
+   */
+  displayName: z.string().nullable(),
   photoURL: z.string().nullable(),
   phoneNumber: z.string().nullable(),
   age: z.number().int().optional(),

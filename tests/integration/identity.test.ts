@@ -116,8 +116,11 @@ describe('M1 identity integration (Auth + Firestore emulators)', () => {
     const snap = await adminDb.collection('users').doc(userRecord.uid).get();
     const parsed = UserDocumentSchema.parse(snap.data());
     expect(parsed.uid).toBe(userRecord.uid);
-    // deriveDisplayName's fallback: local part of the email.
-    expect(parsed.displayName).toBe(email.split('@')[0]);
+    // M1 T7 fix: deriveDisplayName no longer falls back to the email local
+    // part when the Auth record has no displayName - it writes null, so the
+    // UI's own `|| user?.name || 'Driver'` fallback chain resolves it
+    // instead of a wrong value getting baked permanently into Firestore.
+    expect(parsed.displayName).toBeNull();
     expect(parsed.onboardingComplete).toBe(false);
     expect(parsed.drivingProfile.currentScore).toBe(100);
   });

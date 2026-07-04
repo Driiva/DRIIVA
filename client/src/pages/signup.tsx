@@ -151,12 +151,12 @@ export default function Signup() {
       // Fire-and-forget: Auth profile update and email verification only.
       // provisionUserOnSignup (Auth onCreate Cloud Function, M1 T7 cutover)
       // now owns creating users/{uid} and usernames/{localPart} - the client
-      // no longer writes either doc. Note: the trigger derives displayName
-      // from the Auth profile's displayName (set below) or the email local
-      // part, never from formData.fullName directly - if this updateProfile
-      // call hasn't landed by the time the trigger fires, the user's typed
-      // full name will not appear as displayName (intentional, per the M1
-      // whole-branch review; see docs/rebuild/m1-t7-cutover.md).
+      // no longer writes either doc. Note: this updateProfile call reliably
+      // hasn't landed by the time the trigger fires (it's a separate,
+      // un-awaited async call), so provisionUser writes displayName: null
+      // rather than guessing a fallback - every reader falls back to
+      // user?.name (this Auth profile update, read via AuthContext), which
+      // resolves correctly moments later. See docs/rebuild/m1-t7-cutover.md.
       Promise.all([
         updateProfile(user, { displayName: formData.fullName }),
         sendEmailVerification(user, { url: `${window.location.origin}/verify-email` }),

@@ -21,6 +21,7 @@ exports.calculateRiskTier = calculateRiskTier;
 exports.calculateProjectedRefund = calculateProjectedRefund;
 exports.computeTripMetrics = computeTripMetrics;
 const tripProcessor_1 = require("../shared/tripProcessor");
+const refundCalculator_1 = require("../shared/refundCalculator");
 /**
  * Get current pool period string (e.g., "2026-02")
  */
@@ -173,15 +174,11 @@ function calculateRiskTier(score) {
 }
 /**
  * Calculate projected refund based on score and contribution.
- * @deprecated Use shared/refundCalculator.ts::calculateRefundCents for new code.
- * Kept for backward compatibility — delegates to the canonical formula.
+ * Delegates to shared/refundCalculator.ts — the single source of truth.
  */
 function calculateProjectedRefund(score, contributionCents, safetyFactor, _refundRate) {
-    // Canonical formula: blended score → refund rate 5-15% → apply safety factor
-    const clamped = Math.max(50, Math.min(100, score));
-    const rate = 0.05 + ((clamped - 50) / 50) * 0.10;
-    const rawRefund = contributionCents * rate * safetyFactor;
-    return Math.round(rawRefund);
+    const communityScore = 75;
+    return (0, refundCalculator_1.calculateRefundCents)(score, communityScore, contributionCents, safetyFactor, contributionCents);
 }
 /**
  * Compute trip metrics from raw GPS points

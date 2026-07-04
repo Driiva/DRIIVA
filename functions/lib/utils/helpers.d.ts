@@ -71,8 +71,7 @@ export declare function detectAnomalies(trip: {
 export declare function calculateRiskTier(score: number): 'low' | 'medium' | 'high';
 /**
  * Calculate projected refund based on score and contribution.
- * @deprecated Use shared/refundCalculator.ts::calculateRefundCents for new code.
- * Kept for backward compatibility — delegates to the canonical formula.
+ * Delegates to shared/refundCalculator.ts — the single source of truth.
  */
 export declare function calculateProjectedRefund(score: number, contributionCents: number, safetyFactor: number, _refundRate: number): number;
 import { TripPoint, ComputedTripMetrics } from '../types';

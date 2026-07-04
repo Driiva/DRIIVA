@@ -74,6 +74,14 @@ describe('UserDocumentSchema', () => {
     expect(Object.keys(UserDocumentSchema.shape)).toMatchSnapshot();
   });
 
+  // M1 T7 fix: provisionUserOnSignup writes null (not a derived fallback)
+  // when the Auth record has no displayName yet - see
+  // functions/src/utils/provisionUser.ts's deriveDisplayName.
+  it('parses displayName: null (M1 T7 - no Auth displayName yet)', () => {
+    const withNullDisplayName = { ...validFixture, displayName: null };
+    expect(UserDocumentSchema.parse(withNullDisplayName)).toEqual(withNullDisplayName);
+  });
+
   it('rejects more than 3 recentTrips (denormalized max per shared/firestore-types.ts comment)', () => {
     const tooMany = {
       ...validFixture,

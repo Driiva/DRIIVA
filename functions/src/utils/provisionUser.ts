@@ -42,12 +42,22 @@ export interface BuildProvisionedUserDocInput {
  */
 export type ProvisionedUserDocument = UserDocument & { isAdmin?: boolean };
 
-const FALLBACK_DISPLAY_NAME = 'Driver';
-
-function deriveDisplayName(email: string, displayName?: string | null): string {
-  if (displayName) return displayName;
-  const localPart = email.split('@')[0];
-  return localPart || FALLBACK_DISPLAY_NAME;
+/**
+ * Returns the Auth record's displayName verbatim, or null when it has none
+ * (M1 T7 fix). Previously this derived a fallback from the email local part,
+ * but for the only signup path that matters (email/password) the Auth
+ * onCreate trigger fires BEFORE the client's un-awaited `updateProfile` call
+ * lands (see signup.tsx), so the record's displayName is reliably empty at
+ * this point - the derived fallback was being baked permanently into
+ * Firestore instead of the name the user actually typed. Writing null lets
+ * every reader's existing `|| user?.name || 'Driver'` fallback chain resolve
+ * to the correct Auth-profile name once updateProfile has landed (near-
+ * immediate for the same client session), rather than a wrong value that
+ * only a manual edit could fix. Google-style signups, where the Auth record
+ * already carries a real displayName at creation time, are unaffected.
+ */
+function deriveDisplayName(displayName?: string | null): string | null {
+  return displayName || null;
 }
 
 export function buildProvisionedUserDoc(
@@ -58,7 +68,7 @@ export function buildProvisionedUserDoc(
   const doc: ProvisionedUserDocument = {
     uid,
     email,
-    displayName: deriveDisplayName(email, displayName),
+    displayName: deriveDisplayName(displayName),
     photoURL: null,
     phoneNumber: null,
     createdAt: now,

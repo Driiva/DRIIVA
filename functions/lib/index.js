@@ -63,7 +63,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.health = exports.seedAchievements = exports.onUserUpdateRecalcBetaEstimate = exports.calculateBetaEstimateForUser = exports.syncInsurancePolicy = exports.acceptInsuranceQuote = exports.getInsuranceQuote = exports.getAIInsights = exports.analyzeTripAI = exports.deleteUserAccount = exports.exportUserData = exports.batchClassifyTrips = exports.classifyTrip = exports.cancelTrip = exports.addPoolContribution = exports.initializePool = exports.monitorTripHealth = exports.syncDamoovTrips = exports.sendWeeklySummary = exports.recalculatePoolShares = exports.finalizePoolPeriod = exports.updateLeaderboards = exports.onPendingPaymentWrite = exports.syncTripOnComplete = exports.syncUserOnSignup = exports.onUserCreate = exports.onPoolShareWrite = exports.onPolicyWrite = exports.onTripStatusChange = exports.onTripCreate = exports.db = void 0;
+exports.health = exports.seedAchievements = exports.onUserUpdateRecalcBetaEstimate = exports.calculateBetaEstimateForUser = exports.syncInsurancePolicy = exports.acceptInsuranceQuote = exports.getInsuranceQuote = exports.getAIInsights = exports.analyzeTripAI = exports.deleteUserAccount = exports.exportUserData = exports.batchClassifyTrips = exports.classifyTrip = exports.cancelTrip = exports.addPoolContribution = exports.initializePool = exports.monitorTripHealth = exports.syncDamoovTrips = exports.sendWeeklySummary = exports.recalculatePoolShares = exports.finalizePoolPeriod = exports.updateLeaderboards = exports.onPendingPaymentWrite = exports.syncTripOnComplete = exports.syncUserOnSignup = exports.provisionUserOnSignup = exports.onPoolShareWrite = exports.onPolicyWrite = exports.onTripStatusChange = exports.onTripCreate = exports.db = void 0;
 const admin = __importStar(require("firebase-admin"));
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -79,8 +79,14 @@ var policies_1 = require("./triggers/policies");
 Object.defineProperty(exports, "onPolicyWrite", { enumerable: true, get: function () { return policies_1.onPolicyWrite; } });
 var pool_1 = require("./triggers/pool");
 Object.defineProperty(exports, "onPoolShareWrite", { enumerable: true, get: function () { return pool_1.onPoolShareWrite; } });
-var users_1 = require("./triggers/users");
-Object.defineProperty(exports, "onUserCreate", { enumerable: true, get: function () { return users_1.onUserCreate; } });
+// M1 T7 cutover: provisionUserOnSignup (a real Auth onCreate trigger) is the
+// sole user-provisioning path, replacing onUserCreate (a Firestore-doc
+// onCreate trigger that never fired for Google sign-in - retired, see git
+// history for functions/src/triggers/users.ts) and the client's
+// fire-and-forget Firestore batch (client/src/pages/signup.tsx). syncUserOnSignup
+// (DEC-3) stays as the Neon analytics mirror.
+var provisionUserOnSignup_1 = require("./triggers/provisionUserOnSignup");
+Object.defineProperty(exports, "provisionUserOnSignup", { enumerable: true, get: function () { return provisionUserOnSignup_1.provisionUserOnSignup; } });
 var syncUserOnSignup_1 = require("./triggers/syncUserOnSignup");
 Object.defineProperty(exports, "syncUserOnSignup", { enumerable: true, get: function () { return syncUserOnSignup_1.syncUserOnSignup; } });
 var syncTripOnComplete_1 = require("./triggers/syncTripOnComplete");

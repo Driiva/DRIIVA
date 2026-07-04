@@ -33,19 +33,33 @@ state the user had legitimately accrued since first provisioning
 (`onboardingComplete`, driving score, etc). Tested in
 `functions/src/__tests__/triggers/provisionUserOnSignup.test.ts`.
 
-## Known, accepted behaviour change
+## The displayName fix
 
-`displayName` is no longer guaranteed to be the name the user typed at
-signup. Previously, `onUserCreate` read `fullName` from the same Firestore
-doc the client's batch wrote atomically alongside it, so the typed name
-always landed. Now, `provisionUser` (an Auth trigger, dispatched off account
-creation) only sees the Auth profile's `displayName` at the moment it fires,
-or falls back to the email local part - the client's `updateProfile(user,
-{ displayName: formData.fullName })` call is a separate, unawaited,
-racing async call. This was already flagged by the whole-branch review
-(`.superpowers/sdd/progress.md`, M1-T7 must-include item 2, "note fullName
-no-longer-written as intentional") and is not fixed here; it is inherent to
-using an Auth trigger for provisioning and was accepted at T1's review gate.
+`onUserCreate` read `fullName` from the same Firestore doc the client's
+batch wrote atomically alongside it, so the typed full name always landed
+on `displayName`. `provisionUser` (an Auth trigger, dispatched off account
+creation) only sees the Auth profile's `displayName` at the moment it
+fires - and for the only signup path that matters (email/password), the
+trigger reliably fires BEFORE the client's un-awaited `updateProfile(user,
+{ displayName: formData.fullName })` call lands (`signup.tsx`). The first
+version of this cutover derived a fallback from the email local part in
+that case (`deriveDisplayName`), which is worse than it sounds: it doesn't
+degrade gracefully, it permanently writes the WRONG name into Firestore -
+"Jamal Driver" becomes "jamal" and stays "jamal" until the user hand-edits
+their profile, because every reader (`dashboard.tsx:270`,
+`useDashboardData.ts:211`, `profile.tsx:197,451`) reads the Firestore
+`displayName` with priority over the correct Auth-profile name.
+
+Fixed: `deriveDisplayName` now writes `null` instead of deriving a
+fallback when the Auth record has no displayName yet (`@driiva/contracts`'
+`UserDocumentSchema.displayName` is now `.nullable()` to allow it). Every
+reader's fallback chain (`dashboardData?.displayName || user?.name ||
+'Driver'`) then skips the null and resolves to `user?.name`, which
+`AuthContext.tsx` sources from the Firebase Auth profile's `displayName` -
+correct as soon as `updateProfile` lands, which for the same client
+session is near-immediate. Google-style signups, where the Auth record
+already carries a real `displayName` at account-creation time, are
+unaffected and still get their name written straight through.
 
 ## Username derivation - checked, matches
 
@@ -55,6 +69,38 @@ same way: the email local part, lower-cased
 `client/src/pages/signup.tsx` (the advisory collision check, still live) and
 `functions/src/triggers/provisionUserOnSignup.ts:114`. Signup does not let
 the user choose a separate username, so there is no design gap here.
+
+## Build-pipeline fix (found while regenerating the committed `functions/lib/`)
+
+The review flagged that the committed `functions/lib/` was stale (still exported
+`onUserCreate`). Regenerating it with a plain `npm run build` surfaced a real,
+pre-existing bug: `functions/tsconfig.json` path-mapped `@driiva/contracts` to
+the package's raw `../packages/contracts/src/index.ts`, not its compiled
+`dist/index.d.ts` (unlike `packages/scoring/tsconfig.json`, which already does
+this correctly). Since T1 added a `@driiva/contracts` import into
+`functions/src/utils/provisionUser.ts`, this made `tsc`'s computed `rootDir`
+span the whole monorepo, and a real build silently emitted into
+`functions/lib/functions/src/*` and `functions/lib/packages/contracts/src/*`
+instead of the flat `functions/lib/*` that `package.json`'s `"main":
+"lib/index.js"` and Firebase's deploy expect - a working but wrong artifact,
+not a build failure, so CI's `functions-build` job (which only checks exit
+code) never caught it.
+
+Fixed: `functions/tsconfig.json` now path-maps to `../packages/contracts/dist/index.d.ts`
+and sets `rootDir: "src"` explicitly, mirroring `packages/scoring`'s already-
+correct pattern. Because this makes `functions`'s own build depend on
+`@driiva/contracts` being built first, `functions/package.json`'s `prebuild`
+script now builds it (`npm run build --prefix ../packages/contracts`) before
+copying the shared trip/refund files, so `npm run build` inside `functions/`
+- exactly what Firebase's `predeploy` hook runs - is self-contained from a
+clean checkout. `.github/workflows/ci.yml`'s `functions-build` job was
+updated the same way (root install + `npm run build --prefix
+packages/contracts` before the functions-scoped install/build/test), so this
+can't silently regress again. Verified: a full `rm -rf functions/lib
+packages/contracts/dist && npm run build` (inside `functions/`) now produces
+a flat `lib/` whose `index.js` exports `provisionUserOnSignup` and
+`syncUserOnSignup` and not `onUserCreate`, confirmed by actually `require()`-
+ing it, not just a clean `tsc` exit code.
 
 ## Deploy command (when this ships - separate explicit OK required)
 

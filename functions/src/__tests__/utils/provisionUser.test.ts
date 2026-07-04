@@ -36,18 +36,32 @@ describe('buildProvisionedUserDoc', () => {
     expect(doc.displayName).toBe('Jamal Driver');
   });
 
-  it('produces a UserDocumentSchema-valid doc for a Google user (displayName absent, falls back to the email local part)', () => {
+  it('produces a UserDocumentSchema-valid doc for a Google user with a real Auth displayName', () => {
+    const doc = buildProvisionedUserDoc({ ...baseInput, displayName: 'Ada Google' });
+
+    expect(() => UserDocumentSchema.parse(doc)).not.toThrow();
+    expect(doc.displayName).toBe('Ada Google');
+  });
+
+  // M1 T7 fix: previously this derived a fallback from the email local part,
+  // which for email/password signup (the only path where this fires with no
+  // displayName - see provisionUserOnSignup.ts's own comment) permanently
+  // wrote the WRONG name, because the Auth onCreate trigger fires before the
+  // client's un-awaited updateProfile call lands. Writing null instead lets
+  // the UI's existing `|| user?.name || 'Driver'` fallback chain resolve to
+  // the real Auth-profile name once updateProfile has landed.
+  it('writes displayName as null when the Auth record has none, instead of deriving the email local part', () => {
     const doc = buildProvisionedUserDoc({ ...baseInput, displayName: undefined });
 
     expect(() => UserDocumentSchema.parse(doc)).not.toThrow();
-    expect(doc.displayName).toBe('driver');
+    expect(doc.displayName).toBeNull();
   });
 
-  it('falls back to "Driver" when both displayName and the email local part are unavailable', () => {
+  it('writes displayName as null when both displayName and email are unavailable (no server-side "Driver" fallback anymore)', () => {
     const doc = buildProvisionedUserDoc({ ...baseInput, email: '', displayName: undefined });
 
     expect(() => UserDocumentSchema.parse(doc)).not.toThrow();
-    expect(doc.displayName).toBe('Driver');
+    expect(doc.displayName).toBeNull();
   });
 
   it('produces a UserDocumentSchema-valid doc for an ADMIN_EMAILS user and marks isAdmin true', () => {
