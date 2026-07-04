@@ -44,7 +44,13 @@ export const db = admin.firestore();
 export { onTripCreate, onTripStatusChange } from './triggers/trips';
 export { onPolicyWrite } from './triggers/policies';
 export { onPoolShareWrite } from './triggers/pool';
-export { onUserCreate } from './triggers/users';
+// M1 T7 cutover: provisionUserOnSignup (a real Auth onCreate trigger) is the
+// sole user-provisioning path, replacing onUserCreate (a Firestore-doc
+// onCreate trigger that never fired for Google sign-in - retired, see git
+// history for functions/src/triggers/users.ts) and the client's
+// fire-and-forget Firestore batch (client/src/pages/signup.tsx). syncUserOnSignup
+// (DEC-3) stays as the Neon analytics mirror.
+export { provisionUserOnSignup } from './triggers/provisionUserOnSignup';
 export { syncUserOnSignup } from './triggers/syncUserOnSignup';
 export { syncTripOnComplete } from './triggers/syncTripOnComplete';
 export { onPendingPaymentWrite } from './triggers/payments';

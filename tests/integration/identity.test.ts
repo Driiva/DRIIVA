@@ -1,25 +1,39 @@
 /**
- * M1 T5 - Auth+Firestore integration test (the module gate).
+ * M1 T5/T7 - Auth+Firestore integration test (the module gate).
  *
  * Proves the M1 flow end to end against REAL emulators with REAL SDKs:
  * signup -> provisioning -> onboarding-completion -> dashboard-gate.
  *
  * PROVISIONING APPROACH: this suite calls the exported `provisionUser`
  * handler (functions/src/triggers/provisionUserOnSignup.ts) directly against
- * the Firestore emulator, rather than loading the dormant
- * `provisionUserOnSignup` Cloud Function into the functions emulator so a
- * real Auth `onCreate` fires it. Both are legitimate per the M1 T5 brief;
- * this one was chosen because the trigger file's own comment states
- * `provisionUser` and `buildProvisionedUserDoc` are exported individually
- * "so a later emulator integration test (M1 T5) can drive them directly
- * without the trigger wrapper" - the author already built this seam for this
- * exact purpose. It also avoids standing up a second, test-only Functions
- * entrypoint/build just to exercise a function that never runs in
- * production today (the trigger is dormant, not in functions/src/index.ts),
+ * the Firestore emulator, rather than loading the Cloud Function into the
+ * functions emulator so a real Auth `onCreate` dispatch fires it. Both are
+ * legitimate per the M1 T5 brief; this one was chosen because the trigger
+ * file's own comment states `provisionUser` and `buildProvisionedUserDoc`
+ * are exported individually "so a later emulator integration test (M1 T5)
+ * can drive them directly without the trigger wrapper" - the author already
+ * built this seam for this exact purpose. It also avoids standing up the
+ * functions emulator (which would need a `functions/lib` rebuild plus every
+ * OTHER exported function's secrets/env satisfied just to boot one trigger),
  * and every line of `provisionUser`'s own logic still runs unmocked against
  * the real Firestore emulator - only the Auth-trigger dispatch wrapper is
  * skipped. Hence `--only auth,firestore` (no `functions`) in the
  * `test:integration` script.
+ *
+ * T7 CUTOVER: `provisionUserOnSignup` is no longer dormant - it is exported
+ * from `functions/src/index.ts` (the deploy surface), replacing the retired
+ * `onUserCreate` and the client's fire-and-forget batch. The "wired into the
+ * deploy set" test below asserts that directly, as the brief's fallback for
+ * not standing up the real functions-emulator dispatch (see above). It reads
+ * `functions/src/index.ts` as text rather than importing it: that module
+ * unconditionally calls `admin.initializeApp()` at its own top level (no
+ * `admin.apps.length` guard, unlike this suite's helpers.ts), which would
+ * throw "default app already exists" against the already-initialized Admin
+ * app this suite shares with provisionUserOnSignup.ts (see the
+ * module-instance note below) - and it transitively imports every other
+ * Cloud Function's module (Stripe, Root Platform, Anthropic clients, etc.),
+ * any of which may read env/secrets at import time. A source-text assertion
+ * proves the deploy surface without either risk.
  *
  * T2's completion write is exercised the other way: signed in as the real
  * emulator user via the client SDK, so the owner-gated Firestore write goes
@@ -33,6 +47,8 @@
  * module-instance note in helpers.ts.
  */
 import { afterAll, describe, expect, it } from 'vitest';
+import { readFileSync } from 'fs';
+import path from 'path';
 import { adminAuth, adminDb, adminApp, clientAuth, clientDb } from './helpers';
 
 import { UserDocumentSchema } from '@driiva/contracts';
@@ -137,5 +153,26 @@ describe('M1 identity integration (Auth + Firestore emulators)', () => {
     // The gate signal AuthContext/ProtectedRoute read.
     const afterSnap = await adminDb.collection('users').doc(userRecord.uid).get();
     expect(afterSnap.data()?.onboardingComplete).toBe(true);
+  });
+
+  it('M1 T7: provisionUserOnSignup is wired into the deploy set, replacing the retired onUserCreate', () => {
+    const indexSource = readFileSync(
+      path.resolve(__dirname, '../../functions/src/index.ts'),
+      'utf-8',
+    );
+
+    expect(indexSource).toMatch(
+      /export\s*\{\s*provisionUserOnSignup\s*\}\s*from\s*['"]\.\/triggers\/provisionUserOnSignup['"]/,
+    );
+    // The retired module must not be importable from here at all. Checked as
+    // export/import syntax, not a bare `.not.toContain('onUserCreate')` -
+    // this file's own explanatory comments about the retirement mention that
+    // name too, so a substring check would false-fail on its own commentary.
+    expect(indexSource).not.toMatch(/export\s*\{[^}]*\bonUserCreate\b[^}]*\}/);
+    expect(indexSource).not.toMatch(/from\s*['"]\.\/triggers\/users['"]/);
+    // syncUserOnSignup (DEC-3) must survive the cutover unchanged.
+    expect(indexSource).toMatch(
+      /export\s*\{\s*syncUserOnSignup\s*\}\s*from\s*['"]\.\/triggers\/syncUserOnSignup['"]/,
+    );
   });
 });

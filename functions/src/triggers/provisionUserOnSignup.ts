@@ -4,16 +4,14 @@
  * The unified user-provisioning path for M1 (see
  * .superpowers/sdd/m1-grounding.md §2/§8, rebuild_plan.md §M1 T1). A single
  * Firebase Auth `onCreate` trigger that writes the complete `users/{uid}`
- * doc for EVERY signup method, including Google - which today writes no
- * `users` doc at all (see `functions/src/triggers/users.ts`'s `onUserCreate`,
- * a Firestore-doc trigger that never fires for Google sign-in).
+ * doc for EVERY signup method, including Google - which the retired
+ * `onUserCreate` (a Firestore-doc trigger, see git history) never fired for.
  *
- * ADDITIVE + DORMANT: this trigger is intentionally NOT exported from
- * `functions/src/index.ts` (the deploy surface). It coexists with the
- * untouched `onUserCreate` and `syncUserOnSignup` triggers and the client's
- * fire-and-forget batch (`client/src/pages/signup.tsx`) until the M1 T7
- * cutover retires them and wires this in. `provisionUser` and
- * `buildProvisionedUserDoc` are exported individually so a later emulator
+ * LIVE as of the M1 T7 cutover: exported from `functions/src/index.ts` (the
+ * deploy surface), replacing `onUserCreate` and the client's fire-and-forget
+ * batch (`client/src/pages/signup.tsx`), which are both retired. `syncUserOnSignup`
+ * (DEC-3) stays alongside this as the Neon analytics mirror. `provisionUser`
+ * and `buildProvisionedUserDoc` are exported individually so the emulator
  * integration test (M1 T5) can drive them directly without the trigger
  * wrapper.
  */
@@ -70,20 +68,44 @@ async function generatePolicyNumber(): Promise<string> {
  * Async handler for the Auth `onCreate` event: writes `users/{uid}`,
  * `usernames/{localPart}`, the default `policies/{...}` doc, and registers
  * the user with Damoov. Fires for every signup method, including Google.
+ * Skips all of the above (idempotency guard, above) when a policy already
+ * exists for the uid, so a duplicate Auth-trigger delivery is a no-op.
  *
- * Matches `onUserCreate`'s never-throw posture (`functions/src/triggers/
- * users.ts:61,195-199`): the whole body is wrapped in one try/catch that
- * logs and does not rethrow. This is an Auth `onCreate` trigger, not a
- * Firestore-doc trigger - it is not auto-retried by the platform, so a
- * transient Firestore blip must not fail loudly; it leaves the user
- * un-provisioned for a manual/scripted retry rather than surfacing an error
- * to the signup flow.
+ * Matches the retired `onUserCreate`'s never-throw posture (it lived in
+ * functions/src/triggers/users.ts, deleted at the M1 T7 cutover - see git
+ * history): the whole body is wrapped in one try/catch that logs and does
+ * not rethrow. This is an Auth `onCreate` trigger, not a Firestore-doc
+ * trigger - it is not auto-retried by the platform, so a transient
+ * Firestore blip must not fail loudly; it leaves the user un-provisioned
+ * for a manual/scripted retry rather than surfacing an error to the signup
+ * flow.
  */
 export async function provisionUser(user: functions.auth.UserRecord): Promise<void> {
   const { uid, email: rawEmail, displayName } = user;
   const email = rawEmail || '';
 
   try {
+    // Idempotency guard (restored from onUserCreate, users.ts:75-85 - the
+    // ONE genuine cutover-gate flagged by the whole-branch review). Auth
+    // onCreate triggers are delivered at-least-once, not exactly-once, so a
+    // re-run for the same uid must be a no-op: without this check it would
+    // mint a second policies/{...} doc, drift the shared DRV-### counter,
+    // AND - worse, since the write below is a full `.set()` of the whole
+    // users/{uid} doc, not a merge - clobber any state the user has
+    // legitimately accrued since first provisioning (onboardingComplete,
+    // driving score, etc). A policy already existing for this uid is the
+    // signal that provisioning already ran.
+    const existingPolicies = await db
+      .collection(COLLECTION_NAMES.POLICIES)
+      .where('userId', '==', uid)
+      .limit(1)
+      .get();
+
+    if (!existingPolicies.empty) {
+      functions.logger.info(`User ${uid} already has a policy, skipping re-provisioning`);
+      return;
+    }
+
     const adminEmails = getAdminEmails();
     const isAdmin = adminEmails.length > 0 && adminEmails.includes(email.toLowerCase());
     if (isAdmin) {

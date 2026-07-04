@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { mockDb, mockSet, mockUpdate, mockRunTransaction } from '../setup';
+import { mockDb, mockGet, mockSet, mockUpdate, mockRunTransaction, mockWhere, mockLimit } from '../setup';
 
 const { mockCreateDamoovUser } = vi.hoisted(() => ({
   mockCreateDamoovUser: vi.fn(),
@@ -33,6 +33,11 @@ function fakeUserRecord(overrides: Partial<{ uid: string; email: string; display
 beforeEach(() => {
   vi.clearAllMocks();
   delete process.env.ADMIN_EMAILS;
+
+  // Idempotency guard's existing-policy query: pretend no policy exists yet,
+  // so provisioning proceeds. Individual tests override this to simulate a
+  // re-run/duplicate delivery.
+  mockGet.mockResolvedValue({ empty: true });
 
   // Counter transaction: pretend the counter doc doesn't exist yet, so
   // generatePolicyNumber() resolves deterministically to DRV-001.
@@ -112,6 +117,29 @@ describe('provisionUser', () => {
 
     const [userDoc] = mockSet.mock.calls.map((call: unknown[]) => call[0]);
     expect(userDoc.displayName).toBe('jamal');
+  });
+
+  it('is idempotent: a second call for the same uid does not create a second policy, re-increment the counter, or overwrite the user doc', async () => {
+    // Simulates a re-run / at-least-once duplicate delivery of the Auth
+    // onCreate event: a policy already exists for this uid, so the
+    // idempotency guard (restored from onUserCreate) must short-circuit
+    // before any write.
+    mockGet.mockResolvedValue({ empty: false });
+
+    await provisionUser(fakeUserRecord());
+
+    expect(mockSet).not.toHaveBeenCalled();
+    expect(mockRunTransaction).not.toHaveBeenCalled();
+    expect(mockCreateDamoovUser).not.toHaveBeenCalled();
+  });
+
+  it('checks for an existing policy by userId before doing any provisioning work', async () => {
+    await provisionUser(fakeUserRecord());
+
+    const collectionsWritten = mockDb.collection.mock.calls.map((call: unknown[]) => call[0]);
+    expect(collectionsWritten[0]).toBe('policies');
+    expect(mockWhere).toHaveBeenCalledWith('userId', '==', 'user-001');
+    expect(mockLimit).toHaveBeenCalledWith(1);
   });
 });
 
