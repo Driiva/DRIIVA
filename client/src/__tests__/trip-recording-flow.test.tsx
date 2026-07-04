@@ -53,7 +53,6 @@ const mockUseAuth = vi.fn(() => ({
   logout: vi.fn(),
   setIsAuthenticated: vi.fn(),
   setUser: vi.fn(),
-  checkOnboardingStatus: vi.fn(),
   markEmailVerified: vi.fn(),
 }));
 

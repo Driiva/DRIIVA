@@ -21,7 +21,6 @@ interface AuthContextType {
   logout: () => void;
   setIsAuthenticated: (value: boolean) => void;
   setUser: (user: User | null) => void;
-  checkOnboardingStatus: () => Promise<boolean>;
   markEmailVerified: () => void;
 }
 
@@ -242,22 +241,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(u => u ? { ...u, emailVerified: true } : null);
   };
 
-  const checkOnboardingStatus = async (): Promise<boolean> => {
-    if (!user || !auth?.currentUser) return false;
-    try {
-      const token = await auth.currentUser.getIdToken();
-      const res = await fetch("/api/profile/me", {
-        headers: { Authorization: `Bearer ${token}` },
-        credentials: "include",
-      });
-      if (!res.ok) return false;
-      const profile = await res.json();
-      return profile.onboardingComplete === true;
-    } catch {
-      return false;
-    }
-  };
-
   return (
     <AuthContext.Provider
       value={{
@@ -267,7 +250,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         logout,
         setIsAuthenticated: () => {},
         setUser,
-        checkOnboardingStatus,
         markEmailVerified,
       }}
     >

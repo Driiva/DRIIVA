@@ -31,7 +31,12 @@ const ADMIN_UIDS = new Set(
 
 /**
  * Verifies Firebase JWT from Authorization: Bearer <token>.
- * Sets req.auth.uid and req.auth.email from token; req.auth.userId from DB (getUserByFirebaseUid).
+ * Sets req.auth.uid and req.auth.email from the verified token alone: a valid
+ * token authenticates the request even when no Neon row exists yet (M1 T3: the
+ * Neon row is enrichment, not a gate; it no longer decides whether requireAuth
+ * 401s). req.auth.userId is set from DB (getUserByFirebaseUid) when a row
+ * exists, undefined otherwise; requireResourceOwner still needs a real row to
+ * pass, so :userId-scoped routes are unaffected.
  * Does NOT send response — use requireAuth for 401 on missing/invalid token.
  */
 export async function verifyFirebaseAuth(
@@ -57,12 +62,6 @@ export async function verifyFirebaseAuth(
   }
 
   const user = await storage.getUserByFirebaseUid(decoded.uid);
-  if (!user) {
-    // Firebase token is valid but no matching DB record — treat as unauthenticated.
-    // requireAuth will return 401; avoids userId=0 matching real rows.
-    next();
-    return;
-  }
   req.auth = {
     uid: decoded.uid,
     email: decoded.email,

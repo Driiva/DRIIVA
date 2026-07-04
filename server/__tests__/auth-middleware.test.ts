@@ -75,13 +75,16 @@ describe("verifyFirebaseAuth", () => {
     expect(req.auth).toEqual({ uid: "fb-123", email: "test@driiva.com", userId: 42 });
   });
 
-  it("does not set req.auth when token is valid but no DB user", async () => {
+  // DISPOSITION (M1 T3, FIX): this pinned the retired 401 wall (no DB user,
+  // req.auth left unset). A valid token now authenticates regardless; the
+  // Neon row only enriches userId, it is no longer a gate.
+  it("sets req.auth with userId=undefined when token is valid but no DB user", async () => {
     mockedVerify.mockResolvedValue({ uid: "fb-999", email: "ghost@driiva.com" } as any);
     mockedGetUser.mockResolvedValue(null as any);
     const req = mockReq({ headers: { authorization: "Bearer valid-token" } } as any);
     await verifyFirebaseAuth(req, mockRes(), next);
     expect(next).toHaveBeenCalled();
-    expect(req.auth).toBeUndefined();
+    expect(req.auth).toEqual({ uid: "fb-999", email: "ghost@driiva.com", userId: undefined });
   });
 });
 

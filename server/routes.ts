@@ -114,31 +114,14 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  app.patch("/api/profile/me", requireAuth, async (req: AuthRequest, res) => {
-    try {
-      const uid = req.auth!.uid;
-      const user = await storage.getUserByFirebaseUid(uid);
-      if (!user) {
-        return res.status(404).json({ message: "Profile not found. Complete signup first." });
-      }
-      const { onboardingComplete } = req.body as { onboardingComplete?: boolean };
-      if (typeof onboardingComplete !== "boolean") {
-        return res.status(400).json({ message: "onboardingComplete must be a boolean" });
-      }
-      const updated = await storage.updateUser(user.id, { onboardingComplete });
-      if (!updated) {
-        return res.status(500).json({ message: "Update failed" });
-      }
-      res.json({
-        id: String(updated.id),
-        email: updated.email,
-        name: updated.displayName ?? updated.email?.split("@")[0] ?? "User",
-        onboardingComplete: updated.onboardingComplete === true,
-      });
-    } catch (error: unknown) {
-      console.error("PATCH /api/profile/me error:", error);
-      res.status(500).json({ message: "Error updating profile" });
-    }
+  // Retired (M1 T3): this endpoint's only job was writing the Postgres
+  // onboardingComplete column, which no longer gates anything now that
+  // onboarding completion is a Firestore-only write (quick-onboarding.tsx
+  // handleComplete, per DEC-4). No other profile field was ever writable
+  // here, so the endpoint is deprecated outright rather than trimmed.
+  app.patch("/api/profile/me", requireAuth, (_req: AuthRequest, res) => {
+    console.warn("PATCH /api/profile/me called but is retired: onboarding completion is Firestore-only");
+    res.status(410).json({ message: "Retired. Onboarding completion is now written directly to Firestore." });
   });
 
   // Auth check: requires valid Firebase JWT; returns authenticated + user from verified token (never trusts x-user-id)

@@ -236,42 +236,50 @@ describe("auth gating (requireAuth / requireResourceOwner / requireAdmin)", () =
 });
 
 describe("API-02/03 profile/me", () => {
-  it("QUIRK: valid Firebase token with NO Neon row → 401 on GET /api/profile/me (auto-provision branch unreachable; verifyFirebaseAuth drops token-valid-no-row users before requireAuth)", async () => {
+  // DISPOSITION (M1 T3): the two prior "QUIRK: ... 401" tests below pinned
+  // verifyFirebaseAuth's old wall (no Neon row → req.auth never set → 401).
+  // The wall is retired: a valid token now authenticates regardless of a
+  // Neon row. FIX, not drop: both are rewritten to pin the new behaviour.
+  it("FIX (was QUIRK/401): valid Firebase token with NO Neon row now authenticates, GET /api/profile/me 200s via auto-provision", async () => {
     const headers = asUser(null);
     vi.mocked(storage.getOrCreateUserByFirebase).mockResolvedValue(NEON_USER as never);
     const res = await request(app).get("/api/profile/me").set(headers);
-    expect(res.status).toBe(401);
-    expect(storage.getOrCreateUserByFirebase).not.toHaveBeenCalled();
+    expect(res.status).toBe(200);
+    expect(storage.getOrCreateUserByFirebase).toHaveBeenCalledWith(
+      "fb-uid-1",
+      "driver@driiva.co.uk",
+      undefined
+    );
   });
 
-  it("QUIRK: same 401 on PATCH /api/profile/me — a fresh Firebase user cannot complete onboarding via this endpoint until a Neon row exists by some other path", async () => {
+  // DISPOSITION: FIX. PATCH no longer 401s for a missing Neon row; it is
+  // retired outright (410) regardless of the row, so the old distinction
+  // this test drew (401 for no-row vs 400/200 for a row) no longer applies.
+  it("FIX (was QUIRK/401): PATCH /api/profile/me is retired, 410 regardless of Neon row, no storage write", async () => {
     const headers = asUser(null);
     const res = await request(app)
       .patch("/api/profile/me")
       .set(headers)
       .send({ onboardingComplete: true });
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(410);
     expect(storage.updateUser).not.toHaveBeenCalled();
   });
 
-  it("PATCH rejects non-boolean onboardingComplete with 400", async () => {
+  // DISPOSITION: DROP. The endpoint no longer parses the request body at
+  // all (onboarding-write role retired), so "rejects non-boolean" no longer
+  // has anything to assert; folded into the 410-for-any-body test below.
+  //
+  // DISPOSITION: DROP. "persists boolean onboardingComplete via
+  // storage.updateUser" pinned the write path this task removes; superseded
+  // by the 410 test above and the one below.
+  it("PATCH /api/profile/me stays 410 for an existing Neon user too (no legacy write path remains)", async () => {
     const headers = asUser();
-    const res = await request(app)
-      .patch("/api/profile/me")
-      .set(headers)
-      .send({ onboardingComplete: "yes" });
-    expect(res.status).toBe(400);
-  });
-
-  it("PATCH persists boolean onboardingComplete via storage.updateUser", async () => {
-    const headers = asUser();
-    vi.mocked(storage.updateUser).mockResolvedValue({ ...NEON_USER, onboardingComplete: true } as never);
     const res = await request(app)
       .patch("/api/profile/me")
       .set(headers)
       .send({ onboardingComplete: true });
-    expect(res.status).toBe(200);
-    expect(res.body.onboardingComplete).toBe(true);
+    expect(res.status).toBe(410);
+    expect(storage.updateUser).not.toHaveBeenCalled();
   });
 });
 
