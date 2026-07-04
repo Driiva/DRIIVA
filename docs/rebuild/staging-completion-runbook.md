@@ -130,9 +130,10 @@ to `npm run create-firebase-test-users` in `package.json`.
 
 It creates five fixed test accounts via the Firebase Admin SDK: Firebase Auth
 users plus matching Firestore documents (`users/{uid}`, `usernames/{username}`,
-`policies/{uid}-policy`), each with an active `comprehensive_plus` policy so
-they land past onboarding-gated screens. Accounts (all `@driiva.co.uk`,
-password `TestPass123!`):
+`policies/{uid}-policy`), each already marked `onboardingComplete: true` on
+their Firestore user doc (bypassing the onboarding gate), plus an active
+`comprehensive_plus` policy for dashboard/coverage display. Accounts (all
+`@driiva.co.uk`, password `TestPass123!`):
 
 - `steelphoenix7@driiva.co.uk` (Steel Phoenix)
 - `crimsonshadow99@driiva.co.uk` (Crimson Shadow)
