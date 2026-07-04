@@ -104,10 +104,145 @@ jobs:
       - name: Run coverage
         run: npm run test:coverage
 
+  packages:
+    name: Packages (contracts + scoring)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Type check @driiva/contracts
+        run: npx tsc -p packages/contracts/tsconfig.json --noEmit
+
+      # scoring's tsconfig path-maps @driiva/contracts to contracts/dist/index.d.ts,
+      # so contracts must be built before scoring can be typechecked. build:packages
+      # makes that order explicit so a future reorder can't silently break it.
+      - name: Build packages (contracts, then scoring)
+        run: npm run build:packages
+
+      - name: Type check @driiva/scoring
+        run: npx tsc -p packages/scoring/tsconfig.json --noEmit
+
+  rules-emulator:
+    name: Firestore Rules (emulator)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+
+      # The rules suite runs under `firebase emulators:exec`, which needs a JRE.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Run Firestore rules suite (emulator)
+        run: npm run test:rules
+
+  e2e:
+    name: E2E (Playwright)
+    runs-on: ubuntu-latest
+    # Characterisation E2E runs the real dev server against the STAGING Firebase
+    # project (see playwright.config.ts). A ci-placeholder Firebase config was
+    # tried first and breaks 3 specs (invalid API key surfaces as an unhandled
+    # console error on every page load, and wrong Firebase error codes on the
+    # signup/demo characterisation specs) so this job reuses the same staging
+    # secrets deploy-staging/deploy-production already read.
+    env:
+      VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+      VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+      VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+      VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+      VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+      VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+      VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}
+      # None of the runnable (non-skipped) specs hit a DB-backed route, but
+      # server/db.ts throws at import time if this is unset or not postgres-
+      # shaped, so a placeholder unblocks the dev server boot without a real DB.
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci_placeholder
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      # playwright.config.ts's webServer hardcodes `npm run dev:staging`, which
+      # in turn hardcodes `--env-file=.env.staging`. That file is gitignored and
+      # doesn't exist on the runner, so letting Playwright spawn it fresh would
+      # fail outright. Write a CI-only copy from the env above instead.
+      - name: Write .env.staging for CI
+        run: |
+          cat > .env.staging <<EOF
+          VITE_FIREBASE_API_KEY=${VITE_FIREBASE_API_KEY}
+          VITE_FIREBASE_AUTH_DOMAIN=${VITE_FIREBASE_AUTH_DOMAIN}
+          VITE_FIREBASE_PROJECT_ID=${VITE_FIREBASE_PROJECT_ID}
+          VITE_FIREBASE_STORAGE_BUCKET=${VITE_FIREBASE_STORAGE_BUCKET}
+          VITE_FIREBASE_MESSAGING_SENDER_ID=${VITE_FIREBASE_MESSAGING_SENDER_ID}
+          VITE_FIREBASE_APP_ID=${VITE_FIREBASE_APP_ID}
+          VITE_FIREBASE_MEASUREMENT_ID=${VITE_FIREBASE_MEASUREMENT_ID}
+          DATABASE_URL=${DATABASE_URL}
+          EOF
+
+      # Start the server explicitly rather than relying on Playwright's own
+      # webServer command: it needs to be up before we know .env.staging (just
+      # written above) is actually being picked up correctly.
+      - name: Start dev server (staging mode, backgrounded)
+        run: |
+          nohup env PORT=4310 npm run dev:staging > dev-server.log 2>&1 &
+          echo "Dev server starting in background"
+
+      - name: Wait for dev server
+        run: |
+          for _i in $(seq 1 60); do
+            if curl -sf http://localhost:4310/api/health > /dev/null; then
+              echo "Dev server is up"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Dev server did not become healthy in time"
+          cat dev-server.log
+          exit 1
+
+      # reuseExistingServer: true in playwright.config.ts means Playwright
+      # reuses the server started above instead of spawning its own.
+      - name: Run Playwright tests
+        run: npx playwright test
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
   deploy-staging:
     name: Deploy to Staging
     runs-on: ubuntu-latest
-    needs: [lint-and-typecheck, build, functions-build, test]
+    needs: [lint-and-typecheck, build, functions-build, test, packages, rules-emulator, e2e]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     env:
       # ── Staging Firebase config (from GitHub Secrets) ────────────────────
@@ -152,7 +287,6 @@ jobs:
       # If not yet upgraded, change --only to: firestore:rules,firestore:indexes
       # TODO: Create staging Firebase project and add FIREBASE_TOKEN to GitHub Secrets
       - name: Deploy Firebase to staging
-        continue-on-error: true
         run: |
           npx firebase deploy \
             --only firestore:rules,firestore:indexes,functions \
@@ -164,14 +298,13 @@ jobs:
       # ── Vercel ────────────────────────────────────────────────────────────
       # Deploys the pre-built client + Express serverless function to Vercel.
       # Requires these GitHub Secrets:
-      #   VERCEL_TOKEN            — from vercel.com/account/tokens
-      #   VERCEL_ORG_ID           — from .vercel/project.json or Vercel dashboard
-      #   VERCEL_PROJECT_ID_STAGING — Vercel project ID for the staging project
+      #   VERCEL_TOKEN            : from vercel.com/account/tokens
+      #   VERCEL_ORG_ID           : from .vercel/project.json or Vercel dashboard
+      #   VERCEL_PROJECT_ID_STAGING : Vercel project ID for the staging project
       # Runtime env vars (DATABASE_URL, ANTHROPIC_API_KEY etc.) must be set in
       # the Vercel staging project's Environment Variables settings.
       # TODO: Create staging Firebase project and add FIREBASE_TOKEN to GitHub Secrets
       - name: Deploy to Vercel (staging)
-        continue-on-error: true
         run: npx vercel --prod --token "$VERCEL_TOKEN" --yes
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
@@ -199,7 +332,7 @@ jobs:
   deploy-production:
     name: Deploy to Production
     runs-on: ubuntu-latest
-    needs: [lint-and-typecheck, build, functions-build, test]
+    needs: [lint-and-typecheck, build, functions-build, test, packages, rules-emulator, e2e]
     if: >
       (github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_target == 'production')
       || startsWith(github.ref, 'refs/tags/v')
