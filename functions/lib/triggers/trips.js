@@ -43,6 +43,7 @@ const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const types_1 = require("../types");
 const helpers_1 = require("../utils/helpers");
+const tripMetrics_1 = require("../scoring/tripMetrics");
 const weather_1 = require("../utils/weather");
 const achievements_1 = require("../utils/achievements");
 const notifications_1 = require("../utils/notifications");
@@ -332,7 +333,7 @@ async function finalizeTripFromPoints(tripId, tripData) {
         checkDpiaCompliance(tripId, points).catch((err) => functions.logger.warn('DPIA check failed (non-blocking)', { tripId, err }));
         // 2. Compute metrics from points
         const startTimestampMs = tripData.startedAt.toMillis();
-        const metrics = await Sentry.startSpan({ name: 'computeTripMetrics', op: 'trip.compute' }, async () => (0, helpers_1.computeTripMetrics)(points, startTimestampMs));
+        const metrics = await Sentry.startSpan({ name: 'computeTripMetrics', op: 'trip.compute' }, async () => (0, tripMetrics_1.computeTripMetrics)(points, startTimestampMs));
         functions.logger.info(`Computed metrics for trip ${tripId}:`, {
             distanceMeters: metrics.distanceMeters,
             durationSeconds: metrics.durationSeconds,

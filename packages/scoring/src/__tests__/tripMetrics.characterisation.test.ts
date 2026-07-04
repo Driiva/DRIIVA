@@ -1,55 +1,19 @@
 /**
- * CHARACTERISATION: computeTripMetrics (M0 Task 2).
+ * CHARACTERISATION: computeTripMetrics (M0 Task 2; oracle retired M2 Task 1).
  *
- * `functions/src/__tests__/triggers/trips.test.ts` mocks scoring rather than
- * calling `computeTripMetrics` with real GPS points; its "scoring
- * assertions" only pin shape and the 0-100 range (reproduced in the last
- * `describe` block below). There is no existing test in the repo that locks
- * concrete `computeTripMetrics` input/output pairs, so the strongest
- * available characterisation is a direct golden-master diff against the
- * ORIGINAL `functions/src/utils/helpers.ts` implementation: for arbitrary
- * valid point arrays, the port must produce byte-identical output to the
- * unmodified original, verbatim import and all. This is a test-only import
- * (not a production dependency of the package) purely to prove port fidelity.
+ * M0 proved this port byte-identical to the original `functions/src/utils/
+ * helpers.ts` implementation via a golden-master diff (representative trip,
+ * single-point, empty, and arbitrary-point-array fast-check cases against
+ * the unmodified original - see the M0 Task 2 report for the transcript).
+ * M2 Task 1 repoints `functions/src/triggers/trips.ts` to this package and
+ * DELETES the original from helpers.ts, so there is no longer an "original"
+ * to diff against - the port fidelity that oracle proved is now locked in
+ * git history rather than re-asserted on every run. What remains here is the
+ * shape/range characterisation below, standing on its own against this
+ * package's implementation directly.
  */
 import { describe, it, expect } from 'vitest';
-import fc from 'fast-check';
 import { computeTripMetrics } from '../tripMetrics';
-// Test-only golden-master oracle (see file header); not a production dependency of the package.
-import { computeTripMetrics as originalComputeTripMetrics } from '../../../../functions/src/utils/helpers';
-import { tripPointsArb } from './arbitraries';
-
-describe('computeTripMetrics: golden-master diff against functions/src/utils/helpers.ts', () => {
-  it('matches the original for a representative hand-built trip', () => {
-    const points = [
-      { t: 0, lat: 51.5074, lng: -0.1278, spd: 1000, hdg: 90, acc: 5 },
-      { t: 1000, lat: 51.5075, lng: -0.1277, spd: 1200, hdg: 91, acc: 5 },
-      { t: 2000, lat: 51.5076, lng: -0.1276, spd: 500, hdg: 95, acc: 5 }, // hard braking
-      { t: 3000, lat: 51.5078, lng: -0.1274, spd: 3500, hdg: 40, acc: 5 }, // hard accel + sharp turn
-      { t: 4000, lat: 51.508, lng: -0.127, spd: 3400, hdg: 42, acc: 5 },
-    ];
-    expect(computeTripMetrics(points, 0)).toEqual(originalComputeTripMetrics(points, 0));
-  });
-
-  it('matches the original for a single-point trip (insufficient data → default metrics)', () => {
-    const points = [{ t: 0, lat: 51.5, lng: -0.1, spd: 0, hdg: 0, acc: 5 }];
-    expect(computeTripMetrics(points, 0)).toEqual(originalComputeTripMetrics(points, 0));
-  });
-
-  it('matches the original for an empty trip', () => {
-    expect(computeTripMetrics([], 0)).toEqual(originalComputeTripMetrics([], 0));
-  });
-
-  it('matches the original across arbitrary valid point arrays (fast-check)', () => {
-    fc.assert(
-      fc.property(tripPointsArb(), fc.integer(), (points, startTimestampMs) => {
-        expect(computeTripMetrics(points, startTimestampMs)).toEqual(
-          originalComputeTripMetrics(points, startTimestampMs)
-        );
-      })
-    );
-  });
-});
 
 describe('computeTripMetrics: shape/range assertions reproduced from trips.test.ts', () => {
   // Mirrors the assertions in `onTripStatusChange trigger` › 'computes and

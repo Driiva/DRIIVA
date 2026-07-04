@@ -26,8 +26,8 @@ import {
   calculateRiskTier,
   getCurrentPoolPeriod,
   getShareId,
-  computeTripMetrics,
 } from '../utils/helpers';
+import { computeTripMetrics } from '../scoring/tripMetrics';
 import { getWeatherForTrip } from '../utils/weather';
 import { checkAndUnlockAchievements, ACHIEVEMENT_DEFINITIONS } from '../utils/achievements';
 import { notifyTripComplete, notifyAchievementsUnlocked } from '../utils/notifications';

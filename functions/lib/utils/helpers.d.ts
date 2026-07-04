@@ -74,10 +74,4 @@ export declare function calculateRiskTier(score: number): 'low' | 'medium' | 'hi
  * Delegates to shared/refundCalculator.ts - the single source of truth.
  */
 export declare function calculateProjectedRefund(score: number, contributionCents: number, safetyFactor: number, _refundRate: number): number;
-import { TripPoint, ComputedTripMetrics } from '../types';
-/**
- * Compute trip metrics from raw GPS points
- * This is the core algorithm that processes GPS data to derive metrics and scores.
- */
-export declare function computeTripMetrics(points: TripPoint[], startTimestampMs: number): ComputedTripMetrics;
 //# sourceMappingURL=helpers.d.ts.map
