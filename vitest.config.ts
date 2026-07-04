@@ -13,6 +13,7 @@ export default defineConfig({
       'functions/src/**/*.test.ts',
       'server/**/*.test.ts',
       'shared/**/*.test.ts',
+      'packages/**/*.test.{ts,tsx}',
     ],
     exclude: [
       'node_modules',
@@ -38,6 +39,7 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, 'client', 'src'),
       '@shared': path.resolve(__dirname, 'shared'),
+      '@driiva/contracts': path.resolve(__dirname, 'packages', 'contracts', 'src'),
     },
   },
 });

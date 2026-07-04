@@ -1,0 +1,8 @@
+## Target-state declaration only (M0). The repo root stays npm-managed
+## (package-lock.json, `npm run` scripts) — this file does NOT trigger a pnpm
+## install or a workspace migration. During M0, packages/* are consumed via
+## tsconfig "paths" + the vitest resolve.alias (see vitest.config.ts and
+## tsconfig.json), so `npm run dev:staging` / `npm test` keep working
+## unmodified. A real pnpm migration of the root app is out of scope here.
+packages:
+  - 'packages/*'

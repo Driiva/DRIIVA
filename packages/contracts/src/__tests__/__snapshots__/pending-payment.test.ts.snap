@@ -1,0 +1,13 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`PendingPaymentDocumentSchema > pins the current field set (drift guard: fails if a field is removed/renamed) 1`] = `
+[
+  "stripeSubscriptionId",
+  "stripeCustomerId",
+  "quoteId",
+  "status",
+  "error",
+  "createdAt",
+  "processedAt",
+]
+`;

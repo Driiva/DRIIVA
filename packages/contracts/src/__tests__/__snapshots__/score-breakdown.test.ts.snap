@@ -1,0 +1,11 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ScoreBreakdownSchema > pins the current field set (drift guard: fails if a field is removed/renamed) 1`] = `
+[
+  "speedScore",
+  "brakingScore",
+  "accelerationScore",
+  "corneringScore",
+  "phoneUsageScore",
+]
+`;
