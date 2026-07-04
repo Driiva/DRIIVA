@@ -4,12 +4,12 @@
  * Ported verbatim from `functions/src/utils/helpers.ts:224-489` (the
  * `computeTripMetrics` algorithm and its private helpers) plus
  * `shared/tripProcessor.ts:23` (`haversineMeters`, the distance dependency).
- * Byte-faithful to current behaviour — do NOT "fix" or refactor any logic
+ * Byte-faithful to current behaviour: do NOT "fix" or refactor any logic
  * here. See the M0 Task 2 report for characterisation evidence and any
  * bugs spotted but intentionally left unchanged.
  *
  * `TripEvents` / `TripMetrics` mirror `functions/src/types.ts` `TripEvents`
- * / `ComputedTripMetrics` field-for-field — @driiva/contracts does not yet
+ * / `ComputedTripMetrics` field-for-field. @driiva/contracts does not yet
  * define these shapes, so they are declared locally per the brief.
  */
 import type { TripPoint, ScoreBreakdown } from '@driiva/contracts';

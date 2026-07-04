@@ -1,7 +1,7 @@
 /**
  * Characterises the deny-by-design collections (audit quirk 6.8) and the
  * catch-all deny. `systemLogs`, `feedback` (read), and `aiUsageTracking` are
- * unreadable by ANY client — including one with an admin-like custom claim,
+ * unreadable by ANY client, including one with an admin-like custom claim,
  * because `isAdmin` is a Firestore field the rules can't see and no admin
  * custom-claim exists yet. Rebuilding admin access on custom claims is M5
  * scope; this suite only pins today's behaviour.

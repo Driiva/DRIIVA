@@ -85,7 +85,7 @@ describe('firestore.rules: users', () => {
     });
   });
 
-  describe('update — immutable-field lock', () => {
+  describe('update: immutable-field lock', () => {
     beforeEach(async () => {
       await testEnv.withSecurityRulesDisabled(async (context) => {
         await setDoc(doc(context.firestore(), `users/${ALICE}`), baseUser());

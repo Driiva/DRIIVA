@@ -1,6 +1,6 @@
 /**
  * Characterises the /trips/{tripId} status-transition lock (rebuild plan
- * calls this out explicitly as a must-cover behaviour). Not a fix — this
+ * calls this out explicitly as a must-cover behaviour). Not a fix: this
  * pins the rule as it stands today.
  */
 import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest';
@@ -70,7 +70,7 @@ describe('firestore.rules: trips status-transition lock', () => {
     });
   });
 
-  describe('update — status transitions', () => {
+  describe('update: status transitions', () => {
     beforeEach(async () => {
       await testEnv.withSecurityRulesDisabled(async (context) => {
         await setDoc(doc(context.firestore(), 'trips/t1'), baseTrip({ status: 'recording' }));
@@ -92,19 +92,26 @@ describe('firestore.rules: trips status-transition lock', () => {
       await assertFails(updateDoc(doc(alice.firestore(), 'trips/t1'), { status: 'completed' }));
     });
 
-    it('denies mutating a locked field (score) even alongside a valid transition', async () => {
-      const alice = testEnv.authenticatedContext(ALICE);
-      await assertFails(
-        updateDoc(doc(alice.firestore(), 'trips/t1'), { status: 'processing', score: 999 }),
-      );
-    });
+    const LOCKED_FIELDS: Record<string, unknown> = {
+      score: 999,
+      scoreBreakdown: { hardBraking: 1 },
+      events: [{ type: 'hardBraking' }],
+      anomalies: [{ type: 'suspicious' }],
+      context: { tampered: true },
+      userId: BOB,
+      createdBy: BOB,
+      createdAt: 0,
+    };
 
-    it('denies mutating another locked field (userId)', async () => {
-      const alice = testEnv.authenticatedContext(ALICE);
-      await assertFails(
-        updateDoc(doc(alice.firestore(), 'trips/t1'), { status: 'processing', userId: BOB }),
-      );
-    });
+    it.each(Object.entries(LOCKED_FIELDS))(
+      'denies mutating the locked field "%s" even alongside a valid transition',
+      async (field, value) => {
+        const alice = testEnv.authenticatedContext(ALICE);
+        await assertFails(
+          updateDoc(doc(alice.firestore(), 'trips/t1'), { status: 'processing', [field]: value }),
+        );
+      },
+    );
 
     it('denies a non-owner updating the trip', async () => {
       const bob = testEnv.authenticatedContext(BOB);

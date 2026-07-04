@@ -1,8 +1,8 @@
 /**
- * CHARACTERISATION — computeTripMetrics (M0 Task 2).
+ * CHARACTERISATION: computeTripMetrics (M0 Task 2).
  *
  * `functions/src/__tests__/triggers/trips.test.ts` mocks scoring rather than
- * calling `computeTripMetrics` with real GPS points — its "scoring
+ * calling `computeTripMetrics` with real GPS points; its "scoring
  * assertions" only pin shape and the 0-100 range (reproduced in the last
  * `describe` block below). There is no existing test in the repo that locks
  * concrete `computeTripMetrics` input/output pairs, so the strongest
@@ -15,11 +15,11 @@
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
 import { computeTripMetrics } from '../tripMetrics';
-// Test-only golden-master oracle (see file header) — not a production dependency of the package.
+// Test-only golden-master oracle (see file header); not a production dependency of the package.
 import { computeTripMetrics as originalComputeTripMetrics } from '../../../../functions/src/utils/helpers';
 import { tripPointsArb } from './arbitraries';
 
-describe('computeTripMetrics — golden-master diff against functions/src/utils/helpers.ts', () => {
+describe('computeTripMetrics: golden-master diff against functions/src/utils/helpers.ts', () => {
   it('matches the original for a representative hand-built trip', () => {
     const points = [
       { t: 0, lat: 51.5074, lng: -0.1278, spd: 1000, hdg: 90, acc: 5 },
@@ -51,9 +51,9 @@ describe('computeTripMetrics — golden-master diff against functions/src/utils/
   });
 });
 
-describe('computeTripMetrics — shape/range assertions reproduced from trips.test.ts', () => {
+describe('computeTripMetrics: shape/range assertions reproduced from trips.test.ts', () => {
   // Mirrors the assertions in `onTripStatusChange trigger` › 'computes and
-  // saves score...' and 'score is within valid range 0-100' — that suite
+  // saves score...' and 'score is within valid range 0-100'; that suite
   // only checks shape/range (it mocks the score computation), so this
   // reproduces the same checks against the real ported function.
   const points = [

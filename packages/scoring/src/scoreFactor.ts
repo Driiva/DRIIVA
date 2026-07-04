@@ -9,7 +9,7 @@
  * checkout quote summary) must derive it from here via scoreDiscountPercent
  * so the figure displayed always matches the factor actually charged.
  *
- * NOTE: `client/src/lib/scoring.ts` is a SEPARATE engine — out of scope for
+ * NOTE: `client/src/lib/scoring.ts` is a SEPARATE engine, out of scope for
  * M0 (see the Task 2 brief); M2 consolidates it. Not ported here.
  */
 

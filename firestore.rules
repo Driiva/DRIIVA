@@ -143,7 +143,7 @@ service cloud.firestore {
 
       // Client may ONLY advance status via valid transitions (recording→processing
       // or recording→failed). Score, scoreBreakdown, events, anomalies, context
-      // are locked — Cloud Functions set these via Admin SDK.
+      // are locked; Cloud Functions set these via Admin SDK.
       allow update: if isAuthenticated()
         && resource.data.userId == request.auth.uid
         && unchanged('score')
@@ -220,7 +220,7 @@ service cloud.firestore {
     // LEADERBOARD COLLECTION
     // =========================================================================
 
-    // Leaderboard contains displayName + photoURL — restrict to authenticated users (GDPR).
+    // Leaderboard contains displayName + photoURL; restrict to authenticated users (GDPR).
     // Unauthenticated public read was previously allowed but publishes real user names/photos.
     match /leaderboard/{leaderboardId} {
       allow read: if isAuthenticated();
@@ -254,7 +254,7 @@ service cloud.firestore {
     }
 
     // =========================================================================
-    // COUNTERS (sharded counters — Cloud Functions only)
+    // COUNTERS (sharded counters, Cloud Functions only)
     // =========================================================================
 
     match /counters/{docId} {
@@ -282,7 +282,7 @@ service cloud.firestore {
     }
 
     // =========================================================================
-    // SYSTEM LOGS (admin SDK only — FCA audit trail)
+    // SYSTEM LOGS (admin SDK only, FCA audit trail)
     // =========================================================================
 
     match /systemLogs/{document=**} {

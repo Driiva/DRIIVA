@@ -5,7 +5,7 @@
  * Firestore emulator via `@firebase/rules-unit-testing`, so these tests
  * exercise the actual production rules byte-for-byte.
  *
- * Requires the Firestore emulator to be running on 127.0.0.1:8080 — see
+ * Requires the Firestore emulator to be running on 127.0.0.1:8080, see
  * the `test:rules` script in package.json, which boots it via
  * `firebase emulators:exec`.
  */

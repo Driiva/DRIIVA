@@ -1,6 +1,6 @@
 /**
  * Shared fast-check arbitraries for the scoring property tests.
- * Not a test file itself (no `.test.ts` suffix) — imported by the suites
+ * Not a test file itself (no `.test.ts` suffix); imported by the suites
  * under this directory.
  */
 import fc from 'fast-check';
@@ -25,7 +25,7 @@ const stepDeltaArb = fc.double({ min: -0.0005, max: 0.0005, noNaN: true });
  *
  * Two deliberate scope decisions, not test conveniences:
  * - `computeTripMetrics` sorts by `t` internally using JavaScript's *stable*
- *   sort — with duplicate `t` values, permuting the input changes each tied
+ *   sort: with duplicate `t` values, permuting the input changes each tied
  *   element's pre-sort relative order and therefore its post-sort position,
  *   making permutation-stability ill-defined. Real GPS sample streams never
  *   repeat a timestamp, so distinct `t` is the realistic case too.
@@ -35,7 +35,7 @@ const stepDeltaArb = fc.double({ min: -0.0005, max: 0.0005, noNaN: true });
  *   fractionally above 1, so `Math.sqrt(1 - a)` returns NaN. This is
  *   pre-existing behaviour of the original algorithm (see the Task 2
  *   report's concerns section), not introduced by the port, and is outside
- *   this arbitrary's domain — real trip points a second apart are metres
+ *   this arbitrary's domain: real trip points a second apart are metres
  *   apart, never continents apart.
  */
 export function tripPointsArb(): fc.Arbitrary<TripPoint[]> {

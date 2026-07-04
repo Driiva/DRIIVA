@@ -1,11 +1,11 @@
 /**
  * Proves the two rules fixes for this task (see firestore.rules):
  *
- * 1. Merge conflict at the `leaderboard` block resolved — the emulator
+ * 1. Merge conflict at the `leaderboard` block resolved: the emulator
  *    loading the file at all is the proof (a file with `<<<<<<<` markers
  *    fails `initializeTestEnvironment`), plus the read behaviour below.
  * 2. New top-level `achievements/{achId}` catalogue rule (audit quirk 6.9 /
- *    DATA-22) — previously missing, so every read fell through to the
+ *    DATA-22); previously missing, so every read fell through to the
  *    catch-all deny.
  */
 import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest';
@@ -32,7 +32,7 @@ describe('firestore.rules: achievements + leaderboard', () => {
     });
   });
 
-  describe('achievements/{achId} — badge-definition catalogue (fix 2)', () => {
+  describe('achievements/{achId}: badge-definition catalogue (fix 2)', () => {
     it('allows an authenticated user to read', async () => {
       const alice = testEnv.authenticatedContext('alice');
       await assertSucceeds(alice.firestore().doc('achievements/first-trip').get());

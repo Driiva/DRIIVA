@@ -1,11 +1,11 @@
 /**
- * DETERMINISM PROPERTY TESTS — scoreFactor (M0 Task 2).
+ * DETERMINISM PROPERTY TESTS: scoreFactor (M0 Task 2).
  */
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
 import { scoreFactor } from '../scoreFactor';
 
-describe('scoreFactor — determinism properties', () => {
+describe('scoreFactor: determinism properties', () => {
   it('is always within [0.85, 1.15] for scores in [0, 100]', () => {
     fc.assert(
       fc.property(fc.double({ min: 0, max: 100, noNaN: true }), score => {

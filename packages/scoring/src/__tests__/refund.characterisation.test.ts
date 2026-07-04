@@ -1,7 +1,7 @@
 /**
- * CHARACTERISATION — calculateRefundCents (M0 Task 2).
+ * CHARACTERISATION: calculateRefundCents (M0 Task 2).
  * Reproduces the exact cases from `shared/__tests__/refundCalculator.test.ts`
- * against the ported functions — same inputs, same expected outputs.
+ * against the ported functions: same inputs, same expected outputs.
  */
 import { describe, it, expect } from 'vitest';
 import { blendedScore, refundRate, calculateRefundCents, projectedRefundCents } from '../refund';

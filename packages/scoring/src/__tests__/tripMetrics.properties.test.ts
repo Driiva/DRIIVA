@@ -1,5 +1,5 @@
 /**
- * DETERMINISM PROPERTY TESTS — computeTripMetrics (M0 Task 2).
+ * DETERMINISM PROPERTY TESTS: computeTripMetrics (M0 Task 2).
  *
  * Permutation-stability was developed TDD-style: the property was first
  * proven to catch a broken port (RED) by temporarily removing the internal
@@ -12,7 +12,7 @@ import fc from 'fast-check';
 import { computeTripMetrics } from '../tripMetrics';
 import { tripPointsArb } from './arbitraries';
 
-describe('computeTripMetrics — determinism properties', () => {
+describe('computeTripMetrics: determinism properties', () => {
   it('score is always within [0, 100]', () => {
     fc.assert(
       fc.property(tripPointsArb(), fc.integer(), (points, startTimestampMs) => {
