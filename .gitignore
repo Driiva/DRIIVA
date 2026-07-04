@@ -52,3 +52,6 @@ apps/*/lighthouse.json
 # Playwright (characterisation E2E)
 playwright-report/
 test-results/
+
+# Subagent-driven-development scratch (ledger + task briefs/reports)
+.superpowers/
