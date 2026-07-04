@@ -197,7 +197,9 @@ export default function Signup() {
       } else if (err.code === 'auth/too-many-requests') {
         setError("Too many attempts. Please try again later.");
       } else {
-        setError(err.message || "Something went wrong. Please try again.");
+        // Unmapped Firebase error code (or a non-Firebase throw) - never
+        // surface err.message or a raw auth/... code to the user.
+        setError("Something went wrong. Please try again.");
       }
     } finally {
       setIsLoading(false);

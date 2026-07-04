@@ -47,6 +47,10 @@ import { StepConfirm } from './onboarding/steps/StepConfirm';
 import { StepCelebration } from './onboarding/steps/StepCelebration';
 
 const TOTAL_STEPS = 12;
+// Celebration (step TOTAL_STEPS) is a terminal screen with no progress dot,
+// so the dots and the "Step X of N" label both derive from this single
+// value - changing TOTAL_STEPS can never desync the two again.
+const PROGRESS_STEPS = TOTAL_STEPS - 1;
 
 export default function QuickOnboarding() {
   const [, setLocation] = useLocation();
@@ -363,12 +367,13 @@ export default function QuickOnboarding() {
 
       <div className="relative z-10 flex-1 flex flex-col p-6 max-w-lg mx-auto w-full">
         {/* Progress indicator (hidden on celebration step) */}
-        {currentStep < 12 && (
+        {currentStep < TOTAL_STEPS && (
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-1">
-              {Array.from({ length: 11 }, (_, i) => (
+              {Array.from({ length: PROGRESS_STEPS }, (_, i) => (
                 <div
                   key={i}
+                  data-testid="progress-dot"
                   className={`h-1.5 rounded-full transition-all duration-300 ${
                     i + 1 <= currentStep
                       ? 'bg-[#5b4dc9] w-5'
@@ -377,7 +382,7 @@ export default function QuickOnboarding() {
                 />
               ))}
             </div>
-            <span className="text-sm text-white/50 flex-shrink-0 ml-3">Step {currentStep} of 11</span>
+            <span className="text-sm text-white/50 flex-shrink-0 ml-3">Step {currentStep} of {PROGRESS_STEPS}</span>
           </div>
         )}
 
@@ -477,7 +482,7 @@ export default function QuickOnboarding() {
                 handleComplete={handleComplete}
               />
             )}
-            {currentStep === 12 && (
+            {currentStep === TOTAL_STEPS && (
               <StepCelebration
                 onContinue={goToDashboard}
                 userName={user?.name}
