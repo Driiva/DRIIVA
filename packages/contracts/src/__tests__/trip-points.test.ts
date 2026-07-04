@@ -22,6 +22,10 @@ describe('TripPointSchema', () => {
     expect(TripPointSchema.parse(withSensors)).toEqual(withSensors);
   });
 
+  it('pins the current field set (drift guard: fails if a field is removed/renamed)', () => {
+    expect(Object.keys(TripPointSchema.shape)).toMatchSnapshot();
+  });
+
   it('rejects a non-integer spd (must stay an encoded integer, not real m/s)', () => {
     expect(() => TripPointSchema.parse({ ...validPoint, spd: 13.4 })).toThrow();
   });
@@ -69,6 +73,10 @@ describe('TripPointsBatchSchema', () => {
 
   it('parses a representative tripPoints/{tripId}/batches/{n} document', () => {
     expect(TripPointsBatchSchema.parse(validFixture)).toEqual(validFixture);
+  });
+
+  it('pins the current field set (drift guard: fails if a field is removed/renamed)', () => {
+    expect(Object.keys(TripPointsBatchSchema.shape)).toMatchSnapshot();
   });
 
   it('rejects a missing batchIndex', () => {

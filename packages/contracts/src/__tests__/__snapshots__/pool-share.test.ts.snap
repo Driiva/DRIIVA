@@ -1,5 +1,27 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`PoolShareDocumentSchema > pins the current field set (drift guard: fails if a field is removed/renamed) 1`] = `
+[
+  "shareId",
+  "poolPeriod",
+  "userId",
+  "contributionCents",
+  "contributionCount",
+  "sharePercentage",
+  "weightedScore",
+  "baseRefundCents",
+  "projectedRefundCents",
+  "status",
+  "eligibleForRefund",
+  "tripsIncluded",
+  "milesIncluded",
+  "averageScore",
+  "createdAt",
+  "updatedAt",
+  "finalizedAt",
+]
+`;
+
 exports[`PoolShareSummarySchema > pins the current field set (drift guard: fails if a field is removed/renamed) 1`] = `
 [
   "currentShareCents",

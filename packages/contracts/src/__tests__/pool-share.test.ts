@@ -49,6 +49,10 @@ describe('PoolShareDocumentSchema', () => {
     expect(PoolShareDocumentSchema.parse(validFixture)).toEqual(validFixture);
   });
 
+  it('pins the current field set (drift guard: fails if a field is removed/renamed)', () => {
+    expect(Object.keys(PoolShareDocumentSchema.shape)).toMatchSnapshot();
+  });
+
   it('rejects an invalid status', () => {
     expect(() => PoolShareDocumentSchema.parse({ ...validFixture, status: 'refunded' })).toThrow();
   });

@@ -10,3 +10,27 @@ exports[`ActivePolicySummarySchema > pins the current field set (drift guard: fa
   "renewalDate",
 ]
 `;
+
+exports[`PolicyDocumentSchema > pins the current field set (drift guard: fails if a field is removed/renamed) 1`] = `
+[
+  "policyId",
+  "userId",
+  "policyNumber",
+  "status",
+  "coverageType",
+  "coverageDetails",
+  "basePremiumCents",
+  "currentPremiumCents",
+  "discountPercentage",
+  "effectiveDate",
+  "expirationDate",
+  "renewalDate",
+  "vehicle",
+  "billingCycle",
+  "stripeSubscriptionId",
+  "createdAt",
+  "updatedAt",
+  "createdBy",
+  "updatedBy",
+]
+`;

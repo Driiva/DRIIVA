@@ -67,6 +67,10 @@ describe('PolicyDocumentSchema', () => {
     expect(PolicyDocumentSchema.parse(validFixture)).toEqual(validFixture);
   });
 
+  it('pins the current field set (drift guard: fails if a field is removed/renamed)', () => {
+    expect(Object.keys(PolicyDocumentSchema.shape)).toMatchSnapshot();
+  });
+
   it('rejects an invalid coverageType', () => {
     expect(() => PolicyDocumentSchema.parse({ ...validFixture, coverageType: 'gold' })).toThrow();
   });

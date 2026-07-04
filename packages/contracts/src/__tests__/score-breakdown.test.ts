@@ -32,4 +32,8 @@ describe('ScoreBreakdownSchema', () => {
     const { phoneUsageScore: _phoneUsageScore, ...missingField } = validFixture;
     expect(() => ScoreBreakdownSchema.parse(missingField)).toThrow();
   });
+
+  it('rejects an extra field (strict: the scoring package must emit exactly this shape)', () => {
+    expect(() => ScoreBreakdownSchema.parse({ ...validFixture, overallScore: 90 })).toThrow();
+  });
 });
