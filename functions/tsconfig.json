@@ -11,7 +11,11 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "declaration": true,
-    "declarationMap": true
+    "declarationMap": true,
+    "baseUrl": ".",
+    "paths": {
+      "@driiva/contracts": ["../packages/contracts/src/index.ts"]
+    }
   },
   "compileOnSave": true,
   "include": [

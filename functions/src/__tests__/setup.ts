@@ -8,7 +8,7 @@
 import { vi } from 'vitest';
 
 // ---------------------------------------------------------------------------
-// Firebase Admin mock — must be hoisted before any imports that use admin
+// Firebase Admin mock - must be hoisted before any imports that use admin
 // ---------------------------------------------------------------------------
 
 const mockTimestamp = {
@@ -110,8 +110,71 @@ vi.mock('firebase-admin', () => ({
   })),
 }));
 
-vi.mock('firebase-functions', () => ({
-  default: {
+vi.mock('firebase-functions', () => {
+  // Shared so `functions.region(...)` and `functions.default.region(...)`
+  // behave identically regardless of which interop path a trigger's
+  // `import * as functions from 'firebase-functions'` resolves through.
+  const region = vi.fn(function regionMock() {
+    const builder = {
+      runWith: vi.fn(() => builder),
+      firestore: {
+        document: vi.fn(() => ({
+          onWrite: vi.fn((handler: unknown) => handler),
+          onCreate: vi.fn((handler: unknown) => handler),
+          onUpdate: vi.fn((handler: unknown) => handler),
+        })),
+      },
+      https: {
+        onCall: vi.fn((handler: unknown) => handler),
+        onRequest: vi.fn((handler: unknown) => handler),
+      },
+      pubsub: {
+        schedule: vi.fn(() => ({
+          timeZone: vi.fn(() => ({ onRun: vi.fn((handler: unknown) => handler) })),
+          onRun: vi.fn((handler: unknown) => handler),
+        })),
+      },
+      auth: {
+        user: vi.fn(() => ({ onCreate: vi.fn((handler: unknown) => handler) })),
+      },
+    };
+    return builder;
+  });
+
+  return {
+    default: {
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn(),
+      },
+      firestore: {
+        document: vi.fn(() => ({
+          onCreate: vi.fn((handler: unknown) => handler),
+          onUpdate: vi.fn((handler: unknown) => handler),
+          onWrite: vi.fn((handler: unknown) => handler),
+          onDelete: vi.fn((handler: unknown) => handler),
+        })),
+      },
+      pubsub: {
+        schedule: vi.fn(() => ({
+          onRun: vi.fn((handler: unknown) => handler),
+        })),
+      },
+      https: {
+        onCall: vi.fn((handler: unknown) => handler),
+        onRequest: vi.fn((handler: unknown) => handler),
+        HttpsError: class HttpsError extends Error {
+          code: string;
+          constructor(code: string, message: string) {
+            super(message);
+            this.code = code;
+          }
+        },
+      },
+      region,
+    },
     logger: {
       info: vi.fn(),
       warn: vi.fn(),
@@ -123,12 +186,6 @@ vi.mock('firebase-functions', () => ({
         onCreate: vi.fn((handler: unknown) => handler),
         onUpdate: vi.fn((handler: unknown) => handler),
         onWrite: vi.fn((handler: unknown) => handler),
-        onDelete: vi.fn((handler: unknown) => handler),
-      })),
-    },
-    pubsub: {
-      schedule: vi.fn(() => ({
-        onRun: vi.fn((handler: unknown) => handler),
       })),
     },
     https: {
@@ -142,63 +199,14 @@ vi.mock('firebase-functions', () => ({
         }
       },
     },
-    region: vi.fn(function regionMock() {
-      const builder = {
-        runWith: vi.fn(() => builder),
-        firestore: {
-          document: vi.fn(() => ({
-            onWrite: vi.fn((handler: unknown) => handler),
-            onCreate: vi.fn((handler: unknown) => handler),
-            onUpdate: vi.fn((handler: unknown) => handler),
-          })),
-        },
-        https: {
-          onCall: vi.fn((handler: unknown) => handler),
-          onRequest: vi.fn((handler: unknown) => handler),
-        },
-        pubsub: {
-          schedule: vi.fn(() => ({
-            timeZone: vi.fn(() => ({ onRun: vi.fn((handler: unknown) => handler) })),
-            onRun: vi.fn((handler: unknown) => handler),
-          })),
-        },
-        auth: {
-          user: vi.fn(() => ({ onCreate: vi.fn((handler: unknown) => handler) })),
-        },
-      };
-      return builder;
-    }),
-  },
-  logger: {
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn(),
-  },
-  firestore: {
-    document: vi.fn(() => ({
-      onCreate: vi.fn((handler: unknown) => handler),
-      onUpdate: vi.fn((handler: unknown) => handler),
-      onWrite: vi.fn((handler: unknown) => handler),
-    })),
-  },
-  https: {
-    onCall: vi.fn((handler: unknown) => handler),
-    onRequest: vi.fn((handler: unknown) => handler),
-    HttpsError: class HttpsError extends Error {
-      code: string;
-      constructor(code: string, message: string) {
-        super(message);
-        this.code = code;
-      }
+    pubsub: {
+      schedule: vi.fn(() => ({
+        onRun: vi.fn((handler: unknown) => handler),
+      })),
     },
-  },
-  pubsub: {
-    schedule: vi.fn(() => ({
-      onRun: vi.fn((handler: unknown) => handler),
-    })),
-  },
-}));
+    region,
+  };
+});
 
 // Export the mock db so individual tests can configure return values
 export { mockDb, mockTimestamp, mockFieldValue };
