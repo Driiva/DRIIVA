@@ -40,6 +40,7 @@ export default defineConfig({
       '@': path.resolve(__dirname, 'client', 'src'),
       '@shared': path.resolve(__dirname, 'shared'),
       '@driiva/contracts': path.resolve(__dirname, 'packages', 'contracts', 'src'),
+      '@driiva/scoring': path.resolve(__dirname, 'packages', 'scoring', 'src'),
     },
   },
 });
