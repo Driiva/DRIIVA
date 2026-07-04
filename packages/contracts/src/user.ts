@@ -85,11 +85,21 @@ export const UserDocumentSchema = z.object({
   createdBy: z.string(),
   updatedBy: z.string(),
   /**
-   * Quirk 6.10: written by client/src/pages/signup.tsx as a fire-and-forget
-   * extra field ALONGSIDE the correctly-spelled `onboardingComplete` (no
-   * '-ed'). Not declared on the canonical UserDocument interface in
-   * shared/firestore-types.ts and never read by anything. Pinned here
-   * (optional) so a real signup-written document still parses, and the
+   * LIVE onboarding-gate field (no '-ed'). Written at AuthContext.tsx:89,
+   * signup.tsx:140,160, onboarding.tsx:134, signin.tsx:502 and
+   * quick-onboarding.tsx:301. Read at AuthContext.tsx:40
+   * (`snap.data()?.onboardingComplete === true`) to decide whether a signed-in
+   * user is routed past onboarding; the staging seed sets it to bypass the
+   * gate. Not declared on the canonical UserDocument interface in
+   * shared/firestore-types.ts, but it is the field every real gate check
+   * actually reads - characterisation must pin it.
+   */
+  onboardingComplete: z.boolean().optional(),
+  /**
+   * Quirk 6.10: the DEAD '-ed' vestige. Written by
+   * client/src/pages/signup.tsx as a fire-and-forget extra field ALONGSIDE
+   * the live `onboardingComplete` above, but never read by anything. Pinned
+   * here (optional) so a real signup-written document still parses, and the
    * vestige stays visible in the shape snapshot instead of being silently
    * dropped.
    */

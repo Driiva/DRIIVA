@@ -25,6 +25,7 @@ exports[`UserDocumentSchema > pins the current field set (drift guard: fails if 
   "settings",
   "createdBy",
   "updatedBy",
+  "onboardingComplete",
   "onboardingCompleted",
 ]
 `;

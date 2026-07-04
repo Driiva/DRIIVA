@@ -53,7 +53,7 @@ describe('UserDocumentSchema', () => {
     expect(UserDocumentSchema.parse(validFixture)).toEqual(validFixture);
   });
 
-  it('parses with the soft-onboarding optional fields and the onboardingCompleted vestige set (quirk 6.10)', () => {
+  it('parses with the soft-onboarding optional fields, the LIVE onboardingComplete gate field, and the onboardingCompleted vestige set (quirk 6.10)', () => {
     const withOptionals = {
       ...validFixture,
       age: 32,
@@ -64,6 +64,7 @@ describe('UserDocumentSchema', () => {
       currentPremiumPounds: 620,
       noClaimsYears: 3,
       vehicle: { vin: null, make: 'Ford', model: 'Focus', year: 2019, color: 'blue' },
+      onboardingComplete: true,
       onboardingCompleted: false,
     };
     expect(UserDocumentSchema.parse(withOptionals)).toEqual(withOptionals);
