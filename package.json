@@ -20,6 +20,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:rules": "firebase emulators:exec --only firestore \"vitest run --config vitest.rules.config.ts\"",
+    "test:integration": "firebase emulators:exec --only auth,firestore \"vitest run --config vitest.integration.config.ts\"",
     "test:auth": "node test-auth.js",
     "create:user": "node create-user.js",
     "create-firebase-test-users": "tsx scripts/create-firebase-test-users.ts",

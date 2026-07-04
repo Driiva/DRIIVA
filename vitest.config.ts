@@ -21,6 +21,10 @@ export default defineConfig({
       // Rules-emulator suite needs the Firestore emulator running; run it via
       // `npm run test:rules`, not the default suite. See vitest.rules.config.ts.
       'tests/rules/**',
+      // Auth+Firestore integration suite needs live emulators; run it via
+      // `npm run test:integration`, not the default suite. See
+      // vitest.integration.config.ts.
+      'tests/integration/**',
     ],
     coverage: {
       provider: 'v8',

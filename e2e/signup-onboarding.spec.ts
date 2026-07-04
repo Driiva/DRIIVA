@@ -5,12 +5,13 @@ import { test, expect } from '@playwright/test';
  * completion attempt, against the STAGING Firebase project.
  *
  * Creates one throwaway account per run (e2e-<timestamp>@driiva.co.uk).
- * This flow also empirically probes the §0.4 dead-on-arrival finding:
- * onboarding completion is gated on PATCH /api/profile/me, which 401s for
- * any Firebase user with no Neon row (verifyFirebaseAuth drops them), unless
- * the syncUserOnSignup Auth trigger is deployed on staging and has created
- * the row. Whatever happens is pinned via the observable outcome AND the
- * captured PATCH status code.
+ * Completion is now Firestore-only (M1 T2): the confirm step performs a
+ * direct, owner-gated client `setDoc` of `users/{uid}.onboardingComplete`
+ * (see tests/integration/identity.test.ts for the emulator-level proof of
+ * that write and the gate it flips), not a PATCH to a Postgres-backed
+ * endpoint; the old dead-on-arrival 401 wall from §0.4 no longer exists.
+ * The walker below pins the resulting UI outcome (Celebration/dashboard),
+ * not a network status code.
  */
 
 test.describe('FLOW-01 signup → onboarding', () => {
@@ -33,9 +34,14 @@ test.describe('FLOW-01 signup → onboarding', () => {
   });
 
   // UNBLOCK CONDITION: enable the Email/Password sign-in provider on the
-  // driiva-staging Firebase project (console → Authentication → Sign-in method),
-  // then remove this skip. The walker below then pins the full FLOW-01 including
-  // the §0.4 dead-on-arrival probe (does completion PATCH 200 or 401?).
+  // driiva-staging Firebase project (console → Authentication → Sign-in
+  // method), then remove this skip. Per the driiva-staging runbook this is a
+  // human console action, not something this suite can flip; the STAGING
+  // REALITY test above still empirically pins it as disabled today, so this
+  // walker stays skipped rather than faking a pass against a signup flow it
+  // cannot actually reach. Once unblocked, the walker below runs the full
+  // FLOW-01 against the NEW Firestore-only completion signal (M1 T2), with
+  // no PATCH involved any more.
   test.skip('signup lands on /quick-onboarding before any Firestore write confirms; onboarding walks to Confirm; completion outcome pinned', async ({ page }) => {
     test.setTimeout(180_000);
     const email = `e2e-${Date.now()}@driiva.co.uk`;
@@ -50,14 +56,6 @@ test.describe('FLOW-01 signup → onboarding', () => {
 
     // Signup navigates to onboarding IMMEDIATELY (fire-and-forget writes behind it)
     await expect(page).toHaveURL(/\/quick-onboarding/, { timeout: 30_000 });
-
-    // Track the completion PATCH — the load-bearing call of the whole flow.
-    let patchStatus: number | null = null;
-    page.on('response', (res) => {
-      if (res.url().includes('/api/profile/me') && res.request().method() === 'PATCH') {
-        patchStatus = res.status();
-      }
-    });
 
     // Walk the steps. Only DataConsent (checkbox) and Confirm (checkbox) hard-gate;
     // everything else is Continue/Skip. Tick any required checkbox we meet.
@@ -84,10 +82,11 @@ test.describe('FLOW-01 signup → onboarding', () => {
       await page.waitForTimeout(400);
     }
 
-    // Outcome: either Celebration/dashboard (PATCH 200 — Neon row existed, i.e.
-    // syncUserOnSignup IS live on staging) or stuck on Confirm (PATCH 401 —
-    // the dead-on-arrival wall, with the failure toast invisible because the
-    // Toaster is never mounted). Pin whichever staging exhibits, and record it.
+    // Outcome: completion is now a direct, owner-gated Firestore write with no
+    // backend row dependency (M1 T2 dropped the PATCH /api/profile/me
+    // dead-on-arrival wall entirely; see the emulator-level proof in
+    // tests/integration/identity.test.ts). There is no 401 branch left to
+    // pin: a fresh Firebase user reaches Celebration/dashboard unconditionally.
     await page.waitForTimeout(4_000);
     const url = page.url();
     const completed = /\/dashboard/.test(url) || (await page
@@ -96,23 +95,11 @@ test.describe('FLOW-01 signup → onboarding', () => {
       .isVisible()
       .catch(() => false));
 
-    // Attach the empirical result to the report either way:
     test.info().annotations.push({
       type: 'characterisation',
-      description: `completion PATCH /api/profile/me status=${patchStatus}; completed=${completed}; url=${url}`,
+      description: `onboarding completed=${completed}; url=${url}`,
     });
 
-    // The PATCH must have fired — completion is gated on it (June fix 9acbb60).
-    expect(patchStatus, 'completion PATCH never fired — step walker did not reach Confirm').not.toBeNull();
-
-    if (patchStatus === 200) {
-      expect(completed).toBe(true);
-    } else {
-      // Dead-on-arrival wall confirmed end-to-end: fresh Firebase user, no Neon
-      // row, PATCH 401, user cannot complete onboarding; failure feedback is
-      // silently dropped (dead Toaster).
-      expect(patchStatus).toBe(401);
-      expect(completed).toBe(false);
-    }
+    expect(completed, 'onboarding did not reach Celebration/dashboard after the Firestore completion write').toBe(true);
   });
 });
