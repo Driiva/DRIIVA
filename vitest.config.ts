@@ -18,6 +18,9 @@ export default defineConfig({
     exclude: [
       'node_modules',
       'functions/src/__tests__/triggers/damoovRegistration.test.ts',
+      // Rules-emulator suite needs the Firestore emulator running — run it via
+      // `npm run test:rules`, not the default suite. See vitest.rules.config.ts.
+      'tests/rules/**',
     ],
     coverage: {
       provider: 'v8',

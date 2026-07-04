@@ -117,6 +117,18 @@ service cloud.firestore {
     }
 
     // =========================================================================
+    // ACHIEVEMENTS COLLECTION (badge-definition catalogue)
+    // =========================================================================
+    // Static catalogue of achievement/badge definitions, seeded by the Admin SDK.
+    // Distinct from /users/{userId}/achievements/{achId} above, which holds a
+    // given user's UNLOCKED badges.
+
+    match /achievements/{achId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    // =========================================================================
     // TRIPS COLLECTION
     // =========================================================================
 
@@ -209,10 +221,7 @@ service cloud.firestore {
     // =========================================================================
 
     // Leaderboard contains displayName + photoURL — restrict to authenticated users (GDPR).
-<<<<<<< HEAD
     // Unauthenticated public read was previously allowed but publishes real user names/photos.
-=======
->>>>>>> dde6db6 (feat: server hardening, distributed rate limiting, shared trip processor, and refund calculator)
     match /leaderboard/{leaderboardId} {
       allow read: if isAuthenticated();
       allow write: if false;

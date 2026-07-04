@@ -26,6 +26,8 @@ firestore-backup/
 # Firebase CLI
 firebase-debug.log
 firebase-debug.*.log
+firestore-debug.log
+ui-debug.log
 
 # Repo bloat — assets, archives, experimental
 attached_assets/
