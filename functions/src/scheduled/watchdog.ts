@@ -57,7 +57,7 @@ export const monitorTripHealth = functions
       .get();
 
     if (recentTripsSnap.empty) {
-      const msg = `WARNING: No new trips in the last ${STALE_HOURS} hours — possible GPS upload drop-off`;
+      const msg = `WARNING: No new trips in the last ${STALE_HOURS} hours - possible GPS upload drop-off`;
       functions.logger.warn('[watchdog] no_recent_trips', {
         metric: 'watchdog',
         alert: 'no_recent_trips',

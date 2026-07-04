@@ -287,7 +287,7 @@ export const classifyTrip = functions
   .https.onCall(async (data, context) => {
   const userId = requireAuth(context);
 
-  // TODO: Rate limiting – e.g. max N classifyTrip calls per user per minute
+  // TODO: Rate limiting - e.g. max N classifyTrip calls per user per minute
   // Example: Firestore/Redis counter keyed by userId, reject if over threshold
 
   const tripId = data?.tripId as string;
@@ -372,7 +372,7 @@ export const batchClassifyTrips = functions
   requireAuth(context);
   requireAdmin(context);
 
-  // TODO: Rate limiting – e.g. max 1 batch job per admin per 5 minutes
+  // TODO: Rate limiting - e.g. max 1 batch job per admin per 5 minutes
   // Example: check last batchClassifyTrips timestamp in Firestore/Redis for context.auth.uid
 
   const { tripIds, userId, limit = 10 } = data;

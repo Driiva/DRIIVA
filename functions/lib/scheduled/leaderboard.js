@@ -1,0 +1,241 @@
+"use strict";
+/**
+ * LEADERBOARD SCHEDULED FUNCTIONS
+ * ===============================
+ * Scheduled functions to update leaderboard rankings.
+ */
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.updateLeaderboards = void 0;
+const functions = __importStar(require("firebase-functions"));
+const admin = __importStar(require("firebase-admin"));
+const types_1 = require("../types");
+const helpers_1 = require("../utils/helpers");
+const region_1 = require("../lib/region");
+const sentry_1 = require("../lib/sentry");
+const db = admin.firestore();
+// Maximum rankings to store
+const MAX_RANKINGS = 100;
+/**
+ * Update all leaderboards every 15 minutes
+ */
+exports.updateLeaderboards = functions
+    .region(region_1.EUROPE_LONDON)
+    .pubsub
+    .schedule('every 15 minutes')
+    .onRun((0, sentry_1.wrapTrigger)(async (_context) => {
+    functions.logger.info('Starting leaderboard update');
+    try {
+        await Promise.all([
+            calculateLeaderboard('weekly'),
+            calculateLeaderboard('monthly'),
+            calculateLeaderboard('all_time'),
+        ]);
+        functions.logger.info('All leaderboards updated successfully');
+    }
+    catch (error) {
+        functions.logger.error('Error updating leaderboards:', error);
+        throw error;
+    }
+}));
+/**
+ * Calculate and store leaderboard for a specific period type.
+ *
+ * Weekly/monthly boards only include users whose lastTripAt falls within the
+ * current period. Tied scores receive the same rank (dense ranking).
+ */
+async function calculateLeaderboard(periodType) {
+    const period = (0, helpers_1.getCurrentPeriodForType)(periodType);
+    const leaderboardId = `${period}_${periodType}`;
+    functions.logger.info(`Calculating ${periodType} leaderboard`, { leaderboardId });
+    const usersRef = db.collection(types_1.COLLECTION_NAMES.USERS);
+    const query = usersRef
+        .where('drivingProfile.totalTrips', '>', 0)
+        .orderBy('drivingProfile.totalTrips', 'desc')
+        .orderBy('drivingProfile.currentScore', 'desc')
+        .limit(MAX_RANKINGS * 3);
+    const snapshot = await query.get();
+    if (snapshot.empty) {
+        functions.logger.info(`No users found for ${periodType} leaderboard`);
+        return;
+    }
+    // Period date boundaries for weekly/monthly filtering
+    const periodBounds = getPeriodBounds(periodType);
+    // Get previous leaderboard for position changes
+    const prevLeaderboard = await getPreviousLeaderboard(periodType);
+    const prevRankings = new Map();
+    if (prevLeaderboard) {
+        prevLeaderboard.rankings.forEach(r => prevRankings.set(r.userId, r.rank));
+    }
+    // Collect eligible users sorted by score (descending)
+    const eligible = [];
+    for (const doc of snapshot.docs) {
+        const user = doc.data();
+        if (!user.drivingProfile.currentScore || user.drivingProfile.totalTrips === 0) {
+            continue;
+        }
+        // For weekly/monthly, only include users who drove within this period
+        if (periodType !== 'all_time' && periodBounds) {
+            const lastTrip = user.drivingProfile.lastTripAt;
+            if (!lastTrip)
+                continue;
+            const lastTripMs = lastTrip.toMillis();
+            if (lastTripMs < periodBounds.startMs || lastTripMs > periodBounds.endMs) {
+                continue;
+            }
+        }
+        eligible.push({ user, docId: doc.id });
+    }
+    // Sort by score descending (Firestore secondary sort may not be perfect)
+    eligible.sort((a, b) => b.user.drivingProfile.currentScore - a.user.drivingProfile.currentScore);
+    // Build rankings with dense ranking (tied scores = same rank)
+    const rankings = [];
+    const scores = [];
+    let rank = 0;
+    let prevScore = -1;
+    for (const { user } of eligible) {
+        const score = user.drivingProfile.currentScore;
+        // Dense ranking: only increment rank when score differs
+        if (score !== prevScore) {
+            rank++;
+            prevScore = score;
+        }
+        if (rankings.length >= MAX_RANKINGS)
+            break;
+        const prevRank = prevRankings.get(user.uid);
+        const change = prevRank ? prevRank - rank : 0;
+        rankings.push({
+            rank,
+            userId: user.uid,
+            displayName: user.displayName || 'Anonymous',
+            photoURL: user.photoURL,
+            score,
+            totalMiles: user.drivingProfile.totalMiles,
+            totalTrips: user.drivingProfile.totalTrips,
+            change,
+        });
+        scores.push(score);
+    }
+    // Calculate stats
+    const totalParticipants = rankings.length;
+    const averageScore = scores.length > 0
+        ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length * 100) / 100
+        : 0;
+    const medianScore = scores.length > 0
+        ? scores.sort((a, b) => a - b)[Math.floor(scores.length / 2)]
+        : 0;
+    // Calculate next update time
+    const now = admin.firestore.Timestamp.now();
+    const nextUpdate = admin.firestore.Timestamp.fromMillis(now.toMillis() + 15 * 60 * 1000 // 15 minutes
+    );
+    // Build leaderboard document
+    const leaderboardData = {
+        leaderboardId,
+        period,
+        periodType,
+        rankings,
+        totalParticipants,
+        averageScore,
+        medianScore,
+        calculatedAt: now,
+        nextCalculationAt: nextUpdate,
+    };
+    // Save to Firestore
+    await db.collection(types_1.COLLECTION_NAMES.LEADERBOARD)
+        .doc(leaderboardId)
+        .set(leaderboardData);
+    functions.logger.info(`Updated ${periodType} leaderboard`, {
+        leaderboardId,
+        participants: totalParticipants,
+        averageScore,
+    });
+}
+/**
+ * Get previous leaderboard for comparison
+ */
+async function getPreviousLeaderboard(periodType) {
+    const prevPeriod = getPreviousPeriod(periodType);
+    const prevLeaderboardId = `${prevPeriod}_${periodType}`;
+    const doc = await db.collection(types_1.COLLECTION_NAMES.LEADERBOARD)
+        .doc(prevLeaderboardId)
+        .get();
+    if (!doc.exists) {
+        return null;
+    }
+    return doc.data();
+}
+/**
+ * Get start/end epoch milliseconds for the current period.
+ * Returns null for all_time (no filtering needed).
+ */
+function getPeriodBounds(periodType) {
+    if (periodType === 'all_time')
+        return null;
+    const now = new Date();
+    if (periodType === 'weekly') {
+        const dayOfWeek = now.getUTCDay() || 7; // Mon=1 ... Sun=7
+        const monday = new Date(now);
+        monday.setUTCDate(now.getUTCDate() - dayOfWeek + 1);
+        monday.setUTCHours(0, 0, 0, 0);
+        const sunday = new Date(monday);
+        sunday.setUTCDate(monday.getUTCDate() + 6);
+        sunday.setUTCHours(23, 59, 59, 999);
+        return { startMs: monday.getTime(), endMs: sunday.getTime() };
+    }
+    // monthly
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    return { startMs: monthStart.getTime(), endMs: monthEnd.getTime() };
+}
+/**
+ * Get previous period string
+ */
+function getPreviousPeriod(periodType) {
+    const now = new Date();
+    switch (periodType) {
+        case 'weekly':
+            const prevWeekDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            const weekNum = (0, helpers_1.getWeekNumber)(prevWeekDate);
+            return `${prevWeekDate.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+        case 'monthly':
+            const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            return `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, '0')}`;
+        case 'all_time':
+            return 'all_time'; // Same document, compare to self
+        default:
+            return (0, helpers_1.getCurrentPeriodForType)(periodType);
+    }
+}
+//# sourceMappingURL=leaderboard.js.map

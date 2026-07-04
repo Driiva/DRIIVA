@@ -24,12 +24,12 @@ export const onPolicyWrite = functions
   .onWrite(wrapTrigger(async (change, context) => {
     const { policyId } = context.params;
 
-    // Document deleted — clear activePolicy on user
+    // Document deleted - clear activePolicy on user
     if (!change.after.exists) {
       const before = change.before.data() as PolicyDocument | undefined;
       if (!before?.userId) return null;
 
-      functions.logger.info(`Policy ${policyId} deleted — clearing activePolicy for user ${before.userId}`);
+      functions.logger.info(`Policy ${policyId} deleted - clearing activePolicy for user ${before.userId}`);
 
       await db
         .collection(COLLECTION_NAMES.USERS)
@@ -46,14 +46,14 @@ export const onPolicyWrite = functions
     const policy = change.after.data() as PolicyDocument;
 
     if (!policy?.userId) {
-      functions.logger.warn(`Policy ${policyId} has no userId — skipping sync`);
+      functions.logger.warn(`Policy ${policyId} has no userId - skipping sync`);
       return null;
     }
 
     // Policies that are cancelled/expired clear the activePolicy summary
     if (policy.status === 'cancelled' || policy.status === 'expired') {
       functions.logger.info(
-        `Policy ${policyId} is ${policy.status} — clearing activePolicy for user ${policy.userId}`
+        `Policy ${policyId} is ${policy.status} - clearing activePolicy for user ${policy.userId}`
       );
 
       await db
@@ -68,7 +68,7 @@ export const onPolicyWrite = functions
       return null;
     }
 
-    // Active / pending / suspended — sync summary to user document
+    // Active / pending / suspended - sync summary to user document
     const activePolicy: ActivePolicySummary = {
       policyId: policy.policyId,
       policyNumber: policy.policyNumber,       // ← was missing, caused CI failure

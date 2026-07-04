@@ -15,7 +15,7 @@ export type CallableContext = functions.https.CallableContext;
 
 /** Message for unauthenticated requests (missing or expired token). */
 const UNAUTHENTICATED_MESSAGE =
-  'Authentication required. If you were signed in, your session may have expired—please sign in again.';
+  'Authentication required. If you were signed in, your session may have expired - please sign in again.';
 
 /**
  * Require an authenticated user.

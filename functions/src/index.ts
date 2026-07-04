@@ -97,7 +97,7 @@ export {
 export { seedAchievements } from './http/achievements';
 
 // ============================================================================
-// HTTP REQUEST (PUBLIC) — Uptime monitoring
+// HTTP REQUEST (PUBLIC) - Uptime monitoring
 // ============================================================================
 
 export { health } from './http/health';

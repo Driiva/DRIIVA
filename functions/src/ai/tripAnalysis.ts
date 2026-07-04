@@ -1,5 +1,5 @@
 /**
- * AI TRIP ANALYSIS — Claude Sonnet 4 Integration
+ * AI TRIP ANALYSIS - Claude Sonnet 4 Integration
  * ================================================
  * Advanced trip scoring using Anthropic's Claude API.
  *
@@ -301,7 +301,7 @@ export async function analyzeTrip(
     await trackAPIUsage(tripId, trip.userId, 0, 0, latencyMs, false, String(error));
 
     functions.logger.error(`[AI] Analysis failed for trip ${tripId} after ${MAX_RETRIES} attempts:`, error);
-    // Non-blocking — don't throw. The trip is already scored algorithmically.
+    // Non-blocking - don't throw. The trip is already scored algorithmically.
     return null;
   }
 }
@@ -524,7 +524,7 @@ async function callClaude(
     throw new Error('Claude returned no text content');
   }
 
-  // Parse JSON from response — handle markdown code fences
+  // Parse JSON from response - handle markdown code fences
   let jsonText = textBlock.text.trim();
   const fenceMatch = jsonText.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (fenceMatch) {
@@ -684,7 +684,7 @@ function buildInsightDocument(
   const riskLevel = validateRiskLevel(analysis.riskLevel);
   const adjustedScore = clamp(analysis.scoreAdjustment?.adjustedScore ?? overallScore, 0, 100);
 
-  // Strengths & improvements — simple string arrays
+  // Strengths & improvements - simple string arrays
   const strengths = (analysis.strengths || [])
     .slice(0, 5)
     .map(s => String(s).trim())
@@ -714,7 +714,7 @@ function buildInsightDocument(
     scoreImpact: clamp(p.scoreImpact ?? 0, -20, 20),
   }));
 
-  // Safety tips — simple string array
+  // Safety tips - simple string array
   const safetyTips = (analysis.safetyTips || [])
     .slice(0, 5)
     .map(s => String(s).trim())

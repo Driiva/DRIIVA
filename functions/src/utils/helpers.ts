@@ -198,7 +198,7 @@ export function calculateRiskTier(score: number): 'low' | 'medium' | 'high' {
 
 /**
  * Calculate projected refund based on score and contribution.
- * Delegates to shared/refundCalculator.ts — the single source of truth.
+ * Delegates to shared/refundCalculator.ts - the single source of truth.
  */
 export function calculateProjectedRefund(
   score: number,
