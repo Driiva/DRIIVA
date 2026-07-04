@@ -94,6 +94,12 @@ describe('provisionUser', () => {
     expect(mockUpdate).not.toHaveBeenCalled();
   });
 
+  it('does not throw when a Firestore write fails (matches onUserCreate\'s never-throw posture)', async () => {
+    mockSet.mockRejectedValueOnce(new Error('Firestore is down'));
+
+    await expect(provisionUser(fakeUserRecord())).resolves.toBeUndefined();
+  });
+
   it('skips the usernames write when the user has no email', async () => {
     await provisionUser(fakeUserRecord({ email: '' }));
 

@@ -70,88 +70,103 @@ async function generatePolicyNumber(): Promise<string> {
  * Async handler for the Auth `onCreate` event: writes `users/{uid}`,
  * `usernames/{localPart}`, the default `policies/{...}` doc, and registers
  * the user with Damoov. Fires for every signup method, including Google.
+ *
+ * Matches `onUserCreate`'s never-throw posture (`functions/src/triggers/
+ * users.ts:61,195-199`): the whole body is wrapped in one try/catch that
+ * logs and does not rethrow. This is an Auth `onCreate` trigger, not a
+ * Firestore-doc trigger - it is not auto-retried by the platform, so a
+ * transient Firestore blip must not fail loudly; it leaves the user
+ * un-provisioned for a manual/scripted retry rather than surfacing an error
+ * to the signup flow.
  */
 export async function provisionUser(user: functions.auth.UserRecord): Promise<void> {
   const { uid, email: rawEmail, displayName } = user;
   const email = rawEmail || '';
 
-  const adminEmails = getAdminEmails();
-  const isAdmin = adminEmails.length > 0 && adminEmails.includes(email.toLowerCase());
-  if (isAdmin) {
-    functions.logger.info(`Auto-promoting ${uid} (${email}) to admin - reason: ADMIN_EMAILS allowlist`);
-  }
-
-  const policyId = `policy_${uid}`;
-  const policyNumber = await generatePolicyNumber();
-  const now = admin.firestore.Timestamp.now();
-  const renewalDate = admin.firestore.Timestamp.fromDate(
-    new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
-  );
-
-  const userDoc = buildProvisionedUserDoc({
-    uid,
-    email,
-    displayName: displayName ?? undefined,
-    isAdmin,
-    policyId,
-    policyNumber,
-    now,
-    renewalDate,
-  });
-
-  await db.collection(COLLECTION_NAMES.USERS).doc(uid).set(userDoc);
-  functions.logger.info(`Provisioned user doc for ${uid}`, { email, isAdmin });
-
-  const localPart = email.split('@')[0]?.toLowerCase();
-  if (localPart) {
-    await db.collection('usernames').doc(localPart).set({ email, uid }, { merge: true });
-  }
-
-  const policyData: PolicyDocument = {
-    policyId,
-    userId: uid,
-    policyNumber,
-    status: 'pending',
-    coverageType: 'standard',
-    coverageDetails: {
-      liabilityLimitCents: 100000_00, // £100,000
-      collisionDeductibleCents: 500_00, // £500
-      comprehensiveDeductibleCents: 250_00, // £250
-      includesRoadside: true,
-      includesRental: false,
-    },
-    basePremiumCents: 0,
-    currentPremiumCents: 0,
-    discountPercentage: 0,
-    effectiveDate: now,
-    expirationDate: renewalDate,
-    renewalDate,
-    vehicle: null,
-    billingCycle: 'annual',
-    stripeSubscriptionId: null,
-    createdAt: now,
-    updatedAt: now,
-    createdBy: 'cloud-function:provisionUserOnSignup',
-    updatedBy: 'cloud-function:provisionUserOnSignup',
-  };
-
-  await db.collection(COLLECTION_NAMES.POLICIES).doc(policyId).set(policyData);
-  functions.logger.info(`Created default policy ${policyId} for user ${uid}`, { policyNumber });
-
-  // Silently register the user with Damoov for telematics data collection.
-  // createDamoovUser already never throws (returns null on failure), but the
-  // call is wrapped anyway so a future change to that contract can't
-  // silently turn a Damoov outage into a failed provisioning.
-  if (email) {
-    try {
-      const deviceToken = await createDamoovUser(uid, email);
-      if (deviceToken) {
-        await db.collection(COLLECTION_NAMES.USERS).doc(uid).update({ damoovDeviceToken: deviceToken });
-        functions.logger.info(`Stored Damoov deviceToken for user ${uid}`);
-      }
-    } catch (error) {
-      functions.logger.error(`Damoov registration failed for user ${uid} (non-fatal)`, error);
+  try {
+    const adminEmails = getAdminEmails();
+    const isAdmin = adminEmails.length > 0 && adminEmails.includes(email.toLowerCase());
+    if (isAdmin) {
+      functions.logger.info(`Auto-promoting ${uid} (${email}) to admin - reason: ADMIN_EMAILS allowlist`);
     }
+
+    const policyId = `policy_${uid}`;
+    const policyNumber = await generatePolicyNumber();
+    const now = admin.firestore.Timestamp.now();
+    const renewalDate = admin.firestore.Timestamp.fromDate(
+      new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+    );
+
+    const userDoc = buildProvisionedUserDoc({
+      uid,
+      email,
+      displayName: displayName ?? undefined,
+      isAdmin,
+      policyId,
+      policyNumber,
+      now,
+      renewalDate,
+    });
+
+    await db.collection(COLLECTION_NAMES.USERS).doc(uid).set(userDoc);
+    functions.logger.info(`Provisioned user doc for ${uid}`, { email, isAdmin });
+
+    const localPart = email.split('@')[0]?.toLowerCase();
+    if (localPart) {
+      await db.collection('usernames').doc(localPart).set({ email, uid }, { merge: true });
+    }
+
+    const policyData: PolicyDocument = {
+      policyId,
+      userId: uid,
+      policyNumber,
+      status: 'pending',
+      coverageType: 'standard',
+      coverageDetails: {
+        liabilityLimitCents: 100000_00, // £100,000
+        collisionDeductibleCents: 500_00, // £500
+        comprehensiveDeductibleCents: 250_00, // £250
+        includesRoadside: true,
+        includesRental: false,
+      },
+      basePremiumCents: 0,
+      currentPremiumCents: 0,
+      discountPercentage: 0,
+      effectiveDate: now,
+      expirationDate: renewalDate,
+      renewalDate,
+      vehicle: null,
+      billingCycle: 'annual',
+      stripeSubscriptionId: null,
+      createdAt: now,
+      updatedAt: now,
+      createdBy: 'cloud-function:provisionUserOnSignup',
+      updatedBy: 'cloud-function:provisionUserOnSignup',
+    };
+
+    await db.collection(COLLECTION_NAMES.POLICIES).doc(policyId).set(policyData);
+    functions.logger.info(`Created default policy ${policyId} for user ${uid}`, { policyNumber });
+
+    // Silently register the user with Damoov for telematics data collection.
+    // createDamoovUser already never throws (returns null on failure), but the
+    // call is wrapped anyway so a future change to that contract can't
+    // silently turn a Damoov outage into a failed provisioning.
+    if (email) {
+      try {
+        const deviceToken = await createDamoovUser(uid, email);
+        if (deviceToken) {
+          await db.collection(COLLECTION_NAMES.USERS).doc(uid).update({ damoovDeviceToken: deviceToken });
+          functions.logger.info(`Stored Damoov deviceToken for user ${uid}`);
+        }
+      } catch (error) {
+        functions.logger.error(`Damoov registration failed for user ${uid} (non-fatal)`, error);
+      }
+    }
+  } catch (error) {
+    functions.logger.error(`Error provisioning user ${uid}:`, error);
+    // Don't throw - Auth onCreate triggers are not auto-retried by the
+    // platform, so failing loudly here would just surface a spurious error
+    // with no retry benefit. Matches onUserCreate's posture.
   }
 }
 
