@@ -28,9 +28,9 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 /**
- * Firestore fallback: read onboardingComplete directly from Firestore.
- * Used when the Express API is unavailable (e.g. no service account key configured).
- * Returns false safely on any error.
+ * The sole source of truth for onboardingComplete: read it directly from
+ * Firestore. There is no Postgres/API fallback for this field any more (per
+ * DEC-4, Firestore is authoritative). Returns false safely on any error.
  */
 async function readOnboardingFromFirestore(uid: string): Promise<boolean> {
   if (!db) return false;
@@ -125,8 +125,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // ── FAST PATH ────────────────────────────────────────────────────────
         // Resolve auth from Firestore immediately (<500ms) so ProtectedRoutes
         // and the onboarding check unblock without waiting for the Neon/API round-trip.
-        // The slow path (reload + API fetch) runs in the background and patches
-        // the user state once the Neon cold-start resolves.
+        // onboardingComplete is Firestore-only from here: the slow path below no
+        // longer overwrites it, so the onboarding gate has no Postgres dependency.
+        // The slow path (reload + API fetch) still runs in the background to
+        // enrich email/name/emailVerified once the Neon cold-start resolves.
         try {
           const [onboardingComplete, adminFlag] = await Promise.all([
             readOnboardingFromFirestore(firebaseUser.uid),
@@ -184,7 +186,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 ...prev,
                 email: profile.email ?? prev.email,
                 name: profile.name ?? prev.name,
-                onboardingComplete: profile.onboardingComplete === true,
                 emailVerified: refreshedUser.emailVerified,
               } : prev);
               setSentryUser({ id: refreshedUser.uid, email: refreshedUser.email ?? undefined });
