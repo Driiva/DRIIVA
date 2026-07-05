@@ -80,10 +80,10 @@ Dependency-ordered; each module = one `rebuild/m<N>-<name>` branch, commit per t
 **New integration test:** rules emulator suite proving the trip status-transition lock + the achievements read fix.
 
 **Steps (execution detail — this module can start the moment sign-off lands):**
-- [ ] Scaffold pnpm workspace; move nothing yet (old app untouched); `packages/contracts` with the 9 schemas above, each with a vitest snapshot test pinning the current Firestore doc shapes from docs/rebuild/audit-data-shapes.md
-- [ ] Port `functions/src/utils/helpers.ts:224-489` scoring into `packages/scoring` verbatim first (characterisation: same inputs → same outputs as the existing trigger tests), THEN property-test determinism (fast-check: score ∈ [0,100], permutation-stable point ordering)
-- [ ] Fix firestore.rules conflict (keep the HEAD comment + authenticated leaderboard read — that was the intent of both sides); run the new rules emulator suite; diff `firebase firestore:rules get` output vs repo before any deploy
-- [ ] CI: replace the fake-green paths (deploy-staging continue-on-error removed; test job includes Playwright against the dev server)
+- [x] Scaffold pnpm workspace; move nothing yet (old app untouched); `packages/contracts` with the 9 schemas above, each with a vitest snapshot test pinning the current Firestore doc shapes from docs/rebuild/audit-data-shapes.md - *done: `1ead076`*
+- [x] Port `functions/src/utils/helpers.ts:224-489` scoring into `packages/scoring` verbatim first (characterisation: same inputs → same outputs as the existing trigger tests), THEN property-test determinism (fast-check: score ∈ [0,100], permutation-stable point ordering) - *done: `a2f304e`, `4928f15`*
+- [x] Fix firestore.rules conflict (keep the HEAD comment + authenticated leaderboard read ,  that was the intent of both sides); run the new rules emulator suite; diff `firebase firestore:rules get` output vs repo before any deploy - *done: `3415065`*
+- [x] CI: replace the fake-green paths (deploy-staging continue-on-error removed; test job includes Playwright against the dev server) - *done: `ae7ed93`*
 - [ ] Commit per step; suite green throughout
 
 ### M1: Identity & onboarding
