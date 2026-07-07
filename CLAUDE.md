@@ -215,6 +215,23 @@ Pre-commit hooks run secret scanning + lint. Don't bypass with `--no-verify`.
 
 ---
 
+## Parallel Work - One Worktree Per Task
+
+Multiple Claude/terminal windows often run against this repo at once. They **must not share the `~/Documents/DriivaMVP` checkout** - one window's uncommitted change or branch switch bleeds into another and gets swept into an unrelated commit/PR.
+
+**Rule:** before starting any task in a shared checkout, move into an isolated worktree via the global `wt` helper (`~/bin/wt`):
+
+```bash
+DIR="$(wt new my-task)"   # creates .worktrees/my-task on branch task/my-task off main
+cd "$DIR"                  # work, commit, and PR from here
+wt list                    # see all worktrees
+wt rm my-task --branch     # tear down when merged
+```
+
+`.worktrees/` is excluded locally (`.git/info/exclude`). Doppler resolves automatically in a fresh worktree. Only stage files you touched - never `git add -A` in a shared tree. Before switching windows, confirm the shared root's `git status` is clean.
+
+---
+
 ## Code Style & Architecture
 
 - **Bounded contexts:** `server/`, `client/`, `mobile/`, `functions/` each own their domain. Shared types live in `shared/` only — never reach across contexts.
