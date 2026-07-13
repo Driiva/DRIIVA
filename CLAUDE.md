@@ -1,6 +1,6 @@
 # Driiva — Claude Code Configuration
 
-> Last updated: 2026-06-08. Canonical Driiva repo: `~/Documents/DriivaMVP` (remote `mrshippers/Driiva`). `~/DRIIVA` (uppercase) is a stale abandoned copy — ignore it. Current working branch: `feat/marketing-site-v1` (unmerged to `main`).
+> Last updated: 2026-06-08. Canonical Driiva repo: `~/Documents/DriivaMVP` (remote `mrshippers/Driiva`). `~/DRIIVA` (uppercase) is a stale abandoned copy — ignore it. Current working branch: `rebuild/m1-identity` (rebuild/characterisation track). M1 identity cutover is live on prod (5 Jul 2026, `main` untouched); Phase 2 (M2+) gated on Jamal sign-off. The old `feat/marketing-site-v1` marketing work has landed and is superseded by `apps/marketing/`.
 
 ## Project Context
 
@@ -12,7 +12,7 @@ Driiva Ltd is a telematics insurtech app targeting young UK drivers. Core propos
 - WebAuthn UI (backend complete, frontend pending)
 - Waitlist growth (1,000 signups = raise accelerant)
 - Pre-beta blocklist follow-through (post commit `96e2762`)
-- Mobile app (Expo SDK 52) is the canonical mobile surface — PWA path superseded
+- Mobile app (Expo SDK 54) is the canonical mobile surface — PWA path superseded
 - Q2–Q3 2026 raise (angels + seed, insurtech OR Muslim/ethical finance)
 
 **The raise story:**
@@ -148,7 +148,7 @@ The `skill-router` skill governs all dispatch in this project. On every task, ch
 ## Stack Reference
 
 - **Web:** React + Vite (client) on an Express server bundled via esbuild
-- **Mobile:** Expo SDK 52 (canonical mobile surface — PWA path superseded)
+- **Mobile:** Expo SDK 54 (canonical mobile surface — PWA path superseded)
 - **Auth:** Firebase Auth (fast-path live — see Known Blockers)
 - **Database:** Firebase Firestore + Neon DB
 - **ORM:** Drizzle ORM
@@ -167,7 +167,7 @@ The `skill-router` skill governs all dispatch in this project. On every task, ch
 
 - `client/` — main web app (React + Vite)
 - `server/` — Express API server (entrypoint `server/index.ts`)
-- `mobile/` — Expo SDK 52 app, 16-screen onboarding flow shipped May 2026 (commit `7b1658c`)
+- `mobile/` — Expo SDK 54 app, 16-screen onboarding flow shipped May 2026 (commit `7b1658c`)
 - `functions/` — Firebase Functions
 - `api/` — Vercel API routes
 - `shared/` — cross-cutting types and schemas
@@ -265,7 +265,7 @@ Pre-commit hooks run secret scanning + lint. Don't bypass with `--no-verify`.
 4. **Waitlist** — exists but not actively driven to 1,000 target.
 5. **Marketing site** — the live driiva.co.uk is now the `apps/marketing/` Vite SPA (Vercel), which **supersedes** the old Framer + `marketing-site/index.html` split-brain. Edit `apps/marketing/`; treat `marketing-site/` and Framer as legacy.
 6. **Public GitHub repo** — `github.com/mrshippers/Driiva` is public. Reconcile against the "Private repos" rule below: either flip to private, or confirm no secrets have ever been committed + scrub history. Doppler now ensures future secrets don't land in git, but historical commits may need audit.
-7. **Working branch** — the past month of work (marketing-site rebuild) lives on `feat/marketing-site-v1`, **not yet merged to `main`**. Branch from / build on `feat/marketing-site-v1` until it lands.
+7. **Working branch** - current work is on the `rebuild/m1-identity` branch (rebuild/characterisation track). M1 identity cutover is live on prod (5 Jul 2026) with `main` untouched; Phase 2 (M2+) is gated on Jamal sign-off. The earlier `feat/marketing-site-v1` work has landed (marketing now lives in `apps/marketing/`).
 
 ---
 
@@ -286,9 +286,9 @@ Driiva runs under Jamal's **Shippers** operator brand (GitHub/HF: `mrshippers`) 
 | Project | Path | What it is |
 |---|---|---|
 | **Driiva** (this repo) | `~/Documents/DriivaMVP` | Telematics insurtech for young UK drivers. |
-| **StrydeOS** | `~/Desktop/StrydeOS` | Clinical performance SaaS for UK private physio. Flagship. |
-| **TradeMind** | `~/Downloads/AI/Shippers/TradeMind` | Mobile AI for UK electricians. Client deliverable. |
-| **shippers-tt** | `~/Projects/shippers-tt` | Personal operator system that tracks all ventures. |
+| **StrydeOS** | `~/Documents/AI/strydeos` | Clinical performance SaaS for UK private physio. Flagship. |
+| **TradeMind** | `~/Documents/AI/Shippers/TradeMind` | Mobile AI for UK electricians. Client deliverable. |
+| **shippers-tt** | `~/Documents/AI/Shippers/shippers-tt` | Personal operator system that tracks all ventures. |
 
 ⚠ `~/DRIIVA` (uppercase) is a stale abandoned copy of this project — different remote (`mrshippers/DRIIVA.git`), last commit 12 Apr, outdated CLAUDE.md + a 96 MB committed zip. Don't open or act on it; archive/delete when convenient.
 
