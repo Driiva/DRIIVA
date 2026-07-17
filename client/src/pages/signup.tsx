@@ -1,15 +1,13 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
-import { AlertCircle, Loader2, Eye, EyeOff, ArrowLeft, User, Mail, Lock } from "lucide-react";
+import { AlertCircle, Loader2, Eye, EyeOff, User, Mail, Lock } from "lucide-react";
 import { timing, easing, microInteractions } from "@/lib/animations";
 import { auth, db, isFirebaseConfigured } from "../lib/firebase";
 import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from "firebase/auth";
-import { doc, setDoc, getDoc, writeBatch } from "firebase/firestore";
+import { doc, getDoc, writeBatch } from "firebase/firestore";
 import { useAuth } from "../contexts/AuthContext";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
-import { useParallax } from "@/hooks/useParallax";
 import { useToast } from "@/hooks/use-toast";
 
 /**
@@ -34,7 +32,7 @@ export default function Signup() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const { ref: cardRef, style: cardParallaxStyle } = useParallax({ speed: 0.3 });
+  const [done, setDone] = useState(false);
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -133,9 +131,9 @@ export default function Signup() {
         )
       ]);
       const user = userCredential.user;
+      setDone(true);
       const now = new Date();
       const nowISO = now.toISOString();
-
 
       const batch = writeBatch(db);
       batch.set(doc(db, 'users', user.uid), {
@@ -215,6 +213,14 @@ export default function Signup() {
   const handleBack = () => {
     window.history.back();
   };
+
+  if (done) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-10 h-10 border-3 border-white/20 border-t-white rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col p-6 pt-safe text-white relative z-10">
