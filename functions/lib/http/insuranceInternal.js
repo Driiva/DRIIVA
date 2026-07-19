@@ -1,6 +1,6 @@
 "use strict";
 /**
- * Internal Root Platform policy binding — shared between the callable function
+ * Internal Root Platform policy binding - shared between the callable function
  * and the Stripe payment trigger.
  *
  * Extracted here to avoid duplicating Root API logic across modules.
@@ -100,7 +100,7 @@ async function acceptInsuranceQuoteInternal(userId, quoteId, stripeSubscriptionI
     // Create application
     const application = await rootApiFetch('/applications', 'POST', { quote_package_id: quoteId, policyholder_id: policyholderPackageId });
     if (!application.policy_id) {
-        throw new Error(`Root application status: ${application.status} — no policy_id returned`);
+        throw new Error(`Root application status: ${application.status} - no policy_id returned`);
     }
     // Get full policy
     const rootPolicy = await rootApiFetch(`/policies/${application.policy_id}`, 'GET');

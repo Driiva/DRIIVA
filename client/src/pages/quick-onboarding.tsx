@@ -17,8 +17,9 @@
  *   11. Confirm — User acknowledges "drive to earn rewards" concept
  *   12. Celebration
  *
- * On completion, writes onboardingComplete to PostgreSQL (authoritative) first,
- * then mirrors it to Firestore. Partial progress is drafted to localStorage so
+ * On completion, writes onboardingComplete via a single owner-gated Firestore
+ * write (Firestore is the sole source of truth, per DEC-4 - no PostgreSQL
+ * round-trip in this path). Partial progress is drafted to localStorage so
  * the flow can resume after a closed tab.
  */
 
@@ -46,6 +47,10 @@ import { StepConfirm } from './onboarding/steps/StepConfirm';
 import { StepCelebration } from './onboarding/steps/StepCelebration';
 
 const TOTAL_STEPS = 12;
+// Celebration (step TOTAL_STEPS) is a terminal screen with no progress dot,
+// so the dots and the "Step X of N" label both derive from this single
+// value - changing TOTAL_STEPS can never desync the two again.
+const PROGRESS_STEPS = TOTAL_STEPS - 1;
 
 export default function QuickOnboarding() {
   const [, setLocation] = useLocation();
@@ -245,13 +250,11 @@ export default function QuickOnboarding() {
   };
 
   /**
-   * Persist onboarding completion to backend, then advance to celebration step.
-   *
-   * PostgreSQL is the authoritative store that AuthContext's slow path reconciles
-   * against, so it must be written successfully BEFORE we mark Firestore complete
-   * or advance. If the authoritative write fails we keep the user on the confirm
-   * step (no data lost) and surface a toast, rather than navigating to a dashboard
-   * that the slow path would immediately bounce them out of.
+   * Persist onboarding completion as a single owner-gated Firestore write, then
+   * advance to celebration. Firestore is the sole source of truth (per DEC-4) -
+   * there is no PostgreSQL round-trip in this path, so a brand-new user whose
+   * Neon row hasn't landed yet is never blocked here. If the write fails we
+   * keep the user on the confirm step (no data lost) and surface a toast.
    */
   const handleComplete = async () => {
     if (!confirmed) return;
@@ -266,20 +269,43 @@ export default function QuickOnboarding() {
       return;
     }
 
+    if (!isFirebaseConfigured || !db) {
+      toast({
+        title: "Couldn't save your details",
+        description: 'Something went wrong saving your onboarding. Check your connection and try again.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsLoading(true);
 
-    // 1. Authoritative write — must succeed before we advance.
+    // The one authoritative write. onboardingComplete is the live gate field
+    // AuthContext reads - do NOT write the dead '-ed' onboardingCompleted
+    // vestige. Note: dataConsentTimestamp is intentionally NOT re-stamped here -
+    // the real consent moment is recorded at step 2 by persistDataConsent.
     try {
-      const token = await firebaseUser.getIdToken();
-      const res = await fetch('/api/profile/me', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        credentials: 'include',
-        body: JSON.stringify({ onboardingComplete: true }),
-      });
-      if (!res.ok) throw new Error(`Profile update failed (${res.status})`);
+      const userDocRef = doc(db, 'users', firebaseUser.uid);
+      await setDoc(userDocRef, {
+        onboardingComplete: true,
+        gpsPermissionGranted: gpsStatus === 'success',
+        dataConsentGiven: dataConsentGiven,
+        annualMileage: annualMileage || null,
+        age: age ? Number(age) : null,
+        postcode: postcode ? postcode.trim().toUpperCase() : null,
+        vehicle: (vehicleMake || vehicleModel || vehicleYear) ? {
+          make: vehicleMake || null,
+          model: vehicleModel || null,
+          year: vehicleYear ? Number(vehicleYear) : null,
+        } : null,
+        noClaimsYears: noClaimsYears !== null ? noClaimsYears : null,
+        referralSource: referralSource || null,
+        currentInsurer: currentInsurer || null,
+        currentPremiumPounds: currentPremiumPounds ? Number(currentPremiumPounds) : null,
+        updatedAt: new Date().toISOString(),
+      }, { merge: true });
     } catch (err) {
-      console.error('[QuickOnboarding] Failed to update onboarding in PostgreSQL:', err);
+      console.error('[QuickOnboarding] Failed to save onboarding to Firestore:', err);
       setIsLoading(false);
       toast({
         title: "Couldn't save your details",
@@ -287,37 +313,6 @@ export default function QuickOnboarding() {
         variant: 'destructive',
       });
       return; // Stay on the confirm step — nothing entered is lost.
-    }
-
-    // 2. Mirror to Firestore (the AuthContext fast-path source). Best-effort:
-    //    the authoritative write already succeeded, so a Firestore hiccup here
-    //    must not strand the user. The slow path reconciles from PostgreSQL.
-    //    Note: dataConsentTimestamp is intentionally NOT re-stamped here — the
-    //    real consent moment is recorded at step 2 by persistDataConsent.
-    try {
-      if (isFirebaseConfigured && db) {
-        const userDocRef = doc(db, 'users', firebaseUser.uid);
-        await setDoc(userDocRef, {
-          onboardingComplete: true,
-          gpsPermissionGranted: gpsStatus === 'success',
-          dataConsentGiven: dataConsentGiven,
-          annualMileage: annualMileage || null,
-          age: age ? Number(age) : null,
-          postcode: postcode ? postcode.trim().toUpperCase() : null,
-          vehicle: (vehicleMake || vehicleModel || vehicleYear) ? {
-            make: vehicleMake || null,
-            model: vehicleModel || null,
-            year: vehicleYear ? Number(vehicleYear) : null,
-          } : null,
-          noClaimsYears: noClaimsYears !== null ? noClaimsYears : null,
-          referralSource: referralSource || null,
-          currentInsurer: currentInsurer || null,
-          currentPremiumPounds: currentPremiumPounds ? Number(currentPremiumPounds) : null,
-          updatedAt: new Date().toISOString(),
-        }, { merge: true });
-      }
-    } catch (err) {
-      console.error('[QuickOnboarding] Failed to mirror onboarding to Firestore:', err);
     }
 
     // Onboarding is persisted — clear the resume draft and advance to celebration.
@@ -372,12 +367,13 @@ export default function QuickOnboarding() {
 
       <div className="relative z-10 flex-1 flex flex-col p-6 max-w-lg mx-auto w-full">
         {/* Progress indicator (hidden on celebration step) */}
-        {currentStep < 12 && (
+        {currentStep < TOTAL_STEPS && (
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-1">
-              {Array.from({ length: 11 }, (_, i) => (
+              {Array.from({ length: PROGRESS_STEPS }, (_, i) => (
                 <div
                   key={i}
+                  data-testid="progress-dot"
                   className={`h-1.5 rounded-full transition-all duration-300 ${
                     i + 1 <= currentStep
                       ? 'bg-[#5b4dc9] w-5'
@@ -386,7 +382,7 @@ export default function QuickOnboarding() {
                 />
               ))}
             </div>
-            <span className="text-sm text-white/50 flex-shrink-0 ml-3">Step {currentStep} of 11</span>
+            <span className="text-sm text-white/50 flex-shrink-0 ml-3">Step {currentStep} of {PROGRESS_STEPS}</span>
           </div>
         )}
 
@@ -486,7 +482,7 @@ export default function QuickOnboarding() {
                 handleComplete={handleComplete}
               />
             )}
-            {currentStep === 12 && (
+            {currentStep === TOTAL_STEPS && (
               <StepCelebration
                 onContinue={goToDashboard}
                 userName={user?.name}

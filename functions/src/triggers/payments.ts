@@ -67,7 +67,7 @@ export const onPendingPaymentWrite = functions
     await snap.ref.update({ status: 'processing' });
 
     try {
-      // Check if user already has an active policy — avoid duplicates
+      // Check if user already has an active policy - avoid duplicates
       const policiesSnap = await db
         .collection(COLLECTION_NAMES.POLICIES)
         .where('userId', '==', userId)
@@ -76,7 +76,7 @@ export const onPendingPaymentWrite = functions
         .get();
 
       if (!policiesSnap.empty) {
-        functions.logger.info(`[Payments] User ${userId} already has active policy — updating stripeSubscriptionId`);
+        functions.logger.info(`[Payments] User ${userId} already has active policy - updating stripeSubscriptionId`);
         const existingPolicy = policiesSnap.docs[0];
         await existingPolicy.ref.update({
           stripeSubscriptionId: subscriptionId,

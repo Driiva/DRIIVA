@@ -1,0 +1,31 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`UserDocumentSchema > pins the current field set (drift guard: fails if a field is removed/renamed) 1`] = `
+[
+  "uid",
+  "email",
+  "displayName",
+  "photoURL",
+  "phoneNumber",
+  "age",
+  "postcode",
+  "annualMileage",
+  "referralSource",
+  "currentInsurer",
+  "currentPremiumPounds",
+  "noClaimsYears",
+  "vehicle",
+  "createdAt",
+  "updatedAt",
+  "drivingProfile",
+  "activePolicy",
+  "poolShare",
+  "recentTrips",
+  "fcmTokens",
+  "settings",
+  "createdBy",
+  "updatedBy",
+  "onboardingComplete",
+  "onboardingCompleted",
+]
+`;

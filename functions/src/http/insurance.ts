@@ -11,10 +11,10 @@
  *   4. Retrieving policy details from Root
  *
  * Environment variables (set via Firebase secrets):
- *   ROOT_API_KEY             – Root Platform API key (required)
- *   ROOT_API_URL             – Base URL; defaults to https://api.rootplatform.com/v1/insurance
- *   ROOT_ENVIRONMENT         – "sandbox" | "production"
- *   ROOT_PRODUCT_MODULE_KEY  – Product module key (required — no fallback)
+ *   ROOT_API_KEY             - Root Platform API key (required)
+ *   ROOT_API_URL             - Base URL; defaults to https://api.rootplatform.com/v1/insurance
+ *   ROOT_ENVIRONMENT         - "sandbox" | "production"
+ *   ROOT_PRODUCT_MODULE_KEY  - Product module key (required, no fallback)
  *
  * All monetary values use integer cents (Root sandbox uses ZAR cents).
  */
@@ -47,7 +47,7 @@ function getRootConfig(): RootConfig {
     );
   }
 
-  // Fail fast — no silent placeholder fallback
+  // Fail fast - no silent placeholder fallback
   if (!productModuleKey) {
     throw new functions.https.HttpsError(
       'failed-precondition',
@@ -206,7 +206,7 @@ async function ensurePolicyholder(
     },
   });
 
-  // Cache on Firestore user document (non-critical — if this fails we'll just re-create on next call)
+  // Cache on Firestore user document (non-critical - if this fails we'll just re-create on next call)
   await db.collection(COLLECTION_NAMES.USERS).doc(userId).update({
     rootPolicyholderId: policyholder.policyholder_id,
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -341,7 +341,7 @@ export const acceptInsuranceQuote = functions
   }
   const user = userDoc.data() as UserDocument;
 
-  // Ensure Root policyholder exists (creates one if needed — fixes Firebase UID ≠ policyholder_id)
+  // Ensure Root policyholder exists (creates one if needed - fixes Firebase UID ≠ policyholder_id)
   const policyholderPackageId = await ensurePolicyholder(userId, user);
 
   // Create application on Root

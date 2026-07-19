@@ -1,5 +1,5 @@
 /**
- * SENTRY ERROR MONITORING — CLOUD FUNCTIONS
+ * SENTRY ERROR MONITORING - CLOUD FUNCTIONS
  * ==========================================
  * Wraps Cloud Functions with Sentry error tracking.
  *
@@ -27,7 +27,7 @@ let initialized = false;
 
 /**
  * Initialize Sentry for Cloud Functions.
- * Safe to call multiple times — only initializes once.
+ * Safe to call multiple times - only initializes once.
  */
 export function initSentry(): void {
   if (initialized || !SENTRY_DSN) return;

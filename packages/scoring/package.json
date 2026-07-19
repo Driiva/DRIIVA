@@ -1,0 +1,21 @@
+{
+  "name": "@driiva/scoring",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The single deterministic driving-score, pricing-factor, and refund implementation (M0 foundations). Ported verbatim from functions/, client/, shared/; consumers are repointed in M2.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "npm run build --prefix ../contracts && tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@driiva/contracts": "*"
+  },
+  "devDependencies": {
+    "fast-check": "^4.8.0"
+  }
+}

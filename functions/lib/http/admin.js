@@ -60,7 +60,7 @@ exports.initializePool = functions
     .https.onCall((0, sentry_1.wrapFunction)(async (data, context) => {
     (0, auth_1.requireAuth)(context);
     (0, auth_1.requireAdmin)(context);
-    // TODO: Rate limiting – e.g. allow at most 1 initializePool per project per hour
+    // TODO: Rate limiting - e.g. allow at most 1 initializePool per project per hour
     // Example: check Firestore or Redis for last call timestamp by context.auth.uid
     const poolRef = db.collection(types_1.COLLECTION_NAMES.COMMUNITY_POOL).doc('current');
     const existingPool = await poolRef.get();
@@ -137,7 +137,7 @@ exports.cancelTrip = functions
     .region(region_1.EUROPE_LONDON)
     .https.onCall((0, sentry_1.wrapFunction)(async (data, context) => {
     const userId = (0, auth_1.requireAuth)(context);
-    // TODO: Rate limiting – e.g. max N cancelTrip calls per user per minute
+    // TODO: Rate limiting - e.g. max N cancelTrip calls per user per minute
     // Example: increment counter in Firestore/Redis keyed by userId, reject if over threshold
     const tripId = data?.tripId;
     // Validate input
@@ -204,7 +204,7 @@ exports.addPoolContribution = functions
     .region(region_1.EUROPE_LONDON)
     .https.onCall((0, sentry_1.wrapFunction)(async (data, context) => {
     const userId = (0, auth_1.requireAuth)(context);
-    // TODO: Rate limiting – e.g. max N contributions per user per day, or per amount
+    // TODO: Rate limiting - e.g. max N contributions per user per day, or per amount
     // Example: check Firestore/Redis for count in current period for userId
     const amountCents = data?.amountCents;
     // Validate input

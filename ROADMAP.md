@@ -1,17 +1,45 @@
-# Driiva — Current sprint (tickets)
+# Driiva - Current sprint (tickets)
 
-**Last updated:** 18 April 2026
-**Product Lead:** Keith Cheng  
+**Last updated:** 29 June 2026
+**Product Lead:** Keith Cheng (onboarded 27 June 2026)
 **External memory for AI sessions:** Work on the next unchecked ticket only; update this list when done.
 
 ---
 
-## Sprint: "Damoov & Feedback" (Week 0 — Telematics + Compliance)
+## Sprint: "P0 Release Blockers" (June 2026 - Security + Integrity)
 
-- [x] Damoov telematics integration (server-side: user registration on signup, daily sync Cloud Function) — *done: `functions/src/lib/damoov.ts` API client; `onUserCreate` trigger stores deviceToken; `syncDamoovTrips` scheduled function at 00:30 UK daily with maxInstances:10*
-- [x] Feedback collection system (Settings → FeedbackModal → Firestore) — *done: star rating + freetext widget in settings; writes to `feedback/{autoId}`; admin dashboard at `/admin/feedback`*
-- [x] GDPR-compliant privacy/terms for telematics data — *done: Damoov named as Article 28 data processor; telematics consent clause; rewards framing (FCA-clean)*
-- [x] Firestore security rules for feedback + systemLogs — *done: authenticated create on feedback; admin SDK only on systemLogs*
+- [x] Close 3 critical security issues found by logic-gap harness (trust proxy, sanitise order, worker recovery) - *done: commit `d7339e0` + batch merge `81d7117` on 2026-06-26*
+- [x] Make pricing server-authoritative; enforce +/-15% discount cap server-side - *done: `6853a80`*
+- [x] Atomic trip persistence + duplicate rejection + price allow-list - *done: `d12b0ff`*
+- [x] Serialise point flushes; atomic startTrip; canonical cancelTrip state machine - *done: `889c8ba`*
+- [x] Gate onboarding completion on confirmed server write; add draft resume + consent integrity - *done: `9acbb60`*
+- [x] Deterministic scoring output; worker auto-recovery; sanitise pipeline reordering - *done: `611717d`*
+- [x] Wire ESLint + secret-safety check into CI; repair false-red - *done: `d7339e0`, `27e1700`*
+- [x] Pin Node at root via `engines` + `.nvmrc`; drop deprecated `baseUrl` for TS 6 - *done: `fc83165`, `10ecce3`*
+- [x] Remove dead duplicate-trap components; correct package name - *done: `f748d7c`*
+- [x] Repaint onboarding to Driiva instrument palette; eliminate re-centre jump - *done: `8fe9e29`*
+- [ ] Root Platform credentials - sandbox key needed from Root to activate insurance quote/bind/policy endpoints
+- [ ] Stripe end-to-end - dependencies present, webhook handlers and payment flow not wired
+- [ ] WebAuthn UI - backend scaffolded, frontend not built
+- [ ] Phone pickup detection - scoring weight reserved at 10%, currently hardcoded to 100
+
+## Sprint: "Marketing + SEO" (May-June 2026)
+
+- [x] Scaffold `apps/marketing/` Vite + React 18 Wouter SPA as the live driiva.co.uk surface - *done: `c2898c8`, supersedes `marketing-site/` and Framer split-brain*
+- [x] Vercel project `driiva-marketing` rootDirectory set to `apps/marketing` - *done: `87dfa96`*
+- [x] Swap Plausible analytics for Vercel Analytics - *done: `dae8f6b`*
+- [x] WebGL shader hero background + glass nav - *done: `6cabd27`*
+- [x] IndexNow key + sitemap lastmod + FAQPage schema + 1200x630 OG card - *done: `618f495`, `6066bdd`*
+- [x] Doppler adopted as canonical secrets source; paste-pollution cleanup scripts added - *done: `16b4456`, `c89415e`*
+- [x] 16-screen mobile onboarding shipped in `mobile/` (Expo SDK 52); PWA path superseded - *done: `7b1658c`*
+- [x] Design system canonicalized at `design-system/`; hyperframes shipped; logos refreshed - *done: `37012a6`*
+
+## Sprint: "Damoov & Feedback" (Week 0 - Telematics + Compliance)
+
+- [x] Damoov telematics integration (server-side: user registration on signup, daily sync Cloud Function) - *done: `functions/src/lib/damoov.ts` API client; `onUserCreate` trigger stores deviceToken; `syncDamoovTrips` scheduled function at 00:30 UK daily with maxInstances:10*
+- [x] Feedback collection system (Settings → FeedbackModal → Firestore) - *done: star rating + freetext widget in settings; writes to `feedback/{autoId}`; admin dashboard at `/admin/feedback`*
+- [x] GDPR-compliant privacy/terms for telematics data - *done: Damoov named as Article 28 data processor; telematics consent clause; rewards framing (FCA-clean)*
+- [x] Firestore security rules for feedback + systemLogs - *done: authenticated create on feedback; admin SDK only on systemLogs*
 - [ ] XGBoost risk model wired to drivingProfile scores (next sprint)
 - [ ] Community pool calculation using aggregated drivingProfile data
 - [ ] Rewards eligibility logic (Tesco/Halfords/Nectar thresholds based on overallSafetyScore)
@@ -25,20 +53,20 @@
 - [ ] Deploy Cloud Functions (`firebase deploy --only functions`)
 - [ ] Deploy Firestore rules and indexes
 - [ ] Contact Root Platform for sandbox credentials
-- [x] Fix CORS (restrict to driiva.com) — *done: server uses `CORS_ORIGINS` env, no wildcard; set to driiva.com in prod*
-- [x] Add password reset flow — *done: /forgot-password page + "Forgot password?" link in signin + route registered in App.tsx*
+- [x] Fix CORS (restrict to driiva.com) - *done: server uses `CORS_ORIGINS` env, no wildcard; set to driiva.com in prod*
+- [x] Add password reset flow - *done: /forgot-password page + "Forgot password?" link in signin + route registered in App.tsx*
 - [ ] Test full flow: signup → onboarding → record trip → see score → see AI insights
 
 ## Sprint: "Make It Safe" (Week 3–4)
 
-- [x] Set up Sentry for error monitoring (frontend + Cloud Functions) — *done: client/src/lib/sentry.ts + functions/src/lib/sentry.ts; SentryErrorBoundary in main.tsx; wrapFunction/wrapTrigger helpers*
-- [x] Add Content Security Policy headers — *done: added to server/middleware/security.ts securityHeaders; 'unsafe-inline' for style-src documented (required by Tailwind/Leaflet)*
-- [x] Set up GitHub Actions CI/CD pipeline — *done: .github/workflows/ci.yml; jobs: lint-and-typecheck, build (client+server), functions-build, test; triggers on push/PR to main*
-- [x] Write first batch of tests (auth flow, scoring algorithm, trip processing) — *done: 197 tests passing across 12 files; covers auth-flow, scoring, trip-metrics, insurance, feature-flags, GDPR, AI analysis, leaderboard, pool scheduling, trip triggers, policy triggers, server API routes*
-- [x] Set up staging Firebase project — *done: `driiva-staging` project provisioned; `.env.staging` configured; `.firebaserc` alias set; `build:staging`/`dev:staging` scripts added; `deploy-staging` CI job wired; Firestore rules + indexes deployed; `functions/.env.driiva-staging` created for CF staging overrides. Remaining manual steps: upgrade to Blaze plan → deploy functions; set FIREBASE_TOKEN + VERCEL_* GitHub Secrets; create Neon staging branch; create Vercel staging project.*
-- [x] Add Firebase Analytics initialisation — *done: getAnalytics() in client/src/lib/firebase.ts; guarded by VITE_FIREBASE_MEASUREMENT_ID; try/catch for ad-blocker safety*
-- [x] Implement email verification — *done: sendEmailVerification() in signup.tsx; emailVerified field on User type in AuthContext; ProtectedRoute hard-redirects unverified users to /verify-email (skipEmailVerificationCheck=true on /quick-onboarding and /verify-email routes); verify-email.tsx page with resend + check flow*
-- [x] Backend & database security audit — *done: 12 issues found and fixed across Firestore rules, PostgreSQL, Cloud Functions, and API routes. See DRIIVA_CHANGELOG.md for full details.*
+- [x] Set up Sentry for error monitoring (frontend + Cloud Functions) - *done: client/src/lib/sentry.ts + functions/src/lib/sentry.ts; SentryErrorBoundary in main.tsx; wrapFunction/wrapTrigger helpers*
+- [x] Add Content Security Policy headers - *done: added to server/middleware/security.ts securityHeaders; 'unsafe-inline' for style-src documented (required by Tailwind/Leaflet)*
+- [x] Set up GitHub Actions CI/CD pipeline - *done: .github/workflows/ci.yml; jobs: lint-and-typecheck, build (client+server), functions-build, test; triggers on push/PR to main*
+- [x] Write first batch of tests (auth flow, scoring algorithm, trip processing) - *done: 197 tests passing across 12 files; covers auth-flow, scoring, trip-metrics, insurance, feature-flags, GDPR, AI analysis, leaderboard, pool scheduling, trip triggers, policy triggers, server API routes*
+- [x] Set up staging Firebase project - *done: `driiva-staging` project provisioned; `.env.staging` configured; `.firebaserc` alias set; `build:staging`/`dev:staging` scripts added; `deploy-staging` CI job wired; Firestore rules + indexes deployed; `functions/.env.driiva-staging` created for CF staging overrides. Remaining manual steps: upgrade to Blaze plan → deploy functions; set FIREBASE_TOKEN + VERCEL_* GitHub Secrets; create Neon staging branch; create Vercel staging project.*
+- [x] Add Firebase Analytics initialisation - *done: getAnalytics() in client/src/lib/firebase.ts; guarded by VITE_FIREBASE_MEASUREMENT_ID; try/catch for ad-blocker safety*
+- [x] Implement email verification - *done: sendEmailVerification() in signup.tsx; emailVerified field on User type in AuthContext; ProtectedRoute hard-redirects unverified users to /verify-email (skipEmailVerificationCheck=true on /quick-onboarding and /verify-email routes); verify-email.tsx page with resend + check flow*
+- [x] Backend & database security audit - *done: 12 issues found and fixed across Firestore rules, PostgreSQL, Cloud Functions, and API routes. See DRIIVA_CHANGELOG.md for full details.*
 
 ## Sprint: "Make It Payable" (Week 5–6)
 
@@ -47,56 +75,56 @@
 - [ ] Wire premium payments to community pool contributions
 - [ ] Test Root Platform quote → accept → policy flow end-to-end
 - [ ] Add premium amount display on policy page
-- [ ] Set `ENCRYPTION_KEY` env var in production (required — server now refuses to store telematics data without it)
+- [ ] Set `ENCRYPTION_KEY` env var in production (required - server now refuses to store telematics data without it)
 
 ## Sprint: "Make It Polished" (Week 7–8)
 
-- [x] Add push notifications (trip complete, score update, payment due) — *done: FCM init in firebase.ts, firebase-messaging-sw.js service worker, usePushNotifications hook, Cloud Function triggers on trip complete + achievement unlock, sendWeeklySummary scheduled function (Mondays 9AM UK)*
+- [x] Add push notifications (trip complete, score update, payment due) - *done: FCM init in firebase.ts, firebase-messaging-sw.js service worker, usePushNotifications hook, Cloud Function triggers on trip complete + achievement unlock, sendWeeklySummary scheduled function (Mondays 9AM UK)*
 - [ ] Build service worker for offline/PWA support
-- [x] Fix dashboard map — was hardcoded to London; now requests device GPS on load, handles permission denied and GPS unavailable states gracefully
-- [x] Wire up profile page to real data — *done: Member since reads from Firestore createdAt; policyNumber never hardcoded; displayName falls back to fullName field; memberSince added to DashboardData*
-- [x] Tier 3 animation polish (Revolut-level) — *done: ScoreRing radial gauge replaces flat bar; dashboard cards use container/item stagger variants; BottomNav has whileTap spring scale + layoutId sliding indicator; trip cards have whileHover lift; onboarding steps use scaleIn with elastic easing*
-- [x] Implement trip route visualisation on map (show the actual driven path, not just current position) — *done: TripRouteMap component with Polyline + start/end markers; TripDetail page at /trips/:tripId; trip cards clickable in trips list*
-- [x] AI Driving Coach feedback widget — *done: AIFeedbackWidget component with round-robin engagement comments, Perplexity API integration (8s timeout, 1 retry, silent fallback), Firebase ai_feedback_events logging, glassmorphic UI with pulsing AI orb; wired into trip-detail page*
-- [x] Rewards Programme redesign — *done: 5-tier RewardsTimeline component (#Day5 Tesco £5, #Day10 RAC trial, #TeamDriiva Halfords £10, #Month3 500 Nectar pts, #Anniversary Amazon £25); vertical mobile / horizontal desktop; lock/unlock/claimed states; FCA-compliant framing; Web Share API; wired into rewards page*
-- [x] Card/Default unification — *done: GlassCard component now uses dashboard-glass-card spec; unified bg/border/radius/padding/shadow across all card instances*
+- [x] Fix dashboard map - was hardcoded to London; now requests device GPS on load, handles permission denied and GPS unavailable states gracefully
+- [x] Wire up profile page to real data - *done: Member since reads from Firestore createdAt; policyNumber never hardcoded; displayName falls back to fullName field; memberSince added to DashboardData*
+- [x] Tier 3 animation polish (Revolut-level) - *done: ScoreRing radial gauge replaces flat bar; dashboard cards use container/item stagger variants; BottomNav has whileTap spring scale + layoutId sliding indicator; trip cards have whileHover lift; onboarding steps use scaleIn with elastic easing*
+- [x] Implement trip route visualisation on map (show the actual driven path, not just current position) - *done: TripRouteMap component with Polyline + start/end markers; TripDetail page at /trips/:tripId; trip cards clickable in trips list*
+- [x] AI Driving Coach feedback widget - *done: AIFeedbackWidget component with round-robin engagement comments, Perplexity API integration (8s timeout, 1 retry, silent fallback), Firebase ai_feedback_events logging, glassmorphic UI with pulsing AI orb; wired into trip-detail page*
+- [x] Rewards Programme redesign - *done: 5-tier RewardsTimeline component (#Day5 Tesco £5, #Day10 RAC trial, #TeamDriiva Halfords £10, #Month3 500 Nectar pts, #Anniversary Amazon £25); vertical mobile / horizontal desktop; lock/unlock/claimed states; FCA-compliant framing; Web Share API; wired into rewards page*
+- [x] Card/Default unification - *done: GlassCard component now uses dashboard-glass-card spec; unified bg/border/radius/padding/shadow across all card instances*
 - [ ] Phone usage detection for scoring
-- [x] Build achievements backend — *done: 8 achievement definitions in functions/src/utils/achievements.ts; checkAndUnlockAchievements called after trip completion; Firestore collections (achievements/{id}, users/{uid}/achievements/{achId}); seedAchievements admin callable; frontend wired to real data*
-- [x] Weather API integration — *done: Open-Meteo archive API in functions/src/utils/weather.ts; maps WMO codes to clear/cloudy/rain/snow/fog/storm; 3s timeout + graceful null fallback; wired into both trip triggers in trips.ts*
+- [x] Build achievements backend - *done: 8 achievement definitions in functions/src/utils/achievements.ts; checkAndUnlockAchievements called after trip completion; Firestore collections (achievements/{id}, users/{uid}/achievements/{achId}); seedAchievements admin callable; frontend wired to real data*
+- [x] Weather API integration - *done: Open-Meteo archive API in functions/src/utils/weather.ts; maps WMO codes to clear/cloudy/rain/snow/fog/storm; 3s timeout + graceful null fallback; wired into both trip triggers in trips.ts*
 
 ## Remaining features not yet in any sprint
 
 These are known gaps that don't have tickets yet:
 
-- [x] **Weather API** — *done: Open-Meteo archive API (free, no key). `functions/src/utils/weather.ts` fetches WMO weather codes and maps to clear/cloudy/rain/snow/fog/storm. Wired into trip processing triggers. 3s timeout, graceful fallback to null.*
-- [ ] **Root Platform credentials** — scaffolded but not wired. Needs sandbox creds from Root to test quote → bind → policy flow. Once wired, the `/api/insurance` endpoints become live.
-- [ ] **Stripe wiring** — dependencies installed, tables exist, webhooks scaffolded. Premium payments and pool contributions not yet connected end-to-end.
-- [x] **Profile page real data** — *done: profile.tsx reads from useDashboardData hook; edit mode for name/phone/vehicle writes to Firestore via updateDoc; loading skeletons on every section; error state with retry*
-- [x] **Trip route visualisation** — TripRouteMap component + TripDetail page wired.
-- [ ] **Phone pickup detection** — scoring has a 10% weight for phone usage but it's hardcoded to 100 (no penalty). Needs accelerometer pattern recognition to detect phone pickups while driving.
-- [x] **Push notifications** — FCM wired end-to-end: trip complete, achievement unlock, weekly summary.
-- [x] **Leaderboard rank recalculation** — Firestore scheduled function now filters weekly/monthly by lastTripAt period bounds and uses dense ranking for tied scores. PG table remains stale (not primary).
-- [x] GDPR data export — implemented GET /api/gdpr/export/:userId; returns JSON of all user data
-- [x] GDPR data delete — implemented DELETE /api/gdpr/delete/:userId; strictly rate-limited
-- [x] **Achievements backend** — 8 definitions, unlock logic in Cloud Functions, frontend wired to real Firestore data.
-- [ ] **WebAuthn/Passkey login** — `server/webauthn.ts` is scaffolded but not exposed as a real login flow in the frontend.
-- [ ] **Staging environment** — `driiva-staging` project provisioned; manual steps remain (Blaze plan, deploy functions, Vercel staging). Recommended before any production payments go live.
-- [ ] **Marketing site sync** — live site runs on Framer (no automation API); local `marketing-site/index.html` is the canonical source for editorial hero + waitlist copy. Decide path: (a) manually paste CSS changes into Framer code overrides, (b) migrate the live site off Framer to Vercel (the `marketing-site/` build is deployable as-is), or (c) keep Framer for visual, and serve `/early-access` from the Next app. Current blocker: Framer has no write MCP/API available in this session.
-- [x] **Design system canonicalized** — `design-system/` at repo root now holds `colors_and_type.css` (ink ladder, brand gradient, glass, radii, shadows, motion, type stack), `README.md` (voice/tone/visual rules), `source/` (Figma rules + Instrument philosophy), `assets/` (14 brand PNGs). Marketing site + client DriivaLogo component switched to canonical v3 white wordmark. Mobile app theme already aligned to canonical "instrument" mode. Follow-up: rename client Vite CSS variables to match canonical token names.
-- [ ] **Client SPA token alignment** — `client/` still uses legacy variable names (`--color-accent-primary` etc.) instead of canonical (`--brand-iris`, `--glass-bg`, etc.). One-pass rename across `client/src/**/*.css` + `tailwind.config.ts` to converge on `design-system/colors_and_type.css`.
+- [x] **Weather API** - *done: Open-Meteo archive API (free, no key). `functions/src/utils/weather.ts` fetches WMO weather codes and maps to clear/cloudy/rain/snow/fog/storm. Wired into trip processing triggers. 3s timeout, graceful fallback to null.*
+- [ ] **Root Platform credentials** - scaffolded but not wired. Needs sandbox creds from Root to test quote → bind → policy flow. Once wired, the `/api/insurance` endpoints become live.
+- [ ] **Stripe wiring** - dependencies installed, tables exist, webhooks scaffolded. Premium payments and pool contributions not yet connected end-to-end.
+- [x] **Profile page real data** - *done: profile.tsx reads from useDashboardData hook; edit mode for name/phone/vehicle writes to Firestore via updateDoc; loading skeletons on every section; error state with retry*
+- [x] **Trip route visualisation** - TripRouteMap component + TripDetail page wired.
+- [ ] **Phone pickup detection** - scoring has a 10% weight for phone usage but it's hardcoded to 100 (no penalty). Needs accelerometer pattern recognition to detect phone pickups while driving.
+- [x] **Push notifications** - FCM wired end-to-end: trip complete, achievement unlock, weekly summary.
+- [x] **Leaderboard rank recalculation** - Firestore scheduled function now filters weekly/monthly by lastTripAt period bounds and uses dense ranking for tied scores. PG table remains stale (not primary).
+- [x] GDPR data export - implemented GET /api/gdpr/export/:userId; returns JSON of all user data
+- [x] GDPR data delete - implemented DELETE /api/gdpr/delete/:userId; strictly rate-limited
+- [x] **Achievements backend** - 8 definitions, unlock logic in Cloud Functions, frontend wired to real Firestore data.
+- [ ] **WebAuthn/Passkey login** - `server/webauthn.ts` is scaffolded but not exposed as a real login flow in the frontend.
+- [ ] **Staging environment** - `driiva-staging` project provisioned; manual steps remain (Blaze plan, deploy functions, Vercel staging). Recommended before any production payments go live.
+- [ ] **Marketing site sync** - live site runs on Framer (no automation API); local `marketing-site/index.html` is the canonical source for editorial hero + waitlist copy. Decide path: (a) manually paste CSS changes into Framer code overrides, (b) migrate the live site off Framer to Vercel (the `marketing-site/` build is deployable as-is), or (c) keep Framer for visual, and serve `/early-access` from the Next app. Current blocker: Framer has no write MCP/API available in this session.
+- [x] **Design system canonicalized** - `design-system/` at repo root now holds `colors_and_type.css` (ink ladder, brand gradient, glass, radii, shadows, motion, type stack), `README.md` (voice/tone/visual rules), `source/` (Figma rules + Instrument philosophy), `assets/` (14 brand PNGs). Marketing site + client DriivaLogo component switched to canonical v3 white wordmark. Mobile app theme already aligned to canonical "instrument" mode. Follow-up: rename client Vite CSS variables to match canonical token names.
+- [ ] **Client SPA token alignment** - `client/` still uses legacy variable names (`--color-accent-primary` etc.) instead of canonical (`--brand-iris`, `--glass-bg`, etc.). One-pass rename across `client/src/**/*.css` + `tailwind.config.ts` to converge on `design-system/colors_and_type.css`.
 
 ## Sprint: "Code Quality & UX Fixes" (Week 9–10)
 
-- [x] Split quick-onboarding.tsx into 12 step components — *done: 1261 → 390 lines; 12 components in `client/src/pages/onboarding/steps/`*
-- [x] Add leaderboard in-memory cache (60s TTL) — *done: deduplicates Neon reads; auto-invalidates on score update*
-- [x] Implement `/api/auth/firebase` endpoint — *done: was returning 501; now verifies Firebase ID tokens*
-- [x] Fix PR template (Next.js → Vite/React) — *done: corrected checklist, env prefix, image optimisation references*
-- [x] Add coverage thresholds to vitest — *done: baseline 4/2/7/4%; CI will catch regressions*
-- [x] Sign-in integration tests (15 tests) — *done: form validation, auth flows, username resolution, error handling*
-- [x] Trip-recording integration tests (37 tests) — *done: full lifecycle, demo mode, error states*
-- [x] Fix notification bell button on dashboard — *done: was dead button; now opens dropdown with mutual exclusion*
-- [x] Premium mobile UX polish — *done: haptics, pull-to-refresh, shimmer skeletons, swipe cards, animated numbers*
-- [x] Fix auth performance (10-20s delay) — *done: localStorage cache, hard timeout, splash screen*
+- [x] Split quick-onboarding.tsx into 12 step components - *done: 1261 → 390 lines; 12 components in `client/src/pages/onboarding/steps/`*
+- [x] Add leaderboard in-memory cache (60s TTL) - *done: deduplicates Neon reads; auto-invalidates on score update*
+- [x] Implement `/api/auth/firebase` endpoint - *done: was returning 501; now verifies Firebase ID tokens*
+- [x] Fix PR template (Next.js → Vite/React) - *done: corrected checklist, env prefix, image optimisation references*
+- [x] Add coverage thresholds to vitest - *done: baseline 4/2/7/4%; CI will catch regressions*
+- [x] Sign-in integration tests (15 tests) - *done: form validation, auth flows, username resolution, error handling*
+- [x] Trip-recording integration tests (37 tests) - *done: full lifecycle, demo mode, error states*
+- [x] Fix notification bell button on dashboard - *done: was dead button; now opens dropdown with mutual exclusion*
+- [x] Premium mobile UX polish - *done: haptics, pull-to-refresh, shimmer skeletons, swipe cards, animated numbers*
+- [x] Fix auth performance (10-20s delay) - *done: localStorage cache, hard timeout, splash screen*
 - [ ] Split `server/routes.ts` into domain-specific route modules
 - [ ] Add OpenAPI documentation for Express API
 - [ ] Set up structured logging with Sentry breadcrumbs
@@ -104,11 +132,11 @@ These are known gaps that don't have tickets yet:
 
 ## Sprint: "Observation Mode" (Live Monitoring)
 
-- [x] Complete Sentry wiring — wrapFunction/wrapTrigger on all Cloud Functions; setSentryUser in AuthContext
-- [x] Add Firebase Performance Monitoring — client SDK + custom trace utility (`performanceTraces.ts`)
-- [x] Add structured metrics logging — trip pipeline, classifier, AI analysis with `[metric]` tags for Cloud Monitoring
-- [x] Add Vercel Analytics + Speed Insights — Web Vitals, page latency, geographic distribution
-- [x] Configure alerting — watchdog function (`monitorTripHealth`) for failed trips, GPS drop-off, stuck trips; health endpoint enhanced with version/checks
+- [x] Complete Sentry wiring - wrapFunction/wrapTrigger on all Cloud Functions; setSentryUser in AuthContext
+- [x] Add Firebase Performance Monitoring - client SDK + custom trace utility (`performanceTraces.ts`)
+- [x] Add structured metrics logging - trip pipeline, classifier, AI analysis with `[metric]` tags for Cloud Monitoring
+- [x] Add Vercel Analytics + Speed Insights - Web Vitals, page latency, geographic distribution
+- [x] Configure alerting - watchdog function (`monitorTripHealth`) for failed trips, GPS drop-off, stuck trips; health endpoint enhanced with version/checks
 
 ## Completed (reference)
 

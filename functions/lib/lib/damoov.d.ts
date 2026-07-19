@@ -2,7 +2,7 @@
  * DAMOOV API CLIENT
  * =================
  * Server-side client for Damoov DataHub / User APIs.
- * Damoov is the telematics data collection layer — it feeds Driiva's XGBoost
+ * Damoov is the telematics data collection layer - it feeds Driiva's XGBoost
  * risk model. Credentials come from Firebase Secret Manager, never hardcoded.
  *
  * API docs: https://docs.damoov.com/
@@ -45,7 +45,7 @@ export interface DamoovTripsResponse {
 }
 /**
  * Register a new user with Damoov. Returns deviceToken on success, null on failure.
- * Called silently during Firebase Auth registration — must never throw.
+ * Called silently during Firebase Auth registration - must never throw.
  */
 export declare function createDamoovUser(uid: string, email: string): Promise<string | null>;
 /**

@@ -1,0 +1,16 @@
+# MOB-T01/T02 — onboarding welcome → goal (Continue gated) → pain-points multi-select.
+# Expo Go bypass or fresh native install both land on /onboarding when unauthenticated.
+appId: com.driiva.app
+---
+- launchApp
+- assertVisible: ".*Driiva.*"
+# Step 1: welcome screen with the static community-pool mock
+- tapOn: "Continue"
+# Step 2: goal select — Continue is disabled until a selection is made
+- assertVisible: ".*what matters most.*"
+- tapOn: ".*[Ss]ave.*"
+- tapOn: "Continue"
+# Step 3: pain points — button label flips Skip ↔ Continue (N selected)
+- assertVisible: "Skip"
+- tapOn: ".*[Pp]remium.*"
+- assertVisible: ".*Continue.*1.*"

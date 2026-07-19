@@ -1,6 +1,11 @@
 # Compiled JavaScript is committed so Firebase Deploy can package it.
 # (Firebase CLI respects .gitignore when uploading to Cloud Build, so we
 #  must NOT ignore lib/ here or Cloud Build will fail with "entry point not found".)
+# M1 T7: lib/ was briefly gitignored (a81f330) to hide em dashes that had
+# leaked in from pre-existing source comments, then reverted once the actual
+# fix (stripping the dashes at the source, see functions/src/triggers/
+# syncUserOnSignup.ts and shared/refundCalculator.ts) made that unnecessary.
+# Keep this file dash-clean going forward rather than gitignoring lib/ again.
 
 # Node modules
 node_modules/

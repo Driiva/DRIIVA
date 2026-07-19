@@ -33,7 +33,7 @@ export declare const db: admin.firestore.Firestore;
 export { onTripCreate, onTripStatusChange } from './triggers/trips';
 export { onPolicyWrite } from './triggers/policies';
 export { onPoolShareWrite } from './triggers/pool';
-export { onUserCreate } from './triggers/users';
+export { provisionUserOnSignup } from './triggers/provisionUserOnSignup';
 export { syncUserOnSignup } from './triggers/syncUserOnSignup';
 export { syncTripOnComplete } from './triggers/syncTripOnComplete';
 export { onPendingPaymentWrite } from './triggers/payments';

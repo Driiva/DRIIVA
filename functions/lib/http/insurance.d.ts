@@ -11,10 +11,10 @@
  *   4. Retrieving policy details from Root
  *
  * Environment variables (set via Firebase secrets):
- *   ROOT_API_KEY             – Root Platform API key (required)
- *   ROOT_API_URL             – Base URL; defaults to https://api.rootplatform.com/v1/insurance
- *   ROOT_ENVIRONMENT         – "sandbox" | "production"
- *   ROOT_PRODUCT_MODULE_KEY  – Product module key (required — no fallback)
+ *   ROOT_API_KEY             - Root Platform API key (required)
+ *   ROOT_API_URL             - Base URL; defaults to https://api.rootplatform.com/v1/insurance
+ *   ROOT_ENVIRONMENT         - "sandbox" | "production"
+ *   ROOT_PRODUCT_MODULE_KEY  - Product module key (required, no fallback)
  *
  * All monetary values use integer cents (Root sandbox uses ZAR cents).
  */

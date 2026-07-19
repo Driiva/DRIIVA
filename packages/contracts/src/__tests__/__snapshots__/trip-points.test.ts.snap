@@ -1,0 +1,40 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`TripPointSchema > pins the current field set (drift guard: fails if a field is removed/renamed) 1`] = `
+[
+  "t",
+  "lat",
+  "lng",
+  "spd",
+  "hdg",
+  "acc",
+  "ax",
+  "ay",
+  "az",
+  "gx",
+  "gy",
+  "gz",
+]
+`;
+
+exports[`TripPointsBatchSchema > pins the current field set (drift guard: fails if a field is removed/renamed) 1`] = `
+[
+  "tripId",
+  "batchIndex",
+  "startOffset",
+  "endOffset",
+  "points",
+]
+`;
+
+exports[`TripPointsDocumentSchema > pins the current field set (drift guard: fails if a field is removed/renamed) 1`] = `
+[
+  "tripId",
+  "userId",
+  "points",
+  "samplingRateHz",
+  "totalPoints",
+  "compressedSize",
+  "createdAt",
+]
+`;

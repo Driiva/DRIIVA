@@ -1,0 +1,19 @@
+# MOB-T10 — STUB-LOCK: the record tab is a fake state machine.
+# Start = haptic + local state only; Stop = 3s fake "processing" then idle.
+# No trip document is ever created; no GPS starts. This flow asserts the stub.
+appId: com.driiva.app
+---
+- launchApp
+- tapOn: "Record"
+- assertVisible: ".*[Rr]ecord.*"
+- tapOn:
+    id: "record-button"
+    optional: true
+- tapOn: ".*[Ss]tart.*"
+- assertVisible: ".*[Rr]ecording.*"
+- tapOn: ".*[Ss]top.*"
+- assertVisible: ".*[Pp]rocessing.*"
+# The hardcoded setTimeout resets to idle after 3000ms — nothing was persisted
+- extendedWaitUntil:
+    visible: ".*[Ss]tart.*"
+    timeout: 6000

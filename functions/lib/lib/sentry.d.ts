@@ -1,5 +1,5 @@
 /**
- * SENTRY ERROR MONITORING — CLOUD FUNCTIONS
+ * SENTRY ERROR MONITORING - CLOUD FUNCTIONS
  * ==========================================
  * Wraps Cloud Functions with Sentry error tracking.
  *
@@ -20,7 +20,7 @@
 import * as functions from 'firebase-functions';
 /**
  * Initialize Sentry for Cloud Functions.
- * Safe to call multiple times — only initializes once.
+ * Safe to call multiple times - only initializes once.
  */
 export declare function initSentry(): void;
 /**

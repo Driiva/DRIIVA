@@ -1,7 +1,9 @@
 import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react';
 import path from 'path';
 
 export default defineConfig({
+  plugins: [react()],
   test: {
     globals: true,
     environment: 'jsdom',
@@ -11,10 +13,18 @@ export default defineConfig({
       'functions/src/**/*.test.ts',
       'server/**/*.test.ts',
       'shared/**/*.test.ts',
+      'packages/**/*.test.{ts,tsx}',
     ],
     exclude: [
       'node_modules',
       'functions/src/__tests__/triggers/damoovRegistration.test.ts',
+      // Rules-emulator suite needs the Firestore emulator running; run it via
+      // `npm run test:rules`, not the default suite. See vitest.rules.config.ts.
+      'tests/rules/**',
+      // Auth+Firestore integration suite needs live emulators; run it via
+      // `npm run test:integration`, not the default suite. See
+      // vitest.integration.config.ts.
+      'tests/integration/**',
     ],
     coverage: {
       provider: 'v8',
@@ -36,6 +46,8 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, 'client', 'src'),
       '@shared': path.resolve(__dirname, 'shared'),
+      '@driiva/contracts': path.resolve(__dirname, 'packages', 'contracts', 'src'),
+      '@driiva/scoring': path.resolve(__dirname, 'packages', 'scoring', 'src'),
     },
   },
 });

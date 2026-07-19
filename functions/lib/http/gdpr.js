@@ -82,7 +82,7 @@ exports.exportUserData = functions
     const requestedUserId = data?.userId;
     (0, auth_1.requireSelf)(context, requestedUserId);
     const userId = requestedUserId;
-    // TODO: Rate limiting – e.g. max 1 export per user per 24 hours
+    // TODO: Rate limiting - e.g. max 1 export per user per 24 hours
     functions.logger.info('Exporting user data', { userId });
     const userRef = db.collection(types_1.COLLECTION_NAMES.USERS).doc(userId);
     const userSnap = await userRef.get();
@@ -174,7 +174,7 @@ exports.deleteUserAccount = functions
     const requestedUserId = data?.userId;
     (0, auth_1.requireSelf)(context, requestedUserId);
     const userId = requestedUserId;
-    // TODO: Rate limiting – consider requiring re-auth or delay before delete
+    // TODO: Rate limiting - consider requiring re-auth or delay before delete
     functions.logger.info('Deleting user account', { userId });
     const tripSnap = await db
         .collection(types_1.COLLECTION_NAMES.TRIPS)

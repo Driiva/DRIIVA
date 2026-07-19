@@ -56,7 +56,7 @@ const db = admin.firestore();
 // Approved data fields for trip point processing. Any new field types added to
 // tripPoints documents that aren't in this list will trigger a warning log and
 // a Firestore flag at admin/dpiaAlerts. This is an architectural safeguard for
-// future GDPR compliance — trips still process normally.
+// future GDPR compliance - trips still process normally.
 //
 // Before adding new sensor types to trip collection, a Data Protection Impact
 // Assessment (DPIA) must be completed per UK GDPR Art. 35 for high-risk
@@ -189,7 +189,7 @@ exports.onTripCreate = functions
     // Trips created with status='recording' are in-progress on the client.
     // The client transitions recording→processing when the trip ends, which
     // triggers onTripStatusChange to compute metrics from GPS points.
-    // Do NOT change status here — distanceMeters/durationSeconds are 0 at
+    // Do NOT change status here - distanceMeters/durationSeconds are 0 at
     // creation time and anomaly detection on zero values produces false results.
     if (trip.status === 'recording') {
         functions.logger.info(`Trip ${tripId} is recording; awaiting client status transition`);
@@ -375,7 +375,7 @@ async function finalizeTripFromPoints(tripId, tripData) {
             flaggedForReview: anomalies.flaggedForReview,
         });
         // 7. If completed (no anomalies), update driver profile.
-        // Classification and AI analysis are NOT triggered here — they fire in
+        // Classification and AI analysis are NOT triggered here - they fire in
         // onTripStatusChange (processing → completed) which runs when this update
         // sets finalStatus = 'completed'. This avoids duplicate Claude API calls.
         if (finalStatus === 'completed') {

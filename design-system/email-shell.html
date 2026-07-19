@@ -1,0 +1,95 @@
+<!--
+  ============================================================================
+  DRIIVA CANONICAL EMAIL SHELL  ("Instrument Glass")
+  ----------------------------------------------------------------------------
+  The ONE branded shell for every Driiva email (build updates, notices, comms).
+  Fill the {{PLACEHOLDER}} tokens; do NOT restyle. Never hand-roll a bespoke
+  Driiva email ,  start from this file.
+
+  DESIGN LAW (from design-system/source/Driiva_Instrument_Philosophy.md +
+  design-system/colors_and_type.css). Read those before deviating.
+    - Surface is near-black, almost monochrome. Outer #050509, card #0a0a14.
+    - Colour is EARNED, never given: the single accent #6b5fdc appears once
+      (left rule / section tick); score/status green #10b981 only on a live
+      signal. No rainbow of purples. Headlines stay MONOCHROME (#fafafa) , 
+      never gradient-clip headline text.
+    - The signature amber->indigo gradient is the SURFACE beneath, refracted:
+      it lives ONLY as the 3px top hairline. amber #d4850a warns, indigo
+      #3b2d8b grounds.
+    - Type: Inter Tight (display/headline), Inter (body), JetBrains Mono
+      (eyebrows/labels/stats/footer, uppercase, letter-spaced). Three weights
+      only: 400 / 600 / 700. Numbers use tabular figures.
+    - Logo: the WHITE wordmark on dark (small, ~34KB, reliably loads).
+      https://driiva.co.uk/brand/logo-wordmark-white-v3.png
+      (gradient wordmark logo-wordmark-gradient.png is 496KB ,  too heavy for
+      email; use white on the dark card.)
+    - Radii 18px card / 14px inner. Footer: DRIIVA LTD - telematics insurance
+      for young UK drivers. No em dashes anywhere (single hyphens only).
+
+  SEND PATH (do NOT use Gmail compose/CDP ,  it STRIPS the dark bg + images).
+    Resend raw-HTML API, from  Driiva <hello@driiva.co.uk>  ->  jamal@driiva.co.uk
+    POST https://api.resend.com/emails {from,to,subject,html,text}
+    driiva.co.uk is a verified Resend domain (DKIM live; DMARC passes via DKIM).
+    Confirmed lands in INBOX (not spam). Give every image descriptive alt text;
+    Gmail may gate images for a brand-new sender until "show images" is clicked.
+  ============================================================================
+-->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#050509;background-image:radial-gradient(1100px 520px at 50% -22%,rgba(107,95,220,0.12),transparent 60%);padding:40px 16px"><tbody><tr><td align="center">
+ <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:100%;background:#0a0a14;border:1px solid rgba(255,255,255,0.08);border-radius:18px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.55)"><tbody>
+
+  <!-- signature brand gradient as the surface hairline (amber warns, indigo grounds) -->
+  <tr><td style="height:3px;line-height:3px;font-size:0;background:linear-gradient(90deg,#d4850a 0%,#a04c2a 34%,#6b3fa0 68%,#3b2d8b 100%)">&nbsp;</td></tr>
+
+  <!-- header: white wordmark + earned-status eyebrow -->
+  <tr><td style="padding:34px 36px 0 36px">
+    <img src="https://driiva.co.uk/brand/logo-wordmark-white-v3.png" width="128" alt="driiva" style="display:block;width:128px;max-width:44%;height:auto;border:0">
+    <div style="margin-top:24px;font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;font-size:11px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.60)"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#10b981;vertical-align:middle;margin-right:9px;box-shadow:0 0 8px rgba(16,185,129,0.7)"></span>{{EYEBROW}}</div>
+  </td></tr>
+
+  <!-- headline: monochrome, Inter Tight, restrained -->
+  <tr><td style="padding:16px 36px 0 36px">
+    <h1 style="margin:0;font-family:'Inter Tight',Inter,-apple-system,sans-serif;font-size:30px;font-weight:700;letter-spacing:-0.035em;line-height:1.04;color:#fafafa">{{HEADLINE}}</h1>
+    <p style="margin:14px 0 0 0;font-family:Inter,-apple-system,sans-serif;font-size:15.5px;font-weight:400;line-height:1.55;letter-spacing:-0.005em;color:rgba(255,255,255,0.66)">{{SUBHEAD}}</p>
+  </td></tr>
+
+  <!-- OPTIONAL instrument readout: tabular figures, colour earned only on a live signal.
+       Duplicate/remove cells to taste; keep the hairline dividers. -->
+  <tr><td style="padding:26px 36px 0 36px">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#12111f;border:1px solid rgba(255,255,255,0.07);border-radius:14px"><tbody><tr>
+      <td width="40%" style="padding:18px 20px;border-right:1px solid rgba(255,255,255,0.06)">
+        <div style="font-family:'Inter Tight',sans-serif;font-size:23px;font-weight:700;color:#f8fafc;font-variant-numeric:tabular-nums;letter-spacing:-0.02em">{{STAT1_VALUE}}</div>
+        <div style="margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.46)"><span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:#10b981;vertical-align:middle;margin-right:6px"></span>{{STAT1_LABEL}}</div>
+      </td>
+      <td width="30%" style="padding:18px 20px;border-right:1px solid rgba(255,255,255,0.06)">
+        <div style="font-family:'Inter Tight',sans-serif;font-size:23px;font-weight:700;color:#f8fafc;font-variant-numeric:tabular-nums;letter-spacing:-0.02em">{{STAT2_VALUE}}</div>
+        <div style="margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.46)">{{STAT2_LABEL}}</div>
+      </td>
+      <td width="30%" style="padding:18px 20px">
+        <div style="font-family:'Inter Tight',sans-serif;font-size:23px;font-weight:700;color:#f8fafc;font-variant-numeric:tabular-nums;letter-spacing:-0.02em">{{STAT3_VALUE}}</div>
+        <div style="margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.46)">{{STAT3_LABEL}}</div>
+      </td>
+    </tr></tbody></table>
+  </td></tr>
+
+  <!-- SECTION (repeat per section). Tick is a CSS box in the single accent hue
+       (NOT a unicode char - Gmail emoji-substitutes those). -->
+  <tr><td style="padding:28px 36px 0 36px">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#8b8b9e"><span style="display:inline-block;width:5px;height:5px;background:#6b5fdc;border-radius:1px;vertical-align:middle;margin-right:10px"></span>{{SECTION_LABEL}}</div>
+    <p style="margin:11px 0 0 0;font-family:Inter,sans-serif;font-size:14.5px;line-height:1.6;color:rgba(255,255,255,0.68)">{{SECTION_BODY}}  <!-- emphasise with <strong style="color:#ededf0;font-weight:600">...</strong> --></p>
+  </td></tr>
+
+  <!-- OPTIONAL callout: single accent, left rule -->
+  <tr><td style="padding:26px 36px 0 36px">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#12111f;border:1px solid rgba(255,255,255,0.07);border-left:2px solid #6b5fdc;border-radius:12px"><tbody><tr><td style="padding:16px 20px">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#8f86e6;margin-bottom:8px">{{CALLOUT_LABEL}}</div>
+      <p style="margin:0;font-family:Inter,sans-serif;font-size:14px;line-height:1.55;color:rgba(255,255,255,0.7)">{{CALLOUT_BODY}}</p>
+    </td></tr></tbody></table>
+  </td></tr>
+
+  <!-- footer -->
+  <tr><td style="padding:28px 36px 32px 36px">
+    <div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:18px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.06em;color:rgba(255,255,255,0.38);line-height:1.7">DRIIVA LTD &nbsp;&middot;&nbsp; telematics insurance for young UK drivers<br>{{FOOTER_NOTE}}</div>
+  </td></tr>
+
+ </tbody></table>
+</td></tr></tbody></table>

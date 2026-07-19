@@ -16,6 +16,13 @@ let adminApp: admin.app.App | null = null;
 export function getFirebaseAdmin(): admin.app.App | null {
   if (adminApp) return adminApp;
   try {
+    // Reuse an already-initialized default app (e.g. a shared test/emulator
+    // harness that called admin.initializeApp() first) instead of throwing
+    // on a duplicate-app error.
+    if (admin.apps.length > 0) {
+      adminApp = admin.app();
+      return adminApp;
+    }
     if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
       adminApp = admin.initializeApp({ credential: admin.credential.applicationDefault() });
       return adminApp;
@@ -63,7 +70,11 @@ export async function verifyFirebaseToken(idToken: string): Promise<{ uid: strin
   const firebase = getFirebaseAdmin();
   if (firebase) {
     try {
-      const decoded = await firebase.auth().verifyIdToken(idToken);
+      // checkRevoked=true adds one extra lookup per verified request (the
+      // Admin SDK checks the token's issued-at time against the user's
+      // tokensValidAfterTime) so a revoked-but-unexpired token is rejected
+      // immediately instead of staying valid until natural expiry.
+      const decoded = await firebase.auth().verifyIdToken(idToken, true);
       return { uid: decoded.uid, email: decoded.email };
     } catch {
       return null;

@@ -6,7 +6,7 @@
  * Pulls trip data and statistics from Damoov DataHub for all active users
  * with a damoovDeviceToken, writes trip records and updates driving profiles.
  *
- * maxInstances: 10 — hard cap to prevent billing loops.
+ * maxInstances: 10 - hard cap to prevent billing loops.
  */
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;

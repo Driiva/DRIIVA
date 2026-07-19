@@ -240,7 +240,7 @@ exports.classifyTrip = functions
     .region(region_1.EUROPE_LONDON)
     .https.onCall(async (data, context) => {
     const userId = (0, auth_1.requireAuth)(context);
-    // TODO: Rate limiting – e.g. max N classifyTrip calls per user per minute
+    // TODO: Rate limiting - e.g. max N classifyTrip calls per user per minute
     // Example: Firestore/Redis counter keyed by userId, reject if over threshold
     const tripId = data?.tripId;
     if (typeof tripId !== 'string' || tripId.trim() === '') {
@@ -300,7 +300,7 @@ exports.batchClassifyTrips = functions
     .https.onCall(async (data, context) => {
     (0, auth_1.requireAuth)(context);
     (0, auth_1.requireAdmin)(context);
-    // TODO: Rate limiting – e.g. max 1 batch job per admin per 5 minutes
+    // TODO: Rate limiting - e.g. max 1 batch job per admin per 5 minutes
     // Example: check last batchClassifyTrips timestamp in Firestore/Redis for context.auth.uid
     const { tripIds, userId, limit = 10 } = data;
     let tripsToProcess = [];

@@ -125,11 +125,10 @@ jobs:
 
       # ── Firebase ──────────────────────────────────────────────────────────
       # Deploys to driiva-staging Firebase project.
-      # Cloud Functions require Blaze plan — if not upgraded yet, change to:
+      # Cloud Functions require Blaze plan, if not upgraded yet, change to:
       #   --only firestore:rules,firestore:indexes
       # TODO: Create staging Firebase project and add FIREBASE_TOKEN to GitHub Secrets
       - name: Deploy Firebase to staging
-        continue-on-error: true
         run: |
           npx firebase deploy \
             --only firestore:rules,firestore:indexes,functions \
@@ -144,7 +143,6 @@ jobs:
       # by the Vercel CLI to identify which project to deploy to.
       # TODO: Create staging Firebase project and add FIREBASE_TOKEN to GitHub Secrets
       - name: Deploy to Vercel (staging)
-        continue-on-error: true
         run: npx vercel --prod --token "$VERCEL_TOKEN" --yes
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}

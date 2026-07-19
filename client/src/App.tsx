@@ -20,7 +20,6 @@ import Settings from './pages/settings';
 
 // ─── Lazy-loaded: secondary pages (split into separate chunks) ───────────
 const Permissions = lazy(() => import('./pages/permissions'));
-const Onboarding = lazy(() => import('./pages/onboarding'));
 const CheckoutPage = lazy(() => import('./pages/checkout'));
 const Rewards = lazy(() => import('./pages/rewards'));
 const Support = lazy(() => import('./pages/support'));
@@ -166,7 +165,8 @@ function AppContent() {
 
           {/* Semi-protected routes (onboarding flow) */}
           <Route path="/permissions" component={Permissions} />
-          <Route path="/onboarding" component={Onboarding} />
+          {/* quick-onboarding.tsx is the single canonical onboarding flow (DEC-5) */}
+          <Route path="/onboarding" component={QuickOnboarding} />
 
           {/* Redirect legacy /home: dashboard if auth/demo, else welcome */}
           <Route path="/home" component={HomeRedirect} />

@@ -1,6 +1,6 @@
 "use strict";
 /**
- * SENTRY ERROR MONITORING — CLOUD FUNCTIONS
+ * SENTRY ERROR MONITORING - CLOUD FUNCTIONS
  * ==========================================
  * Wraps Cloud Functions with Sentry error tracking.
  *
@@ -63,7 +63,7 @@ const SENTRY_DSN = process.env.SENTRY_DSN_FUNCTIONS;
 let initialized = false;
 /**
  * Initialize Sentry for Cloud Functions.
- * Safe to call multiple times — only initializes once.
+ * Safe to call multiple times - only initializes once.
  */
 function initSentry() {
     if (initialized || !SENTRY_DSN)

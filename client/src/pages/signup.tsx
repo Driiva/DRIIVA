@@ -5,7 +5,7 @@ import { AlertCircle, Loader2, Eye, EyeOff, User, Mail, Lock } from "lucide-reac
 import { timing, easing, microInteractions } from "@/lib/animations";
 import { auth, db, isFirebaseConfigured } from "../lib/firebase";
 import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from "firebase/auth";
-import { doc, getDoc, writeBatch } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { useAuth } from "../contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -148,29 +148,20 @@ export default function Signup() {
 
       setLocation("/quick-onboarding");
 
-      // Fire-and-forget: Firestore writes, profile update, and email verification
-      // The onUserCreate Cloud Function also creates the user doc, so these are best-effort
-      const nowISO = new Date().toISOString();
-      const batch = writeBatch(db);
-      batch.set(doc(db, 'users', user.uid), {
-        uid: user.uid,
-        email: formData.email,
-        fullName: formData.fullName,
-        onboardingCompleted: false,
-        onboardingComplete: false,
-        createdAt: nowISO,
-        updatedAt: nowISO,
-      });
-      if (localPart) {
-        batch.set(doc(db, 'usernames', localPart), { email: formData.email, uid: user.uid }, { merge: true });
-      }
-
+      // Fire-and-forget: Auth profile update and email verification only.
+      // provisionUserOnSignup (Auth onCreate Cloud Function, M1 T7 cutover)
+      // now owns creating users/{uid} and usernames/{localPart} - the client
+      // no longer writes either doc. Note: this updateProfile call reliably
+      // hasn't landed by the time the trigger fires (it's a separate,
+      // un-awaited async call), so provisionUser writes displayName: null
+      // rather than guessing a fallback - every reader falls back to
+      // user?.name (this Auth profile update, read via AuthContext), which
+      // resolves correctly moments later. See docs/rebuild/m1-t7-cutover.md.
       Promise.all([
         updateProfile(user, { displayName: formData.fullName }),
-        batch.commit(),
         sendEmailVerification(user, { url: `${window.location.origin}/verify-email` }),
       ]).catch(() => {
-        // Non-fatal — Cloud Function onUserCreate also writes the user doc
+        // Non-fatal - the Cloud Function has already provisioned the account.
       });
 
     } catch (err: any) {
@@ -197,7 +188,9 @@ export default function Signup() {
       } else if (err.code === 'auth/too-many-requests') {
         setError("Too many attempts. Please try again later.");
       } else {
-        setError(err.message || "Something went wrong. Please try again.");
+        // Unmapped Firebase error code (or a non-Firebase throw) - never
+        // surface err.message or a raw auth/... code to the user.
+        setError("Something went wrong. Please try again.");
       }
     } finally {
       setIsLoading(false);

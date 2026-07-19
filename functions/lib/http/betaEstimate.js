@@ -2,8 +2,8 @@
 /**
  * BETA ESTIMATE CLOUD FUNCTIONS
  * =============================
- * Callable: calculateBetaEstimateForUser – recompute and write beta pricing doc.
- * Trigger: onUserOrPoolUpdate – keep estimate in sync when user or pool changes.
+ * Callable: calculateBetaEstimateForUser - recompute and write beta pricing doc.
+ * Trigger: onUserOrPoolUpdate - keep estimate in sync when user or pool changes.
  */
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -53,7 +53,7 @@ const BETA_PRICING_SUBCOLLECTION = 'betaPricing';
 const BETA_ESTIMATE_DOC_ID = 'currentEstimate';
 const POOL_DOC_ID = 'current';
 /**
- * Get community pool safety factor (0–1). Default 0.5 if pool missing.
+ * Get community pool safety factor (0-1). Default 0.5 if pool missing.
  */
 async function getCommunityPoolSafety() {
     const poolSnap = await index_1.db

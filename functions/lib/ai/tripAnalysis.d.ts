@@ -1,5 +1,5 @@
 /**
- * AI TRIP ANALYSIS — Claude Sonnet 4 Integration
+ * AI TRIP ANALYSIS - Claude Sonnet 4 Integration
  * ================================================
  * Advanced trip scoring using Anthropic's Claude API.
  *

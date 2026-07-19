@@ -1,0 +1,13 @@
+# MOB-T07 — STUB-LOCK: the final onboarding quote screen's waitlist join
+# shows "You're on the list" without writing anywhere (quote.tsx:39 TODO).
+# This flow deliberately locks in the FALSE-SUCCESS state so the rebuild
+# cannot silently inherit it.
+appId: com.driiva.app
+---
+- launchApp
+# Deep-link straight to the quote screen (final onboarding step)
+- openLink: "driiva://onboarding/quote"
+- assertVisible: ".*[Qq]uote.*"
+- inputText: "characterisation@driiva.co.uk"
+- tapOn: ".*[Jj]oin.*"
+- assertVisible: ".*on the list.*"

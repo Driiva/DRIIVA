@@ -1,5 +1,5 @@
 /**
- * REFUND CALCULATOR — Single source of truth for refund pool calculations
+ * REFUND CALCULATOR - Single source of truth for refund pool calculations
  * =======================================================================
  * All refund-related code (Cloud Functions, server, Python API) must use
  * this formula so refund amounts are consistent everywhere.
@@ -15,14 +15,14 @@
 
 /**
  * Calculate the blended score from personal and community scores.
- * Weights: 80% personal, 20% community (locked — see CLAUDE.md Hard Stops).
+ * Weights: 80% personal, 20% community (locked - see CLAUDE.md Hard Stops).
  */
 export function blendedScore(personalScore: number, communityScore: number): number {
   return 0.8 * personalScore + 0.2 * communityScore;
 }
 
 /**
- * Calculate the refund rate (5%–15%) from a blended score (0–100).
+ * Calculate the refund rate (5%-15%) from a blended score (0-100).
  * Score 50 → 5%, score 100 → 15%, linear interpolation.
  * Below 50 → 5% floor. Above 100 → 15% cap.
  */
@@ -34,10 +34,10 @@ export function refundRate(score: number): number {
 /**
  * Calculate the projected refund in integer cents.
  *
- * @param personalScore     Driver's personal safety score (0–100)
+ * @param personalScore     Driver's personal safety score (0-100)
  * @param communityScore    Community average score (default 75)
  * @param contributionCents Premium contribution in integer cents
- * @param safetyFactor      Pool safety factor (0–1, typically ~0.85)
+ * @param safetyFactor      Pool safety factor (0-1, typically ~0.85)
  * @param premiumCents      Total premium in cents (for hard cap)
  * @returns Refund amount in integer cents
  */
@@ -64,7 +64,7 @@ export function calculateRefundCents(
  * Simplified refund projection for UI display.
  * Uses default community score (75) and safety factor (0.85).
  *
- * @param personalScore  Driver's personal safety score (0–100)
+ * @param personalScore  Driver's personal safety score (0-100)
  * @param premiumCents   Total premium in integer cents
  * @returns Projected refund in integer cents
  */

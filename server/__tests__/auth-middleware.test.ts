@@ -75,13 +75,16 @@ describe("verifyFirebaseAuth", () => {
     expect(req.auth).toEqual({ uid: "fb-123", email: "test@driiva.com", userId: 42 });
   });
 
-  it("does not set req.auth when token is valid but no DB user", async () => {
+  // DISPOSITION (M1 T3, FIX): this pinned the retired 401 wall (no DB user,
+  // req.auth left unset). A valid token now authenticates regardless; the
+  // Neon row only enriches userId, it is no longer a gate.
+  it("sets req.auth with userId=undefined when token is valid but no DB user", async () => {
     mockedVerify.mockResolvedValue({ uid: "fb-999", email: "ghost@driiva.com" } as any);
     mockedGetUser.mockResolvedValue(null as any);
     const req = mockReq({ headers: { authorization: "Bearer valid-token" } } as any);
     await verifyFirebaseAuth(req, mockRes(), next);
     expect(next).toHaveBeenCalled();
-    expect(req.auth).toBeUndefined();
+    expect(req.auth).toEqual({ uid: "fb-999", email: "ghost@driiva.com", userId: undefined });
   });
 });
 
@@ -133,6 +136,24 @@ describe("requireResourceOwner", () => {
     const req = mockReq({
       auth: { uid: "fb-1", userId: 7 },
       params: { userId: "99" },
+    } as any);
+    const res = mockRes();
+    requireResourceOwner()(req, res, next);
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ code: "RESOURCE_OWNER_REQUIRED" }),
+    );
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  // REGRESSION (M1 T7 add-on): the newly-reachable state T3 created -
+  // req.auth set with userId: undefined (valid token, no Neon row yet, see
+  // verifyFirebaseAuth above). A route param present but no DB row must
+  // still 403, not incorrectly authorize because both sides are "falsy".
+  it("returns 403 when req.auth.userId is undefined (valid token, no DB row yet)", () => {
+    const req = mockReq({
+      auth: { uid: "fb-1", userId: undefined },
+      params: { userId: "7" },
     } as any);
     const res = mockRes();
     requireResourceOwner()(req, res, next);

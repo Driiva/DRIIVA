@@ -1,5 +1,5 @@
 /**
- * TRIP PROCESSOR — Single source of truth for trip duration and distance
+ * TRIP PROCESSOR - Single source of truth for trip duration and distance
  * ======================================================================
  * All trip-related code (Cloud Functions, server telematics, tests) must
  * use these functions so duration and distance are consistent everywhere.

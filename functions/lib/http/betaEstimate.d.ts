@@ -1,8 +1,8 @@
 /**
  * BETA ESTIMATE CLOUD FUNCTIONS
  * =============================
- * Callable: calculateBetaEstimateForUser – recompute and write beta pricing doc.
- * Trigger: onUserOrPoolUpdate – keep estimate in sync when user or pool changes.
+ * Callable: calculateBetaEstimateForUser - recompute and write beta pricing doc.
+ * Trigger: onUserOrPoolUpdate - keep estimate in sync when user or pool changes.
  */
 import * as functions from 'firebase-functions';
 /**
