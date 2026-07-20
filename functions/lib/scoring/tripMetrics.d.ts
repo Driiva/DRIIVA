@@ -32,6 +32,21 @@ export interface TripMetrics {
     events: TripEvents;
 }
 /**
+ * Composite score weights. Single source of truth for both the algorithm
+ * (computeDrivingScore, below) and any UI that shows the weighting to a user
+ * (trip-detail's score breakdown). Values are byte-identical to the previous
+ * inline literals (25/25/20/20/10) - extracting them changes nothing about
+ * the computed score, it just makes algorithm and display impossible to drift
+ * apart. These must sum to 1.0.
+ */
+export declare const SCORE_WEIGHTS: {
+    readonly speed: 0.25;
+    readonly braking: 0.25;
+    readonly acceleration: 0.2;
+    readonly cornering: 0.2;
+    readonly phoneUsage: 0.1;
+};
+/**
  * Haversine distance between two WGS84 points, in meters.
  * Ported verbatim from `shared/tripProcessor.ts`.
  */

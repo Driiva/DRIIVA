@@ -63,7 +63,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.health = exports.seedAchievements = exports.onUserUpdateRecalcBetaEstimate = exports.calculateBetaEstimateForUser = exports.syncInsurancePolicy = exports.acceptInsuranceQuote = exports.getInsuranceQuote = exports.getAIInsights = exports.analyzeTripAI = exports.deleteUserAccount = exports.exportUserData = exports.batchClassifyTrips = exports.classifyTrip = exports.cancelTrip = exports.addPoolContribution = exports.initializePool = exports.monitorTripHealth = exports.syncDamoovTrips = exports.sendWeeklySummary = exports.recalculatePoolShares = exports.finalizePoolPeriod = exports.updateLeaderboards = exports.onPendingPaymentWrite = exports.syncTripOnComplete = exports.syncUserOnSignup = exports.provisionUserOnSignup = exports.onPoolShareWrite = exports.onPolicyWrite = exports.onTripStatusChange = exports.onTripCreate = exports.db = void 0;
+exports.health = exports.seedAchievements = exports.onUserUpdateRecalcBetaEstimate = exports.calculateBetaEstimateForUser = exports.syncInsurancePolicy = exports.acceptInsuranceQuote = exports.getInsuranceQuote = exports.getAIInsights = exports.analyzeTripAI = exports.deleteUserAccount = exports.exportUserData = exports.batchClassifyTrips = exports.classifyTrip = exports.cancelTrip = exports.addPoolContribution = exports.initializePool = exports.monitorTripHealth = exports.syncDamoovTrips = exports.sendWeeklySummary = exports.recalculatePoolShares = exports.finalizePoolPeriod = exports.updateLeaderboards = exports.onPendingPaymentWrite = exports.syncUserOnSignup = exports.provisionUserOnSignup = exports.onPoolShareWrite = exports.onPolicyWrite = exports.onTripStatusChange = exports.onTripCreate = exports.db = void 0;
 const admin = __importStar(require("firebase-admin"));
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -89,8 +89,6 @@ var provisionUserOnSignup_1 = require("./triggers/provisionUserOnSignup");
 Object.defineProperty(exports, "provisionUserOnSignup", { enumerable: true, get: function () { return provisionUserOnSignup_1.provisionUserOnSignup; } });
 var syncUserOnSignup_1 = require("./triggers/syncUserOnSignup");
 Object.defineProperty(exports, "syncUserOnSignup", { enumerable: true, get: function () { return syncUserOnSignup_1.syncUserOnSignup; } });
-var syncTripOnComplete_1 = require("./triggers/syncTripOnComplete");
-Object.defineProperty(exports, "syncTripOnComplete", { enumerable: true, get: function () { return syncTripOnComplete_1.syncTripOnComplete; } });
 var payments_1 = require("./triggers/payments");
 Object.defineProperty(exports, "onPendingPaymentWrite", { enumerable: true, get: function () { return payments_1.onPendingPaymentWrite; } });
 // ============================================================================

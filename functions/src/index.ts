@@ -52,7 +52,6 @@ export { onPoolShareWrite } from './triggers/pool';
 // (DEC-3) stays as the Neon analytics mirror.
 export { provisionUserOnSignup } from './triggers/provisionUserOnSignup';
 export { syncUserOnSignup } from './triggers/syncUserOnSignup';
-export { syncTripOnComplete } from './triggers/syncTripOnComplete';
 export { onPendingPaymentWrite } from './triggers/payments';
 
 // ============================================================================

@@ -1,17 +1,14 @@
 import { 
-  users, 
-  drivingProfiles, 
-  trips, 
-  tripsSummary,
-  communityPool, 
-  achievements, 
-  userAchievements, 
-  incidents, 
+  users,
+  drivingProfiles,
+  trips,
+  communityPool,
+  achievements,
+  userAchievements,
+  incidents,
   leaderboard,
-  type User, 
+  type User,
   type InsertUser,
-  type TripSummary,
-  type InsertTripSummary,
   type DrivingProfile,
   type InsertDrivingProfile,
   type Trip,
@@ -36,10 +33,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, updates: Partial<InsertUser>): Promise<User | undefined>;
   getOrCreateUserByFirebase(firebaseUid: string, email: string, displayName?: string | null): Promise<User>;
-  // Trip summary (synced from Firestore)
-  createTripSummary(summary: InsertTripSummary): Promise<TripSummary>;
-  getTripSummariesByUserId(userId: number, limit?: number, offset?: number): Promise<TripSummary[]>;
-  
+
   // Driving profile operations
   getDrivingProfile(userId: number): Promise<DrivingProfile | undefined>;
   createDrivingProfile(profile: InsertDrivingProfile): Promise<DrivingProfile>;
@@ -132,20 +126,6 @@ export class DatabaseStorage implements IStorage {
     if (!user) throw new Error("Failed to create user from Firebase");
     await this.createDrivingProfile({ userId: user.id });
     return user;
-  }
-
-  async createTripSummary(summary: InsertTripSummary): Promise<TripSummary> {
-    const [row] = await db.insert(tripsSummary).values(summary).returning();
-    if (!row) throw new Error("Failed to create trip summary");
-    return row;
-  }
-
-  async getTripSummariesByUserId(userId: number, limit: number = 20, offset: number = 0): Promise<TripSummary[]> {
-    return await db.select().from(tripsSummary)
-      .where(eq(tripsSummary.userId, userId))
-      .orderBy(desc(tripsSummary.startedAt))
-      .limit(limit)
-      .offset(offset);
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {

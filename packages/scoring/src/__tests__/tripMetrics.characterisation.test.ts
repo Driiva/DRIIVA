@@ -13,7 +13,7 @@
  * package's implementation directly.
  */
 import { describe, it, expect } from 'vitest';
-import { computeTripMetrics } from '../tripMetrics';
+import { computeTripMetrics, SCORE_WEIGHTS } from '../tripMetrics';
 
 describe('computeTripMetrics: shape/range assertions reproduced from trips.test.ts', () => {
   // Mirrors the assertions in `onTripStatusChange trigger` › 'computes and
@@ -38,5 +38,27 @@ describe('computeTripMetrics: shape/range assertions reproduced from trips.test.
     expect(typeof result.scoreBreakdown.accelerationScore).toBe('number');
     expect(typeof result.scoreBreakdown.corneringScore).toBe('number');
     expect(typeof result.scoreBreakdown.phoneUsageScore).toBe('number');
+  });
+});
+
+describe('SCORE_WEIGHTS: single source of truth for algorithm and display', () => {
+  it('pins the canonical 25/25/20/20/10 weighting', () => {
+    expect(SCORE_WEIGHTS).toEqual({
+      speed: 0.25,
+      braking: 0.25,
+      acceleration: 0.2,
+      cornering: 0.2,
+      phoneUsage: 0.1,
+    });
+  });
+
+  it('weights sum to exactly 1.0 (a full composite, no free points)', () => {
+    const sum =
+      SCORE_WEIGHTS.speed +
+      SCORE_WEIGHTS.braking +
+      SCORE_WEIGHTS.acceleration +
+      SCORE_WEIGHTS.cornering +
+      SCORE_WEIGHTS.phoneUsage;
+    expect(sum).toBeCloseTo(1, 10);
   });
 });

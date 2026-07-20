@@ -35,6 +35,22 @@ export interface TripMetrics {
 }
 
 /**
+ * Composite score weights. Single source of truth for both the algorithm
+ * (computeDrivingScore, below) and any UI that shows the weighting to a user
+ * (trip-detail's score breakdown). Values are byte-identical to the previous
+ * inline literals (25/25/20/20/10) - extracting them changes nothing about
+ * the computed score, it just makes algorithm and display impossible to drift
+ * apart. These must sum to 1.0.
+ */
+export const SCORE_WEIGHTS = {
+  speed: 0.25,
+  braking: 0.25,
+  acceleration: 0.2,
+  cornering: 0.2,
+  phoneUsage: 0.1,
+} as const;
+
+/**
  * Haversine distance between two WGS84 points, in meters.
  * Ported verbatim from `shared/tripProcessor.ts`.
  */
@@ -319,11 +335,11 @@ function computeDrivingScore(
 
   // Calculate weighted composite score
   const score = Math.round(
-    speedScore * 0.25 +
-    brakingScore * 0.25 +
-    accelerationScore * 0.20 +
-    corneringScore * 0.20 +
-    phoneUsageScore * 0.10
+    speedScore * SCORE_WEIGHTS.speed +
+    brakingScore * SCORE_WEIGHTS.braking +
+    accelerationScore * SCORE_WEIGHTS.acceleration +
+    corneringScore * SCORE_WEIGHTS.cornering +
+    phoneUsageScore * SCORE_WEIGHTS.phoneUsage
   );
 
   return {

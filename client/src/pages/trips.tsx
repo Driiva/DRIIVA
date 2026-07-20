@@ -4,14 +4,17 @@
  * Shows user's trip history with pull-to-refresh, swipeable cards, and shimmer loading.
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
+import { collection, query, where, orderBy, limit } from 'firebase/firestore';
 import { PageWrapper } from '../components/PageWrapper';
 import { BottomNav } from '../components/BottomNav';
 import { Map, Car, AlertCircle, Play, Navigation, RefreshCw, ChevronLeft } from "lucide-react";
 import { useAuth } from '../contexts/AuthContext';
-import { getUserTrips } from '@/lib/firestore';
+import { db, isFirebaseConfigured } from '@/lib/firebase';
+import { useFirestoreQuery } from '@/hooks/useFirestoreQuery';
+import { COLLECTION_NAMES } from '../../../shared/firestore-types';
 import type { TripDocument } from '../../../shared/firestore-types';
 import { SwipeTripCard } from '@/components/SwipeTripCard';
 import { TripCardShimmer } from '@/components/Shimmer';
@@ -100,46 +103,39 @@ export default function Trips() {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
   const haptics = useHaptics();
-  const [trips, setTrips] = useState<TripDocument[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   const isDemoMode = typeof window !== 'undefined' && sessionStorage.getItem('driiva-demo-mode') === 'true';
 
-  const fetchTrips = useCallback(async () => {
-    if (isDemoMode) {
-      setLoading(false);
-      return;
-    }
-    if (!user?.id) {
-      setLoading(false);
-      return;
-    }
-    try {
-      setLoading(true);
-      setError(null);
-      const result = await getUserTrips({
-        userId: user.id,
-        status: 'completed',
-        limit: 50,
-      });
-      setTrips(result);
-    } catch (err) {
-      console.error('[Trips] Failed to fetch trips:', err);
-      setError('Failed to load trips. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  }, [user?.id, isDemoMode]);
+  // Realtime trip history. Includes in-flight trips (recording/processing) so
+  // a trip that is still being recorded or scored is visible in the list, and
+  // a trip completing while this page is open updates live via onSnapshot
+  // (no manual refresh). Ordered by startedAt because recording trips have no
+  // endedAt yet. The status `in` filter is served by the existing composite
+  // index (userId, status, startedAt); a status-less query would need a new
+  // index that is not deployed.
+  const tripsQuery = useMemo(() => {
+    if (isDemoMode || !user?.id || !isFirebaseConfigured || !db) return null;
+    return query(
+      collection(db, COLLECTION_NAMES.TRIPS),
+      where('userId', '==', user.id),
+      where('status', 'in', ['recording', 'processing', 'completed']),
+      orderBy('startedAt', 'desc'),
+      limit(50),
+    );
+  }, [isDemoMode, user?.id]);
 
-  useEffect(() => {
-    fetchTrips();
-  }, [fetchTrips]);
+  const { data: tripsData, loading, error: queryError, refresh } = useFirestoreQuery<TripDocument[]>(
+    tripsQuery,
+    { transform: (snapshot) => snapshot.docs.map(d => d.data() as TripDocument) },
+  );
+  const trips = tripsData ?? [];
+  const error = queryError ? 'Failed to load trips. Please try again.' : null;
 
-  // Pull-to-refresh
+  // Pull-to-refresh (realtime already keeps the list current; this stays for
+  // the familiar gesture and to force a re-subscribe on demand).
   const pullToRefresh = usePullToRefresh({
     onRefresh: async () => {
-      await fetchTrips();
+      refresh();
       await new Promise(r => setTimeout(r, 400));
     },
     disabled: isDemoMode,
@@ -149,10 +145,13 @@ export default function Trips() {
   const hasDemoTrips = isDemoMode && DEMO_TRIPS.length > 0;
   const isEmpty = !loading && !error && !hasRealTrips && !hasDemoTrips;
 
-  const totalTrips = isDemoMode ? DEMO_TRIPS.length : trips.length;
+  // Stats reflect completed trips only - in-flight trips have no final
+  // distance or score to total up.
+  const completedTrips = trips.filter(t => t.status === 'completed');
+  const totalTrips = isDemoMode ? DEMO_TRIPS.length : completedTrips.length;
   const totalMiles = isDemoMode
     ? DEMO_TRIPS.reduce((sum, t) => sum + t.distance, 0)
-    : trips.reduce((sum, t) => sum + (t.distanceMeters / 1609.34), 0);
+    : completedTrips.reduce((sum, t) => sum + ((t.distanceMeters ?? 0) / 1609.34), 0);
 
   return (
     <PageWrapper>
@@ -233,7 +232,7 @@ export default function Trips() {
             <p className="text-red-300 text-sm mb-4">{error}</p>
             <motion.button
               whileTap={{ scale: 0.95 }}
-              onClick={() => { haptics.light(); fetchTrips(); }}
+              onClick={() => { haptics.light(); refresh(); }}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 border border-white/20 text-white/70 text-sm hover:bg-white/15 transition-all"
             >
               <RefreshCw className="w-4 h-4" />
@@ -312,10 +311,12 @@ export default function Trips() {
             animate="show"
           >
             {trips.map((trip, index) => {
-              const distanceMiles = (trip.distanceMeters / 1609.34).toFixed(1);
-              const durationMinutes = Math.round(trip.durationSeconds / 60);
+              const isCompleted = trip.status === 'completed';
+              const distanceMiles = ((trip.distanceMeters ?? 0) / 1609.34).toFixed(1);
+              const durationMinutes = Math.round((trip.durationSeconds ?? 0) / 60);
               const startLabel = locationLabel(trip.startLocation);
-              const endLabel = locationLabel(trip.endLocation);
+              // Recording trips have no endLocation yet - fall back to start.
+              const endLabel = trip.endLocation ? locationLabel(trip.endLocation) : startLabel;
               const tripDate = trip.startedAt?.toDate?.() ?? new Date();
 
               return (
@@ -324,7 +325,7 @@ export default function Trips() {
                   tripId={trip.tripId}
                   from={startLabel}
                   to={endLabel}
-                  score={trip.score}
+                  score={isCompleted ? Math.round(trip.score) : 0}
                   distance={`${distanceMiles} mi`}
                   date={tripDate.toLocaleDateString('en-GB', {
                     weekday: 'short',
@@ -333,10 +334,11 @@ export default function Trips() {
                   })}
                   duration={`${durationMinutes} min`}
                   events={{
-                    braking: trip.events.hardBrakingCount,
-                    acceleration: trip.events.hardAccelerationCount,
-                    speeding: `${trip.events.speedingSeconds}s`,
+                    braking: trip.events?.hardBrakingCount ?? 0,
+                    acceleration: trip.events?.hardAccelerationCount ?? 0,
+                    speeding: `${trip.events?.speedingSeconds ?? 0}s`,
                   }}
+                  status={isCompleted ? 'completed' : (trip.status === 'recording' ? 'recording' : 'processing')}
                   onTap={() => setLocation(`/trips/${trip.tripId}`)}
                   index={index}
                 />
