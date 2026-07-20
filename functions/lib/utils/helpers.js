@@ -20,7 +20,7 @@ exports.detectAnomalies = detectAnomalies;
 exports.calculateRiskTier = calculateRiskTier;
 exports.calculateProjectedRefund = calculateProjectedRefund;
 const tripProcessor_1 = require("../shared/tripProcessor");
-const refundCalculator_1 = require("../shared/refundCalculator");
+const refund_1 = require("../scoring/refund");
 /**
  * Get current pool period string (e.g., "2026-02")
  */
@@ -177,7 +177,7 @@ function calculateRiskTier(score) {
  */
 function calculateProjectedRefund(score, contributionCents, safetyFactor, _refundRate) {
     const communityScore = 75;
-    return (0, refundCalculator_1.calculateRefundCents)(score, communityScore, contributionCents, safetyFactor, contributionCents);
+    return (0, refund_1.calculateRefundCents)(score, communityScore, contributionCents, safetyFactor, contributionCents);
 }
 // Trip-metrics computation (computeTripMetrics + its private helpers) moved to
 // @driiva/scoring - see functions/src/scoring/tripMetrics.ts (vendored copy,

@@ -1,8 +1,13 @@
+// KEPT (M2): the canonical refund implementation now lives in @driiva/scoring
+// (packages/scoring/src/refund.ts). This file is retained ONLY because the dead
+// legacy server/lib/telematics.ts path still imports it, and that path is
+// deliberately left untouched per the M2 plan pending a future graveyard sweep.
+// All live consumers (client pages, hooks, Cloud Functions) use @driiva/scoring.
+// Do not add new importers of this file.
 /**
- * REFUND CALCULATOR - Single source of truth for refund pool calculations
+ * REFUND CALCULATOR - legacy shim for the dead telematics.ts path
  * =======================================================================
- * All refund-related code (Cloud Functions, server, Python API) must use
- * this formula so refund amounts are consistent everywhere.
+ * Formula is byte-identical to @driiva/scoring's refund.ts.
  *
  * Formula (from CLAUDE.md Hard Stops):
  *   blendedScore = 0.8 * personalScore + 0.2 * communityScore

@@ -7,7 +7,7 @@
 import * as admin from 'firebase-admin';
 import { TripLocation } from '../types';
 import { haversineMeters } from '../shared/tripProcessor';
-import { calculateRefundCents } from '../shared/refundCalculator';
+import { calculateRefundCents } from '../scoring/refund';
 
 /**
  * Get current pool period string (e.g., "2026-02")

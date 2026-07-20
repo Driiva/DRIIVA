@@ -14,6 +14,8 @@ export default defineConfig({
       "@": path.resolve(import.meta.dirname, "client", "src"),
       "@shared": path.resolve(import.meta.dirname, "shared"),
       "@assets": path.resolve(import.meta.dirname, "attached_assets"),
+      "@driiva/contracts": path.resolve(import.meta.dirname, "packages", "contracts", "src"),
+      "@driiva/scoring": path.resolve(import.meta.dirname, "packages", "scoring", "src"),
     },
   },
   root: path.resolve(import.meta.dirname, "client"),

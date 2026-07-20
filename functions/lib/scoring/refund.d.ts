@@ -1,8 +1,11 @@
 /**
- * REFUND CALCULATOR - Single source of truth for refund pool calculations
- * =======================================================================
- * All refund-related code (Cloud Functions, server, Python API) must use
- * this formula so refund amounts are consistent everywhere.
+ * REFUND CALCULATOR
+ * =================
+ * Ported verbatim from `shared/refundCalculator.ts:44` (`functions/src/shared/refundCalculator.ts`
+ * is byte-identical, verified; this ports the one canonical copy). Keeps
+ * the exact arithmetic, including `blendedScore` and `refundRate`, the two
+ * helpers `calculateRefundCents` depends on, and `projectedRefundCents`
+ * (the simplified UI-facing wrapper), all from the same source file.
  *
  * Formula (from CLAUDE.md Hard Stops):
  *   blendedScore = 0.8 * personalScore + 0.2 * communityScore
@@ -11,10 +14,17 @@
  *   Hard cap:      refund <= premiumCents * 0.15
  *
  * All amounts are integer cents. No floats for money.
+ *
+ * NOTE on naming: the rebuild plan's frozen name `calculateRefund` refers to
+ * the 3-arg `telematicsProcessor.calculateRefund(score, safetyFactor, premium)`
+ * convenience wrapper (see docs/rebuild/audit-api-contracts.md API-13/API-26),
+ * a different signature to this 5-arg canonical function. The brief scopes
+ * this task to `shared/refundCalculator.ts:44`'s `calculateRefundCents` only,
+ * so no `calculateRefund` alias is exported here; the signatures don't align.
  */
 /**
  * Calculate the blended score from personal and community scores.
- * Weights: 80% personal, 20% community (locked - see CLAUDE.md Hard Stops).
+ * Weights: 80% personal, 20% community (locked, see CLAUDE.md Hard Stops).
  */
 export declare function blendedScore(personalScore: number, communityScore: number): number;
 /**
@@ -25,6 +35,7 @@ export declare function blendedScore(personalScore: number, communityScore: numb
 export declare function refundRate(score: number): number;
 /**
  * Calculate the projected refund in integer cents.
+ * Frozen signature (M0 Task 2 brief).
  *
  * @param personalScore     Driver's personal safety score (0-100)
  * @param communityScore    Community average score (default 75)
@@ -43,4 +54,4 @@ export declare function calculateRefundCents(personalScore: number, communitySco
  * @returns Projected refund in integer cents
  */
 export declare function projectedRefundCents(personalScore: number, premiumCents: number): number;
-//# sourceMappingURL=refundCalculator.d.ts.map
+//# sourceMappingURL=refund.d.ts.map

@@ -27,7 +27,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import MapLoader from '../components/MapLoader';
 import { useDashboardData, DashboardData } from '@/hooks/useDashboardData';
 import { useCommunityData } from '@/hooks/useCommunityData';
-import { projectedRefundCents } from '../../../shared/refundCalculator';
+import { projectedRefundCents } from '@driiva/scoring';
 import { useBetaEstimate } from '@/hooks/useBetaEstimate';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useToast } from '@/hooks/use-toast';
@@ -177,7 +177,10 @@ function getAiDriivaTip(score: number): typeof AI_DRIIVA_TIPS[0] {
 }
 
 function calculateSurplus(score: number, premiumPounds: number): number {
-  return projectedRefundCents(score, Math.round(premiumPounds * 100));
+  // Pounds for display (WEB-13): projectedRefundCents returns pence, and every
+  // downstream render site (the refund figure, the pounds-denominated bar-width
+  // calc, the "on track for" copy) treats surplusProjection as pounds.
+  return projectedRefundCents(score, Math.round(premiumPounds * 100)) / 100;
 }
 
 // ============================================================================

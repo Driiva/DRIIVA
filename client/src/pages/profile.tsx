@@ -12,6 +12,7 @@ import { ChevronDown, Bell, Pencil, Check, X, Loader2, Shield } from "lucide-rea
 import { timing, easing } from "@/lib/animations";
 import { useAuth } from '../contexts/AuthContext';
 import { useDashboardData } from '@/hooks/useDashboardData';
+import { projectedRefundCents } from '@driiva/scoring';
 import { Shimmer } from '@/components/Shimmer';
 import { AnimatedNumber } from '@/components/AnimatedNumber';
 import { useHaptics } from '@/hooks/useHaptics';
@@ -73,8 +74,10 @@ function PolicyFeature({ icon, title, description }: { icon: string; title: stri
 
 function CoverageTypeSection({ currentScore, coverageType, premiumAmount, loading }: { currentScore: number; coverageType: string | null; premiumAmount: number; loading?: boolean }) {
   const [isExpanded, setIsExpanded] = useState(false);
+  // WEB-17: use the canonical @driiva/scoring refund (blended score, 50-100
+  // scale) instead of a divergent hand-rolled 5-15%/70-100 formula.
   const projectedRefund = currentScore >= 70 && premiumAmount > 0
-    ? ((currentScore - 70) / 30 * 10 + 5) / 100 * premiumAmount
+    ? projectedRefundCents(currentScore, Math.round(premiumAmount * 100)) / 100
     : 0;
 
   if (loading) {

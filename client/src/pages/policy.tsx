@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { useActivePolicy } from '../hooks/useActivePolicy';
 import { DEFAULT_DRIVING_PROFILE } from '../../../shared/firestore-types';
-import { projectedRefundCents } from '../../../shared/refundCalculator';
+import { projectedRefundCents, refundRate as refundRateForScore, blendedScore } from '@driiva/scoring';
 
 function Skeleton({ className = "" }: { className?: string }) {
   return (
@@ -37,7 +37,8 @@ function getScoreLabel(score: number): string {
 }
 
 function calculateProjectedRefund(score: number, premiumCents: number): number {
-  return projectedRefundCents(score, premiumCents);
+  // Pounds for display (WEB-21): projectedRefundCents returns pence.
+  return projectedRefundCents(score, premiumCents) / 100;
 }
 
 export default function PolicyPage() {
@@ -61,8 +62,11 @@ export default function PolicyPage() {
   const projectedRefund = calculateProjectedRefund(profile.currentScore, premiumCents);
   const renewalDate = policy?.renewalDate?.toDate() || userDoc?.activePolicy?.renewalDate?.toDate() || null;
 
+  // WEB-21: derive the displayed refund rate from the SAME canonical @driiva/scoring
+  // refund path the "Projected Refund" figure uses (blended score over the 50-100
+  // scale), not a divergent hand-rolled 5-15%/70-100 formula.
   const refundRate = currentScore >= 70
-    ? (((currentScore - 70) / 30 * 10 + 5)).toFixed(2)
+    ? (refundRateForScore(blendedScore(profile.currentScore, 75)) * 100).toFixed(2)
     : '0.00';
 
   const policyStart = renewalDate

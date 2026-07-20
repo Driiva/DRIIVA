@@ -14,7 +14,7 @@ import { useUserProfile } from './useUserProfile';
 import { useRecentTrips } from './useRecentTrips';
 import { useActivePolicy } from './useActivePolicy';
 import { usePoolState } from './usePoolState';
-import { projectedRefundCents } from '../../../shared/refundCalculator';
+import { projectedRefundCents } from '@driiva/scoring';
 import {
   TripDocument,
   RecentTripSummary,
@@ -149,7 +149,8 @@ function truncateAddress(address: string | null): string {
 }
 
 function calculateProjectedRefund(score: number, premiumCents: number): number {
-  return projectedRefundCents(score, premiumCents);
+  // Pounds for display, consistent with the other money fields on DashboardData.
+  return projectedRefundCents(score, premiumCents) / 100;
 }
 
 function parseMemberSince(rawCreatedAt: unknown): string | null {
