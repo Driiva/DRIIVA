@@ -9,14 +9,26 @@
  */
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
-import { computeTripMetrics } from '../tripMetrics';
+import { computeTripMetrics, haversineMeters } from '../tripMetrics';
 import { tripPointsArb } from './arbitraries';
+
+describe('haversineMeters: near-antipodal robustness', () => {
+  // Exact antipode (-88.2, 0) / (88.2, 180): floating-point rounding pushes the
+  // haversine `a` term fractionally above 1, so an unclamped `Math.sqrt(1 - a)`
+  // takes the root of a negative number and returns NaN. The clamp keeps it finite.
+  it('returns a finite distance for a near-antipodal coordinate pair (no NaN)', () => {
+    const d = haversineMeters(-88.2, 0, 88.2, 180);
+    expect(Number.isNaN(d)).toBe(false);
+    expect(Number.isFinite(d)).toBe(true);
+    expect(d).toBeGreaterThan(0);
+  });
+});
 
 describe('computeTripMetrics: determinism properties', () => {
   it('score is always within [0, 100]', () => {
     fc.assert(
-      fc.property(tripPointsArb(), fc.integer(), (points, startTimestampMs) => {
-        const { score } = computeTripMetrics(points, startTimestampMs);
+      fc.property(tripPointsArb(), (points) => {
+        const { score } = computeTripMetrics(points);
         expect(score).toBeGreaterThanOrEqual(0);
         expect(score).toBeLessThanOrEqual(100);
       })
@@ -25,8 +37,8 @@ describe('computeTripMetrics: determinism properties', () => {
 
   it('every scoreBreakdown sub-score is within [0, 100]', () => {
     fc.assert(
-      fc.property(tripPointsArb(), fc.integer(), (points, startTimestampMs) => {
-        const { scoreBreakdown } = computeTripMetrics(points, startTimestampMs);
+      fc.property(tripPointsArb(), (points) => {
+        const { scoreBreakdown } = computeTripMetrics(points);
         for (const sub of Object.values(scoreBreakdown)) {
           expect(sub).toBeGreaterThanOrEqual(0);
           expect(sub).toBeLessThanOrEqual(100);
@@ -44,7 +56,7 @@ describe('computeTripMetrics: determinism properties', () => {
             .map(shuffled => ({ points, shuffled }))
         ),
         ({ points, shuffled }) => {
-          expect(computeTripMetrics(shuffled, 0)).toEqual(computeTripMetrics(points, 0));
+          expect(computeTripMetrics(shuffled)).toEqual(computeTripMetrics(points));
         }
       )
     );
@@ -52,9 +64,9 @@ describe('computeTripMetrics: determinism properties', () => {
 
   it('purity: repeated calls with the same input produce the same output', () => {
     fc.assert(
-      fc.property(tripPointsArb(), fc.integer(), (points, startTimestampMs) => {
-        const first = computeTripMetrics(points, startTimestampMs);
-        const second = computeTripMetrics(points, startTimestampMs);
+      fc.property(tripPointsArb(), (points) => {
+        const first = computeTripMetrics(points);
+        const second = computeTripMetrics(points);
         expect(second).toEqual(first);
       })
     );

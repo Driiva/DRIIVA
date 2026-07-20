@@ -41,5 +41,5 @@ export declare function haversineMeters(lat1: number, lng1: number, lat2: number
  * This is the core algorithm that processes GPS data to derive metrics and
  * scores. Frozen signature (M0 Task 2 brief).
  */
-export declare function computeTripMetrics(points: TripPoint[], startTimestampMs: number): TripMetrics;
+export declare function computeTripMetrics(points: TripPoint[]): TripMetrics;
 //# sourceMappingURL=tripMetrics.d.ts.map

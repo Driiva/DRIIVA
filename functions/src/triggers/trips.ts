@@ -375,10 +375,9 @@ export async function finalizeTripFromPoints(
     );
     
     // 2. Compute metrics from points
-    const startTimestampMs = tripData.startedAt.toMillis();
     const metrics = await Sentry.startSpan(
       { name: 'computeTripMetrics', op: 'trip.compute' },
-      async () => computeTripMetrics(points, startTimestampMs),
+      async () => computeTripMetrics(points),
     );
     
     functions.logger.info(`Computed metrics for trip ${tripId}:`, {

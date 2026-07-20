@@ -14,7 +14,12 @@ function haversineMeters(lat1, lng1, lat2, lng2) {
     const Δλ = ((lng2 - lng1) * Math.PI) / 180;
     const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
         Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    // Near-antipodal pairs can round `a` fractionally above 1, making
+    // Math.sqrt(1 - a) take the root of a negative number and return NaN. Clamp
+    // to [0, 1] before the sqrt. Unreachable by sequential trip points (metres
+    // apart), but cheap and correct.
+    const aClamped = Math.min(1, Math.max(0, a));
+    const c = 2 * Math.atan2(Math.sqrt(aClamped), Math.sqrt(1 - aClamped));
     return R * c;
 }
 /**
@@ -27,7 +32,7 @@ const calculateDistance = haversineMeters;
  * This is the core algorithm that processes GPS data to derive metrics and
  * scores. Frozen signature (M0 Task 2 brief).
  */
-function computeTripMetrics(points, startTimestampMs) {
+function computeTripMetrics(points) {
     if (points.length < 2) {
         return getDefaultMetrics();
     }

@@ -24,7 +24,7 @@ describe('computeTripMetrics: shape/range assertions reproduced from trips.test.
     { t: 0, lat: 51.5074, lng: -0.1278, spd: 1000, hdg: 90, acc: 5 },
     { t: 1000, lat: 51.5075, lng: -0.1277, spd: 1200, hdg: 91, acc: 5 },
   ];
-  const result = computeTripMetrics(points, 0);
+  const result = computeTripMetrics(points);
 
   it('score is a number within 0-100', () => {
     expect(typeof result.score).toBe('number');

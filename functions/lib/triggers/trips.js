@@ -338,8 +338,7 @@ async function finalizeTripFromPoints(tripId, tripData) {
         // 1b. DPIA compliance check (non-blocking)
         checkDpiaCompliance(tripId, points).catch((err) => functions.logger.warn('DPIA check failed (non-blocking)', { tripId, err }));
         // 2. Compute metrics from points
-        const startTimestampMs = tripData.startedAt.toMillis();
-        const metrics = await Sentry.startSpan({ name: 'computeTripMetrics', op: 'trip.compute' }, async () => (0, tripMetrics_1.computeTripMetrics)(points, startTimestampMs));
+        const metrics = await Sentry.startSpan({ name: 'computeTripMetrics', op: 'trip.compute' }, async () => (0, tripMetrics_1.computeTripMetrics)(points));
         functions.logger.info(`Computed metrics for trip ${tripId}:`, {
             distanceMeters: metrics.distanceMeters,
             durationSeconds: metrics.durationSeconds,
