@@ -660,8 +660,10 @@ export async function updateDriverProfileAndPoolShare(
     }
 
     // Mark this trip as applied so any re-delivery of the same completion is a
-    // no-op (see the idempotency check at the top of this transaction).
-    transaction.update(tripRef, { profileApplied: true });
+    // no-op (see the idempotency check at the top of this transaction). Use a
+    // merge set rather than update so a caller that reaches here before the trip
+    // doc exists (e.g. a future manual-review path) does not throw.
+    transaction.set(tripRef, { profileApplied: true }, { merge: true });
 
     functions.logger.info(`Updated profile for user ${trip.userId}`, {
       newScore: Math.round(newScore * 100) / 100,

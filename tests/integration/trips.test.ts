@@ -6,35 +6,61 @@
  * re-implementations of the trigger logic, so it cannot catch a regression in
  * the real file - see m2-grounding.md section 9).
  *
- * It drives the REAL exported completion path from
- * functions/src/triggers/trips.ts against the Firestore emulator:
- *   1. finalizeTripFromPoints  - CASE 1's finalizer (recording -> processing),
- *      which computes metrics and performs Write B (status -> completed).
- *   2. updateDriverProfileAndPoolShare - the exact function CASE 2 calls when
- *      Write B's status flip re-triggers onTripStatusChange (the second half of
- *      the double-fire).
+ * It drives the REAL exported onTripStatusChange Cloud Function against the
+ * Firestore emulator via its v1 `.run(change, context)` entrypoint (the same
+ * handler Firestore dispatches in production, wrapped by wrapTrigger), for BOTH
+ * halves of the completion cascade:
+ *   CASE 1 (recording -> processing): finalizeTripFromPoints computes metrics and
+ *          performs Write B (status -> completed).
+ *   CASE 2 (processing -> completed): the re-trigger Write B causes in production,
+ *          which updates the driver profile and fires the push / classification /
+ *          AI side effects.
  *
- * The pre-fix bug (m2-grounding.md section 2): finalizeTripFromPoints step 7
- * ALSO called updateDriverProfileAndPoolShare directly, so one real completion
- * applied the profile twice - totalTrips 2, totalMiles doubled, etc. The fix
- * deletes step 7 (CASE 2 is the sole caller) and adds a per-trip idempotency
- * marker inside the transaction, giving "score exactly once per trip" even
- * against a re-delivery or a retried invocation.
+ * Pre-fix bug (m2-grounding.md section 2): finalizeTripFromPoints step 7 ALSO
+ * applied the profile + achievements directly, so one real completion applied the
+ * profile twice (totalTrips 2, totalMiles doubled) and fired the trip-complete
+ * push twice. The fix deletes step 7 (CASE 2 is the sole caller) and adds a
+ * per-trip idempotency marker inside the transaction.
+ *
+ * The push / classification / AI targets are mocked with spies purely to COUNT
+ * how many times each side effect fires per completion (the done-when's "exactly
+ * once"); the real profile transaction (updateDriverProfileAndPoolShare, inside
+ * trips.ts) is NOT mocked and runs against the emulator. Weather is mocked to
+ * keep the run deterministic and offline.
  *
  * IMPORT ORDER MATTERS: './helpers' must be imported before trips.ts so the
  * shared Admin app is initialised before trips.ts's top-level
  * `const db = admin.firestore()` runs - see the module-instance note in
- * tests/integration/helpers.ts. Same reason identity.test.ts imports helpers
- * first.
+ * tests/integration/helpers.ts.
  */
-import { afterAll, describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it, vi } from 'vitest';
 import * as admin from 'firebase-admin';
 import { adminDb, adminApp } from './helpers';
 
-import {
-  finalizeTripFromPoints,
-  updateDriverProfileAndPoolShare,
-} from '../../functions/src/triggers/trips';
+// Mock the side-effect targets so we can count firings. Factories only need the
+// exports trips.ts imports from each module.
+vi.mock('../../functions/src/utils/notifications', () => ({
+  notifyTripComplete: vi.fn().mockResolvedValue(undefined),
+  notifyAchievementsUnlocked: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock('../../functions/src/utils/achievements', () => ({
+  checkAndUnlockAchievements: vi.fn().mockResolvedValue([]),
+  ACHIEVEMENT_DEFINITIONS: [],
+}));
+vi.mock('../../functions/src/http/classifier', () => ({
+  classifyCompletedTrip: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock('../../functions/src/ai/tripAnalysis', () => ({
+  analyzeTrip: vi.fn().mockResolvedValue(null),
+}));
+vi.mock('../../functions/src/utils/weather', () => ({
+  getWeatherForTrip: vi.fn().mockResolvedValue('clear'),
+}));
+
+import { onTripStatusChange } from '../../functions/src/triggers/trips';
+import { notifyTripComplete } from '../../functions/src/utils/notifications';
+import { classifyCompletedTrip } from '../../functions/src/http/classifier';
+import { analyzeTrip } from '../../functions/src/ai/tripAnalysis';
 
 const METERS_PER_MILE = 1609.34;
 
@@ -43,7 +69,7 @@ function uniqueId(label: string): string {
 }
 
 function location(lat: number, lng: number) {
-  return { lat, lng, address: null, placeType: null as null };
+  return { lat, lng, address: null as null, placeType: null as null };
 }
 
 function seedUserDoc(uid: string) {
@@ -93,8 +119,8 @@ function seedUserDoc(uid: string) {
 
 /**
  * A trip in the state the client leaves it after endTrip flips recording ->
- * processing: score/breakdown/events are zeroed (rules-locked on the client
- * write) and get filled in by finalizeTripFromPoints from the GPS points.
+ * processing: score/breakdown/events zeroed (rules-locked on the client write),
+ * filled in by finalizeTripFromPoints from the GPS points.
  */
 function seedProcessingTripDoc(
   tripId: string,
@@ -204,12 +230,39 @@ async function getProfile(userId: string): Promise<admin.firestore.DocumentData>
   return (snap.data() as admin.firestore.DocumentData).drivingProfile;
 }
 
-describe('M2 T2 scoring double-fire (Firestore emulator)', () => {
+/**
+ * Drive the REAL onTripStatusChange Cloud Function the way Firestore dispatches
+ * it: a v1 `.run(change, context)` call with before/after snapshots. The handler
+ * only reads `change.before.data()`, `change.after.data()` and
+ * `context.params.tripId`, so a minimal snapshot stub is faithful.
+ */
+async function runOnUpdate(
+  beforeData: admin.firestore.DocumentData,
+  afterData: admin.firestore.DocumentData,
+  tripId: string,
+): Promise<void> {
+  const change = {
+    before: { data: () => beforeData },
+    after: { data: () => afterData },
+  };
+  const context = { params: { tripId } };
+  await (onTripStatusChange as unknown as {
+    run: (c: unknown, ctx: unknown) => Promise<void>;
+  }).run(change, context);
+}
+
+/** Let fire-and-forget side effects (checkAchievementsAsync etc.) settle. */
+async function settle(ms = 300): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+describe('M2 T2 scoring double-fire (Firestore emulator, real onTripStatusChange)', () => {
   afterAll(async () => {
     await adminApp.delete();
   });
 
-  it('applies a completed trip to the driver profile EXACTLY once (kills the double-fire)', async () => {
+  it('applies a completed trip to the profile EXACTLY once and fires push/classification/AI once each', async () => {
+    vi.clearAllMocks();
     const userId = uniqueId('user-once');
     const tripId = uniqueId('trip-once');
     const pts = normalPoints();
@@ -217,28 +270,38 @@ describe('M2 T2 scoring double-fire (Firestore emulator)', () => {
     const end = location(pts[pts.length - 1].lat, pts[pts.length - 1].lng);
     await seedTrip(tripId, userId, start, end, pts);
 
-    // CASE 1: finalize the trip. This performs Write B (status -> completed)
-    // and, pre-fix, ALSO applied the profile once directly (step 7).
-    await finalizeTripFromPoints(tripId, (await getTrip(tripId)) as never);
+    // CASE 1: recording -> processing. Runs the real finalizer, which performs
+    // Write B (status -> completed). Post-fix it applies NO profile/achievements.
+    const processing = await getTrip(tripId);
+    await runOnUpdate({ ...processing, status: 'recording' }, processing, tripId);
 
     const completed = await getTrip(tripId);
     expect(completed.status).toBe('completed');
 
-    // CASE 2: Write B's status flip re-triggers onTripStatusChange, which calls
-    // updateDriverProfileAndPoolShare with the now-completed trip. This is the
-    // second half of the double-fire.
-    await updateDriverProfileAndPoolShare(completed as never, tripId);
+    // CASE 2: processing -> completed. In production Write B's status flip
+    // dispatches exactly this. It is the sole caller of the profile update and
+    // the push / classification / AI side effects.
+    await runOnUpdate({ ...completed, status: 'processing' }, completed, tripId);
+    await settle();
 
     const profile = await getProfile(userId);
-    // Pre-fix this is 2 (step 7 + CASE 2). Post-fix it must be exactly 1.
+    // Pre-fix this was 2 (step 7 + CASE 2). Post-fix it must be exactly 1.
     expect(profile.totalTrips).toBe(1);
-
-    // A representative accumulator must also be applied once, not doubled.
     const expectedMiles = Math.round((completed.distanceMeters / METERS_PER_MILE) * 100) / 100;
     expect(profile.totalMiles).toBe(expectedMiles);
+
+    // The done-when: each completion side effect fires EXACTLY once - not twice
+    // (the pre-fix double-fire, or a future regression re-adding a direct call
+    // to step 7), not zero (accidentally removed). notifyTripComplete is the
+    // achievements/push wrapper's first action; classifyCompletedTrip and
+    // analyzeTrip are the classification and AI wrappers' targets.
+    expect(notifyTripComplete).toHaveBeenCalledTimes(1);
+    expect(classifyCompletedTrip).toHaveBeenCalledTimes(1);
+    expect(analyzeTrip).toHaveBeenCalledTimes(1);
   });
 
-  it('is idempotent when the same completed trip is delivered again (retry / re-trigger)', async () => {
+  it('is idempotent when the same completed trip is delivered to CASE 2 again', async () => {
+    vi.clearAllMocks();
     const userId = uniqueId('user-idem');
     const tripId = uniqueId('trip-idem');
     const pts = normalPoints();
@@ -246,24 +309,28 @@ describe('M2 T2 scoring double-fire (Firestore emulator)', () => {
     const end = location(pts[pts.length - 1].lat, pts[pts.length - 1].lng);
     await seedTrip(tripId, userId, start, end, pts);
 
-    await finalizeTripFromPoints(tripId, (await getTrip(tripId)) as never);
+    const processing = await getTrip(tripId);
+    await runOnUpdate({ ...processing, status: 'recording' }, processing, tripId);
     const completed = await getTrip(tripId);
     expect(completed.status).toBe('completed');
 
-    // First (legitimate) application.
-    await updateDriverProfileAndPoolShare(completed as never, tripId);
+    // First (legitimate) CASE 2 delivery.
+    await runOnUpdate({ ...completed, status: 'processing' }, completed, tripId);
+    await settle();
     const afterFirst = await getProfile(userId);
     expect(afterFirst.totalTrips).toBe(1);
 
-    // Second delivery of the SAME trip - a duplicate Cloud Function invocation
-    // or a re-trigger. The idempotency marker must make this a no-op.
-    await updateDriverProfileAndPoolShare(completed as never, tripId);
+    // Second delivery of the SAME completion - a duplicate/retried Cloud Function
+    // dispatch. The per-trip marker must make the profile update a no-op.
+    await runOnUpdate({ ...completed, status: 'processing' }, completed, tripId);
+    await settle();
     const afterSecond = await getProfile(userId);
     expect(afterSecond.totalTrips).toBe(1);
     expect(afterSecond.totalMiles).toBe(afterFirst.totalMiles);
   });
 
   it('leaves an anomaly-flagged trip in processing with the profile untouched', async () => {
+    vi.clearAllMocks();
     const userId = uniqueId('user-anom');
     const tripId = uniqueId('trip-anom');
     const pts = impossibleSpeedPoints();
@@ -271,16 +338,24 @@ describe('M2 T2 scoring double-fire (Firestore emulator)', () => {
     const end = location(pts[pts.length - 1].lat, pts[pts.length - 1].lng);
     await seedTrip(tripId, userId, start, end, pts);
 
-    await finalizeTripFromPoints(tripId, (await getTrip(tripId)) as never);
+    // CASE 1 only: the finalizer flags the anomaly, keeps status 'processing',
+    // so Write B never flips to 'completed' and CASE 2 never fires.
+    const processing = await getTrip(tripId);
+    await runOnUpdate({ ...processing, status: 'recording' }, processing, tripId);
+    await settle();
 
     const trip = await getTrip(tripId);
-    // Locks section 6's current behaviour: a flagged trip is left in
-    // 'processing', never scored into the profile (before T8 changes this).
+    // Locks section 6's current behaviour before T8 changes it.
     expect(trip.status).toBe('processing');
     expect(trip.anomalies.flaggedForReview).toBe(true);
 
     const profile = await getProfile(userId);
     expect(profile.totalTrips).toBe(0);
     expect(profile.totalMiles).toBe(0);
+
+    // A flagged trip fires no completion side effects at all.
+    expect(notifyTripComplete).toHaveBeenCalledTimes(0);
+    expect(classifyCompletedTrip).toHaveBeenCalledTimes(0);
+    expect(analyzeTrip).toHaveBeenCalledTimes(0);
   });
 });
