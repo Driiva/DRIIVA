@@ -272,7 +272,7 @@ export default function Trips() {
           </motion.div>
         )}
 
-        {/* Demo trips list — using SwipeTripCard */}
+        {/* Demo trips list - using SwipeTripCard */}
         {isDemoMode && !loading && !error && (
           <motion.div
             className="space-y-3"
@@ -302,7 +302,7 @@ export default function Trips() {
           </motion.div>
         )}
 
-        {/* Real Firestore trips — using SwipeTripCard */}
+        {/* Real Firestore trips - using SwipeTripCard */}
         {hasRealTrips && !loading && !error && (
           <motion.div
             className="space-y-3"
@@ -339,6 +339,7 @@ export default function Trips() {
                     speeding: `${trip.events?.speedingSeconds ?? 0}s`,
                   }}
                   status={isCompleted ? 'completed' : (trip.status === 'recording' ? 'recording' : 'processing')}
+                  flagged={trip.status === 'processing' && trip.anomalies?.flaggedForReview === true}
                   onTap={() => setLocation(`/trips/${trip.tripId}`)}
                   index={index}
                 />

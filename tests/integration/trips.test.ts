@@ -358,4 +358,61 @@ describe('M2 T2 scoring double-fire (Firestore emulator, real onTripStatusChange
     expect(classifyCompletedTrip).toHaveBeenCalledTimes(0);
     expect(analyzeTrip).toHaveBeenCalledTimes(0);
   });
+
+  // M2 T8 (M2-DEC-3): pins the "scored but held, no automatic path out" reality
+  // that the new "Under review" UI state is honest about. A flagged trip DOES
+  // get a real computed score written to its document (finalizeTripFromPoints
+  // step 6 writes score/scoreBreakdown unconditionally), it is simply never
+  // applied to the driver profile and never advanced past 'processing'. Nothing
+  // in the pipeline moves it forward: a later benign update to the doc that does
+  // not change status is an explicit no-op (onTripStatusChange returns early on
+  // an unchanged status), so the trip stays in processing indefinitely. The only
+  // real exits today are the user's own cancelTrip (-> 'failed') or a future
+  // reviewer/auto-resolve mechanism, both OPEN and gated on Jamal's call. If a
+  // future change gives flagged trips an automatic path out, this test turns RED
+  // and forces the M2-DEC-3 conversation instead of silently changing behaviour.
+  it('scores a flagged trip but holds it in processing with no automatic path out (M2-DEC-3)', async () => {
+    vi.clearAllMocks();
+    const userId = uniqueId('user-held');
+    const tripId = uniqueId('trip-held');
+    const pts = impossibleSpeedPoints();
+    const start = location(pts[0].lat, pts[0].lng);
+    const end = location(pts[pts.length - 1].lat, pts[pts.length - 1].lng);
+    await seedTrip(tripId, userId, start, end, pts);
+
+    // CASE 1: the finalizer computes metrics, flags the anomaly, and holds the
+    // trip in 'processing' (Write B does not flip status to 'completed').
+    const processing = await getTrip(tripId);
+    await runOnUpdate({ ...processing, status: 'recording' }, processing, tripId);
+    await settle();
+
+    const held = await getTrip(tripId);
+    expect(held.status).toBe('processing');
+    expect(held.anomalies.flaggedForReview).toBe(true);
+    // Scored-but-held: a real score/breakdown was computed and stored, even
+    // though the trip is not 'completed' and never reached the driver profile.
+    // This is why a flagged trip is NOT the same as a normal in-flight trip that
+    // has no score yet, and why it needs its own honest UI state.
+    expect(typeof held.score).toBe('number');
+    expect(held.scoreBreakdown).toBeTruthy();
+    expect(held.processedAt).toBeNull();
+
+    // A later benign delivery that does not change status (e.g. any subsequent
+    // write to the held doc) must not advance or score it: no transition, no
+    // profile application, no completion side effects.
+    await runOnUpdate(held, held, tripId);
+    await settle();
+
+    const stillHeld = await getTrip(tripId);
+    expect(stillHeld.status).toBe('processing');
+    expect(stillHeld.anomalies.flaggedForReview).toBe(true);
+    expect(stillHeld.score).toBe(held.score);
+
+    const profile = await getProfile(userId);
+    expect(profile.totalTrips).toBe(0);
+    expect(profile.totalMiles).toBe(0);
+    expect(notifyTripComplete).toHaveBeenCalledTimes(0);
+    expect(classifyCompletedTrip).toHaveBeenCalledTimes(0);
+    expect(analyzeTrip).toHaveBeenCalledTimes(0);
+  });
 });

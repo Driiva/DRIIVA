@@ -4,7 +4,7 @@
  */
 import { motion, useMotionValue, useTransform, PanInfo } from 'framer-motion';
 import { useCallback, useState } from 'react';
-import { Map, ChevronRight, Eye } from 'lucide-react';
+import { Map, ChevronRight, Eye, AlertCircle } from 'lucide-react';
 import { haptic } from '@/hooks/useHaptics';
 
 interface SwipeTripCardProps {
@@ -28,6 +28,15 @@ interface SwipeTripCardProps {
    * shows a distinct "in progress" treatment instead of a score of 0.
    */
   status?: 'recording' | 'processing' | 'completed';
+  /**
+   * True when the trip was flagged for review by anomaly detection (impossible
+   * average speed or an extreme GPS jump). A flagged trip sits in 'processing'
+   * status indefinitely - there is no automatic path back out today (see
+   * docs/rebuild/m2-dec-3-anomaly-resolution.md) - so it must NOT wear the same
+   * pulsing "Processing" badge as a trip that will finish scoring in seconds.
+   * This drives a distinct, honest "Under review" treatment instead.
+   */
+  flagged?: boolean;
 }
 
 function getScoreColor(score: number): string {
@@ -53,6 +62,7 @@ export function SwipeTripCard({
   onTap,
   index = 0,
   status = 'completed',
+  flagged = false,
 }: SwipeTripCardProps) {
   const isInFlight = status !== 'completed';
   const x = useMotionValue(0);
@@ -129,9 +139,15 @@ export function SwipeTripCard({
           {isInFlight ? (
             <div className="text-right flex-shrink-0 ml-3">
               <div className="flex items-center gap-1.5 justify-end">
-                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                <span className="text-xs font-semibold text-amber-300">
-                  {status === 'recording' ? 'Recording' : 'Processing'}
+                {flagged ? (
+                  // Steady alert icon, not a pulsing dot: a flagged trip is held,
+                  // not actively computing, so the indicator must not imply motion.
+                  <AlertCircle className="w-3.5 h-3.5 text-indigo-300" />
+                ) : (
+                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                )}
+                <span className={`text-xs font-semibold ${flagged ? 'text-indigo-300' : 'text-amber-300'}`}>
+                  {flagged ? 'Under review' : status === 'recording' ? 'Recording' : 'Processing'}
                 </span>
               </div>
               <div className="text-[11px] text-white/40 mt-0.5">{distance}</div>
@@ -150,7 +166,9 @@ export function SwipeTripCard({
           /* In-flight status line (no final events yet) */
           <div className="mt-3 pt-3 border-t border-white/[0.06] text-center">
             <span className="text-[11px] text-white/45">
-              {status === 'recording'
+              {flagged
+                ? "This trip flagged something unusual - we're checking it"
+                : status === 'recording'
                 ? 'Trip in progress - score pending'
                 : 'Scoring your trip - this can take a moment'}
             </span>
