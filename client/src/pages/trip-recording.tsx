@@ -24,7 +24,6 @@ import {
   endTrip,
   cancelTrip,
   createTripLocation,
-  calculateDefaultScoreBreakdown,
   ActiveTrip,
   TripEvents,
 } from '@/lib/tripService';
@@ -403,17 +402,6 @@ export default function TripRecording() {
 
       // Calculate final stats
       const finalPosition = tracker.currentPosition;
-      const durationSeconds = Math.floor(tripStats.durationMs / 1000);
-
-      // Calculate score
-      const { score, breakdown } = calculateDefaultScoreBreakdown(
-        tripEvents.hardBrakingCount,
-        tripEvents.hardAccelerationCount,
-        tripEvents.speedingSeconds,
-        tripEvents.sharpTurnCount,
-        tripEvents.phonePickupCount,
-        durationSeconds
-      );
 
       // End trip in Firestore
       if (activeTrip && isFirebaseConfigured) {
@@ -425,8 +413,6 @@ export default function TripRecording() {
                 finalPosition?.latitude ?? 0,
                 finalPosition?.longitude ?? 0
               ),
-              score,
-              scoreBreakdown: breakdown,
               events: tripEvents,
               distanceMeters: tripStats.distanceMeters,
             },
@@ -437,10 +423,12 @@ export default function TripRecording() {
         }
       }
 
-      // Show result
+      // Show result. The score is computed server-side (Cloud Function) after
+      // processing GPS points, so it is not known here; show only what is
+      // client-side true and let the trip detail view surface the real score.
       toast({
         title: 'Trip Completed',
-        description: `Score: ${score}/100 • Distance: ${formatDistance(tripStats.distanceMeters)} • ${finalPointsCount} points`,
+        description: `Distance: ${formatDistance(tripStats.distanceMeters)} • ${formatDuration(tripStats.durationMs)} • ${finalPointsCount} points`,
       });
 
       // Reset state

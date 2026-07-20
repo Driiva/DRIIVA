@@ -180,10 +180,6 @@ vi.mock('@/lib/tripService', () => {
     endTrip: (...args: unknown[]) => mockEndTrip(...args),
     cancelTrip: (...args: unknown[]) => mockCancelTrip(...args),
     createTripLocation: (lat: number, lng: number) => ({ latitude: lat, longitude: lng }),
-    calculateDefaultScoreBreakdown: vi.fn(() => ({
-      score: 85,
-      breakdown: { speed: 90, braking: 80, acceleration: 85, cornering: 88, phone: 100 },
-    })),
   };
 });
 
@@ -569,7 +565,7 @@ describe('Trip Recording Page', () => {
       expect(screen.getByRole('button', { name: /saving trip/i })).toBeDisabled();
     });
 
-    it('calls endTrip with trip ID, score data, and shows completion toast', async () => {
+    it('calls endTrip with trip ID and real trip data (no client score), and shows completion toast', async () => {
       mockRequestPermission.mockResolvedValue(true);
       mockStartTrip.mockResolvedValue({
         tripId: 'trip-001',
@@ -597,8 +593,14 @@ describe('Trip Recording Page', () => {
       expect(mockEndTrip).toHaveBeenCalled();
       const callArgs = mockEndTrip.mock.calls[0];
       expect(callArgs[0]).toBe('trip-001');
-      // Second arg is the TripEndInput with score
-      expect(callArgs[1]).toEqual(expect.objectContaining({ score: 85 }));
+      // Second arg is the TripEndInput. The client no longer fabricates a
+      // score; the Cloud Function computes it server-side. Assert on the real
+      // persisted fields and lock in that no client score leaks through.
+      expect(callArgs[1]).toEqual(
+        expect.objectContaining({ distanceMeters: expect.any(Number) })
+      );
+      expect(callArgs[1]).not.toHaveProperty('score');
+      expect(callArgs[1]).not.toHaveProperty('scoreBreakdown');
 
       expect(mockToast).toHaveBeenCalledWith(
         expect.objectContaining({ title: 'Trip Completed' })
