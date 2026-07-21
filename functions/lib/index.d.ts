@@ -35,7 +35,6 @@ export { onPolicyWrite } from './triggers/policies';
 export { onPoolShareWrite } from './triggers/pool';
 export { provisionUserOnSignup } from './triggers/provisionUserOnSignup';
 export { syncUserOnSignup } from './triggers/syncUserOnSignup';
-export { syncTripOnComplete } from './triggers/syncTripOnComplete';
 export { onPendingPaymentWrite } from './triggers/payments';
 export { updateLeaderboards } from './scheduled/leaderboard';
 export { finalizePoolPeriod, recalculatePoolShares } from './scheduled/pool';

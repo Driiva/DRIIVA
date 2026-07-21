@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
 ## 7. Project Structure
 
 ```
-DriivaMVP/
+Driiva/
 ├── mobile/                    # Expo React Native app (THE product)
 │   ├── app/                   # Expo Router file-based routes
 │   │   ├── (auth)/            # Auth group (signin, signup, forgot-password)

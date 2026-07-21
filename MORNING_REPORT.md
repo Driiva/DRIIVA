@@ -101,7 +101,7 @@ Open a preview deploy and walk through the live build, focused on:
 4. Decide on the LCP follow-up branch.
 
 ```bash
-cd /Users/joa/Documents/DriivaMVP/apps/marketing
+cd /Users/joa/Documents/Driiva/apps/marketing
 vercel deploy
 ```
 

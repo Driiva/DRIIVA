@@ -66,7 +66,6 @@ import {
   endTrip,
   cancelTrip,
   createTripLocation,
-  calculateDefaultScoreBreakdown,
 } from "@/lib/tripService";
 import { updateTripStatus } from "@/lib/firestore";
 
@@ -194,8 +193,6 @@ describe("endTrip — the rule-lock contract", () => {
       "trip-9",
       {
         endLocation: createTripLocation(51.6, -0.1),
-        score: 93,
-        scoreBreakdown: {} as never,
         events: {} as never,
         distanceMeters: 12345.67,
       },
@@ -230,41 +227,5 @@ describe("cancelTrip", () => {
     await cancelTrip("trip-9");
     expect(updateTripStatus).toHaveBeenCalledWith("trip-9", "failed");
     expect(fsMock.writeBatch).not.toHaveBeenCalled();
-  });
-});
-
-describe("calculateDefaultScoreBreakdown — client-side default scoring weights", () => {
-  it("clean trip → all components 100, score 100", () => {
-    const { score, breakdown } = calculateDefaultScoreBreakdown(0, 0, 0, 0, 0, 600);
-    expect(score).toBe(100);
-    expect(breakdown).toEqual({
-      speedScore: 100,
-      brakingScore: 100,
-      accelerationScore: 100,
-      corneringScore: 100,
-      phoneUsageScore: 100,
-    });
-  });
-
-  it("penalties: -5/hard brake, -5/hard accel, -1 per 10s speeding, -3/sharp turn; weights 25/25/20/20/10", () => {
-    const { score, breakdown } = calculateDefaultScoreBreakdown(2, 1, 35, 3, 0, 600);
-    expect(breakdown.brakingScore).toBe(90);
-    expect(breakdown.accelerationScore).toBe(95);
-    expect(breakdown.speedScore).toBe(97);
-    expect(breakdown.corneringScore).toBe(91);
-    // 97×.25 + 90×.25 + 95×.2 + 91×.2 + 100×.1 = 93.95 → 94
-    expect(score).toBe(94);
-  });
-
-  it("phone-usage: 5 pickups in 10 min bottoms out at the floor of 20", () => {
-    const { breakdown } = calculateDefaultScoreBreakdown(0, 0, 0, 0, 5, 600);
-    expect(breakdown.phoneUsageScore).toBe(20);
-  });
-
-  it("QUIRK: zero/omitted duration neutralises phone usage entirely (score 100 despite pickups) — mirrors the server-side phonePickupCount-never-wired gap", () => {
-    const { breakdown } = calculateDefaultScoreBreakdown(0, 0, 0, 0, 7, 0);
-    expect(breakdown.phoneUsageScore).toBe(100);
-    const defaulted = calculateDefaultScoreBreakdown(0, 0, 0, 0, 7);
-    expect(defaulted.breakdown.phoneUsageScore).toBe(100);
   });
 });

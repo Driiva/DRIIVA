@@ -3,7 +3,7 @@ import {
   tripDistanceMeters,
   tripDurationSeconds,
 } from '../../shared/tripProcessor.js';
-import { calculateRefundCents } from '../../shared/refundCalculator.js';
+import { calculateRefundCents } from '../../packages/scoring/src/refund.js';
 
 export interface TelematicsData {
   gpsPoints: GPSPoint[];
@@ -208,7 +208,7 @@ export class TelematicsProcessor {
   }
 
   /**
-   * Calculate refund projection — delegates to shared/refundCalculator.ts
+   * Calculate refund projection - delegates to @driiva/scoring (packages/scoring/src/refund.ts)
    */
   calculateRefund(personalScore: number, poolSafetyFactor: number, premiumAmount: number): number {
     const communityScore = 75;

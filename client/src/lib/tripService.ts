@@ -43,8 +43,6 @@ export interface TripStartInput {
 
 export interface TripEndInput {
   endLocation: TripLocation;
-  score: number;
-  scoreBreakdown: ScoreBreakdown;
   events: TripEvents;
   distanceMeters: number;
 }
@@ -399,50 +397,6 @@ export function createTripLocation(
     address,
     placeType,
   };
-}
-
-/**
- * Calculate default score breakdown (placeholder for actual scoring)
- */
-function computePhoneUsageScore(phonePickupCount: number, durationSeconds: number): number {
-  if (durationSeconds <= 0 || phonePickupCount <= 0) return 100;
-  const pickupsPerTenMin = (phonePickupCount / durationSeconds) * 600;
-  return Math.max(20, Math.round(100 - pickupsPerTenMin * 16));
-}
-
-export function calculateDefaultScoreBreakdown(
-  hardBrakingCount: number,
-  hardAccelerationCount: number,
-  speedingSeconds: number,
-  sharpTurnCount: number,
-  phonePickupCount: number = 0,
-  durationSeconds: number = 0
-): { score: number; breakdown: ScoreBreakdown } {
-  // Simple scoring algorithm (production would be more sophisticated)
-  const brakingScore = Math.max(0, 100 - hardBrakingCount * 5);
-  const accelerationScore = Math.max(0, 100 - hardAccelerationCount * 5);
-  const speedScore = Math.max(0, 100 - Math.floor(speedingSeconds / 10));
-  const corneringScore = Math.max(0, 100 - sharpTurnCount * 3);
-  const phoneUsageScore = computePhoneUsageScore(phonePickupCount, durationSeconds);
-
-  const breakdown: ScoreBreakdown = {
-    speedScore,
-    brakingScore,
-    accelerationScore,
-    corneringScore,
-    phoneUsageScore,
-  };
-
-  // Weighted average
-  const score = Math.round(
-    speedScore * 0.25 +
-    brakingScore * 0.25 +
-    accelerationScore * 0.2 +
-    corneringScore * 0.2 +
-    phoneUsageScore * 0.1
-  );
-
-  return { score, breakdown };
 }
 
 // ============================================================================

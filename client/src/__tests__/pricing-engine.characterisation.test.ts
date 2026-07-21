@@ -7,6 +7,15 @@
  * fallback and the pre-quote display source) — the rebuild must reproduce
  * these figures or consciously change them.
  *
+ * M2 repoint (T4): scoreFactor / scoreDiscountPercent are no longer DEFINED in
+ * pricingEngine.ts - they are imported from the canonical @driiva/scoring
+ * package and re-exported (so this suite's import path is unchanged). The
+ * assertions below are deliberately UNCHANGED and still green, which proves the
+ * repointed functions are byte-identical to the deleted local copies (the port
+ * was verified byte-faithful in M0). calculateAnnualPremium still exercises the
+ * canonical scoreFactor through that re-export. WEB-13/WEB-21 are refund-display
+ * bugs in dashboard/policy/profile (not this pricing path), so nothing here moves.
+ *
  * QUIRK pinned: vehicleFactor depends on new Date().getFullYear(), so the
  * same inputs price differently across calendar years. Clock frozen at
  * 2026-07-02 here; the assertions below are only valid at that date.

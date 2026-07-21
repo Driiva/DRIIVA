@@ -1,6 +1,6 @@
 # Driiva Ground-Up Rebuild — Prep Harness (supersedes Foundation Harness plan, 2026-07-02)
 
-> Repo: `~/Documents/DriivaMVP` (remote `mrshippers/Driiva`). Branch discipline: **main is untouched throughout**. All characterisation work lands on `rebuild/characterisation`. Current codebase = behavioural spec: a failing characterisation test is a wrong test, not a bug report.
+> Repo: `~/Documents/Driiva` (remote `mrshippers/Driiva`). Branch discipline: **main is untouched throughout**. All characterisation work lands on `rebuild/characterisation`. Current codebase = behavioural spec: a failing characterisation test is a wrong test, not a bug report.
 > Prior mission (Foundation Harness, June 2026) is COMPLETE — its register + logic-gap findings live in findings.md and are inputs to this mission.
 
 ## Goal

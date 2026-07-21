@@ -1,6 +1,6 @@
 # Driiva — Phase 0 Findings & Structural Error Register
 
-> Read-only ground truth. Repo `~/Documents/DriivaMVP` (remote `mrshippers/Driiva`). Branch `feat/marketing-site-v1` (clean tree, 1 untracked: `.claude/`). Date 2026-06-13.
+> Read-only ground truth. Repo `~/Documents/Driiva` (remote `mrshippers/Driiva`). Branch `feat/marketing-site-v1` (clean tree, 1 untracked: `.claude/`). Date 2026-06-13.
 > Recon = deterministic checks (tsc/build-config/secrets/CI) + 4 parallel read-only sweeps (client / mobile / backend / deps+CI). Sub-agent claims verified where load-bearing.
 
 ## Stack (established)

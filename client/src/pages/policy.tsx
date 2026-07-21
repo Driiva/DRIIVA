@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { useActivePolicy } from '../hooks/useActivePolicy';
 import { DEFAULT_DRIVING_PROFILE } from '../../../shared/firestore-types';
-import { projectedRefundCents } from '../../../shared/refundCalculator';
+import { projectedRefundCents, refundRate as refundRateForScore, blendedScore } from '@driiva/scoring';
 
 function Skeleton({ className = "" }: { className?: string }) {
   return (
@@ -37,7 +37,8 @@ function getScoreLabel(score: number): string {
 }
 
 function calculateProjectedRefund(score: number, premiumCents: number): number {
-  return projectedRefundCents(score, premiumCents);
+  // Pounds for display (WEB-21): projectedRefundCents returns pence.
+  return projectedRefundCents(score, premiumCents) / 100;
 }
 
 export default function PolicyPage() {
@@ -61,9 +62,15 @@ export default function PolicyPage() {
   const projectedRefund = calculateProjectedRefund(profile.currentScore, premiumCents);
   const renewalDate = policy?.renewalDate?.toDate() || userDoc?.activePolicy?.renewalDate?.toDate() || null;
 
-  const refundRate = currentScore >= 70
-    ? (((currentScore - 70) / 30 * 10 + 5)).toFixed(2)
-    : '0.00';
+  // WEB-21 residual: gate the displayed refund rate on the SAME condition and the
+  // SAME unrounded score as the "Projected Refund" figure (projectedRefund > 0, i.e.
+  // calculateRefundCents eligibility at score 70). The old rounded currentScore >= 70
+  // gate diverged from the unrounded projectedRefund at the [69.5, 70) boundary, showing
+  // a live rate next to a "no refund" figure. Same value, same gate = consistent by
+  // construction; empty state matches the figure's placeholder.
+  const refundRate = projectedRefund > 0
+    ? `${(refundRateForScore(blendedScore(profile.currentScore, 75)) * 100).toFixed(2)}%`
+    : '-';
 
   const policyStart = renewalDate
     ? new Date(renewalDate.getFullYear() - 1, renewalDate.getMonth(), renewalDate.getDate())
@@ -193,7 +200,7 @@ export default function PolicyPage() {
                   </div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-green-400">{refundRate}%</div>
+                  <div className="text-2xl font-bold text-green-400">{refundRate}</div>
                   <div className="text-sm text-gray-400">Refund Rate</div>
                   <div className="text-xs text-gray-500 mt-1">
                     {projectedRefund > 0 ? `${formatCurrency(projectedRefund)} projected` : '—'}

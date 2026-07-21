@@ -34,8 +34,6 @@ vi.mock("../storage", () => ({
     createUser: vi.fn(),
     updateUser: vi.fn(),
     getOrCreateUserByFirebase: vi.fn(),
-    createTripSummary: vi.fn(),
-    getTripSummariesByUserId: vi.fn(),
     getDrivingProfile: vi.fn(),
     createDrivingProfile: vi.fn(),
     updateDrivingProfile: vi.fn(),

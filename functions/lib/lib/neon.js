@@ -40,7 +40,6 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getPgUserIdByFirebaseUid = getPgUserIdByFirebaseUid;
 exports.insertUserFromFirebase = insertUserFromFirebase;
-exports.insertTripSummary = insertTripSummary;
 const serverless_1 = require("@neondatabase/serverless");
 const ws = __importStar(require("ws"));
 serverless_1.neonConfig.webSocketConstructor = ws;
@@ -78,29 +77,5 @@ async function insertUserFromFirebase(firebaseUid, email, displayName) {
     const userId = row.id;
     await p.query(`INSERT INTO driving_profiles (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING`, [userId]);
     return userId;
-}
-async function insertTripSummary(row) {
-    const p = getPool();
-    await p.query(`INSERT INTO trips_summary (
-      user_id, firestore_trip_id, started_at, ended_at, distance_km, duration_seconds, score,
-      hard_braking_events, harsh_acceleration, speed_violations, night_driving, sharp_corners,
-      start_address, end_address, created_by
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'syncTripOnComplete')
-    ON CONFLICT (firestore_trip_id) DO NOTHING`, [
-        row.userId,
-        row.firestoreTripId,
-        row.startedAt,
-        row.endedAt,
-        row.distanceKm,
-        row.durationSeconds,
-        row.score,
-        row.hardBrakingEvents ?? 0,
-        row.harshAcceleration ?? 0,
-        row.speedViolations ?? 0,
-        row.nightDriving ?? false,
-        row.sharpCorners ?? 0,
-        row.startAddress ?? null,
-        row.endAddress ?? null,
-    ]);
 }
 //# sourceMappingURL=neon.js.map

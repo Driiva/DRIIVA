@@ -1,6 +1,6 @@
 # Driiva — Claude Code Configuration
 
-> Last updated: 2026-06-08. Canonical Driiva repo: `~/Documents/DriivaMVP` (remote `mrshippers/Driiva`). `~/DRIIVA` (uppercase) is a stale abandoned copy — ignore it. Current working branch: `rebuild/m1-identity` (rebuild/characterisation track). M1 identity cutover is live on prod (5 Jul 2026, `main` untouched); Phase 2 (M2+) gated on Jamal sign-off. The old `feat/marketing-site-v1` marketing work has landed and is superseded by `apps/marketing/`.
+> Last updated: 2026-07-21. Canonical Driiva repo: `~/Documents/Driiva` (remote `mrshippers/Driiva`). Renamed from `~/Documents/DriivaMVP` (MVP dropped from the name); the old `~/Documents/Driiva` business-docs folder (deck, financials, legal, investor material) was merged into this same directory and is gitignored (see `.gitignore`), never tracked. `~/DRIIVA` (uppercase) was a stale abandoned copy - already gone. M1 identity cutover is live on prod; M2 (trips & scoring pipeline repoint, double-fire fix, refund display fixes) is merged to main. The old `feat/marketing-site-v1` marketing work has landed and is superseded by `apps/marketing/`.
 
 ## Project Context
 
@@ -302,12 +302,11 @@ Driiva runs under Jamal's **Shippers** operator brand (GitHub/HF: `mrshippers`) 
 
 | Project | Path | What it is |
 |---|---|---|
-| **Driiva** (this repo) | `~/Documents/DriivaMVP` | Telematics insurtech for young UK drivers. |
+| **Driiva** (this repo) | `~/Documents/Driiva` | Telematics insurtech for young UK drivers. |
 | **StrydeOS** | `~/Documents/AI/strydeos` | Clinical performance SaaS for UK private physio. Flagship. |
 | **TradeMind** | `~/Documents/AI/Shippers/TradeMind` | Mobile AI for UK electricians. Client deliverable. |
 | **shippers-tt** | `~/Documents/AI/Shippers/shippers-tt` | Personal operator system that tracks all ventures. |
 
-⚠ `~/DRIIVA` (uppercase) is a stale abandoned copy of this project — different remote (`mrshippers/DRIIVA.git`), last commit 12 Apr, outdated CLAUDE.md + a 96 MB committed zip. Don't open or act on it; archive/delete when convenient.
 
 ## Constraints
 

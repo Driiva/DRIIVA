@@ -26,8 +26,8 @@ import {
   calculateRiskTier,
   getCurrentPoolPeriod,
   getShareId,
-  computeTripMetrics,
 } from '../utils/helpers';
+import { computeTripMetrics } from '../scoring/tripMetrics';
 import { getWeatherForTrip } from '../utils/weather';
 import { checkAndUnlockAchievements, ACHIEVEMENT_DEFINITIONS } from '../utils/achievements';
 import { notifyTripComplete, notifyAchievementsUnlocked } from '../utils/notifications';
@@ -345,7 +345,11 @@ export const onTripStatusChange = functions
  * 5. Detect anomalies and set final status
  * 6. Update driver stats transactionally
  */
-async function finalizeTripFromPoints(
+// Exported for the M2 emulator integration test (tests/integration/trips.test.ts),
+// which drives the real completion path directly against the Firestore emulator
+// without standing up the functions emulator. Mirrors the provisionUser export
+// pattern M1 used for the same reason.
+export async function finalizeTripFromPoints(
   tripId: string,
   tripData: TripDocument
 ): Promise<void> {
@@ -371,10 +375,9 @@ async function finalizeTripFromPoints(
     );
     
     // 2. Compute metrics from points
-    const startTimestampMs = tripData.startedAt.toMillis();
     const metrics = await Sentry.startSpan(
       { name: 'computeTripMetrics', op: 'trip.compute' },
-      async () => computeTripMetrics(points, startTimestampMs),
+      async () => computeTripMetrics(points),
     );
     
     functions.logger.info(`Computed metrics for trip ${tripId}:`, {
@@ -433,18 +436,15 @@ async function finalizeTripFromPoints(
       flaggedForReview: anomalies.flaggedForReview,
     });
     
-    // 7. If completed (no anomalies), update driver profile.
-    // Classification and AI analysis are NOT triggered here - they fire in
-    // onTripStatusChange (processing → completed) which runs when this update
-    // sets finalStatus = 'completed'. This avoids duplicate Claude API calls.
-    if (finalStatus === 'completed') {
-      const updatedTrip = (await tripRef.get()).data() as TripDocument;
-      await Sentry.startSpan(
-        { name: 'updateDriverProfileAndPoolShare', op: 'trip.profile' },
-        async () => updateDriverProfileAndPoolShare(updatedTrip, tripId),
-      );
-      checkAchievementsAsync(updatedTrip.userId, updatedTrip, tripId);
-    }
+    // 7. Profile, achievements, classification and AI are NOT triggered here.
+    // Write B above flips status processing -> completed, which re-triggers
+    // onTripStatusChange CASE 2. CASE 2 is the SOLE caller of
+    // updateDriverProfileAndPoolShare + checkAchievementsAsync (and the
+    // classification/AI wrappers) on every completion. Calling the profile and
+    // achievements directly here as well was the double-fire: one real
+    // completion scored the driver profile twice (totalTrips/totalMiles/streak
+    // double-counted). CASE 2 fires reliably off that same write, so removing
+    // the direct call fixes the double-count without dropping the update.
 
     functions.logger.info('[metric] trip_pipeline', {
       metric: 'trip_pipeline',
@@ -513,7 +513,8 @@ async function readTripPoints(tripId: string): Promise<TripPoint[]> {
  * Update driver profile and pool share after trip completion
  * This is the main business logic for trip processing
  */
-async function updateDriverProfileAndPoolShare(
+// Exported for the M2 emulator integration test - see finalizeTripFromPoints above.
+export async function updateDriverProfileAndPoolShare(
   trip: TripDocument,
   tripId: string
 ): Promise<void> {
@@ -523,13 +524,25 @@ async function updateDriverProfileAndPoolShare(
     // References
     const userRef = db.collection(COLLECTION_NAMES.USERS).doc(trip.userId);
     const poolShareRef = db.collection(COLLECTION_NAMES.POOL_SHARES).doc(getShareId(trip.userId, period));
-    
+    const tripRef = db.collection(COLLECTION_NAMES.TRIPS).doc(tripId);
+
     // Read current state
-    const [userDoc, poolShareDoc] = await Promise.all([
+    const [userDoc, poolShareDoc, tripDoc] = await Promise.all([
       transaction.get(userRef),
       transaction.get(poolShareRef),
+      transaction.get(tripRef),
     ]);
-    
+
+    // Idempotency: score each trip into the profile exactly once. Write B's
+    // status flip can re-trigger this via onTripStatusChange CASE 2, and a
+    // crashed invocation can be retried by the Cloud Functions runtime. The
+    // per-trip marker is checked and set in this SAME transaction as the
+    // profile update, so the check-and-set is atomic and race-safe.
+    if (tripDoc.exists && tripDoc.data()?.profileApplied === true) {
+      functions.logger.info(`Trip ${tripId} already applied to profile, skipping duplicate`);
+      return;
+    }
+
     if (!userDoc.exists) {
       functions.logger.error(`User ${trip.userId} not found for trip ${tripId}`);
       throw new Error(`User ${trip.userId} not found`);
@@ -644,7 +657,13 @@ async function updateDriverProfileAndPoolShare(
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
     }
-    
+
+    // Mark this trip as applied so any re-delivery of the same completion is a
+    // no-op (see the idempotency check at the top of this transaction). Use a
+    // merge set rather than update so a caller that reaches here before the trip
+    // doc exists (e.g. a future manual-review path) does not throw.
+    transaction.set(tripRef, { profileApplied: true }, { merge: true });
+
     functions.logger.info(`Updated profile for user ${trip.userId}`, {
       newScore: Math.round(newScore * 100) / 100,
       totalTrips: newTotalTrips,

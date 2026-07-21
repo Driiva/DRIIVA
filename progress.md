@@ -57,3 +57,6 @@ Branch 3 (toolchain) → 4 (dead-code, verified deletes) → 5 (entrypoint drift
 - **Maestro: 6 flows authored, blocked** — iOS unbuildable from source on this toolchain (gRPC/Xcode 26; retry produced a hollow .app), ios/ not git-tracked, no eas.json, no Firebase native config. All documented in mobile/.maestro/README.md.
 - **Unit total: 412 passed + 2 todo (from 248 at session start).** Coverage report + manual-verify list (17 items) + needs-input list (3 items) → findings.md §1c.
 - Errors log: create-firebase-test-users.ts needs Admin creds (absent from .env.staging) → seeding on needs-input list. First Playwright mass-failure = parallel workers vs dev-server cold transforms (fixed: workers 1, 60s timeout); second = the vite.ts process.exit (fixed).
+
+## 2026-07-20 - Repo relocated + renamed
+- Canonical repo moved from `~/Documents/DriivaMVP` to `~/Documents/Driiva` (MVP dropped from the name; same remote `mrshippers/Driiva`, git history/worktrees intact via `git worktree repair`). The line above ("`~/Documents/Driiva` is an assets/docs folder, ignore") no longer applies - that pre-existing business-docs folder was merged into this same directory and is now gitignored (Branding/, Finance/, Marketing/, Investor Decks/, etc.), never tracked. Update any hardcoded `~/Documents/DriivaMVP` paths in scripts/muscle memory.

@@ -4,7 +4,7 @@
   "description": "Firebase Cloud Functions for Driiva telematics app",
   "main": "lib/index.js",
   "scripts": {
-    "prebuild": "npm run build --prefix ../packages/contracts && cp ../shared/tripProcessor.ts src/shared/tripProcessor.ts && cp ../shared/refundCalculator.ts src/shared/refundCalculator.ts",
+    "prebuild": "npm run build --prefix ../packages/contracts && cp ../shared/tripProcessor.ts src/shared/tripProcessor.ts && cp ../packages/scoring/src/tripMetrics.ts src/scoring/tripMetrics.ts && cp ../packages/scoring/src/refund.ts src/scoring/refund.ts",
     "build": "npm run prebuild && tsc",
     "build:watch": "tsc --watch",
     "serve": "npm run build && firebase emulators:start --only functions",

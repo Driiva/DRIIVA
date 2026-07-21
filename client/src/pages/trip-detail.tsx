@@ -17,7 +17,12 @@ import DrivingAIFeedbackWidget from '../components/DrivingAIFeedbackWidget';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFirestoreDoc } from '@/hooks/useFirestoreDoc';
 import { useFeatureFlags } from '@/hooks/useFeatureFlags';
+import { SCORE_WEIGHTS } from '@driiva/scoring';
 import type { TripDocument, TripPoint } from '../../../shared/firestore-types';
+
+function weightLabel(weight: number): string {
+  return `${Math.round(weight * 100)}%`;
+}
 
 const TripAIInsights = lazy(() => import('../components/TripAIInsights'));
 
@@ -250,11 +255,11 @@ export default function TripDetail() {
           </h2>
           <div className="space-y-3">
             {[
-              { label: 'Speed', value: trip.scoreBreakdown.speedScore, weight: '25%' },
-              { label: 'Braking', value: trip.scoreBreakdown.brakingScore, weight: '25%' },
-              { label: 'Acceleration', value: trip.scoreBreakdown.accelerationScore, weight: '20%' },
-              { label: 'Cornering', value: trip.scoreBreakdown.corneringScore, weight: '20%' },
-              { label: 'Phone Usage', value: trip.scoreBreakdown.phoneUsageScore, weight: '10%' },
+              { label: 'Speed', value: trip.scoreBreakdown.speedScore, weight: weightLabel(SCORE_WEIGHTS.speed) },
+              { label: 'Braking', value: trip.scoreBreakdown.brakingScore, weight: weightLabel(SCORE_WEIGHTS.braking) },
+              { label: 'Acceleration', value: trip.scoreBreakdown.accelerationScore, weight: weightLabel(SCORE_WEIGHTS.acceleration) },
+              { label: 'Cornering', value: trip.scoreBreakdown.corneringScore, weight: weightLabel(SCORE_WEIGHTS.cornering) },
+              { label: 'Phone Usage', value: trip.scoreBreakdown.phoneUsageScore, weight: weightLabel(SCORE_WEIGHTS.phoneUsage) },
             ].map((item) => (
               <div key={item.label}>
                 <div className="flex items-center justify-between mb-1">

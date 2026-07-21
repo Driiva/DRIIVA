@@ -6,7 +6,7 @@
 
 Three files touch "the server," but only one path is live in each environment:
 
-- **`server/app.ts`** (`/Users/joa/Documents/DriivaMVP/server/app.ts`) — the single source of truth for the Express app (middleware chain + `registerRoutes`). Exports `app` and `ready` (a promise that resolves once routes are registered and the error handler is attached).
+- **`server/app.ts`** (`/Users/joa/Documents/Driiva/server/app.ts`) — the single source of truth for the Express app (middleware chain + `registerRoutes`). Exports `app` and `ready` (a promise that resolves once routes are registered and the error handler is attached).
 - **`server/index.ts`** (`server/index.ts:1-36`) — self-host/local-dev entry only. Imports `app`/`ready` from `app.ts`, adds Vite dev middleware or static serving, and calls `server.listen(PORT)`. Used by `npm run dev` and `npm start` (`dist/index.js`, esbuild-bundled from `server/index.ts` per `package.json`'s `build` script). **Does not run on Vercel.**
 - **`api/index.ts`** (`api/index.ts:1-43`) — the actual Vercel serverless entrypoint. Dynamically imports `api/_server.js`, which `vercel.json`'s `buildCommand` produces by esbuild-bundling `server/app.ts` (not `server/index.ts`) directly. Awaits `mod.ready` then delegates `(req,res)` to the Express app as a raw handler.
 - **QUIRK**: `package.json`'s `build` script (`esbuild server/index.ts ... --outdir=dist`) and `vercel.json`'s `buildCommand` (`esbuild server/app.ts ... --outfile=api/_server.js`) bundle two different entry files. This is intentional per the comment in `server/index.ts:1-15` (self-host needs Vite/static serving, Vercel doesn't) but means `npm run build` output (`dist/index.js`) is never what ships to production.
