@@ -94,8 +94,9 @@ Quirk dispositions to decide in-module: dead `onboardingCompleted` field (drop),
 
 ### M2: Trips & scoring pipeline
 
-Scope: tripService streaming (keep the June-hardened batch-index contract — pinned tests carry over), scoring via `@driiva/scoring` in ONE idempotent Cloud Function (event-versioned trip doc; kills the double-fire and the four-implementation split), trip history + detail + route map, anomaly handling (persist-flagged vs reject policy made explicit), phone-usage weight either wired or removed-and-renormalised (CONTEXT.md Rule 8 either way).
-**New integration test:** emulator round-trip — endTrip status flip → function scores → profile updated EXACTLY once (regression lock on the double-fire).
+Scope: tripService streaming (keep the June-hardened batch-index contract - pinned tests carry over), scoring via `@driiva/scoring` in ONE idempotent Cloud Function (event-versioned trip doc; kills the double-fire and the four-implementation split), trip history + detail + route map, anomaly handling (persist-flagged vs reject policy made explicit), phone-usage weight either wired or removed-and-renormalised (CONTEXT.md Rule 8 either way).
+**New integration test:** emulator round-trip - endTrip status flip → function scores → profile updated EXACTLY once (regression lock on the double-fire).
+**Status (21 Jul 2026):** `rebuild/m2-trips` merged to main. A whole-branch-review follow-up (T9) closed separately - server-side refund in `server/lib/telematics.ts` repointed from the retired `shared/refundCalculator.ts` shim to the canonical `@driiva/scoring` source; the policy page's displayed refund rate now gates on the same `projectedRefund > 0` condition and unrounded score as the projected-refund figure, fixing a live rate showing next to a "no refund" result at the 69.5-70 score boundary. Display-only, no scoring or refund formula changed.
 
 ### M3: Dashboard, leaderboard, community pool — **blocked on D6**
 

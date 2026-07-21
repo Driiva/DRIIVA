@@ -5,6 +5,13 @@
 
 ## Entries
 
+### 2026-07-21 – M2 Trips & Scoring Merge, Refund Consistency Fix, Repo Rename
+
+- **M2 module** (`merge rebuild/m2-trips`) - the trips and scoring pipeline module merged into main.
+- **Refund consistency** (`fix(m2)`, T9 whole-branch-review follow-up) - `server/lib/telematics.ts` now imports refund calculation from the canonical `@driiva/scoring` package instead of the retired `shared/refundCalculator.ts` shim (deleted, along with its test - coverage was byte-identical to the scoring package's own test). The policy page's displayed refund rate now gates on the same `projectedRefund > 0` condition and unrounded score as the projected-refund figure, fixing a case where a live rate showed next to a "no refund" result at the 69.5-70 score boundary. Display-only; no scoring or refund formula changed.
+- **Email design system** (`fix(design-system)`) - the canonical email shell (`design-system/email-shell.html`) is now a full HTML document with a zero-margin, background-matched body and `bgcolor` attributes on the outer tables, fixing white dead space that receiving clients (and Outlook's rendering engine, which ignores CSS background on tables) were adding around the dark card.
+- **Repo rename** - the repo is canonically `DriivaMVP` → `Driiva` (same remote, now at `~/Documents/Driiva`); the pre-existing business-docs folder (deck, financials, legal, investor docs) was merged into the same directory and is gitignored, never tracked. Stale path references updated across docs.
+
 ### 2026-06-26 – P0 Critical Blockers + Security Pass (logic-gap harness)
 
 Seven commits landed in one batch after a logic-gap harness audit identified release-blocking issues.
