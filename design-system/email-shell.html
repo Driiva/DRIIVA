@@ -32,10 +32,34 @@
     driiva.co.uk is a verified Resend domain (DKIM live; DMARC passes via DKIM).
     Confirmed lands in INBOX (not spam). Give every image descriptive alt text;
     Gmail may gate images for a brand-new sender until "show images" is clicked.
+
+  WHITE DEAD-SPACE FIX (21 Jul 2026): this file is a FULL HTML document, not a
+    bare table fragment. A fragment with no <body> background gets wrapped by
+    the receiving client in its own default (white, 8px-margin) body, which
+    shows through as dead space around the dark card. The <body> here is
+    zero-margin + background-matched, and both outer tables carry a `bgcolor`
+    attribute alongside their CSS background (Outlook's Word engine ignores
+    CSS background on tables entirely and only reads the HTML attribute).
+    Keep both the DOCTYPE/html/body wrapper AND the bgcolor attributes intact
+    when editing - dropping either one reintroduces the white margin.
   ============================================================================
 -->
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#050509;background-image:radial-gradient(1100px 520px at 50% -22%,rgba(107,95,220,0.12),transparent 60%);padding:40px 16px"><tbody><tr><td align="center">
- <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:100%;background:#0a0a14;border:1px solid rgba(255,255,255,0.08);border-radius:18px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.55)"><tbody>
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="color-scheme" content="dark light">
+<meta name="supported-color-schemes" content="dark light">
+<title></title>
+<!--[if mso]>
+<style type="text/css">table,td,div,h1,p,span{font-family:Arial,sans-serif !important;}</style>
+<![endif]-->
+</head>
+<body style="margin:0;padding:0;width:100%;background:#050509;background-color:#050509;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#050509" style="background:#050509;background-color:#050509;background-image:radial-gradient(1100px 520px at 50% -22%,rgba(107,95,220,0.12),transparent 60%);padding:40px 16px"><tbody><tr><td align="center">
+ <table role="presentation" width="600" cellpadding="0" cellspacing="0" bgcolor="#0a0a14" style="width:600px;max-width:100%;background:#0a0a14;background-color:#0a0a14;border:1px solid rgba(255,255,255,0.08);border-radius:18px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.55)"><tbody>
 
   <!-- signature brand gradient as the surface hairline (amber warns, indigo grounds) -->
   <tr><td style="height:3px;line-height:3px;font-size:0;background:linear-gradient(90deg,#d4850a 0%,#a04c2a 34%,#6b3fa0 68%,#3b2d8b 100%)">&nbsp;</td></tr>
@@ -93,3 +117,5 @@
 
  </tbody></table>
 </td></tr></tbody></table>
+</body>
+</html>
