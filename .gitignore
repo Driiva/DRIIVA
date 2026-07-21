@@ -58,3 +58,18 @@ dev-server.log
 
 # Subagent-driven-development scratch (ledger + task briefs/reports)
 .superpowers/
+
+# Business/confidential assets merged in from the old ~/Documents/Driiva
+# folder (deck, financials, legal, investor material) - never code, never tracked
+/Branding/
+/Conceptual Framework/
+/Driiva HyperFrames/
+/Driiva Stages/
+/Driiva-Deck.pptx
+/Finance/
+/Investor Decks/
+/Legal + Compliance/
+/Marketing/
+/Misc\ /
+/MVP/
+/Research/

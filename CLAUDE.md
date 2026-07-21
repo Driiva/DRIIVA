@@ -1,6 +1,6 @@
 # Driiva — Claude Code Configuration
 
-> Last updated: 2026-06-08. Canonical Driiva repo: `~/Documents/DriivaMVP` (remote `mrshippers/Driiva`). `~/DRIIVA` (uppercase) is a stale abandoned copy — ignore it. Current working branch: `feat/marketing-site-v1` (unmerged to `main`).
+> Last updated: 2026-07-20. Canonical Driiva repo: `~/Documents/Driiva` (remote `mrshippers/Driiva`). Renamed from `~/Documents/DriivaMVP` (MVP dropped from the name); the old `~/Documents/Driiva` business-docs folder (deck, financials, legal, investor material) was merged into this same directory and is gitignored (see `.gitignore`), never tracked. `~/DRIIVA` (uppercase) was a stale abandoned copy - already gone.
 
 ## Project Context
 
@@ -285,12 +285,11 @@ Driiva runs under Jamal's **Shippers** operator brand (GitHub/HF: `mrshippers`) 
 
 | Project | Path | What it is |
 |---|---|---|
-| **Driiva** (this repo) | `~/Documents/DriivaMVP` | Telematics insurtech for young UK drivers. |
+| **Driiva** (this repo) | `~/Documents/Driiva` | Telematics insurtech for young UK drivers. |
 | **StrydeOS** | `~/Desktop/StrydeOS` | Clinical performance SaaS for UK private physio. Flagship. |
 | **TradeMind** | `~/Downloads/AI/Shippers/TradeMind` | Mobile AI for UK electricians. Client deliverable. |
 | **shippers-tt** | `~/Projects/shippers-tt` | Personal operator system that tracks all ventures. |
 
-⚠ `~/DRIIVA` (uppercase) is a stale abandoned copy of this project — different remote (`mrshippers/DRIIVA.git`), last commit 12 Apr, outdated CLAUDE.md + a 96 MB committed zip. Don't open or act on it; archive/delete when convenient.
 
 ## Constraints
 
