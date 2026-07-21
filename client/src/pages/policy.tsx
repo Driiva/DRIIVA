@@ -62,12 +62,15 @@ export default function PolicyPage() {
   const projectedRefund = calculateProjectedRefund(profile.currentScore, premiumCents);
   const renewalDate = policy?.renewalDate?.toDate() || userDoc?.activePolicy?.renewalDate?.toDate() || null;
 
-  // WEB-21: derive the displayed refund rate from the SAME canonical @driiva/scoring
-  // refund path the "Projected Refund" figure uses (blended score over the 50-100
-  // scale), not a divergent hand-rolled 5-15%/70-100 formula.
-  const refundRate = currentScore >= 70
-    ? (refundRateForScore(blendedScore(profile.currentScore, 75)) * 100).toFixed(2)
-    : '0.00';
+  // WEB-21 residual: gate the displayed refund rate on the SAME condition and the
+  // SAME unrounded score as the "Projected Refund" figure (projectedRefund > 0, i.e.
+  // calculateRefundCents eligibility at score 70). The old rounded currentScore >= 70
+  // gate diverged from the unrounded projectedRefund at the [69.5, 70) boundary, showing
+  // a live rate next to a "no refund" figure. Same value, same gate = consistent by
+  // construction; empty state matches the figure's placeholder.
+  const refundRate = projectedRefund > 0
+    ? `${(refundRateForScore(blendedScore(profile.currentScore, 75)) * 100).toFixed(2)}%`
+    : '-';
 
   const policyStart = renewalDate
     ? new Date(renewalDate.getFullYear() - 1, renewalDate.getMonth(), renewalDate.getDate())
@@ -197,7 +200,7 @@ export default function PolicyPage() {
                   </div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-green-400">{refundRate}%</div>
+                  <div className="text-2xl font-bold text-green-400">{refundRate}</div>
                   <div className="text-sm text-gray-400">Refund Rate</div>
                   <div className="text-xs text-gray-500 mt-1">
                     {projectedRefund > 0 ? `${formatCurrency(projectedRefund)} projected` : '—'}
