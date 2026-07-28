@@ -57,6 +57,12 @@ vi.mock("../storage", () => ({
     deleteUserData: vi.fn(),
     updateStripeCustomerId: vi.fn(),
     getUserByStripeCustomerId: vi.fn(),
+    getStripeEventById: vi.fn(),
+    createStripeEvent: vi.fn(),
+    markStripeEventProcessed: vi.fn(),
+    markStripeEventFailed: vi.fn(),
+    getPolicyByStripeSubscriptionId: vi.fn(),
+    updatePolicy: vi.fn(),
   },
 }));
 

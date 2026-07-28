@@ -111,6 +111,22 @@ export const policies = pgTable("policies", {
   updatedBy: text("updated_by"),
 });
 
+/**
+ * Idempotency + audit record for inbound Stripe webhook events.
+ * `id` is Stripe's own `event.id` (primary key doubles as the UNIQUE constraint) so a
+ * redelivered event can be looked up directly - no separate surrogate key needed.
+ * status: received (row written before processing) → processed (side effects done) /
+ * failed (handler threw; Stripe will redeliver and the retry is reprocessed, not skipped).
+ */
+export const stripeEvents = pgTable("stripe_events", {
+  id: text("id").primaryKey(),
+  type: text("type").notNull(),
+  status: text("status").notNull().default("received"),
+  payload: json("payload").notNull(),
+  processedAt: timestamp("processed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const achievements = pgTable("achievements", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -292,6 +308,10 @@ export const insertWebauthnCredentialSchema = createInsertSchema(webauthnCredent
   lastUsed: true,
 });
 
+export const insertStripeEventSchema = createInsertSchema(stripeEvents).omit({
+  createdAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -313,3 +333,5 @@ export type InsertIncident = z.infer<typeof insertIncidentSchema>;
 export type Leaderboard = typeof leaderboard.$inferSelect;
 export type WebauthnCredential = typeof webauthnCredentials.$inferSelect;
 export type InsertWebauthnCredential = z.infer<typeof insertWebauthnCredentialSchema>;
+export type StripeEvent = typeof stripeEvents.$inferSelect;
+export type InsertStripeEvent = z.infer<typeof insertStripeEventSchema>;

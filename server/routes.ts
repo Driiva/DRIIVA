@@ -1063,19 +1063,27 @@ export async function registerRoutes(app: Express): Promise<void> {
    * Events handled:
    *   invoice.payment_succeeded      → write a Firestore pendingPayment so the app /
    *                                    Root binds cover (the money-in / cover path).
-   *   invoice.payment_failed         → resolve the user + structured warn so ops can
-   *                                    act. No past_due flag is persisted yet: this
-   *                                    service has no subscription/policy status store
-   *                                    (the policy lifecycle lives in Firestore/Root).
-   *                                    TODO: persist past_due + notify the customer.
-   *   customer.subscription.deleted  → resolve the user + structured log. No policy
-   *                                    cancellation is performed: there is no
-   *                                    cancellation primitive on this service, the
-   *                                    policy lifecycle is owned by Firestore/Root.
-   *                                    TODO: cancel the bound policy via Root/Firestore.
-   *   checkout.session.completed     → structured log of the one-off purchase. No
-   *                                    fulfilment path exists for one-time checkouts.
-   *                                    TODO: fulfil add-on purchases once defined.
+   *   invoice.payment_failed         → resolve the user, persist a past_due flag on
+   *                                    the bound policy (reuses policies.status -
+   *                                    no new column) + structured warn.
+   *   customer.subscription.deleted  → resolve the user, transition the bound policy
+   *                                    to cancelled (reuses policies.status). Direct
+   *                                    transition is a stopgap: route through the
+   *                                    Task 3/4 policy lifecycle state machine once
+   *                                    it lands on this branch.
+   *   checkout.session.completed     → session → entitlement lookup → grant. No
+   *                                    product/entitlement catalog exists yet, so
+   *                                    this path is wired but grants nothing - an
+   *                                    explicit structured no-op log, not a silent
+   *                                    skip.
+   *
+   * Idempotency + audit: every event with an `id` gets a `stripe_events` row
+   * (status received) written before processing, same side of the ACK boundary as
+   * the switch below - see the comment ahead of the try block for why. A duplicate
+   * delivery of an event already marked `processed` short-circuits: ack 200 without
+   * re-running the switch. A duplicate of an event still `received` or `failed` is
+   * NOT skipped - it re-enters the switch so Stripe's redelivery-on-non-2xx keeps
+   * working for events whose side effects never actually completed.
    */
   app.post("/api/webhooks/stripe", webhookLimiter, async (req, res) => {
     let event: any;
@@ -1089,10 +1097,29 @@ export async function registerRoutes(app: Express): Promise<void> {
       return res.status(400).json({ message: `Webhook Error: ${err.message}` });
     }
 
+    // Idempotency + audit: check/record the event BEFORE processing, still before the
+    // ACK. A lookup/write failure here is not fatal to the request (no event.id is a
+    // legitimate case for malformed/test payloads) - it degrades to "process without
+    // a dedupe guarantee" rather than blocking the critical side effects below.
+    if (event.id) {
+      try {
+        const existing = await storage.getStripeEventById(event.id);
+        if (existing?.status === 'processed') {
+          console.log(`[Stripe webhook] Duplicate event ${event.id} already processed - skipping`);
+          return res.json({ received: true });
+        }
+        if (!existing) {
+          await storage.createStripeEvent({ id: event.id, type: event.type, payload: event });
+        }
+      } catch (auditErr) {
+        console.warn('[Stripe webhook] stripe_events lookup/write failed - proceeding without dedupe:', auditErr);
+      }
+    }
+
     // Process BEFORE acknowledging. A payment that binds a policy is a critical
     // side effect: if it throws we must return a non-2xx so Stripe redelivers the
-    // event. ACKing first (200) and processing async means a failed bind — Firestore
-    // down, Admin not initialised, transient Root error — is dropped forever with no
+    // event. ACKing first (200) and processing async means a failed bind - Firestore
+    // down, Admin not initialised, transient Root error - is dropped forever with no
     // retry, leaving a charged customer with no cover (money-in / no-cover).
     try {
       switch (event.type) {
@@ -1137,9 +1164,26 @@ export async function registerRoutes(app: Express): Promise<void> {
             driivUserId,
             firebaseUid,
           });
-          // TODO: persist a past_due flag + notify the customer. No subscription /
-          // policy status store exists on this service yet (the policy lifecycle is
-          // owned by Firestore/Root), so we cannot mark past_due here.
+          // Persist past_due against the bound policy. Reuses policies.status (no new
+          // column - the field already exists and takes free-text values like
+          // "pending"/"active"). This IS a critical side effect (unlike the lookup
+          // above): if the write fails we rethrow so the outer catch 500s and Stripe
+          // redelivers, rather than silently dropping a past_due transition.
+          const failedSubscriptionId = invoice.subscription as string | undefined;
+          if (failedSubscriptionId) {
+            try {
+              const policy = await storage.getPolicyByStripeSubscriptionId(failedSubscriptionId);
+              if (policy) {
+                await storage.updatePolicy(policy.id, { status: 'past_due' });
+                console.log(`[Stripe webhook] Policy ${policy.id} marked past_due`);
+              } else {
+                console.warn(`[Stripe webhook] No policy bound to subscription ${failedSubscriptionId} - cannot persist past_due`);
+              }
+            } catch (policyErr) {
+              console.error('[Stripe webhook] Failed to persist past_due flag:', policyErr);
+              throw policyErr;
+            }
+          }
           break;
         }
         case 'customer.subscription.deleted': {
@@ -1159,9 +1203,24 @@ export async function registerRoutes(app: Express): Promise<void> {
             driivUserId,
             firebaseUid,
           });
-          // TODO: cancel the bound policy. This service has no policy-cancellation
-          // primitive — the policy lifecycle is owned by Firestore/Root, so the
-          // cancellation must go through that path (intentionally not done here).
+          // Transition the bound policy towards cancelled (reuses policies.status).
+          // TODO(Task 3/4): this is a direct, stopgap status transition, not a real
+          // state machine. Once the policy lifecycle state machine lands (Task 3/4),
+          // route this through it instead of setting status here directly - it
+          // currently has no knowledge of valid prior states or side effects that
+          // should fire on cancellation (refunds, pool exit, notifications).
+          try {
+            const policy = await storage.getPolicyByStripeSubscriptionId(sub.id as string);
+            if (policy) {
+              await storage.updatePolicy(policy.id, { status: 'cancelled' });
+              console.log(`[Stripe webhook] Policy ${policy.id} cancelled`);
+            } else {
+              console.warn(`[Stripe webhook] No policy bound to subscription ${sub.id} - cannot cancel`);
+            }
+          } catch (policyErr) {
+            console.error('[Stripe webhook] Failed to cancel policy:', policyErr);
+            throw policyErr;
+          }
           break;
         }
         case 'checkout.session.completed': {
@@ -1172,18 +1231,45 @@ export async function registerRoutes(app: Express): Promise<void> {
             mode: session.mode,
             amountTotal: session.amount_total,
           });
-          // TODO: fulfil one-off purchases (add-ons). No fulfilment path exists for
-          // one-time checkouts yet; map products to entitlements here once defined.
+          // Session → entitlement lookup → grant. No product/entitlement catalog
+          // exists anywhere in this codebase yet (grepped shared/schema.ts,
+          // server/storage.ts, client/src for "entitlement"/"addon"/"add-on" - zero
+          // hits), so this path is real and wired but currently grants nothing.
+          // Explicit structured no-op, not a silent skip, so ops can see fulfilment
+          // was considered and deliberately deferred.
+          console.log('[Stripe webhook] checkout.session.completed: no entitlement catalog defined yet - granting nothing', {
+            sessionId: session.id,
+            customerId: session.customer ?? undefined,
+          });
           break;
         }
         default:
-          // Unhandled event type — ignore silently
+          // Unhandled event type - ignore silently
       }
       // All handled (or intentionally ignored) without throwing → acknowledge.
+      // Mark the audit row processed. A failure to mark it is not re-thrown: the
+      // critical side effects above already succeeded, and rethrowing here would
+      // turn an audit-only write failure into a spurious Stripe retry that reruns
+      // side effects that already landed. The row simply stays "received" and a
+      // genuine retry will re-attempt (safe: reprocessing is idempotent per handler).
+      if (event.id) {
+        try {
+          await storage.markStripeEventProcessed(event.id);
+        } catch (markErr) {
+          console.warn('[Stripe webhook] Could not mark stripe_events processed:', markErr);
+        }
+      }
       res.json({ received: true });
     } catch (err) {
       // Do NOT swallow: a 5xx tells Stripe to redeliver so the side effect retries.
       console.error("[Stripe webhook] Handler error, returning 500 for Stripe retry:", err);
+      if (event?.id) {
+        try {
+          await storage.markStripeEventFailed(event.id);
+        } catch (markErr) {
+          console.warn('[Stripe webhook] Could not mark stripe_events failed:', markErr);
+        }
+      }
       res.status(500).json({ message: "Webhook handler failed; will be retried" });
     }
   });

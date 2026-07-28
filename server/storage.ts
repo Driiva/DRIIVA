@@ -1,4 +1,4 @@
-import { 
+import {
   users,
   drivingProfiles,
   trips,
@@ -7,6 +7,8 @@ import {
   userAchievements,
   incidents,
   leaderboard,
+  policies,
+  stripeEvents,
   type User,
   type InsertUser,
   type DrivingProfile,
@@ -20,7 +22,10 @@ import {
   type InsertUserAchievement,
   type Incident,
   type InsertIncident,
-  type Leaderboard
+  type Leaderboard,
+  type Policy,
+  type InsertPolicy,
+  type StripeEvent,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, and, gte, lte, sql } from "drizzle-orm";
@@ -80,6 +85,16 @@ export interface IStorage {
   // Stripe operations
   updateStripeCustomerId(userId: number, stripeCustomerId: string): Promise<void>;
   getUserByStripeCustomerId(stripeCustomerId: string): Promise<User | undefined>;
+
+  // Stripe webhook idempotency + audit
+  getStripeEventById(eventId: string): Promise<StripeEvent | undefined>;
+  createStripeEvent(event: { id: string; type: string; payload: unknown }): Promise<StripeEvent>;
+  markStripeEventProcessed(eventId: string): Promise<void>;
+  markStripeEventFailed(eventId: string): Promise<void>;
+
+  // Policy operations
+  getPolicyByStripeSubscriptionId(subscriptionId: string): Promise<Policy | undefined>;
+  updatePolicy(id: number, updates: Partial<InsertPolicy>): Promise<Policy | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -386,6 +401,50 @@ export class DatabaseStorage implements IStorage {
   async getUserByStripeCustomerId(stripeCustomerId: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.stripeCustomerId, stripeCustomerId));
     return user || undefined;
+  }
+
+  // --- Stripe webhook idempotency + audit -----------------------------------
+
+  async getStripeEventById(eventId: string): Promise<StripeEvent | undefined> {
+    const [event] = await db.select().from(stripeEvents).where(eq(stripeEvents.id, eventId));
+    return event || undefined;
+  }
+
+  async createStripeEvent(event: { id: string; type: string; payload: unknown }): Promise<StripeEvent> {
+    const [row] = await db.insert(stripeEvents).values({
+      id: event.id,
+      type: event.type,
+      status: "received",
+      payload: event.payload as any,
+    }).returning();
+    return row;
+  }
+
+  async markStripeEventProcessed(eventId: string): Promise<void> {
+    await db.update(stripeEvents)
+      .set({ status: "processed", processedAt: new Date() })
+      .where(eq(stripeEvents.id, eventId));
+  }
+
+  async markStripeEventFailed(eventId: string): Promise<void> {
+    await db.update(stripeEvents)
+      .set({ status: "failed" })
+      .where(eq(stripeEvents.id, eventId));
+  }
+
+  // --- Policy operations ------------------------------------------------------
+
+  async getPolicyByStripeSubscriptionId(subscriptionId: string): Promise<Policy | undefined> {
+    const [policy] = await db.select().from(policies).where(eq(policies.stripeSubscriptionId, subscriptionId));
+    return policy || undefined;
+  }
+
+  async updatePolicy(id: number, updates: Partial<InsertPolicy>): Promise<Policy | undefined> {
+    const [policy] = await db.update(policies)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(policies.id, id))
+      .returning();
+    return policy || undefined;
   }
 }
 
