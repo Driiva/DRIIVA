@@ -103,7 +103,15 @@ export const policies = pgTable("policies", {
   effectiveDate: timestamp("effective_date").notNull(),
   expirationDate: timestamp("expiration_date").notNull(),
   renewalDate: timestamp("renewal_date"),
-  stripeSubscriptionId: text("stripe_subscription_id"),
+  // Unique (I3b, M4 review fix): without this, two concurrent first-payment
+  // webhook deliveries for the same subscription could each observe "no
+  // existing policy" and both insert - two active policy rows for one
+  // subscription, with getPolicyByStripeSubscriptionId picking one at random
+  // thereafter. Nullable columns allow multiple NULLs under a UNIQUE
+  // constraint in Postgres, so policies not yet bound to a subscription are
+  // unaffected. See migrations/0003_policies_stripe_subscription_id_unique.sql
+  // and handleStripePaymentSucceeded's 23505 handling in server/routes.ts.
+  stripeSubscriptionId: text("stripe_subscription_id").unique(),
   billingCycle: text("billing_cycle").default("annual"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

@@ -20,7 +20,7 @@
  *    required on every call so the audit trail is never anonymous.
  */
 import { storage } from "../storage";
-import type { InsertPolicy, Policy } from "@shared/schema";
+import type { InsertPolicy, Policy, PolicyAuditLog } from "@shared/schema";
 
 export const POLICY_STATUSES = [
   "pending",
@@ -60,7 +60,7 @@ export class InvalidPolicyTransitionError extends Error {
 
 export interface LifecycleResult {
   policy: Policy;
-  audit: Awaited<ReturnType<typeof storage.createPolicyAuditLog>>;
+  audit: PolicyAuditLog;
 }
 
 /**
@@ -69,6 +69,14 @@ export interface LifecycleResult {
  * POLICY_TRANSITIONS - callers must not fall back to writing the status
  * directly on rejection. Writes exactly one policy_audit_log row per
  * successful call.
+ *
+ * The CAS status write and the audit insert are one atomic
+ * `storage.transitionPolicyWithAudit` call (M4 review fix I4) - previously
+ * this was two independent storage calls (updatePolicyIfStatus then
+ * createPolicyAuditLog), so an audit-insert failure after a successful status
+ * write silently dropped the audit entry with no rollback. See
+ * DatabaseStorage.transitionPolicyWithAudit in server/storage.ts for the
+ * db.transaction wrapping.
  */
 export async function transitionPolicy(params: {
   policy: Policy;
@@ -80,25 +88,24 @@ export async function transitionPolicy(params: {
     throw new InvalidPolicyTransitionError(fromStatus, params.toStatus);
   }
 
-  // Optimistic-concurrency write: the WHERE clause includes `status = fromStatus`,
-  // so if another caller already moved this policy off `fromStatus` between our
-  // read and this write (e.g. two webhooks racing on the same policy), zero rows
-  // match and `updated` comes back undefined. Treat that identically to a
-  // pre-validated invalid transition - reject, write no audit row - rather than
-  // silently overwriting a status another handler just set.
-  const updated = await storage.updatePolicyIfStatus(params.policy.id, fromStatus, { status: params.toStatus });
-  if (!updated) {
-    throw new InvalidPolicyTransitionError(fromStatus, params.toStatus);
-  }
-
-  const audit = await storage.createPolicyAuditLog({
-    policyId: params.policy.id,
+  // Optimistic-concurrency write: the transaction's WHERE clause includes
+  // `status = fromStatus`, so if another caller already moved this policy off
+  // `fromStatus` between our read and this write (e.g. two webhooks racing on
+  // the same policy), zero rows match and `result` comes back undefined.
+  // Treat that identically to a pre-validated invalid transition - reject,
+  // write no audit row - rather than silently overwriting a status another
+  // handler just set.
+  const result = await storage.transitionPolicyWithAudit({
+    id: params.policy.id,
     fromStatus,
     toStatus: params.toStatus,
     causedBy: params.causedBy,
   });
+  if (!result) {
+    throw new InvalidPolicyTransitionError(fromStatus, params.toStatus);
+  }
 
-  return { policy: updated, audit };
+  return result;
 }
 
 /**

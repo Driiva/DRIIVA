@@ -66,6 +66,7 @@ const storageMock = vi.hoisted(() => ({
   updatePolicyIfStatus: vi.fn(),
   createPolicyAuditLog: vi.fn(),
   getPolicyAuditLog: vi.fn(),
+  transitionPolicyWithAudit: vi.fn(),
 }));
 
 vi.mock("../storage", () => ({ storage: storageMock }));
@@ -140,6 +141,14 @@ const rawBody = JSON.stringify({ probe: true });
 
 const CANCELLED_POLICY = { id: 42, userId: 7, stripeSubscriptionId: "sub_123", status: "active" };
 
+// I3a fix: storage.createStripeEvent is now the atomic dedupe primitive - it
+// always returns the authoritative row (never undefined), so every test that
+// exercises the webhook must mock its return value directly instead of the
+// old getStripeEventById-based read-then-insert setup.
+function receivedEventRow(id: string, type: string) {
+  return { id, type, status: "received" as const, payload: {}, processedAt: null, createdAt: new Date() };
+}
+
 beforeAll(async () => {
   await ready;
 });
@@ -156,9 +165,12 @@ describe("Stripe webhook - stripe_events idempotency + audit (M4 Task 2)", () =>
       data: { object: { id: "sub_123", customer: "cus_1" } },
     });
     storageMock.getUserByStripeCustomerId.mockResolvedValue({ id: 7, firebaseUid: "fb-1" });
-    storageMock.getStripeEventById.mockResolvedValue(undefined);
+    storageMock.createStripeEvent.mockResolvedValue(receivedEventRow("evt_sub_deleted_1", "customer.subscription.deleted"));
     storageMock.getPolicyByStripeSubscriptionId.mockResolvedValue(CANCELLED_POLICY);
-    storageMock.updatePolicyIfStatus.mockResolvedValue({ ...CANCELLED_POLICY, status: "cancelled" });
+    storageMock.transitionPolicyWithAudit.mockResolvedValue({
+      policy: { ...CANCELLED_POLICY, status: "cancelled" },
+      audit: { id: 1, policyId: 42, fromStatus: "active", toStatus: "cancelled", causedBy: "stripe:evt_sub_deleted_1", createdAt: new Date() },
+    });
 
     const res = await request(app)
       .post("/api/webhooks/stripe")
@@ -173,11 +185,9 @@ describe("Stripe webhook - stripe_events idempotency + audit (M4 Task 2)", () =>
     expect(storageMock.createStripeEvent).toHaveBeenCalledWith(
       expect.objectContaining({ id: "evt_sub_deleted_1", type: "customer.subscription.deleted" })
     );
-    // Policy state transition observed.
-    expect(storageMock.updatePolicyIfStatus).toHaveBeenCalledWith(42, "active", { status: "cancelled" });
-    // Exactly one audit entry recorded for the transition.
-    expect(storageMock.createPolicyAuditLog).toHaveBeenCalledWith({
-      policyId: 42,
+    // Policy state transition + audit write observed as one atomic call (I4).
+    expect(storageMock.transitionPolicyWithAudit).toHaveBeenCalledWith({
+      id: 42,
       fromStatus: "active",
       toStatus: "cancelled",
       causedBy: "stripe:evt_sub_deleted_1",
@@ -193,11 +203,13 @@ describe("Stripe webhook - stripe_events idempotency + audit (M4 Task 2)", () =>
       type: "customer.subscription.deleted",
       data: { object: { id: "sub_123", customer: "cus_1" } },
     });
-    storageMock.getStripeEventById.mockResolvedValue({
+    storageMock.createStripeEvent.mockResolvedValue({
       id: "evt_sub_deleted_1",
       type: "customer.subscription.deleted",
       status: "processed",
       processedAt: new Date(),
+      payload: {},
+      createdAt: new Date(),
     });
 
     const res = await request(app)
@@ -210,8 +222,13 @@ describe("Stripe webhook - stripe_events idempotency + audit (M4 Task 2)", () =>
     expect(res.body).toEqual({ received: true });
     // Side effects did NOT re-run.
     expect(storageMock.getPolicyByStripeSubscriptionId).not.toHaveBeenCalled();
-    expect(storageMock.updatePolicyIfStatus).not.toHaveBeenCalled();
-    expect(storageMock.createStripeEvent).not.toHaveBeenCalled();
+    expect(storageMock.transitionPolicyWithAudit).not.toHaveBeenCalled();
+    // The atomic dedupe write (I3a) IS always attempted - the returned row's
+    // status is what tells us this event is a duplicate in the first place -
+    // it just doesn't trigger reprocessing when that status is 'processed'.
+    expect(storageMock.createStripeEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "evt_sub_deleted_1" })
+    );
   });
 
   it("forced-failure: a DB write throw during processing returns non-2xx and leaves stripe_events NOT processed (Stripe would legitimately retry)", async () => {
@@ -221,9 +238,9 @@ describe("Stripe webhook - stripe_events idempotency + audit (M4 Task 2)", () =>
       data: { object: { id: "sub_fail", customer: "cus_1" } },
     });
     storageMock.getUserByStripeCustomerId.mockResolvedValue({ id: 7, firebaseUid: "fb-1" });
-    storageMock.getStripeEventById.mockResolvedValue(undefined);
+    storageMock.createStripeEvent.mockResolvedValue(receivedEventRow("evt_sub_deleted_fail", "customer.subscription.deleted"));
     storageMock.getPolicyByStripeSubscriptionId.mockResolvedValue(CANCELLED_POLICY);
-    storageMock.updatePolicyIfStatus.mockRejectedValue(new Error("simulated DB write failure"));
+    storageMock.transitionPolicyWithAudit.mockRejectedValue(new Error("simulated DB write failure"));
 
     const res = await request(app)
       .post("/api/webhooks/stripe")
@@ -251,9 +268,12 @@ describe("Stripe webhook - stripe_events idempotency + audit (M4 Task 2)", () =>
       data: { object: { id: "sub_123", customer: "cus_1" } },
     });
     storageMock.getUserByStripeCustomerId.mockResolvedValue({ id: 7, firebaseUid: "fb-1" });
-    storageMock.getStripeEventById.mockResolvedValueOnce(undefined);
+    storageMock.createStripeEvent.mockResolvedValueOnce(receivedEventRow("evt_sub_deleted_2", "customer.subscription.deleted"));
     storageMock.getPolicyByStripeSubscriptionId.mockResolvedValue(policy);
-    storageMock.updatePolicyIfStatus.mockResolvedValue({ ...policy, status: "cancelled" });
+    storageMock.transitionPolicyWithAudit.mockResolvedValue({
+      policy: { ...policy, status: "cancelled" },
+      audit: { id: 1, policyId: 42, fromStatus: "active", toStatus: "cancelled", causedBy: "stripe:evt_sub_deleted_2", createdAt: new Date() },
+    });
 
     const first = await request(app)
       .post("/api/webhooks/stripe")
@@ -262,8 +282,13 @@ describe("Stripe webhook - stripe_events idempotency + audit (M4 Task 2)", () =>
       .send(rawBody);
 
     expect(first.status).toBe(200);
-    expect(storageMock.updatePolicyIfStatus).toHaveBeenCalledTimes(1);
-    expect(storageMock.updatePolicyIfStatus).toHaveBeenCalledWith(42, "active", { status: "cancelled" });
+    expect(storageMock.transitionPolicyWithAudit).toHaveBeenCalledTimes(1);
+    expect(storageMock.transitionPolicyWithAudit).toHaveBeenCalledWith({
+      id: 42,
+      fromStatus: "active",
+      toStatus: "cancelled",
+      causedBy: "stripe:evt_sub_deleted_2",
+    });
 
     // Second delivery for the same subscription, simulating a redelivery that
     // reaches the switch again (e.g. stripe_events dedupe was bypassed, or a
@@ -272,9 +297,9 @@ describe("Stripe webhook - stripe_events idempotency + audit (M4 Task 2)", () =>
     // this safe regardless of the event.id dedupe layer. The policy is now
     // already cancelled from the first call.
     const cancelledPolicy = { ...policy, status: "cancelled" };
-    storageMock.getStripeEventById.mockResolvedValueOnce(undefined);
+    storageMock.createStripeEvent.mockResolvedValueOnce(receivedEventRow("evt_sub_deleted_2", "customer.subscription.deleted"));
     storageMock.getPolicyByStripeSubscriptionId.mockResolvedValue(cancelledPolicy);
-    storageMock.updatePolicyIfStatus.mockClear();
+    storageMock.transitionPolicyWithAudit.mockClear();
 
     const second = await request(app)
       .post("/api/webhooks/stripe")
@@ -283,10 +308,10 @@ describe("Stripe webhook - stripe_events idempotency + audit (M4 Task 2)", () =>
       .send(rawBody);
 
     expect(second.status).toBe(200);
-    // No redundant write: exactly zero further calls to updatePolicyIfStatus on
-    // this second delivery, since the policy is already in the terminal state
+    // No redundant write: exactly zero further calls to transitionPolicyWithAudit
+    // on this second delivery, since the policy is already in the terminal state
     // and cancelled -> cancelled is rejected before any write is attempted.
-    expect(storageMock.updatePolicyIfStatus).not.toHaveBeenCalled();
+    expect(storageMock.transitionPolicyWithAudit).not.toHaveBeenCalled();
   });
 
   it("invoice.payment_failed routes through the state machine: valid active -> past_due writes exactly one audit row", async () => {
@@ -296,9 +321,12 @@ describe("Stripe webhook - stripe_events idempotency + audit (M4 Task 2)", () =>
       data: { object: { id: "in_1", customer: "cus_1", subscription: "sub_123", attempt_count: 1 } },
     });
     storageMock.getUserByStripeCustomerId.mockResolvedValue({ id: 7, firebaseUid: "fb-1" });
-    storageMock.getStripeEventById.mockResolvedValue(undefined);
+    storageMock.createStripeEvent.mockResolvedValue(receivedEventRow("evt_invoice_failed_1", "invoice.payment_failed"));
     storageMock.getPolicyByStripeSubscriptionId.mockResolvedValue(CANCELLED_POLICY); // status: "active"
-    storageMock.updatePolicyIfStatus.mockResolvedValue({ ...CANCELLED_POLICY, status: "past_due" });
+    storageMock.transitionPolicyWithAudit.mockResolvedValue({
+      policy: { ...CANCELLED_POLICY, status: "past_due" },
+      audit: { id: 1, policyId: 42, fromStatus: "active", toStatus: "past_due", causedBy: "stripe:evt_invoice_failed_1", createdAt: new Date() },
+    });
 
     const res = await request(app)
       .post("/api/webhooks/stripe")
@@ -307,10 +335,9 @@ describe("Stripe webhook - stripe_events idempotency + audit (M4 Task 2)", () =>
       .send(rawBody);
 
     expect(res.status).toBe(200);
-    expect(storageMock.updatePolicyIfStatus).toHaveBeenCalledWith(42, "active", { status: "past_due" });
-    expect(storageMock.createPolicyAuditLog).toHaveBeenCalledTimes(1);
-    expect(storageMock.createPolicyAuditLog).toHaveBeenCalledWith({
-      policyId: 42,
+    expect(storageMock.transitionPolicyWithAudit).toHaveBeenCalledTimes(1);
+    expect(storageMock.transitionPolicyWithAudit).toHaveBeenCalledWith({
+      id: 42,
       fromStatus: "active",
       toStatus: "past_due",
       causedBy: "stripe:evt_invoice_failed_1",
@@ -326,10 +353,10 @@ describe("Stripe webhook - stripe_events idempotency + audit (M4 Task 2)", () =>
       data: { object: { id: "in_2", customer: "cus_1", subscription: "sub_123", attempt_count: 2 } },
     });
     storageMock.getUserByStripeCustomerId.mockResolvedValue({ id: 7, firebaseUid: "fb-1" });
-    storageMock.getStripeEventById.mockResolvedValue(undefined);
+    storageMock.createStripeEvent.mockResolvedValue(receivedEventRow("evt_invoice_failed_2", "invoice.payment_failed"));
     storageMock.getPolicyByStripeSubscriptionId.mockResolvedValue(cancelledPolicy);
-    // CAS write matches nothing because the row is already "cancelled", not "active".
-    storageMock.updatePolicyIfStatus.mockResolvedValue(undefined);
+    // cancelled is terminal (POLICY_TRANSITIONS.cancelled = []) - rejected by
+    // isValidTransition before any storage call is made.
 
     const res = await request(app)
       .post("/api/webhooks/stripe")
@@ -338,7 +365,7 @@ describe("Stripe webhook - stripe_events idempotency + audit (M4 Task 2)", () =>
       .send(rawBody);
 
     expect(res.status).toBe(200);
-    expect(storageMock.createPolicyAuditLog).not.toHaveBeenCalled();
+    expect(storageMock.transitionPolicyWithAudit).not.toHaveBeenCalled();
     expect(storageMock.markStripeEventProcessed).toHaveBeenCalledWith("evt_invoice_failed_2");
     expect(storageMock.markStripeEventFailed).not.toHaveBeenCalled();
   });
@@ -348,16 +375,19 @@ describe("Stripe webhook - stripe_events idempotency + audit (M4 Task 2)", () =>
     stripeMock.webhooks.constructEvent.mockReturnValue({
       id: "evt_payment_succeeded_1",
       type: "invoice.payment_succeeded",
-      data: { object: { customer: "cus_1", subscription: "sub_123" } },
+      // amount_paid must be a valid positive amount here (C1 fix): otherwise
+      // handleStripePaymentSucceeded's amount guard throws first and this
+      // test would 500 for the wrong reason, never reaching the
+      // cancelled-policy reconciliation path it's meant to exercise.
+      data: { object: { customer: "cus_1", subscription: "sub_123", amount_paid: 4600 } },
     });
     stripeMock.subscriptions.retrieve.mockResolvedValue({ metadata: {} });
     storageMock.getUserByStripeCustomerId.mockResolvedValue({ id: 7, firebaseUid: "fb-1" });
-    storageMock.getStripeEventById.mockResolvedValue(undefined);
+    storageMock.createStripeEvent.mockResolvedValue(receivedEventRow("evt_payment_succeeded_1", "invoice.payment_succeeded"));
     storageMock.getPolicyByStripeSubscriptionId.mockResolvedValue(cancelledPolicy);
-    // CAS write matches nothing: the row is "cancelled", not "active", so
-    // transitionPolicy's narrowed catch must NOT treat this as the benign
-    // active -> active no-op case - it must rethrow.
-    storageMock.updatePolicyIfStatus.mockResolvedValue(undefined);
+    // cancelled -> active is not a valid transition (cancelled is terminal),
+    // so transitionPolicy's narrowed catch (which only swallows the benign
+    // active -> active no-op) must NOT treat this as benign - it must rethrow.
 
     const res = await request(app)
       .post("/api/webhooks/stripe")
@@ -366,7 +396,7 @@ describe("Stripe webhook - stripe_events idempotency + audit (M4 Task 2)", () =>
       .send(rawBody);
 
     expect(res.status).toBe(500);
-    expect(storageMock.createPolicyAuditLog).not.toHaveBeenCalled();
+    expect(storageMock.transitionPolicyWithAudit).not.toHaveBeenCalled();
     expect(storageMock.markStripeEventProcessed).not.toHaveBeenCalled();
     expect(storageMock.markStripeEventFailed).toHaveBeenCalledWith("evt_payment_succeeded_1");
   });

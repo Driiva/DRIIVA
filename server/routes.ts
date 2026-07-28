@@ -17,7 +17,7 @@ import { crypto } from "./lib/crypto";
 import { telematicsProcessor, TelematicsData, TripJSON } from "./lib/telematics";
 import { aiInsightsEngine } from "./lib/aiInsights";
 import { scoreAggregation } from "./lib/scoreAggregation";
-import { insertTripSchema, insertIncidentSchema, type InsertDrivingProfile } from "@shared/schema";
+import { insertTripSchema, insertIncidentSchema, type InsertDrivingProfile, type Policy } from "@shared/schema";
 import { z } from "zod";
 import { webauthnService } from "./webauthn";
 import { authLimiter, tripDataLimiter, webhookLimiter, coachLimiter } from "./middleware/security";
@@ -1099,22 +1099,31 @@ export async function registerRoutes(app: Express): Promise<void> {
       return res.status(400).json({ message: `Webhook Error: ${err.message}` });
     }
 
-    // Idempotency + audit: check/record the event BEFORE processing, still before the
+    // Idempotency + audit: write/record the event BEFORE processing, still before the
     // ACK. A lookup/write failure here is not fatal to the request (no event.id is a
     // legitimate case for malformed/test payloads) - it degrades to "process without
     // a dedupe guarantee" rather than blocking the critical side effects below.
+    //
+    // I3a fix: storage.createStripeEvent is now the atomic dedupe primitive
+    // (INSERT ... ON CONFLICT DO UPDATE ... RETURNING - see server/storage.ts)
+    // instead of a read-then-conditional-insert. It always returns the
+    // authoritative row - freshly inserted, or the pre-existing row on
+    // conflict - in one round trip, closing the old TOCTOU window where two
+    // concurrent deliveries of a brand-new event.id could both see "no
+    // existing row" and both proceed to process. A row already marked
+    // `processed` short-circuits (ack 200, no reprocessing); a row still
+    // `received` or `failed` is NOT skipped - it re-enters the switch so
+    // Stripe's redelivery-on-non-2xx keeps working for events whose side
+    // effects never actually completed (unchanged contract from before).
     if (event.id) {
       try {
-        const existing = await storage.getStripeEventById(event.id);
-        if (existing?.status === 'processed') {
+        const eventRow = await storage.createStripeEvent({ id: event.id, type: event.type, payload: event });
+        if (eventRow.status === 'processed') {
           console.log(`[Stripe webhook] Duplicate event ${event.id} already processed - skipping`);
           return res.json({ received: true });
         }
-        if (!existing) {
-          await storage.createStripeEvent({ id: event.id, type: event.type, payload: event });
-        }
       } catch (auditErr) {
-        console.warn('[Stripe webhook] stripe_events lookup/write failed - proceeding without dedupe:', auditErr);
+        console.warn('[Stripe webhook] stripe_events dedupe write failed - proceeding without dedupe:', auditErr);
       }
     }
 
@@ -1131,17 +1140,36 @@ export async function registerRoutes(app: Express): Promise<void> {
           const subscriptionId = invoice.subscription as string;
           console.log(`[Stripe webhook] Payment succeeded for customer ${customerId}`);
 
-          // Retrieve subscription to get quoteId from metadata
+          // Retrieve the subscription for quoteId + the real billing
+          // interval/period-end (C1 fix: a bound policy must reflect what was
+          // actually charged and the actual Stripe subscription terms, not a
+          // fabricated 0/'standard'/now+1-year default - see
+          // handleStripePaymentSucceeded below).
           let quoteId: string | undefined;
+          let billingPeriod: 'monthly' | 'annual' = 'monthly';
+          let currentPeriodEndUnix: number | undefined;
           try {
             const stripe = getStripe();
             const sub = await stripe.subscriptions.retrieve(subscriptionId);
             quoteId = sub.metadata?.quoteId;
+            billingPeriod = resolveSubscriptionBillingPeriod(sub);
+            const firstItem = sub.items?.data?.[0];
+            currentPeriodEndUnix = typeof firstItem?.current_period_end === 'number'
+              ? firstItem.current_period_end
+              : undefined;
           } catch (subErr) {
             console.warn('[Stripe webhook] Could not retrieve subscription metadata:', subErr);
           }
 
-          await handleStripePaymentSucceeded(customerId, subscriptionId, quoteId, event.id, invoice.amount_paid);
+          await handleStripePaymentSucceeded(
+            customerId,
+            subscriptionId,
+            quoteId,
+            event.id,
+            invoice.amount_paid,
+            billingPeriod,
+            currentPeriodEndUnix,
+          );
           break;
         }
         case 'invoice.payment_failed': {
@@ -1349,14 +1377,33 @@ export async function registerRoutes(app: Express): Promise<void> {
 async function handleStripePaymentSucceeded(
   stripeCustomerId: string,
   stripeSubscriptionId: string,
-  quoteId?: string,
-  stripeEventId?: string,
-  amountPaidCents?: number,
+  quoteId: string | undefined,
+  stripeEventId: string | undefined,
+  amountPaidCents: number | undefined,
+  billingPeriod: 'monthly' | 'annual' = 'monthly',
+  currentPeriodEndUnix?: number,
 ): Promise<void> {
   const user = await storage.getUserByStripeCustomerId(stripeCustomerId);
   if (!user) {
     console.warn(`[Integration] No user found for Stripe customer ${stripeCustomerId}`);
     return;
+  }
+
+  // C1 fix: a policy bound off this payment must carry the premium that was
+  // actually charged. A missing/zero/non-finite amount_paid means we cannot
+  // honestly populate basePremiumCents/currentPremiumCents (or, downstream,
+  // the pool-contribution amount) - fail loudly so Stripe redelivers, rather
+  // than silently writing a zero-premium "active" policy for cover the
+  // customer was supposedly charged for.
+  if (
+    amountPaidCents === undefined ||
+    amountPaidCents === null ||
+    !Number.isFinite(amountPaidCents) ||
+    amountPaidCents <= 0
+  ) {
+    throw new Error(
+      `[Integration] invoice.payment_succeeded for subscription ${stripeSubscriptionId} has no valid amount_paid (${amountPaidCents}) - refusing to bind/transition a policy without a real premium`,
+    );
   }
 
   // Policy lifecycle (M4 Task 3): create or transition the Postgres policy row
@@ -1370,49 +1417,58 @@ async function handleStripePaymentSucceeded(
     const existingPolicy = await storage.getPolicyByStripeSubscriptionId(stripeSubscriptionId);
     if (existingPolicy) {
       boundPolicyId = existingPolicy.id;
+      await transitionExistingPolicyToActive(existingPolicy, causedBy);
+    } else {
+      // C1 fix: real premium from what Stripe actually charged, a
+      // best-effort real coverageType from the stored quote, and a real
+      // expiration/billing-cycle derived from the actual Stripe subscription
+      // terms - not the previous hardcoded 0 / 'standard' / now+1-year
+      // fabrication.
+      const coverageType = await resolveCoverageTypeFromQuote(quoteId);
+      const now = new Date();
+      const expiration = currentPeriodEndUnix
+        ? new Date(currentPeriodEndUnix * 1000)
+        : computeFallbackExpiration(now, billingPeriod, stripeSubscriptionId);
+
       try {
-        await transitionPolicy({ policy: existingPolicy, toStatus: 'active', causedBy });
-        console.log(`[Integration] Policy ${existingPolicy.id} transitioned to active`);
-      } catch (transitionErr) {
-        // Payment succeeded on an already-active policy (e.g. a redelivered
-        // event, or a renewal invoice on a still-active policy) has no valid
-        // active -> active transition - benign no-op, not a failure. Only that
-        // exact case is swallowed: anything else (e.g. cancelled -> active, a
-        // payment landing on a cancelled policy) is a genuine reconciliation
-        // signal and must rethrow so the webhook still errors and gets
-        // investigated, not silently swallowed.
-        if (
-          transitionErr instanceof InvalidPolicyTransitionError &&
-          transitionErr.from === 'active' &&
-          transitionErr.to === 'active'
-        ) {
-          console.log(`[Integration] Policy ${existingPolicy.id} already ${existingPolicy.status} - no transition needed`, {
-            attempted: `${transitionErr.from} -> ${transitionErr.to}`,
-          });
+        const { policy } = await createPolicyWithAudit({
+          policy: {
+            userId: user.id,
+            policyNumber: `POL-${stripeSubscriptionId}`,
+            status: 'active',
+            coverageType,
+            basePremiumCents: amountPaidCents,
+            currentPremiumCents: amountPaidCents,
+            effectiveDate: now,
+            expirationDate: expiration,
+            billingCycle: billingPeriod,
+            stripeSubscriptionId,
+          },
+          causedBy,
+        });
+        boundPolicyId = policy.id;
+        console.log(`[Integration] Policy ${policy.id} created (active) for ${user.id}`, {
+          basePremiumCents: amountPaidCents,
+          billingCycle: billingPeriod,
+          coverageType,
+        });
+      } catch (createErr: any) {
+        // I3b fix: two concurrent first-payment deliveries for the same
+        // subscription can both reach this branch (both observed no existing
+        // policy via the read above). The unique constraint on
+        // policies.stripe_subscription_id means only one INSERT wins; the
+        // loser hits a 23505 unique violation here. Treat that as "policy
+        // already exists" - fetch the winner's row and transition it instead
+        // of creating a second active policy row for one subscription.
+        if (isUniqueSubscriptionViolation(createErr)) {
+          const racedPolicy = await storage.getPolicyByStripeSubscriptionId(stripeSubscriptionId);
+          if (!racedPolicy) throw createErr; // genuinely unexpected - surface it
+          boundPolicyId = racedPolicy.id;
+          await transitionExistingPolicyToActive(racedPolicy, causedBy);
         } else {
-          throw transitionErr;
+          throw createErr;
         }
       }
-    } else {
-      const now = new Date();
-      const expiration = new Date(now);
-      expiration.setFullYear(expiration.getFullYear() + 1);
-      const { policy } = await createPolicyWithAudit({
-        policy: {
-          userId: user.id,
-          policyNumber: `POL-${stripeSubscriptionId}`,
-          status: 'active',
-          coverageType: 'standard',
-          basePremiumCents: 0,
-          currentPremiumCents: 0,
-          effectiveDate: now,
-          expirationDate: expiration,
-          stripeSubscriptionId,
-        },
-        causedBy,
-      });
-      boundPolicyId = policy.id;
-      console.log(`[Integration] Policy ${policy.id} created (active) for ${user.id}`);
     }
   } catch (policyErr) {
     console.error('[Integration] Failed to create/transition policy:', policyErr);
@@ -1423,12 +1479,15 @@ async function handleStripePaymentSucceeded(
   // payment, after the policy bind/transition above has succeeded (including
   // the benign already-active no-op - money was still received). M3 doesn't
   // exist yet, so this only logs today - see server/lib/poolContribution.ts.
+  // eventId is threaded through (I5 fix) so a future M3 consumer can dedupe a
+  // double-emit caused by a retried delivery (see poolContribution.ts docs).
   if (boundPolicyId) {
     emitPoolContribution({
       userId: user.id,
       policyId: boundPolicyId,
-      amountCents: amountPaidCents ?? 0,
+      amountCents: amountPaidCents,
       source: 'stripe_payment_succeeded',
+      eventId: stripeEventId,
       timestamp: new Date(),
     });
   }
@@ -1438,13 +1497,25 @@ async function handleStripePaymentSucceeded(
     return;
   }
 
+  // C2 fix: this Firestore write used to be wrapped in a try/catch that only
+  // console.error'd the failure. By the time we reach here the Postgres
+  // policy is already 'active' and audited - a swallowed failure would leave
+  // a charged customer with an active DB policy but no Firestore mirror, ack
+  // the webhook 200, and mark the stripe_events row processed, so Stripe's
+  // redelivery-on-non-2xx would never fire and the gap would never be
+  // retried (exactly the "charged customer, no cover" scenario the webhook
+  // redesign exists to prevent). Rethrow instead: the outer webhook handler
+  // 500s, Stripe redelivers, and the retry is safe because the policy bind
+  // above hits the active -> active benign no-op path
+  // (transitionExistingPolicyToActive) rather than re-creating anything -
+  // only this Firestore write is actually retried.
   try {
     console.log(`[Integration] Payment succeeded for ${user.firebaseUid} - writing pendingPayment`, { quoteId });
 
     const adminLib = await import('./lib/firebase-admin');
     const adminApp = adminLib.getFirebaseAdmin();
     if (!adminApp) {
-      console.warn('[Integration] Firebase Admin not initialised — cannot write pendingPayment');
+      console.warn('[Integration] Firebase Admin not initialised - cannot write pendingPayment');
       return;
     }
 
@@ -1466,6 +1537,101 @@ async function handleStripePaymentSucceeded(
 
     console.log(`[Integration] pendingPayment written for ${user.firebaseUid}`);
   } catch (err) {
-    console.error("[Integration] handleStripePaymentSucceeded error:", err);
+    console.error("[Integration] handleStripePaymentSucceeded pendingPayment write failed - rethrowing so Stripe retries:", err);
+    throw err;
   }
+}
+
+/**
+ * Transition an existing policy to 'active' on payment success, treating the
+ * active -> active case as a benign no-op: a redelivered event, a renewal
+ * invoice on a still-active policy, or (after the C2/I3b fixes) a retry that
+ * reaches handleStripePaymentSucceeded a second time after the first attempt
+ * already bound the policy but failed later (e.g. at the Firestore write).
+ * Any other rejected transition (e.g. cancelled -> active) is a genuine
+ * reconciliation signal and is rethrown so the webhook still errors.
+ */
+async function transitionExistingPolicyToActive(policy: Policy, causedBy: string): Promise<Policy> {
+  try {
+    const { policy: updated } = await transitionPolicy({ policy, toStatus: 'active', causedBy });
+    console.log(`[Integration] Policy ${updated.id} transitioned to active`);
+    return updated;
+  } catch (transitionErr) {
+    if (
+      transitionErr instanceof InvalidPolicyTransitionError &&
+      transitionErr.from === 'active' &&
+      transitionErr.to === 'active'
+    ) {
+      console.log(`[Integration] Policy ${policy.id} already ${policy.status} - no transition needed`, {
+        attempted: `${transitionErr.from} -> ${transitionErr.to}`,
+      });
+      return policy;
+    }
+    throw transitionErr;
+  }
+}
+
+const POSTGRES_UNIQUE_VIOLATION_CODE = '23505';
+
+/** Detects the policies.stripe_subscription_id unique-constraint violation (I3b). */
+function isUniqueSubscriptionViolation(err: unknown): boolean {
+  const code = (err as { code?: string } | undefined)?.code;
+  const message = err instanceof Error ? err.message : String(err ?? '');
+  return code === POSTGRES_UNIQUE_VIOLATION_CODE && /stripe_subscription_id/i.test(message);
+}
+
+/**
+ * Best-effort coverageType resolution from the Firestore quote doc
+ * (functions/src/http/insurance.ts's getInsuranceQuote writes coverageType
+ * there when a quote is generated). Not a critical side effect like the
+ * premium amount (the amount guard above already fails loudly for that) - if
+ * the quote can't be resolved (no quoteId, Admin not initialised, quote
+ * missing/expired), default to 'standard' rather than blocking the policy
+ * bind on a best-effort lookup.
+ */
+async function resolveCoverageTypeFromQuote(quoteId: string | undefined): Promise<string> {
+  if (!quoteId) return 'standard';
+  try {
+    const adminLib = await import('./lib/firebase-admin');
+    const adminApp = adminLib.getFirebaseAdmin();
+    if (!adminApp) return 'standard';
+    const quoteSnap = await adminApp.firestore().collection('quotes').doc(quoteId).get();
+    if (!quoteSnap.exists) return 'standard';
+    const data = quoteSnap.data() as { coverageType?: string } | undefined;
+    return data?.coverageType ?? 'standard';
+  } catch (err) {
+    console.warn(`[Integration] Could not resolve coverageType from quote ${quoteId} - defaulting to standard:`, err);
+    return 'standard';
+  }
+}
+
+/**
+ * Fallback expiration when Stripe's per-item current_period_end isn't
+ * available (e.g. the subscriptions.retrieve call itself failed). Derives the
+ * term from the actual billing period rather than assuming annual (C1 fix).
+ */
+function computeFallbackExpiration(from: Date, billingPeriod: 'monthly' | 'annual', stripeSubscriptionId: string): Date {
+  console.warn(`[Integration] Stripe subscription ${stripeSubscriptionId} current_period_end unavailable - falling back to a computed ${billingPeriod} expiration`);
+  const expiration = new Date(from);
+  if (billingPeriod === 'annual') {
+    expiration.setFullYear(expiration.getFullYear() + 1);
+  } else {
+    expiration.setMonth(expiration.getMonth() + 1);
+  }
+  return expiration;
+}
+
+/**
+ * Resolve monthly vs annual from the Stripe subscription itself (C1 fix).
+ * Prefers the billingPeriod set in subscription metadata at creation time
+ * (create-subscription always sets it - see routes.ts ~916), falling back to
+ * the actual Price/Plan recurring interval for subscriptions created without
+ * that metadata (e.g. pre-M4 data). Defaults to 'monthly' - the shorter,
+ * less-overcharging assumption - only when neither source is available.
+ */
+function resolveSubscriptionBillingPeriod(sub: any): 'monthly' | 'annual' {
+  if (sub?.metadata?.billingPeriod === 'annual') return 'annual';
+  if (sub?.metadata?.billingPeriod === 'monthly') return 'monthly';
+  const interval = sub?.items?.data?.[0]?.plan?.interval ?? sub?.items?.data?.[0]?.price?.recurring?.interval;
+  return interval === 'year' ? 'annual' : 'monthly';
 }

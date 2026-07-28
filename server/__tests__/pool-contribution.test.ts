@@ -63,6 +63,7 @@ const storageMock = vi.hoisted(() => ({
   updatePolicyIfStatus: vi.fn(),
   createPolicyAuditLog: vi.fn(),
   getPolicyAuditLog: vi.fn(),
+  transitionPolicyWithAudit: vi.fn(),
 }));
 
 vi.mock("../storage", () => ({ storage: storageMock }));
@@ -162,9 +163,19 @@ describe("Pool-contribution seam (M4 Task 4)", () => {
     });
     stripeMock.subscriptions.retrieve.mockResolvedValue({ metadata: {} });
     storageMock.getUserByStripeCustomerId.mockResolvedValue({ id: 7, firebaseUid: "fb-1" });
-    storageMock.getStripeEventById.mockResolvedValue(undefined);
+    storageMock.createStripeEvent.mockResolvedValue({
+      id: "evt_payment_succeeded_pool_1",
+      type: "invoice.payment_succeeded",
+      status: "received",
+      payload: {},
+      processedAt: null,
+      createdAt: new Date(),
+    });
     storageMock.getPolicyByStripeSubscriptionId.mockResolvedValue(pastDuePolicy);
-    storageMock.updatePolicyIfStatus.mockResolvedValue({ ...pastDuePolicy, status: "active" });
+    storageMock.transitionPolicyWithAudit.mockResolvedValue({
+      policy: { ...pastDuePolicy, status: "active" },
+      audit: { id: 1, policyId: 42, fromStatus: "past_due", toStatus: "active", causedBy: "stripe:evt_payment_succeeded_pool_1", createdAt: new Date() },
+    });
 
     const res = await request(app)
       .post("/api/webhooks/stripe")
@@ -180,6 +191,9 @@ describe("Pool-contribution seam (M4 Task 4)", () => {
         policyId: 42,
         amountCents: 4599,
         source: "stripe_payment_succeeded",
+        // I5 fix: the Stripe event id is threaded through so a future M3
+        // consumer can dedupe a double-emit caused by a retried delivery.
+        eventId: "evt_payment_succeeded_pool_1",
         timestamp: expect.any(Date),
       }),
     );
@@ -193,7 +207,14 @@ describe("Pool-contribution seam (M4 Task 4)", () => {
     });
     stripeMock.subscriptions.retrieve.mockResolvedValue({ metadata: {} });
     storageMock.getUserByStripeCustomerId.mockResolvedValue({ id: 9, firebaseUid: "fb-2" });
-    storageMock.getStripeEventById.mockResolvedValue(undefined);
+    storageMock.createStripeEvent.mockResolvedValue({
+      id: "evt_payment_succeeded_pool_2",
+      type: "invoice.payment_succeeded",
+      status: "received",
+      payload: {},
+      processedAt: null,
+      createdAt: new Date(),
+    });
     storageMock.getPolicyByStripeSubscriptionId.mockResolvedValue(undefined);
     storageMock.createPolicy.mockResolvedValue({ id: 99, userId: 9, status: "active" });
     storageMock.createPolicyAuditLog.mockResolvedValue({ id: "audit-1" });
@@ -212,6 +233,7 @@ describe("Pool-contribution seam (M4 Task 4)", () => {
         policyId: 99,
         amountCents: 3000,
         source: "stripe_payment_succeeded",
+        eventId: "evt_payment_succeeded_pool_2",
       }),
     );
   });
@@ -225,10 +247,17 @@ describe("Pool-contribution seam (M4 Task 4)", () => {
     });
     stripeMock.subscriptions.retrieve.mockResolvedValue({ metadata: {} });
     storageMock.getUserByStripeCustomerId.mockResolvedValue({ id: 7, firebaseUid: "fb-1" });
-    storageMock.getStripeEventById.mockResolvedValue(undefined);
+    storageMock.createStripeEvent.mockResolvedValue({
+      id: "evt_payment_succeeded_pool_3",
+      type: "invoice.payment_succeeded",
+      status: "received",
+      payload: {},
+      processedAt: null,
+      createdAt: new Date(),
+    });
     storageMock.getPolicyByStripeSubscriptionId.mockResolvedValue(cancelledPolicy);
-    // CAS write matches nothing (cancelled -> active is invalid): rethrows, no bind.
-    storageMock.updatePolicyIfStatus.mockResolvedValue(undefined);
+    // cancelled -> active is not a valid transition (cancelled is terminal):
+    // rejected by isValidTransition before any storage write, rethrows, no bind.
 
     const res = await request(app)
       .post("/api/webhooks/stripe")
