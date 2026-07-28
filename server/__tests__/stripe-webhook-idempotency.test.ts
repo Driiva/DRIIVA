@@ -59,8 +59,12 @@ const storageMock = vi.hoisted(() => ({
   createStripeEvent: vi.fn(),
   markStripeEventProcessed: vi.fn(),
   markStripeEventFailed: vi.fn(),
+  getPolicy: vi.fn(),
   getPolicyByStripeSubscriptionId: vi.fn(),
+  createPolicy: vi.fn(),
   updatePolicy: vi.fn(),
+  createPolicyAuditLog: vi.fn(),
+  getPolicyAuditLog: vi.fn(),
 }));
 
 vi.mock("../storage", () => ({ storage: storageMock }));
@@ -153,6 +157,7 @@ describe("Stripe webhook - stripe_events idempotency + audit (M4 Task 2)", () =>
     storageMock.getUserByStripeCustomerId.mockResolvedValue({ id: 7, firebaseUid: "fb-1" });
     storageMock.getStripeEventById.mockResolvedValue(undefined);
     storageMock.getPolicyByStripeSubscriptionId.mockResolvedValue(CANCELLED_POLICY);
+    storageMock.updatePolicy.mockResolvedValue({ ...CANCELLED_POLICY, status: "cancelled" });
 
     const res = await request(app)
       .post("/api/webhooks/stripe")
@@ -169,6 +174,13 @@ describe("Stripe webhook - stripe_events idempotency + audit (M4 Task 2)", () =>
     );
     // Policy state transition observed.
     expect(storageMock.updatePolicy).toHaveBeenCalledWith(42, { status: "cancelled" });
+    // Exactly one audit entry recorded for the transition.
+    expect(storageMock.createPolicyAuditLog).toHaveBeenCalledWith({
+      policyId: 42,
+      fromStatus: "active",
+      toStatus: "cancelled",
+      causedBy: "stripe:evt_sub_deleted_1",
+    });
     // Marked processed after the switch runs successfully.
     expect(storageMock.markStripeEventProcessed).toHaveBeenCalledWith("evt_sub_deleted_1");
     expect(storageMock.markStripeEventFailed).not.toHaveBeenCalled();

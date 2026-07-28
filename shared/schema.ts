@@ -127,6 +127,22 @@ export const stripeEvents = pgTable("stripe_events", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+/**
+ * Policy lifecycle audit trail (M4 Task 3).
+ * Every state-machine transition (server/lib/policyLifecycle.ts) writes exactly
+ * one row here, recording who/what caused it - a Stripe event id
+ * ("stripe:evt_...") or an admin action identifier ("admin:<uid>"). fromStatus
+ * is null for the initial "create" transition (no prior state).
+ */
+export const policyAuditLog = pgTable("policy_audit_log", {
+  id: serial("id").primaryKey(),
+  policyId: integer("policy_id").references(() => policies.id, { onDelete: "cascade" }).notNull(),
+  fromStatus: text("from_status"),
+  toStatus: text("to_status").notNull(),
+  causedBy: text("caused_by").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const achievements = pgTable("achievements", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -208,6 +224,10 @@ export const tripsSummaryRelations = relations(tripsSummary, ({ one }) => ({
 
 export const policiesRelations = relations(policies, ({ one }) => ({
   user: one(users, { fields: [policies.userId], references: [users.id] }),
+}));
+
+export const policyAuditLogRelations = relations(policyAuditLog, ({ one }) => ({
+  policy: one(policies, { fields: [policyAuditLog.policyId], references: [policies.id] }),
 }));
 
 export const drivingProfilesRelations = relations(drivingProfiles, ({ one }) => ({
@@ -312,6 +332,11 @@ export const insertStripeEventSchema = createInsertSchema(stripeEvents).omit({
   createdAt: true,
 });
 
+export const insertPolicyAuditLogSchema = createInsertSchema(policyAuditLog).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -319,6 +344,8 @@ export type TripSummary = typeof tripsSummary.$inferSelect;
 export type InsertTripSummary = z.infer<typeof insertTripsSummarySchema>;
 export type Policy = typeof policies.$inferSelect;
 export type InsertPolicy = z.infer<typeof insertPolicySchema>;
+export type PolicyAuditLog = typeof policyAuditLog.$inferSelect;
+export type InsertPolicyAuditLog = z.infer<typeof insertPolicyAuditLogSchema>;
 export type DrivingProfile = typeof drivingProfiles.$inferSelect;
 export type InsertDrivingProfile = z.infer<typeof insertDrivingProfileSchema>;
 export type Trip = typeof trips.$inferSelect;

@@ -8,6 +8,7 @@ import {
   incidents,
   leaderboard,
   policies,
+  policyAuditLog,
   stripeEvents,
   type User,
   type InsertUser,
@@ -25,6 +26,7 @@ import {
   type Leaderboard,
   type Policy,
   type InsertPolicy,
+  type PolicyAuditLog,
   type StripeEvent,
 } from "@shared/schema";
 import { db } from "./db";
@@ -93,8 +95,19 @@ export interface IStorage {
   markStripeEventFailed(eventId: string): Promise<void>;
 
   // Policy operations
+  getPolicy(id: number): Promise<Policy | undefined>;
   getPolicyByStripeSubscriptionId(subscriptionId: string): Promise<Policy | undefined>;
+  createPolicy(policy: InsertPolicy): Promise<Policy>;
   updatePolicy(id: number, updates: Partial<InsertPolicy>): Promise<Policy | undefined>;
+
+  // Policy lifecycle audit trail (M4 Task 3)
+  createPolicyAuditLog(entry: {
+    policyId: number;
+    fromStatus: string | null;
+    toStatus: string;
+    causedBy: string;
+  }): Promise<PolicyAuditLog>;
+  getPolicyAuditLog(policyId: number): Promise<PolicyAuditLog[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -434,9 +447,19 @@ export class DatabaseStorage implements IStorage {
 
   // --- Policy operations ------------------------------------------------------
 
+  async getPolicy(id: number): Promise<Policy | undefined> {
+    const [policy] = await db.select().from(policies).where(eq(policies.id, id));
+    return policy || undefined;
+  }
+
   async getPolicyByStripeSubscriptionId(subscriptionId: string): Promise<Policy | undefined> {
     const [policy] = await db.select().from(policies).where(eq(policies.stripeSubscriptionId, subscriptionId));
     return policy || undefined;
+  }
+
+  async createPolicy(policy: InsertPolicy): Promise<Policy> {
+    const [row] = await db.insert(policies).values(policy).returning();
+    return row;
   }
 
   async updatePolicy(id: number, updates: Partial<InsertPolicy>): Promise<Policy | undefined> {
@@ -445,6 +468,24 @@ export class DatabaseStorage implements IStorage {
       .where(eq(policies.id, id))
       .returning();
     return policy || undefined;
+  }
+
+  // --- Policy lifecycle audit trail (M4 Task 3) -------------------------------
+
+  async createPolicyAuditLog(entry: {
+    policyId: number;
+    fromStatus: string | null;
+    toStatus: string;
+    causedBy: string;
+  }): Promise<PolicyAuditLog> {
+    const [row] = await db.insert(policyAuditLog).values(entry).returning();
+    return row;
+  }
+
+  async getPolicyAuditLog(policyId: number): Promise<PolicyAuditLog[]> {
+    return db.select().from(policyAuditLog)
+      .where(eq(policyAuditLog.policyId, policyId))
+      .orderBy(asc(policyAuditLog.createdAt));
   }
 }
 

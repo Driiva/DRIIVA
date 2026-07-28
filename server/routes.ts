@@ -30,6 +30,7 @@ import {
   type AuthRequest,
 } from "./middleware/auth";
 import { getStripe, getStripeWebhookSecret, stripeIdempotencyKey } from "./lib/stripe";
+import { transitionPolicy, createPolicyWithAudit, InvalidPolicyTransitionError } from "./lib/policyLifecycle";
 
 // In-memory TTL cache for leaderboard (public, read-heavy, rarely changes)
 const leaderboardCache = new Map<string, { data: unknown; expiresAt: number }>();
@@ -1139,7 +1140,7 @@ export async function registerRoutes(app: Express): Promise<void> {
             console.warn('[Stripe webhook] Could not retrieve subscription metadata:', subErr);
           }
 
-          await handleStripePaymentSucceeded(customerId, subscriptionId, quoteId);
+          await handleStripePaymentSucceeded(customerId, subscriptionId, quoteId, event.id);
           break;
         }
         case 'invoice.payment_failed': {
@@ -1203,24 +1204,30 @@ export async function registerRoutes(app: Express): Promise<void> {
             driivUserId,
             firebaseUid,
           });
-          // Transition the bound policy towards cancelled (reuses policies.status).
-          // TODO(Task 3/4): this is a direct, stopgap status transition, not a real
-          // state machine. Once the policy lifecycle state machine lands (Task 3/4),
-          // route this through it instead of setting status here directly - it
-          // currently has no knowledge of valid prior states or side effects that
-          // should fire on cancellation (refunds, pool exit, notifications).
+          // Transition the bound policy to cancelled via the M4 Task 3 policy
+          // lifecycle state machine (server/lib/policyLifecycle.ts).
           try {
             const policy = await storage.getPolicyByStripeSubscriptionId(sub.id as string);
             if (policy) {
-              // Guard against redundant writes: Stripe can and does redeliver
-              // subscription.deleted (retries, duplicate webhook endpoints, etc).
-              // Only write if the policy isn't already cancelled, so repeated
-              // deliveries are safe no-ops rather than unconditional overwrites.
-              if (policy.status !== 'cancelled') {
-                await storage.updatePolicy(policy.id, { status: 'cancelled' });
+              try {
+                await transitionPolicy({ policy, toStatus: 'cancelled', causedBy: `stripe:${event.id}` });
                 console.log(`[Stripe webhook] Policy ${policy.id} cancelled`);
-              } else {
-                console.log(`[Stripe webhook] Policy ${policy.id} already cancelled - skipping redundant write`);
+              } catch (transitionErr) {
+                // Stripe can and does redeliver subscription.deleted (retries,
+                // duplicate webhook endpoints, etc). A policy that's already
+                // cancelled has no valid outgoing transition (cancelled is
+                // terminal), so a redelivery lands here as a rejected
+                // transition - treat that specific case as a benign no-op, not
+                // a webhook failure. Any other rejection (or non-transition
+                // error) is a real problem and must still fail the webhook.
+                if (
+                  transitionErr instanceof InvalidPolicyTransitionError &&
+                  transitionErr.from === 'cancelled'
+                ) {
+                  console.log(`[Stripe webhook] Policy ${policy.id} already cancelled - skipping redundant transition`);
+                } else {
+                  throw transitionErr;
+                }
               }
             } else {
               console.warn(`[Stripe webhook] No policy bound to subscription ${sub.id} - cannot cancel`);
@@ -1325,15 +1332,70 @@ async function handleStripePaymentSucceeded(
   stripeCustomerId: string,
   stripeSubscriptionId: string,
   quoteId?: string,
+  stripeEventId?: string,
 ): Promise<void> {
-  try {
-    const user = await storage.getUserByStripeCustomerId(stripeCustomerId);
-    if (!user?.firebaseUid) {
-      console.warn(`[Integration] No user found for Stripe customer ${stripeCustomerId}`);
-      return;
-    }
+  const user = await storage.getUserByStripeCustomerId(stripeCustomerId);
+  if (!user) {
+    console.warn(`[Integration] No user found for Stripe customer ${stripeCustomerId}`);
+    return;
+  }
 
-    console.log(`[Integration] Payment succeeded for ${user.firebaseUid} — writing pendingPayment`, { quoteId });
+  // Policy lifecycle (M4 Task 3): create or transition the Postgres policy row
+  // through the state machine. This is the real policy-bind step - it replaces
+  // the client-only flag flip that checkout.tsx used to do on payment success,
+  // and it's a critical side effect (rethrow on failure so Stripe redelivers),
+  // unlike the Firestore pendingPayment write below which stays best-effort.
+  const causedBy = stripeEventId ? `stripe:${stripeEventId}` : `stripe:sub:${stripeSubscriptionId}`;
+  try {
+    const existingPolicy = await storage.getPolicyByStripeSubscriptionId(stripeSubscriptionId);
+    if (existingPolicy) {
+      try {
+        await transitionPolicy({ policy: existingPolicy, toStatus: 'active', causedBy });
+        console.log(`[Integration] Policy ${existingPolicy.id} transitioned to active`);
+      } catch (transitionErr) {
+        // Payment succeeded on an already-active policy (e.g. a redelivered
+        // event, or a renewal invoice on a still-active policy) has no valid
+        // active -> active transition - benign no-op, not a failure.
+        if (transitionErr instanceof InvalidPolicyTransitionError) {
+          console.log(`[Integration] Policy ${existingPolicy.id} already ${existingPolicy.status} - no transition needed`, {
+            attempted: `${transitionErr.from} -> ${transitionErr.to}`,
+          });
+        } else {
+          throw transitionErr;
+        }
+      }
+    } else {
+      const now = new Date();
+      const expiration = new Date(now);
+      expiration.setFullYear(expiration.getFullYear() + 1);
+      const { policy } = await createPolicyWithAudit({
+        policy: {
+          userId: user.id,
+          policyNumber: `POL-${stripeSubscriptionId}`,
+          status: 'active',
+          coverageType: 'standard',
+          basePremiumCents: 0,
+          currentPremiumCents: 0,
+          effectiveDate: now,
+          expirationDate: expiration,
+          stripeSubscriptionId,
+        },
+        causedBy,
+      });
+      console.log(`[Integration] Policy ${policy.id} created (active) for ${user.id}`);
+    }
+  } catch (policyErr) {
+    console.error('[Integration] Failed to create/transition policy:', policyErr);
+    throw policyErr;
+  }
+
+  if (!user.firebaseUid) {
+    console.warn(`[Integration] User ${user.id} has no firebaseUid - skipping Firestore pendingPayment write`);
+    return;
+  }
+
+  try {
+    console.log(`[Integration] Payment succeeded for ${user.firebaseUid} - writing pendingPayment`, { quoteId });
 
     const adminLib = await import('./lib/firebase-admin');
     const adminApp = adminLib.getFirebaseAdmin();

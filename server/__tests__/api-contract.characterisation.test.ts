@@ -61,8 +61,12 @@ vi.mock("../storage", () => ({
     createStripeEvent: vi.fn(),
     markStripeEventProcessed: vi.fn(),
     markStripeEventFailed: vi.fn(),
+    getPolicy: vi.fn(),
     getPolicyByStripeSubscriptionId: vi.fn(),
+    createPolicy: vi.fn(),
     updatePolicy: vi.fn(),
+    createPolicyAuditLog: vi.fn(),
+    getPolicyAuditLog: vi.fn(),
   },
 }));
 
@@ -601,6 +605,8 @@ describe("API-35 Stripe webhook", () => {
     });
     stripeMock.subscriptions.retrieve.mockResolvedValue({ metadata: { quoteId: "q_1" } });
     vi.mocked(storage.getUserByStripeCustomerId).mockResolvedValue(NEON_USER as never);
+    vi.mocked(storage.getPolicyByStripeSubscriptionId).mockResolvedValue(undefined as never);
+    vi.mocked(storage.createPolicy).mockResolvedValue({ id: 99, status: "active" } as never);
     admin.mockReturnValue(null);
     const res = await request(app)
       .post("/api/webhooks/stripe")
@@ -617,6 +623,8 @@ describe("API-35 Stripe webhook", () => {
     });
     stripeMock.subscriptions.retrieve.mockResolvedValue({ metadata: { quoteId: "q_1" } });
     vi.mocked(storage.getUserByStripeCustomerId).mockResolvedValue(NEON_USER as never);
+    vi.mocked(storage.getPolicyByStripeSubscriptionId).mockResolvedValue(undefined as never);
+    vi.mocked(storage.createPolicy).mockResolvedValue({ id: 99, status: "active" } as never);
 
     const set = vi.fn().mockResolvedValue(undefined);
     const chain = {
