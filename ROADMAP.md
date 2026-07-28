@@ -19,7 +19,7 @@
 - [x] Remove dead duplicate-trap components; correct package name - *done: `f748d7c`*
 - [x] Repaint onboarding to Driiva instrument palette; eliminate re-centre jump - *done: `8fe9e29`*
 - [ ] Root Platform credentials - sandbox key needed from Root to activate insurance quote/bind/policy endpoints
-- [ ] Stripe end-to-end - dependencies present, webhook handlers and payment flow not wired
+- [ ] Stripe end-to-end - webhook handlers, idempotency, and policy lifecycle state machine now wired on `rebuild/m4-payments` (not yet merged to main); still blocked on Root sandbox creds for the quote/bind step
 - [ ] WebAuthn UI - backend scaffolded, frontend not built
 - [ ] Phone pickup detection - scoring weight reserved at 10%, currently hardcoded to 100
 
@@ -71,9 +71,9 @@
 ## Sprint: "Make It Payable" (Week 5–6)
 
 - [ ] Build Stripe checkout for premium payments
-- [ ] Build Stripe webhook handlers (payment success, subscription changes)
-- [ ] Wire premium payments to community pool contributions
-- [ ] Test Root Platform quote → accept → policy flow end-to-end
+- [x] Build Stripe webhook handlers (payment success, subscription changes) - *done on `rebuild/m4-payments` (not yet merged to main): idempotent `stripe_events` table, real handlers for `payment_failed`/`subscription.deleted`/`checkout.session.completed`, policy lifecycle state machine with an audit-log trail on every transition, real premium/coverage/expiration bound from the actual Stripe invoice+subscription instead of hardcoded placeholders - `226233c`, `1cb66ef`, `1a0b2a6`, `58668a8`, `cb6bae7`*
+- [ ] Wire premium payments to community pool contributions - *emit seam landed (`ba1326d`): `handleStripePaymentSucceeded` now emits a `PoolContributionEvent` carrying the Stripe event id, but M3's pool ledger consumer doesn't exist yet (blocked on D6), so it only logs today*
+- [ ] Test Root Platform quote → accept → policy flow end-to-end - *RootAdapter interface seam landed (`ba1326d`): typed interface + `RootHttpAdapter` wrapping the existing HTTP calls, still unverified pending Root sandbox creds*
 - [ ] Add premium amount display on policy page
 - [ ] Set `ENCRYPTION_KEY` env var in production (required - server now refuses to store telematics data without it)
 
@@ -98,7 +98,7 @@ These are known gaps that don't have tickets yet:
 
 - [x] **Weather API** - *done: Open-Meteo archive API (free, no key). `functions/src/utils/weather.ts` fetches WMO weather codes and maps to clear/cloudy/rain/snow/fog/storm. Wired into trip processing triggers. 3s timeout, graceful fallback to null.*
 - [ ] **Root Platform credentials** - scaffolded but not wired. Needs sandbox creds from Root to test quote → bind → policy flow. Once wired, the `/api/insurance` endpoints become live.
-- [ ] **Stripe wiring** - dependencies installed, tables exist, webhooks scaffolded. Premium payments and pool contributions not yet connected end-to-end.
+- [ ] **Stripe wiring** - webhook handlers, idempotency, and the policy lifecycle state machine now wired on `rebuild/m4-payments` (not yet merged to main). Pool-contribution emit seam landed but has no consumer yet (blocked on M3/D6).
 - [x] **Profile page real data** - *done: profile.tsx reads from useDashboardData hook; edit mode for name/phone/vehicle writes to Firestore via updateDoc; loading skeletons on every section; error state with retry*
 - [x] **Trip route visualisation** - TripRouteMap component + TripDetail page wired.
 - [ ] **Phone pickup detection** - scoring has a 10% weight for phone usage but it's hardcoded to 100 (no penalty). Needs accelerometer pattern recognition to detect phone pickups while driving.
