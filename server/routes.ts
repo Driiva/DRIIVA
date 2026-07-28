@@ -31,6 +31,7 @@ import {
 } from "./middleware/auth";
 import { getStripe, getStripeWebhookSecret, stripeIdempotencyKey } from "./lib/stripe";
 import { transitionPolicy, createPolicyWithAudit, InvalidPolicyTransitionError } from "./lib/policyLifecycle";
+import { emitPoolContribution } from "./lib/poolContribution";
 
 // In-memory TTL cache for leaderboard (public, read-heavy, rarely changes)
 const leaderboardCache = new Map<string, { data: unknown; expiresAt: number }>();
@@ -1140,7 +1141,7 @@ export async function registerRoutes(app: Express): Promise<void> {
             console.warn('[Stripe webhook] Could not retrieve subscription metadata:', subErr);
           }
 
-          await handleStripePaymentSucceeded(customerId, subscriptionId, quoteId, event.id);
+          await handleStripePaymentSucceeded(customerId, subscriptionId, quoteId, event.id, invoice.amount_paid);
           break;
         }
         case 'invoice.payment_failed': {
@@ -1350,6 +1351,7 @@ async function handleStripePaymentSucceeded(
   stripeSubscriptionId: string,
   quoteId?: string,
   stripeEventId?: string,
+  amountPaidCents?: number,
 ): Promise<void> {
   const user = await storage.getUserByStripeCustomerId(stripeCustomerId);
   if (!user) {
@@ -1363,9 +1365,11 @@ async function handleStripePaymentSucceeded(
   // and it's a critical side effect (rethrow on failure so Stripe redelivers),
   // unlike the Firestore pendingPayment write below which stays best-effort.
   const causedBy = stripeEventId ? `stripe:${stripeEventId}` : `stripe:sub:${stripeSubscriptionId}`;
+  let boundPolicyId: string | number | undefined;
   try {
     const existingPolicy = await storage.getPolicyByStripeSubscriptionId(stripeSubscriptionId);
     if (existingPolicy) {
+      boundPolicyId = existingPolicy.id;
       try {
         await transitionPolicy({ policy: existingPolicy, toStatus: 'active', causedBy });
         console.log(`[Integration] Policy ${existingPolicy.id} transitioned to active`);
@@ -1407,11 +1411,26 @@ async function handleStripePaymentSucceeded(
         },
         causedBy,
       });
+      boundPolicyId = policy.id;
       console.log(`[Integration] Policy ${policy.id} created (active) for ${user.id}`);
     }
   } catch (policyErr) {
     console.error('[Integration] Failed to create/transition policy:', policyErr);
     throw policyErr;
+  }
+
+  // Pool-contribution seam (M4 Task 4): emit exactly once per successful
+  // payment, after the policy bind/transition above has succeeded (including
+  // the benign already-active no-op - money was still received). M3 doesn't
+  // exist yet, so this only logs today - see server/lib/poolContribution.ts.
+  if (boundPolicyId) {
+    emitPoolContribution({
+      userId: user.id,
+      policyId: boundPolicyId,
+      amountCents: amountPaidCents ?? 0,
+      source: 'stripe_payment_succeeded',
+      timestamp: new Date(),
+    });
   }
 
   if (!user.firebaseUid) {
