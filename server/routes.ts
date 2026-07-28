@@ -1212,8 +1212,16 @@ export async function registerRoutes(app: Express): Promise<void> {
           try {
             const policy = await storage.getPolicyByStripeSubscriptionId(sub.id as string);
             if (policy) {
-              await storage.updatePolicy(policy.id, { status: 'cancelled' });
-              console.log(`[Stripe webhook] Policy ${policy.id} cancelled`);
+              // Guard against redundant writes: Stripe can and does redeliver
+              // subscription.deleted (retries, duplicate webhook endpoints, etc).
+              // Only write if the policy isn't already cancelled, so repeated
+              // deliveries are safe no-ops rather than unconditional overwrites.
+              if (policy.status !== 'cancelled') {
+                await storage.updatePolicy(policy.id, { status: 'cancelled' });
+                console.log(`[Stripe webhook] Policy ${policy.id} cancelled`);
+              } else {
+                console.log(`[Stripe webhook] Policy ${policy.id} already cancelled - skipping redundant write`);
+              }
             } else {
               console.warn(`[Stripe webhook] No policy bound to subscription ${sub.id} - cannot cancel`);
             }

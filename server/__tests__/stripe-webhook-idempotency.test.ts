@@ -229,6 +229,52 @@ describe("Stripe webhook - stripe_events idempotency + audit (M4 Task 2)", () =>
     expect(storageMock.markStripeEventFailed).toHaveBeenCalledWith("evt_sub_deleted_fail");
   });
 
+  it("subscription.deleted is safe on repeated delivery: a policy already cancelled is not re-written (guarded, not unconditional)", async () => {
+    // First delivery: policy starts 'active', event.id is new -> real write.
+    const policy = { ...CANCELLED_POLICY, status: "active" };
+    stripeMock.webhooks.constructEvent.mockReturnValue({
+      id: "evt_sub_deleted_2",
+      type: "customer.subscription.deleted",
+      data: { object: { id: "sub_123", customer: "cus_1" } },
+    });
+    storageMock.getUserByStripeCustomerId.mockResolvedValue({ id: 7, firebaseUid: "fb-1" });
+    storageMock.getStripeEventById.mockResolvedValueOnce(undefined);
+    storageMock.getPolicyByStripeSubscriptionId.mockResolvedValue(policy);
+    storageMock.updatePolicy.mockResolvedValue({ ...policy, status: "cancelled" });
+
+    const first = await request(app)
+      .post("/api/webhooks/stripe")
+      .set("stripe-signature", "ok")
+      .set("content-type", "application/json")
+      .send(rawBody);
+
+    expect(first.status).toBe(200);
+    expect(storageMock.updatePolicy).toHaveBeenCalledTimes(1);
+    expect(storageMock.updatePolicy).toHaveBeenCalledWith(42, { status: "cancelled" });
+
+    // Second delivery for the same subscription, simulating a redelivery that
+    // reaches the switch again (e.g. stripe_events dedupe was bypassed, or a
+    // second distinct event.id targets the same subscription). The
+    // handler-level guard (skip if policy.status === 'cancelled') is what makes
+    // this safe regardless of the event.id dedupe layer. The policy is now
+    // already cancelled from the first call.
+    const cancelledPolicy = { ...policy, status: "cancelled" };
+    storageMock.getStripeEventById.mockResolvedValueOnce(undefined);
+    storageMock.getPolicyByStripeSubscriptionId.mockResolvedValue(cancelledPolicy);
+    storageMock.updatePolicy.mockClear();
+
+    const second = await request(app)
+      .post("/api/webhooks/stripe")
+      .set("stripe-signature", "ok")
+      .set("content-type", "application/json")
+      .send(rawBody);
+
+    expect(second.status).toBe(200);
+    // No redundant write: exactly zero further calls to updatePolicy on this
+    // second delivery, since the policy is already in the terminal state.
+    expect(storageMock.updatePolicy).not.toHaveBeenCalled();
+  });
+
   it("invoice.payment_failed persists past_due against the bound policy", async () => {
     stripeMock.webhooks.constructEvent.mockReturnValue({
       id: "evt_invoice_failed_1",
