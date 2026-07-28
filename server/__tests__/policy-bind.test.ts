@@ -221,6 +221,43 @@ describe("C1: policy bind carries real premium/term data", () => {
     expect(createdPolicy.status).toBe("active");
   });
 
+  it("reads current_period_end from the subscription root when the pinned Stripe API version (acacia) doesn't carry it on items, not just the newer (basil) items-shaped field", async () => {
+    // server/lib/stripe.ts pins apiVersion 2025-01-27.acacia. Under that version
+    // current_period_end lives on the subscription object itself, not on
+    // subscription items (that moved in 2025-03-31.basil). stripe-node's types
+    // reflect the newer shape regardless of the pinned version, so a fix that only
+    // reads sub.items.data[0].current_period_end silently falls back on every real
+    // acacia-shaped response.
+    const currentPeriodEndUnix = Math.floor(new Date("2027-06-15T00:00:00.000Z").getTime() / 1000);
+    stripeMock.webhooks.constructEvent.mockReturnValue({
+      id: "evt_c1_acacia_shape",
+      type: "invoice.payment_succeeded",
+      data: { object: { customer: "cus_1", subscription: "sub_c1_acacia", amount_paid: 9900 } },
+    });
+    stripeMock.subscriptions.retrieve.mockResolvedValue({
+      metadata: { billingPeriod: "annual" },
+      // acacia shape: current_period_end on the root, absent from items.
+      current_period_end: currentPeriodEndUnix,
+      items: { data: [{ plan: { interval: "year" } }] },
+    });
+    storageMock.getUserByStripeCustomerId.mockResolvedValue({ id: 7, firebaseUid: undefined });
+    storageMock.createStripeEvent.mockResolvedValue(receivedRow("evt_c1_acacia_shape", "invoice.payment_succeeded"));
+    storageMock.getPolicyByStripeSubscriptionId.mockResolvedValue(undefined);
+    storageMock.createPolicy.mockImplementation(async (policy: any) => ({ id: 502, ...policy }));
+    storageMock.createPolicyAuditLog.mockResolvedValue({ id: 1 });
+
+    const res = await request(app)
+      .post("/api/webhooks/stripe")
+      .set("stripe-signature", "ok")
+      .set("content-type", "application/json")
+      .send(rawBody);
+
+    expect(res.status).toBe(200);
+    expect(storageMock.createPolicy).toHaveBeenCalledTimes(1);
+    const createdPolicy = storageMock.createPolicy.mock.calls[0][0];
+    expect(createdPolicy.expirationDate).toEqual(new Date(currentPeriodEndUnix * 1000));
+  });
+
   it("resolves coverageType from the stored Firestore quote when quoteId + Admin are both available", async () => {
     stripeMock.webhooks.constructEvent.mockReturnValue({
       id: "evt_c1_quote",

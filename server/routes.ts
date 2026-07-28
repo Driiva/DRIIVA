@@ -1153,10 +1153,16 @@ export async function registerRoutes(app: Express): Promise<void> {
             const sub = await stripe.subscriptions.retrieve(subscriptionId);
             quoteId = sub.metadata?.quoteId;
             billingPeriod = resolveSubscriptionBillingPeriod(sub);
+            // Stripe API version pinned in server/lib/stripe.ts (2025-01-27.acacia) still
+            // carries current_period_end on the subscription root; it only moved onto
+            // subscription items in the 2025-03-31.basil release. stripe-node's TypeScript
+            // types reflect the newer (Basil) shape regardless of the pinned API version, so
+            // this must check the root field first or it silently falls back on every bind.
+            const subRootPeriodEnd = (sub as unknown as { current_period_end?: number }).current_period_end;
             const firstItem = sub.items?.data?.[0];
-            currentPeriodEndUnix = typeof firstItem?.current_period_end === 'number'
-              ? firstItem.current_period_end
-              : undefined;
+            currentPeriodEndUnix = typeof subRootPeriodEnd === 'number'
+              ? subRootPeriodEnd
+              : (typeof firstItem?.current_period_end === 'number' ? firstItem.current_period_end : undefined);
           } catch (subErr) {
             console.warn('[Stripe webhook] Could not retrieve subscription metadata:', subErr);
           }
