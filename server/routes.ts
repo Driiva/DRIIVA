@@ -1165,18 +1165,35 @@ export async function registerRoutes(app: Express): Promise<void> {
             driivUserId,
             firebaseUid,
           });
-          // Persist past_due against the bound policy. Reuses policies.status (no new
-          // column - the field already exists and takes free-text values like
-          // "pending"/"active"). This IS a critical side effect (unlike the lookup
-          // above): if the write fails we rethrow so the outer catch 500s and Stripe
-          // redelivers, rather than silently dropping a past_due transition.
+          // Persist past_due against the bound policy via the M4 Task 3 policy
+          // lifecycle state machine (server/lib/policyLifecycle.ts), not a raw
+          // status write - so the transition is validated and audited like every
+          // other status change. This IS a critical side effect: if the write
+          // fails we rethrow so the outer catch 500s and Stripe redelivers,
+          // rather than silently dropping a past_due transition.
           const failedSubscriptionId = invoice.subscription as string | undefined;
           if (failedSubscriptionId) {
             try {
               const policy = await storage.getPolicyByStripeSubscriptionId(failedSubscriptionId);
               if (policy) {
-                await storage.updatePolicy(policy.id, { status: 'past_due' });
-                console.log(`[Stripe webhook] Policy ${policy.id} marked past_due`);
+                try {
+                  await transitionPolicy({ policy, toStatus: 'past_due', causedBy: `stripe:${event.id}` });
+                  console.log(`[Stripe webhook] Policy ${policy.id} marked past_due`);
+                } catch (transitionErr) {
+                  // A policy that's cancelled or lapsed has no valid transition to
+                  // past_due (cancelled is terminal; lapsed only goes to
+                  // active/cancelled) - a redelivered or late payment_failed event
+                  // against such a policy is a benign no-op, not a webhook failure.
+                  // Any other rejection is a real problem and must still fail the
+                  // webhook.
+                  if (transitionErr instanceof InvalidPolicyTransitionError) {
+                    console.log(`[Stripe webhook] Policy ${policy.id} cannot move to past_due from ${transitionErr.from} - skipping`, {
+                      attempted: `${transitionErr.from} -> ${transitionErr.to}`,
+                    });
+                  } else {
+                    throw transitionErr;
+                  }
+                }
               } else {
                 console.warn(`[Stripe webhook] No policy bound to subscription ${failedSubscriptionId} - cannot persist past_due`);
               }
@@ -1355,8 +1372,16 @@ async function handleStripePaymentSucceeded(
       } catch (transitionErr) {
         // Payment succeeded on an already-active policy (e.g. a redelivered
         // event, or a renewal invoice on a still-active policy) has no valid
-        // active -> active transition - benign no-op, not a failure.
-        if (transitionErr instanceof InvalidPolicyTransitionError) {
+        // active -> active transition - benign no-op, not a failure. Only that
+        // exact case is swallowed: anything else (e.g. cancelled -> active, a
+        // payment landing on a cancelled policy) is a genuine reconciliation
+        // signal and must rethrow so the webhook still errors and gets
+        // investigated, not silently swallowed.
+        if (
+          transitionErr instanceof InvalidPolicyTransitionError &&
+          transitionErr.from === 'active' &&
+          transitionErr.to === 'active'
+        ) {
           console.log(`[Integration] Policy ${existingPolicy.id} already ${existingPolicy.status} - no transition needed`, {
             attempted: `${transitionErr.from} -> ${transitionErr.to}`,
           });

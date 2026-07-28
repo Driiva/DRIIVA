@@ -65,6 +65,7 @@ vi.mock("../storage", () => ({
     getPolicyByStripeSubscriptionId: vi.fn(),
     createPolicy: vi.fn(),
     updatePolicy: vi.fn(),
+    updatePolicyIfStatus: vi.fn(),
     createPolicyAuditLog: vi.fn(),
     getPolicyAuditLog: vi.fn(),
   },

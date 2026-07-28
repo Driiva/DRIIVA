@@ -80,9 +80,15 @@ export async function transitionPolicy(params: {
     throw new InvalidPolicyTransitionError(fromStatus, params.toStatus);
   }
 
-  const updated = await storage.updatePolicy(params.policy.id, { status: params.toStatus });
+  // Optimistic-concurrency write: the WHERE clause includes `status = fromStatus`,
+  // so if another caller already moved this policy off `fromStatus` between our
+  // read and this write (e.g. two webhooks racing on the same policy), zero rows
+  // match and `updated` comes back undefined. Treat that identically to a
+  // pre-validated invalid transition - reject, write no audit row - rather than
+  // silently overwriting a status another handler just set.
+  const updated = await storage.updatePolicyIfStatus(params.policy.id, fromStatus, { status: params.toStatus });
   if (!updated) {
-    throw new Error(`Policy ${params.policy.id} disappeared during transition to ${params.toStatus}`);
+    throw new InvalidPolicyTransitionError(fromStatus, params.toStatus);
   }
 
   const audit = await storage.createPolicyAuditLog({

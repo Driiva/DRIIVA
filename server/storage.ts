@@ -99,6 +99,7 @@ export interface IStorage {
   getPolicyByStripeSubscriptionId(subscriptionId: string): Promise<Policy | undefined>;
   createPolicy(policy: InsertPolicy): Promise<Policy>;
   updatePolicy(id: number, updates: Partial<InsertPolicy>): Promise<Policy | undefined>;
+  updatePolicyIfStatus(id: number, fromStatus: string, updates: Partial<InsertPolicy>): Promise<Policy | undefined>;
 
   // Policy lifecycle audit trail (M4 Task 3)
   createPolicyAuditLog(entry: {
@@ -466,6 +467,19 @@ export class DatabaseStorage implements IStorage {
     const [policy] = await db.update(policies)
       .set({ ...updates, updatedAt: new Date() })
       .where(eq(policies.id, id))
+      .returning();
+    return policy || undefined;
+  }
+
+  // Optimistic-concurrency write: only applies `updates` if the row's current
+  // status still matches `fromStatus` at write time. Returns undefined (zero
+  // rows affected) if another writer already moved the policy off `fromStatus`
+  // - callers (transitionPolicy) must treat that as a rejected transition, not
+  // retry or fall back to an unconditional write.
+  async updatePolicyIfStatus(id: number, fromStatus: string, updates: Partial<InsertPolicy>): Promise<Policy | undefined> {
+    const [policy] = await db.update(policies)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(and(eq(policies.id, id), eq(policies.status, fromStatus)))
       .returning();
     return policy || undefined;
   }

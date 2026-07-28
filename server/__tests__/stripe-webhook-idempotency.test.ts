@@ -63,6 +63,7 @@ const storageMock = vi.hoisted(() => ({
   getPolicyByStripeSubscriptionId: vi.fn(),
   createPolicy: vi.fn(),
   updatePolicy: vi.fn(),
+  updatePolicyIfStatus: vi.fn(),
   createPolicyAuditLog: vi.fn(),
   getPolicyAuditLog: vi.fn(),
 }));
@@ -157,7 +158,7 @@ describe("Stripe webhook - stripe_events idempotency + audit (M4 Task 2)", () =>
     storageMock.getUserByStripeCustomerId.mockResolvedValue({ id: 7, firebaseUid: "fb-1" });
     storageMock.getStripeEventById.mockResolvedValue(undefined);
     storageMock.getPolicyByStripeSubscriptionId.mockResolvedValue(CANCELLED_POLICY);
-    storageMock.updatePolicy.mockResolvedValue({ ...CANCELLED_POLICY, status: "cancelled" });
+    storageMock.updatePolicyIfStatus.mockResolvedValue({ ...CANCELLED_POLICY, status: "cancelled" });
 
     const res = await request(app)
       .post("/api/webhooks/stripe")
@@ -173,7 +174,7 @@ describe("Stripe webhook - stripe_events idempotency + audit (M4 Task 2)", () =>
       expect.objectContaining({ id: "evt_sub_deleted_1", type: "customer.subscription.deleted" })
     );
     // Policy state transition observed.
-    expect(storageMock.updatePolicy).toHaveBeenCalledWith(42, { status: "cancelled" });
+    expect(storageMock.updatePolicyIfStatus).toHaveBeenCalledWith(42, "active", { status: "cancelled" });
     // Exactly one audit entry recorded for the transition.
     expect(storageMock.createPolicyAuditLog).toHaveBeenCalledWith({
       policyId: 42,
@@ -209,7 +210,7 @@ describe("Stripe webhook - stripe_events idempotency + audit (M4 Task 2)", () =>
     expect(res.body).toEqual({ received: true });
     // Side effects did NOT re-run.
     expect(storageMock.getPolicyByStripeSubscriptionId).not.toHaveBeenCalled();
-    expect(storageMock.updatePolicy).not.toHaveBeenCalled();
+    expect(storageMock.updatePolicyIfStatus).not.toHaveBeenCalled();
     expect(storageMock.createStripeEvent).not.toHaveBeenCalled();
   });
 
@@ -222,7 +223,7 @@ describe("Stripe webhook - stripe_events idempotency + audit (M4 Task 2)", () =>
     storageMock.getUserByStripeCustomerId.mockResolvedValue({ id: 7, firebaseUid: "fb-1" });
     storageMock.getStripeEventById.mockResolvedValue(undefined);
     storageMock.getPolicyByStripeSubscriptionId.mockResolvedValue(CANCELLED_POLICY);
-    storageMock.updatePolicy.mockRejectedValue(new Error("simulated DB write failure"));
+    storageMock.updatePolicyIfStatus.mockRejectedValue(new Error("simulated DB write failure"));
 
     const res = await request(app)
       .post("/api/webhooks/stripe")
@@ -252,7 +253,7 @@ describe("Stripe webhook - stripe_events idempotency + audit (M4 Task 2)", () =>
     storageMock.getUserByStripeCustomerId.mockResolvedValue({ id: 7, firebaseUid: "fb-1" });
     storageMock.getStripeEventById.mockResolvedValueOnce(undefined);
     storageMock.getPolicyByStripeSubscriptionId.mockResolvedValue(policy);
-    storageMock.updatePolicy.mockResolvedValue({ ...policy, status: "cancelled" });
+    storageMock.updatePolicyIfStatus.mockResolvedValue({ ...policy, status: "cancelled" });
 
     const first = await request(app)
       .post("/api/webhooks/stripe")
@@ -261,8 +262,8 @@ describe("Stripe webhook - stripe_events idempotency + audit (M4 Task 2)", () =>
       .send(rawBody);
 
     expect(first.status).toBe(200);
-    expect(storageMock.updatePolicy).toHaveBeenCalledTimes(1);
-    expect(storageMock.updatePolicy).toHaveBeenCalledWith(42, { status: "cancelled" });
+    expect(storageMock.updatePolicyIfStatus).toHaveBeenCalledTimes(1);
+    expect(storageMock.updatePolicyIfStatus).toHaveBeenCalledWith(42, "active", { status: "cancelled" });
 
     // Second delivery for the same subscription, simulating a redelivery that
     // reaches the switch again (e.g. stripe_events dedupe was bypassed, or a
@@ -273,7 +274,7 @@ describe("Stripe webhook - stripe_events idempotency + audit (M4 Task 2)", () =>
     const cancelledPolicy = { ...policy, status: "cancelled" };
     storageMock.getStripeEventById.mockResolvedValueOnce(undefined);
     storageMock.getPolicyByStripeSubscriptionId.mockResolvedValue(cancelledPolicy);
-    storageMock.updatePolicy.mockClear();
+    storageMock.updatePolicyIfStatus.mockClear();
 
     const second = await request(app)
       .post("/api/webhooks/stripe")
@@ -282,12 +283,13 @@ describe("Stripe webhook - stripe_events idempotency + audit (M4 Task 2)", () =>
       .send(rawBody);
 
     expect(second.status).toBe(200);
-    // No redundant write: exactly zero further calls to updatePolicy on this
-    // second delivery, since the policy is already in the terminal state.
-    expect(storageMock.updatePolicy).not.toHaveBeenCalled();
+    // No redundant write: exactly zero further calls to updatePolicyIfStatus on
+    // this second delivery, since the policy is already in the terminal state
+    // and cancelled -> cancelled is rejected before any write is attempted.
+    expect(storageMock.updatePolicyIfStatus).not.toHaveBeenCalled();
   });
 
-  it("invoice.payment_failed persists past_due against the bound policy", async () => {
+  it("invoice.payment_failed routes through the state machine: valid active -> past_due writes exactly one audit row", async () => {
     stripeMock.webhooks.constructEvent.mockReturnValue({
       id: "evt_invoice_failed_1",
       type: "invoice.payment_failed",
@@ -295,8 +297,8 @@ describe("Stripe webhook - stripe_events idempotency + audit (M4 Task 2)", () =>
     });
     storageMock.getUserByStripeCustomerId.mockResolvedValue({ id: 7, firebaseUid: "fb-1" });
     storageMock.getStripeEventById.mockResolvedValue(undefined);
-    storageMock.getPolicyByStripeSubscriptionId.mockResolvedValue(CANCELLED_POLICY);
-    storageMock.updatePolicy.mockResolvedValue({ ...CANCELLED_POLICY, status: "past_due" });
+    storageMock.getPolicyByStripeSubscriptionId.mockResolvedValue(CANCELLED_POLICY); // status: "active"
+    storageMock.updatePolicyIfStatus.mockResolvedValue({ ...CANCELLED_POLICY, status: "past_due" });
 
     const res = await request(app)
       .post("/api/webhooks/stripe")
@@ -305,7 +307,67 @@ describe("Stripe webhook - stripe_events idempotency + audit (M4 Task 2)", () =>
       .send(rawBody);
 
     expect(res.status).toBe(200);
-    expect(storageMock.updatePolicy).toHaveBeenCalledWith(42, { status: "past_due" });
+    expect(storageMock.updatePolicyIfStatus).toHaveBeenCalledWith(42, "active", { status: "past_due" });
+    expect(storageMock.createPolicyAuditLog).toHaveBeenCalledTimes(1);
+    expect(storageMock.createPolicyAuditLog).toHaveBeenCalledWith({
+      policyId: 42,
+      fromStatus: "active",
+      toStatus: "past_due",
+      causedBy: "stripe:evt_invoice_failed_1",
+    });
     expect(storageMock.markStripeEventProcessed).toHaveBeenCalledWith("evt_invoice_failed_1");
+  });
+
+  it("invoice.payment_failed on an already-cancelled policy is rejected as a benign no-op: no audit row, no crash", async () => {
+    const cancelledPolicy = { ...CANCELLED_POLICY, status: "cancelled" };
+    stripeMock.webhooks.constructEvent.mockReturnValue({
+      id: "evt_invoice_failed_2",
+      type: "invoice.payment_failed",
+      data: { object: { id: "in_2", customer: "cus_1", subscription: "sub_123", attempt_count: 2 } },
+    });
+    storageMock.getUserByStripeCustomerId.mockResolvedValue({ id: 7, firebaseUid: "fb-1" });
+    storageMock.getStripeEventById.mockResolvedValue(undefined);
+    storageMock.getPolicyByStripeSubscriptionId.mockResolvedValue(cancelledPolicy);
+    // CAS write matches nothing because the row is already "cancelled", not "active".
+    storageMock.updatePolicyIfStatus.mockResolvedValue(undefined);
+
+    const res = await request(app)
+      .post("/api/webhooks/stripe")
+      .set("stripe-signature", "ok")
+      .set("content-type", "application/json")
+      .send(rawBody);
+
+    expect(res.status).toBe(200);
+    expect(storageMock.createPolicyAuditLog).not.toHaveBeenCalled();
+    expect(storageMock.markStripeEventProcessed).toHaveBeenCalledWith("evt_invoice_failed_2");
+    expect(storageMock.markStripeEventFailed).not.toHaveBeenCalled();
+  });
+
+  it("payment_succeeded on a cancelled policy is a genuine reconciliation signal, not swallowed: rethrows, 500s, not marked processed", async () => {
+    const cancelledPolicy = { ...CANCELLED_POLICY, status: "cancelled" };
+    stripeMock.webhooks.constructEvent.mockReturnValue({
+      id: "evt_payment_succeeded_1",
+      type: "invoice.payment_succeeded",
+      data: { object: { customer: "cus_1", subscription: "sub_123" } },
+    });
+    stripeMock.subscriptions.retrieve.mockResolvedValue({ metadata: {} });
+    storageMock.getUserByStripeCustomerId.mockResolvedValue({ id: 7, firebaseUid: "fb-1" });
+    storageMock.getStripeEventById.mockResolvedValue(undefined);
+    storageMock.getPolicyByStripeSubscriptionId.mockResolvedValue(cancelledPolicy);
+    // CAS write matches nothing: the row is "cancelled", not "active", so
+    // transitionPolicy's narrowed catch must NOT treat this as the benign
+    // active -> active no-op case - it must rethrow.
+    storageMock.updatePolicyIfStatus.mockResolvedValue(undefined);
+
+    const res = await request(app)
+      .post("/api/webhooks/stripe")
+      .set("stripe-signature", "ok")
+      .set("content-type", "application/json")
+      .send(rawBody);
+
+    expect(res.status).toBe(500);
+    expect(storageMock.createPolicyAuditLog).not.toHaveBeenCalled();
+    expect(storageMock.markStripeEventProcessed).not.toHaveBeenCalled();
+    expect(storageMock.markStripeEventFailed).toHaveBeenCalledWith("evt_payment_succeeded_1");
   });
 });

@@ -40,6 +40,17 @@ const storageMock = vi.hoisted(() => ({
     if (updates.status) row.status = updates.status;
     return row;
   }),
+  // CAS write matching the real DatabaseStorage.updatePolicyIfStatus contract:
+  // only applies `updates` (and returns the row) if the in-memory row's status
+  // still equals `fromStatus`; returns undefined on a stale-status mismatch
+  // (zero rows would match the real `WHERE id = ? AND status = ?`).
+  updatePolicyIfStatus: vi.fn(async (id: number, fromStatus: string, updates: { status?: string }) => {
+    const row = state.policies.get(id);
+    if (!row) return undefined;
+    if (row.status !== fromStatus) return undefined;
+    if (updates.status) row.status = updates.status;
+    return row;
+  }),
   createPolicyAuditLog: vi.fn(async (entry: { policyId: number; fromStatus: string | null; toStatus: string; causedBy: string }) => {
     const row: FakeAuditRow = { id: state.nextAuditId++, ...entry };
     state.auditLog.push(row);
@@ -74,6 +85,13 @@ beforeEach(() => {
   storageMock.updatePolicy.mockImplementation(async (id: number, updates: { status?: string }) => {
     const row = state.policies.get(id);
     if (!row) return undefined;
+    if (updates.status) row.status = updates.status;
+    return row;
+  });
+  storageMock.updatePolicyIfStatus.mockImplementation(async (id: number, fromStatus: string, updates: { status?: string }) => {
+    const row = state.policies.get(id);
+    if (!row) return undefined;
+    if (row.status !== fromStatus) return undefined;
     if (updates.status) row.status = updates.status;
     return row;
   });
@@ -144,5 +162,42 @@ describe("policyLifecycle", () => {
         transitionPolicy({ policy: created as any, toStatus: target, causedBy: "admin:test" })
       ).rejects.toThrow(InvalidPolicyTransitionError);
     }
+  });
+
+  it("CAS guard rejects a stale-state write: two 'concurrent' transitions off the same observed fromStatus - only one wins, one audit row", async () => {
+    const { policy: created } = await createPolicyWithAudit({
+      policy: { userId: 1, policyNumber: "POL-4", status: "active" } as any,
+      causedBy: "admin:test-setup",
+    });
+    const auditCountBefore = auditFor(created.id).length;
+
+    // Take an immutable snapshot of the "active" row, as two handlers both
+    // reading via storage.getPolicyByStripeSubscriptionId at the same moment
+    // would each get their own independent copy of the row (not a shared
+    // mutable reference to the in-memory fake's row).
+    const staleSnapshot = { ...created };
+
+    // Simulate two handlers that both read the policy while it was still
+    // "active" (e.g. a near-simultaneous payment_failed and
+    // subscription.deleted racing on the same policy) and both attempt a
+    // transition off that same stale snapshot. The first write wins and moves
+    // the row on; the second, still holding the original "active" snapshot,
+    // must be rejected by the CAS guard rather than blindly overwriting
+    // whatever the first write landed.
+    const first = await transitionPolicy({ policy: staleSnapshot as any, toStatus: "past_due", causedBy: "stripe:evt_a" });
+    expect(first.policy.status).toBe("past_due");
+
+    await expect(
+      transitionPolicy({ policy: staleSnapshot as any, toStatus: "cancelled", causedBy: "stripe:evt_b" })
+    ).rejects.toThrow(InvalidPolicyTransitionError);
+
+    // Only the winning transition wrote an audit row for the pair.
+    expect(auditFor(created.id)).toHaveLength(auditCountBefore + 1);
+
+    // The storage-layer CAS method itself also directly rejects a stale write:
+    // once the row has moved on, a repeat call with the original fromStatus
+    // returns undefined (zero rows matched) rather than overwriting.
+    const staleWrite = await storageMock.updatePolicyIfStatus(created.id, "active", { status: "lapsed" });
+    expect(staleWrite).toBeUndefined();
   });
 });
