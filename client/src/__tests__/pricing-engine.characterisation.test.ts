@@ -110,17 +110,33 @@ describe("calculateAnnualPremium (clock frozen at 2026)", () => {
     );
   });
 
-  it("postcode matching is letters-only longest-prefix: SW1A → SW (high risk), IV2 → IV (low risk)", () => {
+  it("postcode matching uses the real outward-code AREA (letters before the first digit): SW1A → SW (high risk), IV2 → IV (low risk)", () => {
     expect(calculateAnnualPremium({ postcode: "sw1a 1aa" })).toBe(1440); // case-insensitive, ×1.20
     expect(calculateAnnualPremium({ postcode: "IV2 3AB" })).toBe(1080); // ×0.90
   });
 
-  it("QUIRK: single-letter fallback over-matches — unlisted outward codes starting with a metro letter get the +20% loading (NG Nottingham → 'N' London, BA Bath → 'B' Birmingham, GL Gloucester → 'G' Glasgow)", () => {
-    expect(calculateAnnualPremium({ postcode: "NG1 5DT" })).toBe(1440);
-    expect(calculateAnnualPremium({ postcode: "BA1 1LZ" })).toBe(1440);
-    expect(calculateAnnualPremium({ postcode: "GL1 1DP" })).toBe(1440);
-    // A genuinely neutral prefix (no metro first letter): OX Oxford
+  it("D7 FIX: Bath (BA) no longer falls through to Birmingham's (B) +20% loading - BA is its own low-risk area", () => {
+    expect(calculateAnnualPremium({ postcode: "BA1 1LZ" })).toBe(1080); // ×0.90, distinct from B's ×1.20
+    expect(calculateAnnualPremium({ postcode: "B1 1AA" })).toBe(1440); // Birmingham itself is still ×1.20
+  });
+
+  it("D7 FIX: unlisted areas resolve to the neutral 1.00 multiplier instead of silently borrowing an unrelated single-letter neighbour's risk tier (NG Nottingham, GL Gloucester previously mispriced as N/G)", () => {
+    expect(calculateAnnualPremium({ postcode: "NG1 5DT" })).toBe(1200);
+    expect(calculateAnnualPremium({ postcode: "GL1 1DP" })).toBe(1200);
+    // A genuinely neutral, always-unlisted prefix: OX Oxford
     expect(calculateAnnualPremium({ postcode: "OX1 2JD" })).toBe(1200);
+  });
+
+  it("D7 FIX: BD (Bradford), BL (Bolton), BN (Brighton), SN (Swindon) are distinct entries, not aliases of B (Birmingham) / S (Sheffield)", () => {
+    expect(calculateAnnualPremium({ postcode: "BD1 1AA" })).toBe(1320); // ×1.10, not B's ×1.20
+    expect(calculateAnnualPremium({ postcode: "BL1 1AA" })).toBe(1320); // ×1.10
+    expect(calculateAnnualPremium({ postcode: "BN1 1AA" })).toBe(1320); // ×1.10
+    expect(calculateAnnualPremium({ postcode: "SN1 1AA" })).toBe(1320); // ×1.10, not S's ×1.20
+    expect(calculateAnnualPremium({ postcode: "S1 1AA" })).toBe(1440);  // Sheffield itself is still ×1.20
+  });
+
+  it("D7 FIX: an outward code with no leading letters (numeric-only garbage) is treated as unlisted, not a crash", () => {
+    expect(calculateAnnualPremium({ postcode: "1234" })).toBe(1200);
   });
 
   it("QUIRK: vehicle factor is calendar-dependent — a 2023 car is 'nearly new' (×1.28) in 2026 but will silently reprice to ×1.10 from Jan 2027", () => {

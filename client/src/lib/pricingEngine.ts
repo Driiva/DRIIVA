@@ -1,5 +1,12 @@
 /**
- * Driiva — Deterministic client-side pricing engine.
+ * Driiva - Deterministic client-side pricing engine.
+ *
+ * ESTIMATE ONLY. This engine exists to render a responsive quote preview
+ * while onboarding, before a server-side quote is available. It is never
+ * authoritative: the server (Root Platform quote, or the price_data branch
+ * of POST /api/payments/create-subscription) computes and binds the price
+ * actually charged. Any UI that surfaces a figure from this module MUST
+ * label it as an estimate - see checkout.tsx's "Estimated premium" copy.
  *
  * Calculates an annual premium in GBP from onboarding inputs.
  * Same inputs always produce the same price (no randomness, no external calls).
@@ -76,37 +83,66 @@ function ncbFactor(ncbYears: number | null | undefined): number {
 }
 
 // ---------------------------------------------------------------------------
-// Postcode area risk factor
-// Uses the outward code prefix for broad UK region risk tiers.
-// London/high-density urban: +20%; standard: 0%; rural: -10%.
+// Postcode area risk factor (D7)
+// Uses the UK postcode AREA - the 1-2 leading letters that precede the first
+// digit of the outward code (e.g. "BA1 2AB" -> "BA", "B1 1AA" -> "B") - as
+// the lookup key into a real area risk table.
+//
+// The previous implementation stripped all non-letter characters from the
+// postcode before matching, which concatenated fragments across the digit
+// boundary (e.g. "BA1 2AB" -> "BAAB") and, worse, had no dedicated "BA"
+// entry at all - so Bath silently fell through to the single-letter "B"
+// (Birmingham) entry and was overcharged as if it were an inner-city West
+// Midlands postcode. The same fallthrough mispriced BD (Bradford), BL
+// (Bolton), BN (Brighton) and SN (Swindon) against their unrelated
+// single-letter neighbours (B, S).
+//
+// This is a deliberately real but non-exhaustive outward-code AREA table:
+// enough coverage to separate the areas above, not a full 124-area Royal
+// Mail dataset. Unlisted areas resolve to the standard 1.00 multiplier
+// rather than silently borrowing a neighbouring area's risk tier.
 // ---------------------------------------------------------------------------
-const HIGH_RISK_PREFIXES = new Set([
-  'E', 'EC', 'N', 'NW', 'SE', 'SW', 'W', 'WC',  // Inner London
-  'IG', 'RM', 'DA', 'CR', 'SM', 'TW', 'UB',       // Greater London
-  'B', 'M', 'L', 'LS',                             // Birmingham, Manchester, Liverpool, Leeds
-  'WS', 'WV', 'DY', 'ST',                          // West Midlands
-  'S', 'DN',                                        // Sheffield, Doncaster
-  'G', 'PA',                                        // Glasgow
-]);
+const AREA_RISK_TABLE: Record<string, number> = {
+  // Inner London - high density, high claims frequency
+  E: 1.20, EC: 1.20, N: 1.20, NW: 1.20, SE: 1.20, SW: 1.20, W: 1.20, WC: 1.20,
+  // Greater London
+  IG: 1.20, RM: 1.20, DA: 1.20, CR: 1.20, SM: 1.20, TW: 1.20, UB: 1.20,
+  // Major conurbations
+  B: 1.20,   // Birmingham
+  M: 1.20,   // Manchester
+  L: 1.20,   // Liverpool
+  S: 1.20,   // Sheffield
+  G: 1.20,   // Glasgow
+  // Secondary urban / industrial - elevated but below the major conurbations
+  LS: 1.10,  // Leeds
+  BD: 1.10,  // Bradford
+  BL: 1.10,  // Bolton
+  WS: 1.10, WV: 1.10, DY: 1.10, ST: 1.10, // West Midlands / Staffordshire
+  DN: 1.10,  // Doncaster
+  PA: 1.10,  // Paisley
+  BN: 1.10,  // Brighton
+  SN: 1.10,  // Swindon
+  SG: 1.10,  // Stevenage
+  // Rural / low-density
+  TD: 0.90, DG: 0.90, KW: 0.90, IV: 0.90, PH: 0.90, AB: 0.90, DD: 0.90, FK: 0.90, KY: 0.90, ZE: 0.90, HS: 0.90, // Scottish highlands
+  LL: 0.90, SY: 0.90, SA: 0.90, LD: 0.90,   // Rural Wales
+  TR: 0.90, PL: 0.90, EX: 0.90, TQ: 0.90, DT: 0.90, BH: 0.90, // SW England
+  CA: 0.90, LA: 0.90, DL: 0.90, HG: 0.90,   // Cumbria / N Yorkshire
+  BA: 0.90,  // Bath - affluent, low-density; explicitly distinct from Birmingham (B)
+};
 
-const LOW_RISK_PREFIXES = new Set([
-  'TD', 'DG', 'KW', 'IV', 'PH', 'AB', 'DD', 'FK', 'KY', 'ZE', 'HS', // Scottish highlands
-  'LL', 'SY', 'SA', 'LD',                                               // Rural Wales
-  'TR', 'PL', 'EX', 'TQ', 'DT', 'BH',                                  // SW England
-  'CA', 'LA', 'DL', 'HG',                                               // Cumbria/N Yorkshire
-]);
+/** Extract the UK postcode AREA (1-2 leading letters before the first digit). */
+function extractPostcodeArea(postcode: string): string {
+  const cleaned = postcode.trim().toUpperCase();
+  const match = cleaned.match(/^([A-Z]{1,2})\d/);
+  return match ? match[1] : '';
+}
 
 function postcodeFactor(postcode: string | null | undefined): number {
   if (!postcode) return 1.0;
-  // Extract outward code prefix (letters only, max 2 chars)
-  const prefix = postcode.trim().toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4);
-  // Try longest match first (e.g. "SW1A" before "SW")
-  for (let len = Math.min(prefix.length, 4); len >= 1; len--) {
-    const code = prefix.slice(0, len);
-    if (HIGH_RISK_PREFIXES.has(code)) return 1.20;
-    if (LOW_RISK_PREFIXES.has(code)) return 0.90;
-  }
-  return 1.00;
+  const area = extractPostcodeArea(postcode);
+  if (!area) return 1.0;
+  return AREA_RISK_TABLE[area] ?? 1.00;
 }
 
 // ---------------------------------------------------------------------------
