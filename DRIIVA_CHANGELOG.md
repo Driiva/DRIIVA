@@ -5,6 +5,19 @@
 
 ## Entries
 
+### 2026-08-03 - Marketing Site: Scroll Performance, Text Legibility, Real Hero Screenshot
+
+Seven commits on the marketing site, reconstructed from git history on 2026-08-04. The nightly `docs: nightly roadmap/changelog sync` job runs daily but only ever writes `ROADMAP.md`, so none of this batch reached this file at the time.
+
+- **Scroll performance** (`fix(marketing)`, 2e76d3c) - `DriivaShaderBackground` was rendering a full-viewport WebGL mesh gradient continuously behind every page at up to 1.5x device pixel ratio, looping 10 orbs plus 5-octave noise per pixel. That GPU fill-rate competed with the compositor during scroll and produced the laggy scroll a cofounder reported. Backing-store render scale capped at 1x DPR (the canvas is CSS-stretched to 100%/100%, so displayed size and layout are unchanged, and the shader is blurred noise so the resolution drop is not perceptible), and the animation loop now stops entirely on `visibilitychange` when the tab is backgrounded.
+- **Text legibility** (f5b9b0a) - replaced `background-clip:text` gradient fills with solid `--amber-2` (#f59e0b), one of the brand gradient's own stops, on the 5 selectors that used it as a text colour (`.step-num`, `.founder-quote .hl`, `.cta-final h2 .accent`, `.calc-output-value`, `.brand-statement-body h2 .hl`). All sit on the site's dark ink/glass backgrounds, giving amber-2 a contrast ratio above 9:1, well clear of WCAG AA. `--grad-brand` stays defined and is still used as a decorative background fill on 3 unrelated bar/avatar elements.
+- **Hero credibility** (91bd4de) - `PhoneFrame`'s synthetic score-ring mockup replaced with the real onboarding screenshot (`apps/marketing/public/brand/app-preview.png`) so the hero reads as finished product rather than wireframe. `Hero.test.tsx` updated to assert the screenshot renders instead of the old synthetic ring markup. `FinalCTA` headline changed to the cofounder-approved copy verbatim.
+- **Hero gradient, applied then reverted** (76b27a4, then f5b9b0a) - `.hero-headline .italic` was moved off a flat iris colour onto the canonical `--grad-brand` gradient-clip treatment to match the rest of the site's headline text. Superseded the same day: the legibility pass above removed gradient-clip from text entirely. Recorded rather than dropped, because the round trip is the reason the site no longer uses gradient text anywhere.
+
+**Caveat:** these are code-level entries reconstructed from commit messages and diffs. Unlike earlier entries in this file, no MANUAL_TEST_CHECKLIST run is recorded against them, because none was captured at the time.
+
+---
+
 ### 2026-07-21 – M2 Trips & Scoring Merge, Refund Consistency Fix, Repo Rename
 
 - **M2 module** (`merge rebuild/m2-trips`) - the trips and scoring pipeline module merged into main.
