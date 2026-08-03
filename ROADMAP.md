@@ -1,6 +1,6 @@
 # Driiva - Current sprint (tickets)
 
-**Last updated:** 29 June 2026
+**Last updated:** 3 August 2026
 **Product Lead:** Keith Cheng (onboarded 27 June 2026)
 **External memory for AI sessions:** Work on the next unchecked ticket only; update this list when done.
 
@@ -33,6 +33,12 @@
 - [x] Doppler adopted as canonical secrets source; paste-pollution cleanup scripts added - *done: `16b4456`, `c89415e`*
 - [x] 16-screen mobile onboarding shipped in `mobile/` (Expo SDK 52); PWA path superseded - *done: `7b1658c`*
 - [x] Design system canonicalized at `design-system/`; hyperframes shipped; logos refreshed - *done: `37012a6`*
+
+## Sprint: "Marketing polish" (August 2026 - driiva.co.uk)
+
+- [x] Swap the hero's synthetic score-ring mockup for the real onboarding screenshot, and take the cofounder-approved FinalCTA copy verbatim - *done: `91bd4de`*
+- [x] Fix the scroll lag a cofounder reported: cap the WebGL shader background at 1x DPR and stop its animation loop when the tab is backgrounded - *done: `2e76d3c`*
+- [x] Drop the gradient-clip text treatment for legibility - 5 selectors moved to solid `--amber-2` (>9:1 on the dark surfaces); `--grad-brand` stays as a decorative background fill - *done: `76b27a4`, `f5b9b0a`*
 
 ## Sprint: "Damoov & Feedback" (Week 0 - Telematics + Compliance)
 
