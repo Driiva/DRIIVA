@@ -869,10 +869,7 @@ section {
   font-size: 11.5px;
   font-weight: 700;
   letter-spacing: 0.1em;
-  background: var(--grad-brand);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--amber-2);
   margin-bottom: 14px;
   text-transform: uppercase;
 }
@@ -1096,10 +1093,7 @@ section {
   text-wrap: pretty;
 }
 .founder-quote .hl {
-  background: var(--grad-brand);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--amber-2);
 }
 .founder-meta {
   display: flex;
@@ -1191,10 +1185,7 @@ section {
   margin-bottom: 20px;
 }
 .cta-final h2 .accent {
-  background: var(--grad-brand);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--amber-2);
 }
 .cta-final p {
   font-size: 17px;
@@ -1762,10 +1753,7 @@ footer {
   font-size: clamp(40px, 5vw, 56px);
   font-weight: 700;
   letter-spacing: -0.03em;
-  background: var(--grad-brand);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--amber-2);
   font-variant-numeric: tabular-nums;
   line-height: 1;
 }
@@ -2018,10 +2006,7 @@ footer {
   text-wrap: balance;
 }
 .brand-statement-body h2 .hl {
-  background: var(--grad-brand);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--amber-2);
 }
 .brand-statement-body p {
   font-size: 15px;
