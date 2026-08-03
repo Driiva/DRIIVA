@@ -64,9 +64,7 @@ export function FinalCTA() {
     <section ref={ref} id="cta-final" data-section="cta-final" className="cta-final">
       <div className="container">
         <div className="reveal-init">
-          <h2>
-            Ready to drive well, <span className="accent">and get money back?</span>
-          </h2>
+          <h2>Ready to get paid for driving safely? Sign up now - early access is limited.</h2>
           <p>
             Join the 117 UK drivers on the waitlist for the first refund-first motor insurance that means
             it.
