@@ -391,6 +391,17 @@ main {
   overflow: hidden;
   font-family: var(--font-ui);
 }
+.phone-screen-image {
+  padding: 0;
+}
+.phone-screen-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  border-radius: 32px;
+  display: block;
+}
 .phone-statusbar {
   display: flex;
   justify-content: space-between;
