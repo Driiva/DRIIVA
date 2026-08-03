@@ -612,7 +612,10 @@ main {
 .hero-headline .italic {
   font-style: italic;
   font-weight: 500;
-  color: var(--iris-3);
+  background: var(--grad-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .hero-wordmark {
