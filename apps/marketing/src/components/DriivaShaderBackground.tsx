@@ -270,8 +270,16 @@ export function DriivaShaderBackground({
       lastFrame: performance.now(),
     };
 
+    // Render scale caps the backing-store resolution well below CSS pixel
+    // density. The mesh gradient is smooth/blurred noise with no fine detail,
+    // so this is visually indistinguishable while cutting per-pixel fragment
+    // shader cost (the main-thread-blocking GPU load that was making scroll
+    // feel laggy) roughly in half versus the previous 1.5x DPR cap. The
+    // canvas is CSS-stretched to 100%/100% (see global.css), so displayed
+    // size and layout are unaffected.
+    const RENDER_SCALE_CAP = 1;
     const resize = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      const dpr = Math.min(window.devicePixelRatio || 1, RENDER_SCALE_CAP);
       const w = Math.floor(canvas.clientWidth * dpr);
       const h = Math.floor(canvas.clientHeight * dpr);
       if (canvas.width !== w || canvas.height !== h) {
@@ -322,6 +330,18 @@ export function DriivaShaderBackground({
 
     let raf = 0;
     const FRAME_MS = 1000 / 60;
+    // Stop drawing while the tab is backgrounded - the shader has no visible
+    // effect then, so there's no reason to keep burning GPU cycles.
+    const onVisibility = () => {
+      if (document.hidden) {
+        cancelAnimationFrame(raf);
+        raf = 0;
+      } else if (!raf) {
+        state.lastFrame = performance.now();
+        raf = requestAnimationFrame(tick);
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
     const tick = (now: number) => {
       raf = requestAnimationFrame(tick);
       const dt = now - state.lastFrame;
@@ -355,6 +375,7 @@ export function DriivaShaderBackground({
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('pointerdown', onPointerDown);
       window.removeEventListener('resize', resize);
+      document.removeEventListener('visibilitychange', onVisibility);
       gl.deleteProgram(prog);
       gl.deleteShader(vert);
       gl.deleteShader(frag);
