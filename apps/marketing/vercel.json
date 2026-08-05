@@ -4,6 +4,11 @@
   "outputDirectory": "dist",
   "framework": "vite",
   "rewrites": [
+    { "source": "/uk-survey", "destination": "/uk-survey/index.html" },
+    { "source": "/privacy", "destination": "/privacy/index.html" },
+    { "source": "/terms", "destination": "/terms/index.html" },
+    { "source": "/cookies", "destination": "/cookies/index.html" },
+    { "source": "/complaints", "destination": "/complaints/index.html" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ],
   "headers": [

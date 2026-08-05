@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && npm run build:ssr && node scripts/prerender.mjs",
+    "build:ssr": "vite build --ssr src/entry-server.tsx --outDir dist-ssr",
     "preview": "vite preview --port 4173",
     "test": "vitest run",
     "test:watch": "vitest",

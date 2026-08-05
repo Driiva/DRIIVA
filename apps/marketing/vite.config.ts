@@ -98,7 +98,7 @@ function jsonResponse(res: ServerResponse, status: number, body: unknown) {
   res.end(JSON.stringify(body));
 }
 
-export default defineConfig({
+export default defineConfig(({ isSsrBuild }) => ({
   plugins: [react(), devApiPlugin()],
   resolve: {
     alias: {
@@ -110,16 +110,29 @@ export default defineConfig({
     cssCodeSplit: true,
     sourcemap: false,
     rollupOptions: {
-      output: {
-        manualChunks: {
-          react: ['react', 'react-dom'],
-          anime: ['animejs'],
-          lenis: ['@studio-freight/lenis'],
-        },
-      },
+      // manualChunks is a client-bundle concern. React and friends are external
+      // in the SSR build, and Rollup errors out if you try to chunk an external.
+      output: isSsrBuild
+        ? {}
+        : {
+            manualChunks: {
+              react: ['react', 'react-dom'],
+              anime: ['animejs'],
+              lenis: ['@studio-freight/lenis'],
+            },
+          },
     },
+  },
+  // Bundle every dependency into the prerender build instead of leaving them
+  // external. This is a pnpm workspace, so an externalised `react` resolves to
+  // the hoisted root copy while `react-dom` resolves to the app copy, and two
+  // React instances means "Cannot read properties of null (reading useEffect)".
+  // Bundling guarantees one instance. Only affects the throwaway dist-ssr
+  // output, never the shipped client bundle.
+  ssr: {
+    noExternal: true,
   },
   server: {
     port: 5173,
   },
-});
+}));
