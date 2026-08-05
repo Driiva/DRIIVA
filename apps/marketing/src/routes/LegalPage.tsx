@@ -8,8 +8,10 @@ interface LegalPageProps {
 }
 
 export function LegalPage({ title, updated, children }: LegalPageProps) {
+  // The document title is owned by useRouteMeta in App, driven by the same
+  // route table the prerender uses. Setting it here too would overwrite the
+  // prerendered title with a different string on every legal page.
   useEffect(() => {
-    document.title = `${title} · Driiva`;
     window.scrollTo({ top: 0, behavior: 'auto' });
   }, [title]);
 

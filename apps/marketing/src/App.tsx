@@ -1,6 +1,7 @@
 import { Route, Switch } from 'wouter';
 import { Analytics } from '@vercel/analytics/react';
 import { useLenis } from '@/hooks/useLenis';
+import { useRouteMeta } from '@/hooks/useRouteMeta';
 import { Nav } from '@/sections/Nav';
 import { Footer } from '@/sections/Footer';
 import { StickyCta } from '@/components/StickyCta';
@@ -27,6 +28,7 @@ function NotFound() {
 
 export default function App() {
   useLenis();
+  useRouteMeta();
   return (
     <>
       <DriivaShaderBackground />
