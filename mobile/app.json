@@ -16,11 +16,16 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.driiva.app",
+      "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Driiva uses your location to track trips and calculate your driving safety score.",
         "NSLocationWhenInUseUsageDescription": "Driiva uses your location to track trips and calculate your driving safety score.",
         "NSMotionUsageDescription": "Driiva uses motion sensors to detect phone usage while driving.",
-        "UIBackgroundModes": ["location", "fetch", "remote-notification"]
+        "UIBackgroundModes": [
+          "location",
+          "fetch",
+          "remote-notification"
+        ]
       }
     },
     "android": {
@@ -47,7 +52,8 @@
           "locationAlwaysAndWhenInUsePermission": "Driiva uses your location to track trips and calculate your driving safety score.",
           "isAndroidBackgroundLocationEnabled": true
         }
-      ]
+      ],
+      "./plugins/with-modular-headers"
     ],
     "experiments": {
       "typedRoutes": true
