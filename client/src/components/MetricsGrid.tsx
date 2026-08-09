@@ -53,7 +53,7 @@ export default function MetricsGrid({ profile }: MetricsGridProps) {
       label: "Speed",
       value: profile.speedAdherenceScore,
       weight: "20% weight",
-      color: "#3B82F6",
+      color: "var(--app-primary)",
       unit: profile.speedAdherenceScore === 1 ? "violation this month" : "violations this month"
     },
     {

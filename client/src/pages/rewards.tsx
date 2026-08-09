@@ -19,6 +19,7 @@ import { getAchievementDefinitions, getUserAchievements } from "@/lib/firestore"
 import type { AchievementDef, UserAchievementRecord } from "@/lib/firestore";
 import { isFirebaseConfigured } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
+import { EmptyState } from '@/components/ui/EmptyState';
 
 function Skeleton({ className = "" }: { className?: string }) {
   return <Shimmer className={className} />;
@@ -326,11 +327,11 @@ export default function Rewards() {
                     </GlassCard>
                   ))
                 ) : achievements.length === 0 ? (
-                  <GlassCard className="p-8 text-center">
-                    <Gift className="w-10 h-10 text-white/20 mx-auto mb-3" />
-                    <p className="text-white/60 text-sm">No achievements available yet.</p>
-                    <p className="text-white/40 text-xs mt-1">Complete trips to start unlocking achievements!</p>
-                  </GlassCard>
+                  <EmptyState
+                    icon={<Gift size={24} strokeWidth={2} />}
+                    heading="No achievements yet"
+                    subtext="Achievements unlock as you complete scored trips. Nothing is hidden here, there is simply nothing to show yet."
+                  />
                 ) : (
                   achievements.map((achievement) => (
                     <motion.div

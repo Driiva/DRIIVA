@@ -31,11 +31,11 @@ export default function PolicyDownload({ userId, userData, policyNumber }: Polic
     <title>Driiva Insurance Policy</title>
     <style>
         body { font-family: 'Inter', sans-serif; margin: 0; padding: 40px; color: #1f2937; }
-        .header { text-align: center; margin-bottom: 40px; border-bottom: 2px solid #3b82f6; padding-bottom: 20px; }
-        .logo { font-size: 32px; font-weight: bold; color: #3b82f6; font-style: italic; margin-bottom: 10px; }
+        .header { text-align: center; margin-bottom: 40px; border-bottom: 2px solid #5b4dc9; padding-bottom: 20px; }
+        .logo { font-size: 32px; font-weight: bold; color: #5b4dc9; font-style: italic; margin-bottom: 10px; }
         .policy-details { margin: 30px 0; }
         .section { margin: 25px 0; }
-        .section h3 { color: #3b82f6; border-bottom: 1px solid #e5e7eb; padding-bottom: 5px; }
+        .section h3 { color: #5b4dc9; border-bottom: 1px solid #e5e7eb; padding-bottom: 5px; }
         .detail-row { display: flex; justify-content: space-between; margin: 10px 0; }
         .label { font-weight: 600; }
         .value { color: #6b7280; }
@@ -185,7 +185,7 @@ export default function PolicyDownload({ userId, userData, policyNumber }: Polic
             onClick={handleDownload}
             disabled={isGenerating}
             variant="outline"
-            className="w-full glass-morphism border-[#3B82F6] text-[#3B82F6] hover:bg-[#3B82F6] hover:text-white"
+            className="w-full glass-morphism border-[var(--app-primary)] text-[var(--app-primary)] hover:bg-[var(--app-primary)] hover:text-white"
         >
             <FileText className="w-4 h-4 mr-2" />
             {isGenerating ? 'Generating Policy...' : 'Download My Policy'}

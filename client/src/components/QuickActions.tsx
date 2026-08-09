@@ -19,8 +19,8 @@ export default function QuickActions({ onReportIncident }: QuickActionsProps) {
       icon: FileText,
       title: "Documents",
       description: "Policy & Certificates",
-      color: "bg-[#3B82F6] bg-opacity-20",
-      iconColor: "text-[#3B82F6]",
+      color: "bg-[var(--app-primary)] bg-opacity-20",
+      iconColor: "text-[var(--app-primary)]",
       onClick: () => window.open('/documents', '_blank'),
       href: "/profile"
     },

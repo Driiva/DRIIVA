@@ -1,7 +1,7 @@
 import React, { lazy, Suspense } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/queryClient';
-import { Router, Route, Switch, Redirect } from 'wouter';
+import { Router, Route, Switch, Redirect, useLocation } from 'wouter';
 import gradientBackground from './assets/gradient-background.png';
 import { ProtectedRoute, PublicOnlyRoute } from './components/ProtectedRoute';
 import { HomeRedirect } from './components/HomeRedirect';
@@ -47,6 +47,8 @@ import OfflineBanner from './components/OfflineBanner';
 import InstallPrompt from './components/InstallPrompt';
 import SplashScreen from './components/SplashScreen';
 import BrandedLoader from './components/BrandedLoader';
+import PageTransition from './components/PageTransition';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 function AdminRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -98,23 +100,26 @@ function PageFallback() {
 
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <SplashScreen>
-        <Router>
-          <AuthProvider>
-            <OnlineStatusProvider>
-              <AppContent />
-            </OnlineStatusProvider>
-          </AuthProvider>
-        </Router>
-      </SplashScreen>
-    </QueryClientProvider>
+    <ErrorBoundary level="root" name="Driiva">
+      <QueryClientProvider client={queryClient}>
+        <SplashScreen>
+          <Router>
+            <AuthProvider>
+              <OnlineStatusProvider>
+                <AppContent />
+              </OnlineStatusProvider>
+            </AuthProvider>
+          </Router>
+        </SplashScreen>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 
 function AppContent() {
   const { isOnline } = useOnlineStatusContext();
   const { loading } = useAuth();
+  const [location] = useLocation();
 
   // Block all route rendering until auth state is resolved — prevents white
   // flash and false redirects to /verify-email for already-authenticated users.
@@ -134,6 +139,11 @@ function AppContent() {
         }}
       />
       <Suspense fallback={<PageFallback />}>
+        <PageTransition>
+        {/* Keyed on location so navigating away from a crashed route clears
+            the boundary. Without the key a caught error would persist and the
+            next page would render the fallback instead of itself. */}
+        <ErrorBoundary key={location} level="route" name="This page">
         <Switch>
           {/* Public routes */}
           <Route path="/" component={Welcome} />
@@ -249,8 +259,19 @@ function AppContent() {
             </ProtectedRoute>
           </Route>
 
+          {/* Dev-only: proves the route boundary renders its fallback. */}
+          {import.meta.env.DEV && (
+            <Route path="/__boundary-check">
+              {() => {
+                throw new Error('Deliberate throw: route ErrorBoundary check.');
+              }}
+            </Route>
+          )}
+
           <Route>{() => <Redirect to="/" />}</Route>
         </Switch>
+        </ErrorBoundary>
+        </PageTransition>
       </Suspense>
       {/*
         Mounted once for the whole app. Without this every toast() call in the

@@ -41,6 +41,7 @@ import { ScoreCardShimmer } from '@/components/Shimmer';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { useHaptics } from '@/hooks/useHaptics';
 import { container, item } from '@/lib/animations';
+import { Skeleton, SkeletonList } from '@/components/ui/EmptyState';
 
 const LeafletMap = lazy(() => import('../components/LeafletMap'));
 
@@ -83,63 +84,35 @@ function ScoreCardSkeleton() {
   return <ScoreCardShimmer />;
 }
 
-function _LegacyScoreCardSkeleton() {
-  return (
-    <div className="dashboard-glass-card mb-4 animate-pulse">
-      <div className="flex items-center justify-between mb-4">
-        <div className="h-6 w-32 bg-white/10 rounded" />
-        <div className="h-5 w-5 bg-white/10 rounded" />
-      </div>
-      <div className="flex items-end gap-2 mb-4">
-        <div className="h-12 w-20 bg-white/10 rounded" />
-        <div className="h-6 w-12 bg-white/10 rounded mb-1" />
-      </div>
-      <div className="h-4 w-full bg-white/10 rounded mb-4" />
-      <div className="h-2 w-full bg-white/10 rounded-full" />
-    </div>
-  );
-}
-
+// Both skeletons use the shared shimmer so the dashboard waits in the same
+// visual language as trips, the leaderboard and rewards.
 function TripsSkeleton() {
   return (
-    <div className="dashboard-glass-card mb-4 animate-pulse">
+    <div className="dashboard-glass-card mb-4">
       <div className="flex items-center justify-between mb-4">
-        <div className="h-6 w-24 bg-white/10 rounded" />
-        <div className="h-5 w-5 bg-white/10 rounded" />
+        <Skeleton className="h-6 w-24" />
+        <Skeleton className="h-5 w-5" />
       </div>
-      <div className="space-y-3">
-        {[1, 2, 3].map(i => (
-          <div key={i} className="bg-white/5 rounded-xl p-3">
-            <div className="flex items-center justify-between mb-2">
-              <div className="h-4 w-32 bg-white/10 rounded" />
-              <div className="h-4 w-8 bg-white/10 rounded" />
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="h-3 w-16 bg-white/10 rounded" />
-              <div className="h-3 w-20 bg-white/10 rounded" />
-            </div>
-          </div>
-        ))}
-      </div>
+      <SkeletonList count={3} />
     </div>
   );
 }
 
 function PoolSkeleton() {
   return (
-    <div className="dashboard-glass-card mb-4 animate-pulse">
+    <div className="dashboard-glass-card mb-4">
       <div className="flex items-center justify-between mb-4">
-        <div className="h-6 w-36 bg-white/10 rounded" />
-        <div className="h-5 w-5 bg-white/10 rounded" />
+        <Skeleton className="h-6 w-36" />
+        <Skeleton className="h-5 w-5" />
       </div>
       <div className="space-y-3">
         {[1, 2, 3].map(i => (
           <div key={i} className="flex items-center justify-between">
-            <div className="h-4 w-24 bg-white/10 rounded" />
-            <div className="h-4 w-16 bg-white/10 rounded" />
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-4 w-16" />
           </div>
         ))}
-        <div className="h-2 w-full bg-white/10 rounded-full mt-2" />
+        <Skeleton className="h-2 w-full mt-2" />
       </div>
     </div>
   );

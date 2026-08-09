@@ -64,7 +64,7 @@ export default function SplashScreen({ children }: { children: ReactNode }) {
                 height: '140vw',
                 borderRadius: '50%',
                 background:
-                  'radial-gradient(circle, rgba(139, 92, 246, 0.3) 0%, rgba(236, 72, 153, 0.15) 40%, transparent 70%)',
+                  'radial-gradient(circle, rgba(var(--app-primary-rgb), 0.3) 0%, rgba(var(--app-primary-rgb), 0.15) 40%, transparent 70%)',
               }}
             />
             <motion.div
@@ -77,7 +77,7 @@ export default function SplashScreen({ children }: { children: ReactNode }) {
                 height: '100vw',
                 borderRadius: '50%',
                 background:
-                  'radial-gradient(circle, rgba(59, 130, 246, 0.2) 0%, transparent 60%)',
+                  'radial-gradient(circle, rgba(var(--app-primary-rgb), 0.2) 0%, transparent 60%)',
               }}
             />
 
@@ -103,12 +103,15 @@ export default function SplashScreen({ children }: { children: ReactNode }) {
                 style={{
                   width: 3 + i * 1.5,
                   height: 3 + i * 1.5,
+                  // One accent at three depths. The splash used to throw
+                  // emerald, purple and blue at once, which read as a loading
+                  // screen for a different product.
                   background:
                     i % 3 === 0
-                      ? 'rgba(16, 185, 129, 0.6)'
+                      ? 'rgba(var(--app-primary-rgb), 0.55)'
                       : i % 3 === 1
-                        ? 'rgba(139, 92, 246, 0.5)'
-                        : 'rgba(59, 130, 246, 0.5)',
+                        ? 'rgba(var(--app-primary-rgb), 0.40)'
+                        : 'rgba(var(--app-primary-rgb), 0.25)',
                 }}
               />
             ))}
@@ -183,7 +186,7 @@ export default function SplashScreen({ children }: { children: ReactNode }) {
                   className="h-full rounded-full"
                   style={{
                     background:
-                      'linear-gradient(90deg, #10B981, #3B82F6)',
+                      'linear-gradient(90deg, var(--ok), var(--app-primary))',
                   }}
                   initial={{ width: '0%' }}
                   animate={{ width: '100%' }}

@@ -53,7 +53,7 @@ const features = [
     icon: TrendingUp,
     title: 'Driving Score',
     description: 'Get scored on safety and efficiency',
-    color: 'text-emerald-400',
+    color: 'text-[var(--ok)]',
     bg: 'bg-emerald-500/20',
   },
   {
@@ -142,7 +142,7 @@ export default function Demo() {
                 <p className="text-center text-white/70 text-sm">
                   Experience the app with sample data
                 </p>
-                <div className="mt-3 px-3 py-1 rounded-full text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                <div className="mt-3 px-3 py-1 text-[13px] status-chip status-chip-ok">
                   No Account Required
                 </div>
               </motion.div>
@@ -169,7 +169,7 @@ export default function Demo() {
                       </div>
                       <div>
                         <h3 className="font-medium text-white text-sm">{feature.title}</h3>
-                        <p className="text-xs text-white/60">{feature.description}</p>
+                        <p className="text-[13px] text-white/60">{feature.description}</p>
                       </div>
                     </motion.div>
                   );
@@ -210,7 +210,7 @@ export default function Demo() {
                     <button
                       type="button"
                       onClick={() => setLocation('/signup')}
-                      className="text-emerald-400 hover:text-emerald-300 font-medium"
+                      className="text-[var(--ok)] hover:text-emerald-300 font-medium"
                     >
                       Create account
                     </button>

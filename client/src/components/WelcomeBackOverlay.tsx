@@ -44,7 +44,7 @@ export default function WelcomeBackOverlay({ name, score, lastTrip, onDismiss }:
               background: 'rgba(255, 255, 255, 0.06)',
               border: '1px solid rgba(255, 255, 255, 0.1)',
               backdropFilter: 'blur(32px)',
-              boxShadow: '0 0 80px rgba(139, 92, 246, 0.15), 0 0 160px rgba(59, 130, 246, 0.08)',
+              boxShadow: '0 0 80px rgba(var(--app-primary-rgb), 0.15), 0 0 160px rgba(var(--app-primary-rgb), 0.08)',
             }}
           >
             {/* Avatar ring */}
