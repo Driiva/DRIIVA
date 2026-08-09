@@ -56,7 +56,13 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
-    'Poppins-Regular': require('../assets/fonts/SpaceMono-Regular.ttf'),
+    'InstrumentSans-Regular': require('../assets/fonts/InstrumentSans-Regular.ttf'),
+    'InstrumentSans-SemiBold': require('../assets/fonts/InstrumentSans-SemiBold.ttf'),
+    'InstrumentSans-Bold': require('../assets/fonts/InstrumentSans-Bold.ttf'),
+    'InterTight-SemiBold': require('../assets/fonts/InterTight-SemiBold.ttf'),
+    'InterTight-Bold': require('../assets/fonts/InterTight-Bold.ttf'),
+    'JetBrainsMono-Regular': require('../assets/fonts/JetBrainsMono-Regular.ttf'),
+    'JetBrainsMono-SemiBold': require('../assets/fonts/JetBrainsMono-SemiBold.ttf'),
   });
 
   useEffect(() => {
