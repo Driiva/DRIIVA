@@ -23,32 +23,18 @@
  * than adding AsyncStorage for one boolean.
  */
 import * as SecureStore from 'expo-secure-store';
+import { shouldAskForReview, type ReviewMoment } from './review-gate';
 import * as StoreReview from 'expo-store-review';
 
 // SecureStore keys allow only alphanumerics, dot, dash and underscore.
 const ASKED_KEY = 'driiva_review_asked_at';
 
-/** A trip has to be this good to count as a positive moment. */
-export const REVIEW_SCORE_THRESHOLD = 85;
-
-/** And the driver has to have this much history behind them. */
-export const REVIEW_MIN_TRIPS = 5;
-
-export interface ReviewMoment {
-  tripScore: number;
-  totalTrips: number;
-}
-
-/** Pure, so the gate can be tested without a store or a device. */
-export function shouldAskForReview(
-  moment: ReviewMoment,
-  alreadyAsked: boolean,
-): boolean {
-  if (alreadyAsked) return false;
-  if (moment.tripScore < REVIEW_SCORE_THRESHOLD) return false;
-  if (moment.totalTrips < REVIEW_MIN_TRIPS) return false;
-  return true;
-}
+export {
+  REVIEW_SCORE_THRESHOLD,
+  REVIEW_MIN_TRIPS,
+  shouldAskForReview,
+  type ReviewMoment,
+} from './review-gate';
 
 export async function hasAskedBefore(): Promise<boolean> {
   try {

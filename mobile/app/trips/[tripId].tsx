@@ -22,6 +22,7 @@ import { SCORE_WEIGHTS } from '@driiva/scoring';
 import { firestore } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { C, T, S, R, scoreColor } from '@/components/ui/theme';
+import { maybeAskForReview } from '@/lib/review';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { ScoreBreakdownBar } from '@/components/ui/ScoreBreakdownBar';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -68,6 +69,27 @@ export default function TripDetail() {
   const router = useRouter();
   const [trip, setTrip] = useState<Trip | null | undefined>(undefined);
   const [points, setPoints] = useState<StoredTripPoint[] | undefined>(undefined);
+  // Read once, only so the review gate can tell an established driver from
+  // someone on their first week. Not rendered.
+  const [profileTrips, setProfileTrips] = useState(0);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    firestore()
+      .collection('users')
+      .doc(user.id)
+      .get()
+      .then((snap: { data: () => { drivingProfile?: { totalTrips?: number } } | undefined }) => {
+        if (!cancelled) setProfileTrips(snap.data()?.drivingProfile?.totalTrips ?? 0);
+      })
+      .catch(() => {
+        /* the gate simply will not fire */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
 
   useEffect(() => {
     if (!tripId) return;
@@ -115,6 +137,26 @@ export default function TripDetail() {
       cancelled = true;
     };
   }, [tripId]);
+
+  /*
+   * The one genuinely positive moment in the app: a driver has opened a trip
+   * that scored well. maybeAskForReview decides whether it qualifies (never on
+   * launch, never twice, not before the driver has real history), so this only
+   * has to hand it the facts.
+   *
+   * Deliberately here rather than on the dashboard: opening a trip detail is
+   * an intentional act, whereas the dashboard appears whether or not anyone
+   * wanted it to.
+   */
+  useEffect(() => {
+    if (!trip || trip.score == null) return;
+    maybeAskForReview({
+      tripScore: trip.score,
+      totalTrips: profileTrips,
+    }).catch(() => {
+      // A prompt that cannot be shown is not worth surfacing to the user.
+    });
+  }, [trip, profileTrips]);
 
   const route = useMemo(
     () => (points ?? []).map((p) => ({ latitude: p.lat, longitude: p.lng })),
