@@ -16,6 +16,7 @@ import { useFriends, type RedeemFailure } from '@/hooks/useFriends';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { PageWrapper } from '@/components/PageWrapper';
 import { isValidInviteCode, normaliseInviteCode, INVITE_TTL_DAYS } from '@driiva/contracts';
+import { stashPendingInvite } from '@/hooks/usePendingInvite';
 
 const FAILURE_COPY: Record<RedeemFailure, string> = {
   'invalid-code': 'That link does not carry a valid invite code.',
@@ -48,8 +49,11 @@ export default function InvitePage() {
       return;
     }
 
-    // Carry the code through sign-up so it survives account creation.
+    // Carry the code through sign-up so it survives account creation. The
+    // query string is for legibility; sessionStorage is what actually
+    // survives the reloads between here and a signed-in user.
     if (!user) {
+      stashPendingInvite(code);
       setLocation(`/signup?invite=${encodeURIComponent(code)}`);
       return;
     }

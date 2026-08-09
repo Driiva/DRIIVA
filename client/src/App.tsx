@@ -50,6 +50,7 @@ import SplashScreen from './components/SplashScreen';
 import BrandedLoader from './components/BrandedLoader';
 import PageTransition from './components/PageTransition';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { usePendingInvite } from './hooks/usePendingInvite';
 
 function AdminRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -119,8 +120,13 @@ export default function App() {
 
 function AppContent() {
   const { isOnline } = useOnlineStatusContext();
-  const { loading } = useAuth();
+  const { loading, user } = useAuth();
   const [location] = useLocation();
+
+  // Redeems an invite stashed before sign-up, once there is a user to attach
+  // the friendship to. Without this the code dies at the sign-up redirect and
+  // the friendship silently never forms.
+  usePendingInvite(user?.id ?? null);
 
   // Block all route rendering until auth state is resolved — prevents white
   // flash and false redirects to /verify-email for already-authenticated users.
