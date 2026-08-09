@@ -21,3 +21,4 @@ export * from './trip-points';
 export * from './user';
 export * from './quote';
 export * from './pending-payment';
+export * from './friendship';

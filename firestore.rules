@@ -228,6 +228,103 @@ service cloud.firestore {
     }
 
     // =========================================================================
+    // FRIENDSHIPS COLLECTION (Wave B)
+    // =========================================================================
+    // One document per pair, id = the two uids sorted and joined by "_".
+    // Deriving the id from the pair is what stops A and B holding two
+    // mirrored rows that can disagree about whether they are friends.
+    //
+    // A friendship is created by the ACCEPTING user, as the second half of
+    // redeeming an invite. The rules below cannot see the invite document, so
+    // they enforce the parts that are checkable here: you may only create a
+    // friendship you are part of, the id must match the sorted pair, and you
+    // cannot make yourself a friend of yourself. Whether a valid unexpired
+    // invite existed is enforced on the invite document itself, which the same
+    // client must mark accepted.
+
+    match /friendships/{friendshipId} {
+      /** Both uids present, sorted, and matching the document id. */
+      function wellFormedPair(data) {
+        return data.users.size() == 2
+            && data.users[0] < data.users[1]
+            && friendshipId == data.users[0] + '_' + data.users[1]
+            && data.friendshipId == friendshipId;
+      }
+
+      allow read: if isAuthenticated() && request.auth.uid in resource.data.users;
+
+      allow create: if isAuthenticated()
+                    && request.auth.uid in request.resource.data.users
+                    && wellFormedPair(request.resource.data)
+                    && request.resource.data.initiatedBy in request.resource.data.users
+                    && request.resource.data.initiatedBy != request.auth.uid;
+
+      // Friendships are not edited. Either you are friends or you are not.
+      allow update: if false;
+
+      // Either party can unfriend, and doing so removes it for both, which is
+      // the honest behaviour for a single shared document.
+      allow delete: if isAuthenticated() && request.auth.uid in resource.data.users;
+    }
+
+    // =========================================================================
+    // INVITES COLLECTION (Wave B)
+    // =========================================================================
+    // Keyed BY the invite code so redeeming one is a direct get. A query
+    // cannot be authorised per-document; a get can.
+    //
+    // Read is open to any signed-in user because redeeming requires reading a
+    // code you were given. The document deliberately carries no personal data,
+    // only the creator's uid and the status, so an enumerated code leaks
+    // nothing beyond the existence of an invite.
+
+    match /invites/{code} {
+      allow read: if isAuthenticated();
+
+      allow create: if isAuthenticated()
+                    && request.resource.data.createdBy == request.auth.uid
+                    && request.resource.data.code == code
+                    && request.resource.data.status == 'pending'
+                    && !('acceptedBy' in request.resource.data);
+
+      // Exactly two transitions are allowed from a client.
+      //
+      // Accepting: anyone signed in who is NOT the creator may flip a pending,
+      // unexpired invite to accepted, stamping themselves as the acceptor.
+      // Everything else on the document must stay as it was, so an acceptor
+      // cannot rewrite who created it or when it expires.
+      // Parenthesised rather than leaning on && binding tighter than ||. A
+      // security rule should not depend on the reader knowing the precedence
+      // table.
+      function isAcceptance() {
+        return resource.data.status == 'pending'
+            && request.resource.data.status == 'accepted'
+            && request.auth.uid != resource.data.createdBy
+            && request.resource.data.acceptedBy == request.auth.uid
+            && request.time < resource.data.expiresAt
+            && unchanged('code')
+            && unchanged('createdBy')
+            && unchanged('createdAt')
+            && unchanged('expiresAt');
+      }
+
+      /** The creator withdrawing an invite nobody has taken yet. */
+      function isRevocation() {
+        return resource.data.status == 'pending'
+            && request.resource.data.status == 'revoked'
+            && request.auth.uid == resource.data.createdBy
+            && unchanged('code')
+            && unchanged('createdBy')
+            && unchanged('createdAt')
+            && unchanged('expiresAt');
+      }
+
+      allow update: if isAuthenticated() && (isAcceptance() || isRevocation());
+
+      allow delete: if isAuthenticated() && request.auth.uid == resource.data.createdBy;
+    }
+
+    // =========================================================================
     // TRIP SEGMENTS COLLECTION
     // =========================================================================
 
