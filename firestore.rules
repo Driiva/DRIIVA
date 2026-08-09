@@ -282,6 +282,24 @@ service cloud.firestore {
     }
 
     // =========================================================================
+    // MARKETING WAITLIST (authenticated create only, no client reads)
+    // =========================================================================
+    // Shared with the marketing site's serverless waitlist endpoint, which
+    // writes through the Admin SDK and so bypasses these rules. The mobile
+    // onboarding quote screen writes here directly, so its create path needs
+    // an explicit rule. Reads stay closed: the public count is served by
+    // apps/marketing's waitlist-count endpoint, not by client queries.
+
+    match /marketing_waitlist/{docId} {
+      allow create: if isAuthenticated()
+                    && request.resource.data.email is string
+                    && request.resource.data.email.size() > 3
+                    && request.resource.data.email.size() <= 254
+                    && request.resource.data.source is string;
+      allow read, update, delete: if false;
+    }
+
+    // =========================================================================
     // SYSTEM LOGS (admin SDK only, FCA audit trail)
     // =========================================================================
 

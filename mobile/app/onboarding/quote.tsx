@@ -8,8 +8,9 @@ import { ProgressBar } from '@/components/onboarding/ProgressBar';
 import { ScoreRing } from '@/components/onboarding/ScoreRing';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
 import { refundEstimate } from '@/hooks/useTripSeed';
+import { joinWaitlist, WaitlistError } from '@/lib/waitlist';
 
-// FCA DISCLOSURE REQUIRED — all financial figures are illustrative before product launch
+// FCA DISCLOSURE REQUIRED - all financial figures are illustrative before product launch
 // TODO: Root Platform API integration — Sprint 5
 export default function Quote() {
   const router = useRouter();
@@ -18,29 +19,37 @@ export default function Quote() {
   const [waitlistEmail, setWaitlistEmail] = useState(user?.email ?? '');
   const [loading, setLoading] = useState(false);
   const [joined, setJoined] = useState(false);
+  const [waitlistError, setWaitlistError] = useState<string | null>(null);
 
   const refund = refundEstimate(state.seedScore); // ESTIMATE — subject to actuarial review
   const minRefund = Math.round(refund * 0.8);
   const maxRefund = Math.round(refund * 1.2);
 
   const handleGetQuote = async () => {
-    // TODO: Root Platform API — Sprint 5. Launch quote journey here.
+    // TODO: Root Platform API - Sprint 5. Launch quote journey here.
+    // Wave 0 (0d): this used to promise an email to people whose address was
+    // never captured. It now points at the waitlist, which does store one.
     Alert.alert(
-      'Quote coming soon',
-      "We're finalising our insurance product. You'll be first in line — we'll email you as soon as quotes go live.",
-      [{ text: 'Got it', onPress: () => handleComplete() }]
+      'Quotes are not live yet',
+      'Join the waitlist above with your email and we will contact you when quotes open.',
+      [{ text: 'Got it' }]
     );
   };
 
   const handleJoinWaitlist = async () => {
-    if (!waitlistEmail.trim()) return;
+    if (!waitlistEmail.trim() || loading) return;
     setLoading(true);
+    setWaitlistError(null);
     try {
-      // TODO: write to waitlist Firestore collection
+      // Wave 0 (0d): the confirmation below renders only after this resolves.
+      // Any failure surfaces as an error, never as a tick.
+      await joinWaitlist(waitlistEmail);
       setJoined(true);
-      await handleComplete();
-    } catch {
-      Alert.alert('Something went wrong', 'Please try again.');
+    } catch (err) {
+      const message = err instanceof WaitlistError
+        ? err.message
+        : 'We could not save your place. Try again.';
+      setWaitlistError(message);
     } finally {
       setLoading(false);
     }
@@ -74,13 +83,21 @@ export default function Quote() {
           <Text style={styles.quoteStubEyebrow}>Quote</Text>
           <Text style={styles.quoteStubTitle}>Launching soon.</Text>
           <Text style={styles.quoteStubSub}>
-            Our FCA-authorised product is in final review. Join the waitlist and you'll be first to get a live quote.
+            Our insurance product is pending FCA authorisation. Join the waitlist
+            and you'll be first to get a live quote.
           </Text>
         </View>
 
         <View style={styles.waitlistCard}>
           <Text style={styles.waitlistTitle}>Join the waitlist</Text>
-          <Text style={styles.waitlistSub}>117 drivers ahead of you — and growing.</Text>
+          {/*
+            Wave 0 (0a): "117 drivers ahead of you" was a string literal shown
+            to every user forever, next to a join button that stored nothing.
+            No queue position is claimed until there is a real one to read.
+          */}
+          <Text style={styles.waitlistSub}>
+            We'll email you when quotes open in your area.
+          </Text>
           <TextInput
             style={styles.emailInput}
             value={waitlistEmail}
@@ -93,19 +110,24 @@ export default function Quote() {
           />
           {joined ? (
             <View style={styles.joinedBadge}>
-              <Text style={styles.joinedText}>✓ You're on the list</Text>
+              <Text style={styles.joinedText}>You're on the list</Text>
             </View>
           ) : (
-            <TouchableOpacity
-              style={[styles.waitlistBtn, loading && styles.waitlistBtnDisabled]}
-              onPress={handleJoinWaitlist}
-              activeOpacity={0.8}
-              disabled={loading}
-            >
-              <Text style={styles.waitlistBtnText}>
-                {loading ? 'Saving…' : 'Join waitlist'}
-              </Text>
-            </TouchableOpacity>
+            <>
+              <TouchableOpacity
+                style={[styles.waitlistBtn, loading && styles.waitlistBtnDisabled]}
+                onPress={handleJoinWaitlist}
+                activeOpacity={0.8}
+                disabled={loading}
+              >
+                <Text style={styles.waitlistBtnText}>
+                  {loading ? 'Saving' : 'Join waitlist'}
+                </Text>
+              </TouchableOpacity>
+              {waitlistError !== null && (
+                <Text style={styles.waitlistErrorText}>{waitlistError}</Text>
+              )}
+            </>
           )}
         </View>
 
@@ -202,6 +224,10 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(34,197,94,0.25)',
   },
   joinedText: { color: Colors.success, fontSize: 15, fontWeight: '600' },
+  waitlistErrorText: {
+    color: Colors.error, fontSize: 13,
+    marginTop: 10, lineHeight: 18,
+  },
   disclaimer: { padding: 2 },
   disclaimerText: { color: 'rgba(255,255,255,0.2)', fontSize: 12, lineHeight: 18 },
   footer: {

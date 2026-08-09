@@ -1,13 +1,21 @@
-# MOB-T07 — STUB-LOCK: the final onboarding quote screen's waitlist join
-# shows "You're on the list" without writing anywhere (quote.tsx:39 TODO).
-# This flow deliberately locks in the FALSE-SUCCESS state so the rebuild
-# cannot silently inherit it.
+# MOB-T07 - the final onboarding quote screen's waitlist join.
+#
+# This flow used to STUB-LOCK a false success: the screen showed "You're on
+# the list" while handleJoinWaitlist contained only a TODO and stored nothing.
+# Wave 0 (0d) made the write real, so the flow now asserts the opposite
+# property - a confirmation appears only after a write resolves.
+#
+# Run against a dev client or standalone build, never Expo Go: in Expo Go the
+# Firebase layer is a mock, and joinWaitlist deliberately refuses there rather
+# than showing a confirmation for a write that did not happen.
 appId: com.driiva.app
 ---
 - launchApp
 # Deep-link straight to the quote screen (final onboarding step)
 - openLink: "driiva://onboarding/quote"
 - assertVisible: ".*[Qq]uote.*"
+# The invented "117 drivers ahead of you" counter is gone
+- assertNotVisible: "117"
 - inputText: "characterisation@driiva.co.uk"
 - tapOn: ".*[Jj]oin.*"
 - assertVisible: ".*on the list.*"

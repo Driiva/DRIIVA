@@ -1,8 +1,15 @@
-# MOB-T11 — STUB-LOCK: rewards tab is a fully static 5-tier list, every item
-# permanently locked regardless of score/unlock state.
+# MOB-T11 - rewards tab.
+#
+# This flow used to STUB-LOCK a static 5-tier list of named partner vouchers
+# (Tesco, RAC, Halfords, Nectar, Amazon), every item permanently locked. Wave 0
+# (0a/0c) deleted them: no partnership backed any of those values. The tab now
+# states where the programme actually is, so this flow asserts the named
+# brands are gone rather than pinning them in place.
 appId: com.driiva.app
 ---
 - launchApp
 - tapOn: "Rewards"
 - assertVisible: ".*[Rr]ewards.*"
-- assertVisible: ".*[Ll]ocked.*"
+- assertNotVisible: ".*Tesco.*"
+- assertNotVisible: ".*Amazon.*"
+- assertVisible: ".*not live yet.*"

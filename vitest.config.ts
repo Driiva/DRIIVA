@@ -14,6 +14,9 @@ export default defineConfig({
       'server/**/*.test.ts',
       'shared/**/*.test.ts',
       'packages/**/*.test.{ts,tsx}',
+      // Cross-context unit tests that cannot live beside their subject. See
+      // tests/unit/mobile-waitlist.test.ts for why.
+      'tests/unit/**/*.test.ts',
     ],
     exclude: [
       'node_modules',
