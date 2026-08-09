@@ -84,7 +84,6 @@ const styles = StyleSheet.create({
   progress: { paddingHorizontal: S.lg, paddingTop: S.sm },
   content: { flex: 1, paddingTop: S.md, paddingHorizontal: S.lg },
   back: { marginBottom: S.lg },
-  backText: { color: C.text.mut, fontFamily: F.body, fontSize: 20 },
   headline: {
     color: C.text.hero, fontSize: 26, fontFamily: F.bodySemiBold,
     letterSpacing: -0.025, lineHeight: 32, marginBottom: 8,

@@ -54,7 +54,7 @@ export default function LocationPriming() {
         </TouchableOpacity>
 
         <View style={styles.iconWrap}>
-          <Ionicons name="locate-outline" size={28} color={C.primary} />
+          <Ionicons name="locate-outline" size={28} color={C.primaryLight} />
         </View>
 
         <Text style={styles.headline}>Your phone detects every trip, hands-free, always.</Text>
@@ -65,7 +65,7 @@ export default function LocationPriming() {
         <View style={styles.bullets}>
           {BULLETS.map((b, i) => (
             <View key={i} style={styles.bullet}>
-              <Ionicons name="checkmark" size={14} color={C.primary} />
+              <Ionicons name="checkmark" size={14} color={C.success} />
               <Text style={styles.bulletText}>{b}</Text>
             </View>
           ))}
@@ -102,7 +102,6 @@ const styles = StyleSheet.create({
   progress: { paddingHorizontal: S.lg, paddingTop: S.sm },
   content: { paddingHorizontal: S.lg, paddingTop: S.md, paddingBottom: S.lg },
   back: { marginBottom: S.lg },
-  backText: { color: C.text.mut, fontFamily: F.body, fontSize: 20 },
   iconWrap: {
     width: 64, height: 64, borderRadius: 18,
     backgroundColor: alpha(RGB.primary, 0.12),
@@ -110,7 +109,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center',
     marginBottom: 24,
   },
-  icon: { fontFamily: F.body, fontSize: 28, color: C.primaryLight },
   headline: {
     color: C.text.hero, fontSize: 26, fontFamily: F.bodySemiBold,
     letterSpacing: -0.025, lineHeight: 32, marginBottom: 12,
@@ -118,7 +116,6 @@ const styles = StyleSheet.create({
   sub: { color: C.text.sec, fontFamily: F.body, fontSize: 15, lineHeight: 23, marginBottom: 28 },
   bullets: { gap: 14, marginBottom: 24 },
   bullet: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  bulletDot: { color: C.success, fontSize: 14, fontFamily: F.bodyBold, marginTop: 1 },
   bulletText: { color: C.text.pri, fontFamily: F.body, fontSize: 15, flex: 1, lineHeight: 22 },
   trustBadge: {
     backgroundColor: C.surface1,

@@ -99,7 +99,6 @@ const styles = StyleSheet.create({
   progress: { paddingHorizontal: S.lg, paddingTop: S.sm },
   content: { paddingHorizontal: S.lg, paddingTop: S.md, paddingBottom: S.lg },
   back: { marginBottom: S.lg },
-  backText: { color: C.text.mut, fontFamily: F.body, fontSize: 20 },
   stepIndicator: { flexDirection: 'row', gap: 6, marginBottom: 24 },
   stepDot: {
     width: 8, height: 8, borderRadius: 4,
@@ -128,5 +127,4 @@ const styles = StyleSheet.create({
   },
   optionText: { color: C.text.pri, fontFamily: F.body, fontSize: 15 },
   optionTextSelected: { color: C.text.hero, fontFamily: F.bodySemiBold },
-  check: { color: C.primary, fontSize: 16, fontFamily: F.bodyBold },
 });

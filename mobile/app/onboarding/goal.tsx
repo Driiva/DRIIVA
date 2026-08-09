@@ -75,7 +75,6 @@ const styles = StyleSheet.create({
   progress: { paddingHorizontal: S.lg, paddingTop: S.sm },
   content: { paddingHorizontal: S.lg, paddingTop: S.md, paddingBottom: S.lg },
   back: { marginBottom: S.lg },
-  backText: { color: C.text.mut, fontFamily: F.body, fontSize: 20 },
   headline: {
     color: C.text.hero, fontSize: 28, fontFamily: F.bodySemiBold,
     letterSpacing: -0.025, lineHeight: 34, marginBottom: 8,
@@ -97,7 +96,7 @@ const styles = StyleSheet.create({
     borderColor: C.primary,
     backgroundColor: alpha(RGB.primary, 0.12),
   },
-  optionIcon: { color: C.text.mut, fontFamily: F.body, fontSize: 16, width: 22, textAlign: 'center' },
+  optionIcon: { width: 22, textAlign: 'center' },
   optionLabel: { color: C.text.pri, fontFamily: F.body, fontSize: 15, flex: 1, lineHeight: 22 },
   optionLabelSelected: { color: C.text.hero, fontFamily: F.bodySemiBold },
   footer: { paddingHorizontal: S.lg, paddingBottom: S.lg },

@@ -52,7 +52,7 @@ export default function PersonalisedSolution() {
             <View key={i} style={styles.solutionCard}>
               <Text style={styles.painText}>{s.pain}</Text>
               <View style={styles.arrow}>
-                <Ionicons name="arrow-down" size={16} color={C.text.mut} />
+                <Ionicons name="arrow-down" size={16} color={C.primary} />
               </View>
               <Text style={styles.fixText}>{s.fix}</Text>
             </View>
@@ -78,7 +78,6 @@ const styles = StyleSheet.create({
   progress: { paddingHorizontal: S.lg, paddingTop: S.sm },
   content: { paddingHorizontal: S.lg, paddingTop: S.md, paddingBottom: S.lg },
   back: { marginBottom: S.lg },
-  backText: { color: C.text.mut, fontFamily: F.body, fontSize: 20 },
   headline: {
     color: C.text.hero, fontSize: 26, fontFamily: F.bodySemiBold,
     letterSpacing: -0.025, lineHeight: 32, marginBottom: 8,
@@ -97,7 +96,6 @@ const styles = StyleSheet.create({
     fontFamily: F.bodySemiBold, letterSpacing: -0.005,
   },
   arrow: { marginVertical: 8 },
-  arrowText: { color: C.primary, fontFamily: F.body, fontSize: 16 },
   fixText: {
     color: C.text.hero, fontSize: 15,
     lineHeight: 22, fontFamily: F.body, letterSpacing: -0.005,

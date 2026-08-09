@@ -112,6 +112,5 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: C.border,
   },
-  checkMark: { color: C.success, fontSize: 14, fontFamily: F.bodyBold },
   checkLabel: { color: C.text.pri, fontFamily: F.body, fontSize: 14 },
 });

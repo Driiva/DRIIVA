@@ -56,7 +56,7 @@ export default function PainPoints() {
                 activeOpacity={0.7}
               >
                 <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
-                  {isSelected && <Ionicons name="checkmark" size={14} color={C.primary} />}
+                  {isSelected && <Ionicons name="checkmark" size={12} color={C.text.hero} />}
                 </View>
                 <Text style={[styles.optionLabel, isSelected && styles.optionLabelSelected]}>
                   {opt}
@@ -83,7 +83,6 @@ const styles = StyleSheet.create({
   progress: { paddingHorizontal: S.lg, paddingTop: S.sm },
   content: { paddingHorizontal: S.lg, paddingTop: S.md, paddingBottom: S.lg },
   back: { marginBottom: S.lg },
-  backText: { color: C.text.mut, fontFamily: F.body, fontSize: 20 },
   headline: {
     color: C.text.hero, fontSize: 26, fontFamily: F.bodySemiBold,
     letterSpacing: -0.025, lineHeight: 32, marginBottom: 8,
@@ -113,7 +112,6 @@ const styles = StyleSheet.create({
   checkboxSelected: {
     backgroundColor: C.primary, borderColor: C.primary,
   },
-  checkmark: { color: C.text.hero, fontSize: 12, fontFamily: F.bodyBold },
   optionLabel: { color: C.text.pri, fontFamily: F.body, fontSize: 14, flex: 1, lineHeight: 20 },
   optionLabelSelected: { color: C.text.hero },
   footer: { paddingHorizontal: S.lg, paddingBottom: S.lg },
