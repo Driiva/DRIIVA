@@ -5,6 +5,7 @@ import { Router, Route, Switch, Redirect } from 'wouter';
 import gradientBackground from './assets/gradient-background.png';
 import { ProtectedRoute, PublicOnlyRoute } from './components/ProtectedRoute';
 import { HomeRedirect } from './components/HomeRedirect';
+import { Toaster } from './components/ui/toaster';
 
 // ─── Eagerly loaded: critical user journey pages ─────────────────────────
 // These are loaded in the initial bundle so navigation is instant.
@@ -251,6 +252,11 @@ function AppContent() {
           <Route>{() => <Redirect to="/" />}</Route>
         </Switch>
       </Suspense>
+      {/*
+        Mounted once for the whole app. Without this every toast() call in the
+        codebase writes to the use-toast memory store and renders nothing.
+      */}
+      <Toaster />
     </div>
   );
 }
