@@ -117,6 +117,49 @@ describe('firestore.rules: trips status-transition lock', () => {
       const bob = testEnv.authenticatedContext(BOB);
       await assertFails(updateDoc(doc(bob.firestore(), 'trips/t1'), { status: 'processing' }));
     });
+
+    // Wave C: the exact writes mobile/lib/trips.ts commits. On-device capture
+    // is the first client to write these documents itself, so the shapes it
+    // sends are pinned here rather than discovered as a permission-denied on a
+    // driver's phone after a real journey.
+    describe('on-device capture write shapes', () => {
+      it('allows the full submit-for-scoring update', async () => {
+        const alice = testEnv.authenticatedContext(ALICE);
+        await assertSucceeds(
+          updateDoc(doc(alice.firestore(), 'trips/t1'), {
+            endedAt: Date.now(),
+            endLocation: { lat: 51.5, lng: -0.12, address: null, placeType: null },
+            distanceMeters: 1650,
+            status: 'processing',
+            pointsCount: 150,
+          }),
+        );
+      });
+
+      it('allows the mode-confirmation discard, carrying its reason', async () => {
+        const alice = testEnv.authenticatedContext(ALICE);
+        await assertSucceeds(
+          updateDoc(doc(alice.firestore(), 'trips/t1'), {
+            status: 'failed',
+            discardReason: 'not_driving',
+          }),
+        );
+      });
+
+      it('still denies a submit that tries to carry its own score', async () => {
+        // The capture path deliberately writes no score, breakdown or events.
+        // If a future change adds them back to be helpful, the whole batch is
+        // rejected and the trip strands in recording, so this must stay red.
+        const alice = testEnv.authenticatedContext(ALICE);
+        await assertFails(
+          updateDoc(doc(alice.firestore(), 'trips/t1'), {
+            status: 'processing',
+            distanceMeters: 1650,
+            score: 88,
+          }),
+        );
+      });
+    });
   });
 
   describe('read + delete', () => {
