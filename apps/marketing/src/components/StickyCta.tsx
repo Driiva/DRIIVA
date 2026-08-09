@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'wouter';
+import { useWaitlistCount } from '@/hooks/useWaitlistCount';
 
 const SHOW_AFTER_PX = 600;
 
@@ -7,6 +8,7 @@ export function StickyCta() {
   const [location] = useLocation();
   const [visible, setVisible] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+  const waitlistCount = useWaitlistCount();
 
   useEffect(() => {
     if (location !== '/') {
@@ -50,7 +52,14 @@ export function StickyCta() {
       <div className="sticky-cta-inner">
         <span className="sticky-cta-dot" aria-hidden="true" />
         <span className="sticky-cta-text">
-          <strong>117+ drivers</strong> on the waitlist. Beta opens September.
+          {waitlistCount === null ? (
+            'Join the waitlist. Beta opens September.'
+          ) : (
+            <>
+              <strong>{waitlistCount.toLocaleString('en-GB')} drivers</strong> on the waitlist. Beta
+              opens September.
+            </>
+          )}
         </span>
         <button type="button" className="sticky-cta-button" onClick={scrollToForm}>
           Join Waitlist
