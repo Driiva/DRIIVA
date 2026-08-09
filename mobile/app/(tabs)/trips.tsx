@@ -1,29 +1,80 @@
 /**
- * Trips List — Driiva Mobile
+ * Trips - Driiva Mobile
+ *
+ * Wave C (C4) replaces the hard `.limit(50)` with real cursor pagination on a
+ * FlashList. The list keeps a realtime head page so a trip that finishes
+ * scoring while the screen is open appears without a refresh, and appends older
+ * pages behind it as the driver scrolls. Cursor logic is shared with web and
+ * admin (shared/pagination.ts), including the fetch-one-extra hasMore trick.
+ *
+ * FlashList rather than FlatList: a driver's history grows without bound and
+ * this is a fixed-row-height list, which is exactly what FlashList recycles
+ * well. TradeMind's plain FlatList is not the pattern to copy here.
  */
-import { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { View, Text, StyleSheet, RefreshControl, ActivityIndicator } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { firestore } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
-import { Colors, Spacing, FontSize, BorderRadius, scoreColor } from '@/constants/theme';
+import { C, T, S, ROW } from '@/components/ui/theme';
+import { TripCard } from '@/components/ui/TripCard';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { SkeletonLoader } from '@/components/ui/SkeletonLoader';
+import { fetchTripPage, tripCursor } from '@/lib/trips';
+
+const PAGE_SIZE = 25;
 
 interface Trip {
   id: string;
   score: number;
   distanceMeters: number;
   durationSeconds: number;
-  startedAt: { toDate?: () => Date } | string;
+  startedAt: { toDate?: () => Date } | string | null;
   routeSummary?: string;
   status: string;
+}
+
+function toTrip(id: string, data: Record<string, unknown>): Trip {
+  const d = data as Partial<Trip>;
+  return {
+    id,
+    score: typeof d.score === 'number' ? d.score : 0,
+    distanceMeters: typeof d.distanceMeters === 'number' ? d.distanceMeters : 0,
+    durationSeconds: typeof d.durationSeconds === 'number' ? d.durationSeconds : 0,
+    startedAt: d.startedAt ?? null,
+    routeSummary: d.routeSummary,
+    status: typeof d.status === 'string' ? d.status : 'completed',
+  };
+}
+
+function formatDate(ts: Trip['startedAt']): string {
+  const date = typeof ts === 'string' ? new Date(ts) : ts?.toDate?.();
+  if (!date) return '';
+  return date.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 export default function Trips() {
   const { user } = useAuth();
   const router = useRouter();
-  const [trips, setTrips] = useState<Trip[]>([]);
+
+  const [head, setHead] = useState<Trip[] | null>(null);
+  const [older, setOlder] = useState<Trip[]>([]);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [pageError, setPageError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+
+  const cursorRef = useRef<string | null>(null);
+  // A ref, not state: a fast fling fires onEndReached again before a state
+  // update lands, and the same page would be appended twice.
+  const inFlightRef = useRef(false);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -33,76 +84,184 @@ export default function Trips() {
       .where('userId', '==', user.id)
       .where('status', '==', 'completed')
       .orderBy('startedAt', 'desc')
-      .limit(50)
-      .onSnapshot((snapshot) => {
-        const list = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Trip));
-        setTrips(list);
-      });
+      .limit(PAGE_SIZE)
+      .onSnapshot(
+        (snapshot: { docs: { id: string; data: () => Record<string, unknown> }[] }) => {
+          setHead(snapshot.docs.map((doc) => toTrip(doc.id, doc.data())));
+        },
+        () => setHead([]),
+      );
 
     return unsubscribe;
   }, [user?.id]);
 
-  const onRefresh = () => {
-    setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 800);
-  };
+  const resetPages = useCallback(() => {
+    cursorRef.current = null;
+    inFlightRef.current = false;
+    setOlder([]);
+    setHasMore(true);
+    setPageError(false);
+  }, []);
 
-  const formatDate = (ts: Trip['startedAt']) => {
-    const date = typeof ts === 'string' ? new Date(ts) : ts?.toDate?.() ?? new Date();
-    return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-  };
+  const loadMore = useCallback(async () => {
+    if (!user?.id || inFlightRef.current || !hasMore || !head || head.length < PAGE_SIZE) return;
+
+    const startCursor = cursorRef.current ?? tripCursor(head[head.length - 1].id);
+    inFlightRef.current = true;
+    setLoadingMore(true);
+    setPageError(false);
+
+    try {
+      const page = await fetchTripPage(user.id, startCursor, toTrip, PAGE_SIZE);
+      setOlder((prev) => [...prev, ...page.items]);
+      cursorRef.current = page.nextCursor;
+      setHasMore(page.hasMore);
+    } catch (err) {
+      console.error('[trips] page load failed', err);
+      setPageError(true);
+    } finally {
+      inFlightRef.current = false;
+      setLoadingMore(false);
+    }
+  }, [user?.id, hasMore, head]);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    resetPages();
+    // The head is a live subscription and is already current; this gesture
+    // drops the appended pages so the list rebuilds from the top.
+    setRefreshing(false);
+  }, [resetPages]);
+
+  // A trip can appear in both the head and an appended page if a new trip lands
+  // between the two reads and shifts the window. Render each id once.
+  const seen = new Set<string>();
+  const trips = [...(head ?? []), ...older].filter((t) => {
+    if (seen.has(t.id)) return false;
+    seen.add(t.id);
+    return true;
+  });
+
+  if (head === null) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <Text style={styles.title}>Your trips</Text>
+        <View style={styles.list}>
+          {[0, 1, 2, 3].map((i) => (
+            <SkeletonLoader
+              key={i}
+              width="100%"
+              height={ROW.trip}
+              borderRadius={16}
+              style={{ marginBottom: S.sm }}
+            />
+          ))}
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <Text style={styles.title}>Your Trips</Text>
-      <FlatList
+      <Text style={styles.title}>Your trips</Text>
+      <FlashList
         data={trips}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.primary} />
+        }
+        onEndReached={() => void loadMore()}
+        onEndReachedThreshold={0.5}
         ListEmptyComponent={
-          <Text style={styles.empty}>No trips yet. Hit the record button to start your first drive!</Text>
+          <EmptyState
+            icon="car-outline"
+            title="No trips yet"
+            subtitle="Record a journey and your score for it appears here once it has been scored."
+            action={{ label: 'Record a trip', onPress: () => router.push('/(tabs)/record') }}
+          />
+        }
+        ListFooterComponent={
+          <TripsFooter
+            loadingMore={loadingMore}
+            pageError={pageError}
+            hasMore={hasMore}
+            count={trips.length}
+            onRetry={() => void loadMore()}
+          />
         }
         renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.card}
-            activeOpacity={0.7}
+          <TripCard
+            trip={{
+              id: item.id,
+              score: Math.round(item.score),
+              distanceMeters: item.distanceMeters,
+              durationSeconds: item.durationSeconds,
+              routeSummary: item.routeSummary || formatDate(item.startedAt) || 'Trip',
+              startedAt: formatDate(item.startedAt),
+            }}
             onPress={() => router.push(`/trips/${item.id}`)}
-          >
-            <View style={styles.cardLeft}>
-              <Text style={styles.route}>{item.routeSummary || 'Trip'}</Text>
-              <Text style={styles.meta}>
-                {(item.distanceMeters / 1609.34).toFixed(1)} mi · {Math.round(item.durationSeconds / 60)} min
-              </Text>
-              <Text style={styles.date}>{formatDate(item.startedAt)}</Text>
-            </View>
-            <View style={[styles.scoreBadge, { borderColor: scoreColor(item.score) }]}>
-              <Text style={[styles.scoreText, { color: scoreColor(item.score) }]}>{item.score}</Text>
-            </View>
-          </TouchableOpacity>
+          />
         )}
       />
     </SafeAreaView>
   );
 }
 
+function TripsFooter({
+  loadingMore,
+  pageError,
+  hasMore,
+  count,
+  onRetry,
+}: {
+  loadingMore: boolean;
+  pageError: boolean;
+  hasMore: boolean;
+  count: number;
+  onRetry: () => void;
+}) {
+  if (loadingMore) {
+    return (
+      <View style={styles.footer}>
+        <ActivityIndicator color={C.primary} />
+      </View>
+    );
+  }
+
+  if (pageError) {
+    return (
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>Could not load older trips.</Text>
+        <Text style={styles.retry} onPress={onRetry}>
+          Try again
+        </Text>
+      </View>
+    );
+  }
+
+  if (!hasMore && count > PAGE_SIZE) {
+    return (
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>That is your full trip history.</Text>
+      </View>
+    );
+  }
+
+  return null;
+}
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.bg },
-  title: { fontSize: FontSize.xxl, fontWeight: '800', color: Colors.textPrimary, paddingHorizontal: Spacing.md, paddingTop: Spacing.md, paddingBottom: Spacing.sm },
-  list: { paddingHorizontal: Spacing.md, paddingBottom: 100 },
-  empty: { fontSize: FontSize.md, color: Colors.textMuted, textAlign: 'center', paddingVertical: Spacing.xxl },
-  card: {
-    backgroundColor: Colors.bgCard, borderRadius: BorderRadius.lg, borderWidth: 1,
-    borderColor: Colors.bgCardBorder, padding: Spacing.md, marginBottom: Spacing.sm,
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+  container: { flex: 1, backgroundColor: C.bg },
+  title: {
+    ...T.h1,
+    color: C.text.hero,
+    paddingHorizontal: S.md,
+    paddingTop: S.md,
+    paddingBottom: S.sm,
   },
-  cardLeft: { flex: 1 },
-  route: { fontSize: FontSize.md, fontWeight: '700', color: Colors.textPrimary },
-  meta: { fontSize: FontSize.sm, color: Colors.textSecondary, marginTop: 2 },
-  date: { fontSize: FontSize.xs, color: Colors.textMuted, marginTop: 2 },
-  scoreBadge: {
-    width: 52, height: 52, borderRadius: 26, borderWidth: 3,
-    justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.bgCard,
-  },
-  scoreText: { fontSize: FontSize.lg, fontWeight: '900' },
+  list: { paddingHorizontal: S.md, paddingBottom: 100 },
+  footer: { paddingVertical: S.lg, alignItems: 'center' },
+  footerText: { ...T.caption, color: C.text.mut },
+  retry: { ...T.label, color: C.primary, marginTop: S.sm },
 });
