@@ -354,16 +354,53 @@ async function check(url) {
     await client.ready;
     await client.send('Page.enable');
     await client.send('Runtime.enable');
-    await client.send('Page.navigate', { url });
-    await evaluate(
+    // No Page.navigate here. The tab was opened AT this url, and navigating to
+    // it a second time tears down the execution context underneath the very
+    // evaluate that is waiting on it, which is what made /signin fail at
+    // random with "Inspected target navigated or closed".
+    // Wait for the page to SETTLE, not merely to load. This is a React app
+    // that resolves auth, swaps a loader for content, may redirect, and then
+    // runs a route entrance animation. Measuring at the load event caught it
+    // mid-flight and produced a different number of passing laws on each run,
+    // which is worse than a failing gate because nobody trusts it.
+    //
+    // The poll lives HERE rather than as one long promise inside the page: any
+    // navigation destroys the page's execution context, so a 12-second in-page
+    // wait was itself the thing throwing "Execution context was destroyed".
+    // Short probes just lose one sample and carry on.
+    const SAMPLE = `(() => {
+      const root = document.getElementById("root");
+      return (root ? root.children.length : 0) + ":" +
+             document.querySelectorAll("body *").length + ":" +
+             document.body.innerText.length + ":" +
+             (document.fonts.status === "loaded" ? 1 : 0);
+    })()`;
+
+    let last = '';
+    let stable = 0;
+    const deadline = Date.now() + 15000;
+    while (Date.now() < deadline) {
+      let now = '';
+      try {
+        now = await evaluate(client, SAMPLE);
+      } catch {
+        // Context died under a navigation. Reset and keep sampling.
+        last = '';
+        stable = 0;
+        await new Promise((r) => setTimeout(r, 300));
+        continue;
+      }
+      const empty = now.startsWith('0:') || now.endsWith(':0');
+      stable = !empty && now === last ? stable + 1 : 0;
+      last = now;
+      if (stable >= 3) break;
+      await new Promise((r) => setTimeout(r, 250));
+    }
+
+    const rendered = await evaluate(
       client,
-      `new Promise((r) => {
-         const done = () => document.fonts.ready.then(() => setTimeout(r, 400));
-         if (document.readyState === "complete") done();
-         else addEventListener("load", done, { once: true });
-       })`,
+      '(document.getElementById("root")?.children.length ?? 0) > 0',
     );
-    const rendered = await evaluate(client, 'document.body.children.length > 0');
     if (!rendered) throw new Error(`nothing rendered at ${url}`);
     if (PLANT) await evaluate(client, PLANT_SCRIPT);
     return await evaluate(client, CHECKS);
