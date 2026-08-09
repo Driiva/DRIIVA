@@ -9,8 +9,10 @@
  *   FIREBASE_WAITLIST_COLLECTION    — optional, defaults "marketing_waitlist"
  *   RESEND_API_KEY                  — Resend secret
  *   RESEND_FROM                     — verified sender, default "Driiva <hello@driiva.co.uk>"
- *   WAITLIST_BASE_COUNT             — added to live count (default 117 to honour the
- *                                     current canonical waitlist number).
+ *   WAITLIST_BASE_COUNT             - added to live count. Defaults to 0 so the
+ *                                     number we publish and email is the real one.
+ *                                     Set it deliberately if there is a genuine
+ *                                     off-platform cohort to account for.
  */
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -39,7 +41,7 @@ interface EmailClient {
   sendConfirmation(email: string, position: number): Promise<void>;
 }
 
-const BASE_COUNT = Number(process.env.WAITLIST_BASE_COUNT ?? '117');
+const BASE_COUNT = Number(process.env.WAITLIST_BASE_COUNT ?? '0');
 
 export async function processWaitlist(
   body: WaitlistRequestBody,
@@ -204,7 +206,7 @@ function confirmationEmailHtml(position: number): string {
       You are #${position} on the Driiva waitlist. We will email you the moment the beta opens for sign-ups.
     </p>
     <p style="font-size:13.5px;line-height:1.55;color:rgba(255,255,255,0.55);margin:24px 0 0;">
-      Driiva is in the FCA Regulatory Sandbox application phase. The waitlist is not a policy offer.
+      Driiva Ltd's insurance product is pending FCA authorisation. The waitlist is not a policy offer.
     </p>
   </div>
 </body></html>`;
@@ -215,7 +217,7 @@ function confirmationEmailText(position: number): string {
 
 We'll email you the moment the beta opens for sign-ups.
 
-Driiva is in the FCA Regulatory Sandbox application phase. The waitlist is not a policy offer.
+Driiva Ltd's insurance product is pending FCA authorisation. The waitlist is not a policy offer.
 
 — Driiva`;
 }

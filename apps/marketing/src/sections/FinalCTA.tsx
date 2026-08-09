@@ -3,6 +3,7 @@ import { useReveal } from '@/hooks/useReveal';
 import { animate, prefersReducedMotion } from '@/lib/motion';
 import { joinWaitlist } from '@/lib/api';
 import { trackEvent } from '@/lib/analytics';
+import { useWaitlistCount } from '@/hooks/useWaitlistCount';
 
 type Status = 'idle' | 'submitting' | 'success' | 'error';
 
@@ -12,6 +13,7 @@ function isValidEmail(email: string): boolean {
 
 export function FinalCTA() {
   const ref = useReveal<HTMLElement>();
+  const waitlistCount = useWaitlistCount();
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<Status>('idle');
@@ -66,8 +68,9 @@ export function FinalCTA() {
         <div className="reveal-init">
           <h2>Ready to get paid for driving safely? Sign up now - early access is limited.</h2>
           <p>
-            Join the 117 UK drivers on the waitlist for the first refund-first motor insurance that means
-            it.
+            {waitlistCount === null
+              ? 'Join the waitlist for the first refund-first motor insurance that means it.'
+              : `Join the ${waitlistCount.toLocaleString('en-GB')} UK drivers on the waitlist for the first refund-first motor insurance that means it.`}
           </p>
           <form onSubmit={handleSubmit} noValidate className="waitlist-form" data-testid="cta-form">
             <input
