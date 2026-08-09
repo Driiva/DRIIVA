@@ -18,8 +18,7 @@
 export * from './theme';
 
 // Foundation
-export { AppBackground } from './AppBackground';
-export { GlassCard } from './GlassCard';
+export { SurfaceCard } from './SurfaceCard';
 export { ScoreRing } from './ScoreRing';
 export { DriivButton } from './DriivButton';
 

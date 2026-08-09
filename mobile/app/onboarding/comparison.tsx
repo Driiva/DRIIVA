@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
-import { Colors, Spacing, BorderRadius } from '@/constants/theme';
+import { C, F, S, R, RGB, alpha } from '@/components/ui/theme';
 
 const ROWS = [
   { label: 'Premium surplus', old: 'Kept by insurer', driiva: 'Redistributed to community' },
@@ -75,21 +75,21 @@ export default function Comparison() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.bg },
-  progress: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm },
-  content: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: Spacing.lg },
-  back: { marginBottom: Spacing.lg },
-  backText: { color: 'rgba(255,255,255,0.4)', fontSize: 20 },
+  container: { flex: 1, backgroundColor: C.bg },
+  progress: { paddingHorizontal: S.lg, paddingTop: S.sm },
+  content: { paddingHorizontal: S.lg, paddingTop: S.md, paddingBottom: S.lg },
+  back: { marginBottom: S.lg },
+  backText: { color: C.text.mut, fontFamily: F.body, fontSize: 20 },
   headline: {
-    color: '#fafafa', fontSize: 26, fontWeight: '600',
+    color: C.text.hero, fontSize: 26, fontFamily: F.bodySemiBold,
     letterSpacing: -0.025, lineHeight: 32, marginBottom: 8,
   },
-  sub: { color: 'rgba(255,255,255,0.45)', fontSize: 15, marginBottom: 24 },
+  sub: { color: C.text.sec, fontFamily: F.body, fontSize: 15, marginBottom: 24 },
   table: {
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.xl,
+    backgroundColor: C.surface1,
+    borderRadius: R.sheet,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: C.border,
     overflow: 'hidden',
     marginBottom: 16,
   },
@@ -98,33 +98,33 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.06)',
+    borderBottomColor: C.hairline,
   },
   row: {
     flexDirection: 'row',
     paddingVertical: 14,
     paddingHorizontal: 16,
   },
-  rowAlt: { backgroundColor: 'rgba(255,255,255,0.02)' },
+  rowAlt: { backgroundColor: C.surface1 },
   labelCol: { flex: 1.2 },
   col: { flex: 1 },
-  rowLabel: { color: 'rgba(255,255,255,0.45)', fontSize: 12, lineHeight: 18 },
-  headerOld: { color: 'rgba(255,255,255,0.35)', fontSize: 11, fontWeight: '600', letterSpacing: 0.04 },
-  headerDriiva: { color: Colors.primaryLight, fontSize: 11, fontWeight: '600', letterSpacing: 0.04 },
-  oldText: { color: 'rgba(255,255,255,0.45)', fontSize: 13, lineHeight: 18 },
-  driText: { color: '#fafafa', fontSize: 13, fontWeight: '500', lineHeight: 18 },
+  rowLabel: { color: C.text.sec, fontFamily: F.body, fontSize: 12, lineHeight: 18 },
+  headerOld: { color: C.text.mut, fontSize: 11, fontFamily: F.bodySemiBold, letterSpacing: 0.04 },
+  headerDriiva: { color: C.primaryLight, fontSize: 11, fontFamily: F.bodySemiBold, letterSpacing: 0.04 },
+  oldText: { color: C.text.sec, fontFamily: F.body, fontSize: 13, lineHeight: 18 },
+  driText: { color: C.text.hero, fontSize: 13, fontFamily: F.bodySemiBold, lineHeight: 18 },
   callout: {
-    backgroundColor: 'rgba(107,95,220,0.08)',
-    borderRadius: BorderRadius.lg,
+    backgroundColor: alpha(RGB.primary, 0.08),
+    borderRadius: R.card,
     borderWidth: 1,
-    borderColor: 'rgba(107,95,220,0.2)',
+    borderColor: alpha(RGB.primary, 0.2),
     padding: 16,
   },
-  calloutText: { color: 'rgba(255,255,255,0.5)', fontSize: 13, lineHeight: 20 },
-  footer: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
+  calloutText: { color: C.text.sec, fontFamily: F.body, fontSize: 13, lineHeight: 20 },
+  footer: { paddingHorizontal: S.lg, paddingBottom: S.lg },
   primaryBtn: {
-    backgroundColor: Colors.primary, borderRadius: BorderRadius.md,
+    backgroundColor: C.primary, borderRadius: R.card,
     paddingVertical: 16, alignItems: 'center',
   },
-  primaryBtnText: { color: '#fafafa', fontSize: 15, fontWeight: '600', letterSpacing: -0.005 },
+  primaryBtnText: { color: C.text.hero, fontSize: 15, fontFamily: F.bodySemiBold, letterSpacing: -0.005 },
 });

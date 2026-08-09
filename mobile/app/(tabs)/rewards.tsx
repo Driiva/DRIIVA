@@ -19,7 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { firestore } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
-import { C, T, S, R } from '@/components/ui/theme';
+import { C, T, S, R, RGB, alpha } from '@/components/ui/theme';
 import { buildAchievementViews, type AchievementView } from '@driiva/contracts';
 
 /** Lucide names in the shared catalogue, drawn as Ionicons here. Never emoji. */
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
     padding: S.md,
     opacity: 0.72,
   },
-  badgeUnlocked: { opacity: 1, borderColor: 'rgba(91, 77, 201, 0.30)' },
+  badgeUnlocked: { opacity: 1, borderColor: alpha(RGB.primary, 0.3) },
 
   badgeIcon: {
     width: 40,
@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badgeIconUnlocked: { backgroundColor: 'rgba(91, 77, 201, 0.16)' },
+  badgeIconUnlocked: { backgroundColor: alpha(RGB.primary, 0.16) },
 
   badgeBody: { flex: 1, minWidth: 0 },
   badgeName: { ...T.h2, color: C.text.pri },

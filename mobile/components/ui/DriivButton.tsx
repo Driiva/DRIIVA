@@ -14,7 +14,7 @@ import {
   ViewStyle,
   StyleProp,
 } from 'react-native';
-import { C, T, S, R } from './theme';
+import { C, T, F, S, R } from './theme';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
@@ -98,8 +98,8 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   text: {
+    fontFamily: F.bodySemiBold,
     fontSize: 16,
-    fontWeight: '600',
     color: C.text.hero,
   },
   textGhost: {
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
     color: C.primary,
   },
   textDanger: {
-    color: '#fff',
+    color: C.text.hero,
   },
 });
 

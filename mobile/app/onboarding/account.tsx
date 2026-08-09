@@ -4,8 +4,8 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
-import { ScoreRing } from '@/components/onboarding/ScoreRing';
-import { Colors, Spacing, BorderRadius } from '@/constants/theme';
+import { ScoreRing } from '@/components/ui/ScoreRing';
+import { C, F, S, R, RGB, alpha } from '@/components/ui/theme';
 
 export default function Account() {
   const router = useRouter();
@@ -22,7 +22,7 @@ export default function Account() {
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.scorePreview}>
-          <ScoreRing score={state.seedScore} size={120} label="Your score" animate={false} />
+          <ScoreRing score={state.seedScore} size={120} label="Your score" animated={false} />
         </View>
 
         <Text style={styles.headline}>You're in, {firstName}.</Text>
@@ -36,12 +36,12 @@ export default function Account() {
           <SummaryRow
             label="Location"
             value={state.permissions.location ? 'Enabled' : 'Not yet enabled'}
-            valueColor={state.permissions.location ? Colors.success : Colors.warning}
+            valueColor={state.permissions.location ? C.success : C.warning}
           />
           <SummaryRow
             label="Motion"
             value={state.permissions.motion ? 'Enabled' : 'Not yet enabled'}
-            valueColor={state.permissions.motion ? Colors.success : Colors.warning}
+            valueColor={state.permissions.motion ? C.success : C.warning}
             last
           />
         </View>
@@ -83,22 +83,22 @@ function SummaryRow({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.bg },
-  progress: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm },
-  content: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: 100 },
+  container: { flex: 1, backgroundColor: C.bg },
+  progress: { paddingHorizontal: S.lg, paddingTop: S.sm },
+  content: { paddingHorizontal: S.lg, paddingTop: S.md, paddingBottom: 100 },
   scorePreview: { alignItems: 'center', marginBottom: 28 },
   headline: {
-    color: '#fafafa', fontSize: 28, fontWeight: '600',
+    color: C.text.hero, fontSize: 28, fontFamily: F.bodySemiBold,
     letterSpacing: -0.025, lineHeight: 34, marginBottom: 10,
   },
   sub: {
-    color: 'rgba(255,255,255,0.5)', fontSize: 15, lineHeight: 23, marginBottom: 28,
+    color: C.text.sec, fontFamily: F.body, fontSize: 15, lineHeight: 23, marginBottom: 28,
   },
   summaryCard: {
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.lg,
+    backgroundColor: C.surface1,
+    borderRadius: R.card,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: C.border,
     marginBottom: 16,
   },
   summaryRow: {
@@ -109,22 +109,22 @@ const styles = StyleSheet.create({
   },
   summaryRowBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: C.hairline,
   },
-  summaryLabel: { color: 'rgba(255,255,255,0.45)', fontSize: 14 },
-  summaryValue: { color: '#fafafa', fontSize: 14, fontWeight: '500' },
+  summaryLabel: { color: C.text.sec, fontFamily: F.body, fontSize: 14 },
+  summaryValue: { color: C.text.hero, fontSize: 14, fontFamily: F.bodySemiBold },
   shariahBadge: {
-    backgroundColor: 'rgba(107,95,220,0.08)',
-    borderRadius: BorderRadius.lg,
+    backgroundColor: alpha(RGB.primary, 0.08),
+    borderRadius: R.card,
     borderWidth: 1,
-    borderColor: 'rgba(107,95,220,0.18)',
+    borderColor: alpha(RGB.primary, 0.18),
     padding: 14,
   },
-  shariahText: { color: 'rgba(255,255,255,0.4)', fontSize: 13, lineHeight: 19 },
-  footer: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: Spacing.lg },
+  shariahText: { color: C.text.mut, fontFamily: F.body, fontSize: 13, lineHeight: 19 },
+  footer: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: S.lg },
   primaryBtn: {
-    backgroundColor: Colors.primary, borderRadius: BorderRadius.md,
+    backgroundColor: C.primary, borderRadius: R.card,
     paddingVertical: 16, alignItems: 'center',
   },
-  primaryBtnText: { color: '#fafafa', fontSize: 15, fontWeight: '600', letterSpacing: -0.005 },
+  primaryBtnText: { color: C.text.hero, fontSize: 15, fontFamily: F.bodySemiBold, letterSpacing: -0.005 },
 });

@@ -10,7 +10,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
-import { Colors } from '@/constants/theme';
+import { C } from '@/components/ui/theme';
 import { isExpoGo } from '@/lib/firebase';
 
 export { ErrorBoundary } from 'expo-router';
@@ -82,7 +82,7 @@ export default function RootLayout() {
           <Stack
             screenOptions={{
               headerShown: false,
-              contentStyle: { backgroundColor: Colors.bg },
+              contentStyle: { backgroundColor: C.bg },
               animation: 'slide_from_right',
             }}
           >

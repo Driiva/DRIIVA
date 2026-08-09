@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/contexts/AuthContext';
-import { Colors, Spacing, FontSize, BorderRadius } from '@/constants/theme';
+import { C, F, FS, S, R } from '@/components/ui/theme';
 
 export default function Profile() {
   const { user, logout } = useAuth();
@@ -52,7 +52,7 @@ export default function Profile() {
 
         {/* Sign out */}
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={20} color={Colors.error} />
+          <Ionicons name="log-out-outline" size={20} color={C.error} />
           <Text style={styles.logoutText}>Sign Out</Text>
         </TouchableOpacity>
 
@@ -65,41 +65,41 @@ export default function Profile() {
 function MenuItem({ icon, label, onPress }: { icon: string; label: string; onPress: () => void }) {
   return (
     <TouchableOpacity style={styles.menuItem} onPress={onPress} activeOpacity={0.7}>
-      <Ionicons name={icon as any} size={20} color={Colors.textSecondary} />
+      <Ionicons name={icon as any} size={20} color={C.text.sec} />
       <Text style={styles.menuLabel}>{label}</Text>
-      <Ionicons name="chevron-forward" size={16} color={Colors.textMuted} />
+      <Ionicons name="chevron-forward" size={16} color={C.text.mut} />
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.bg },
-  scroll: { paddingHorizontal: Spacing.md, paddingBottom: 100 },
-  title: { fontSize: FontSize.xxl, fontWeight: '800', color: Colors.textPrimary, marginTop: Spacing.md, marginBottom: Spacing.md },
+  container: { flex: 1, backgroundColor: C.bg },
+  scroll: { paddingHorizontal: S.md, paddingBottom: 100 },
+  title: { fontSize: FS.xxl, fontFamily: F.bodyBold, color: C.text.pri, marginTop: S.md, marginBottom: S.md },
 
   card: {
-    backgroundColor: Colors.bgCard, borderRadius: BorderRadius.lg, borderWidth: 1,
-    borderColor: Colors.bgCardBorder, padding: Spacing.md, marginBottom: Spacing.md,
+    backgroundColor: C.surface1, borderRadius: R.card, borderWidth: 1,
+    borderColor: C.border, padding: S.md, marginBottom: S.md,
   },
   avatar: {
-    width: 64, height: 64, borderRadius: 32, backgroundColor: Colors.primary,
-    justifyContent: 'center', alignItems: 'center', alignSelf: 'center', marginBottom: Spacing.sm,
+    width: 64, height: 64, borderRadius: 32, backgroundColor: C.primary,
+    justifyContent: 'center', alignItems: 'center', alignSelf: 'center', marginBottom: S.sm,
   },
-  avatarText: { fontSize: FontSize.xxl, fontWeight: '800', color: Colors.textPrimary },
-  name: { fontSize: FontSize.xl, fontWeight: '700', color: Colors.textPrimary, textAlign: 'center' },
-  email: { fontSize: FontSize.sm, color: Colors.textSecondary, textAlign: 'center', marginTop: 2 },
+  avatarText: { fontSize: FS.xxl, fontFamily: F.bodyBold, color: C.text.pri },
+  name: { fontSize: FS.xl, fontFamily: F.bodyBold, color: C.text.pri, textAlign: 'center' },
+  email: { fontFamily: F.body, fontSize: FS.sm, color: C.text.sec, textAlign: 'center', marginTop: 2 },
 
   menuItem: {
     flexDirection: 'row', alignItems: 'center', paddingVertical: 14,
-    borderBottomWidth: 1, borderBottomColor: Colors.bgCardBorder,
+    borderBottomWidth: 1, borderBottomColor: C.border,
   },
-  menuLabel: { flex: 1, fontSize: FontSize.md, color: Colors.textPrimary, marginLeft: Spacing.sm },
+  menuLabel: { flex: 1, fontFamily: F.body, fontSize: FS.md, color: C.text.pri, marginLeft: S.sm },
 
   logoutButton: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    paddingVertical: 16, gap: Spacing.sm,
+    paddingVertical: 16, gap: S.sm,
   },
-  logoutText: { fontSize: FontSize.md, color: Colors.error, fontWeight: '600' },
+  logoutText: { fontSize: FS.md, color: C.error, fontFamily: F.bodySemiBold },
 
-  version: { fontSize: FontSize.xs, color: Colors.textMuted, textAlign: 'center', marginTop: Spacing.sm },
+  version: { fontFamily: F.body, fontSize: FS.xs, color: C.text.mut, textAlign: 'center', marginTop: S.sm },
 });

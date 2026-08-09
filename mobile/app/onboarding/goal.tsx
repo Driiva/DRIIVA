@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
-import { Colors, Spacing, BorderRadius } from '@/constants/theme';
+import { C, F, S, R, RGB, alpha } from '@/components/ui/theme';
 
 const OPTIONS = [
   { icon: '£', label: 'Save money on insurance' },
@@ -70,16 +70,16 @@ export default function GoalQuestion() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.bg },
-  progress: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm },
-  content: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: Spacing.lg },
-  back: { marginBottom: Spacing.lg },
-  backText: { color: 'rgba(255,255,255,0.4)', fontSize: 20 },
+  container: { flex: 1, backgroundColor: C.bg },
+  progress: { paddingHorizontal: S.lg, paddingTop: S.sm },
+  content: { paddingHorizontal: S.lg, paddingTop: S.md, paddingBottom: S.lg },
+  back: { marginBottom: S.lg },
+  backText: { color: C.text.mut, fontFamily: F.body, fontSize: 20 },
   headline: {
-    color: '#fafafa', fontSize: 28, fontWeight: '600',
+    color: C.text.hero, fontSize: 28, fontFamily: F.bodySemiBold,
     letterSpacing: -0.025, lineHeight: 34, marginBottom: 8,
   },
-  sub: { color: 'rgba(255,255,255,0.45)', fontSize: 15, marginBottom: 28, lineHeight: 22 },
+  sub: { color: C.text.sec, fontFamily: F.body, fontSize: 15, marginBottom: 28, lineHeight: 22 },
   options: { gap: 10 },
   option: {
     flexDirection: 'row',
@@ -87,23 +87,23 @@ const styles = StyleSheet.create({
     gap: 14,
     paddingVertical: 16,
     paddingHorizontal: 18,
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.lg,
+    backgroundColor: C.surface1,
+    borderRadius: R.card,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: C.border,
   },
   optionSelected: {
-    borderColor: Colors.primary,
-    backgroundColor: 'rgba(107,95,220,0.12)',
+    borderColor: C.primary,
+    backgroundColor: alpha(RGB.primary, 0.12),
   },
-  optionIcon: { color: 'rgba(255,255,255,0.4)', fontSize: 16, width: 22, textAlign: 'center' },
-  optionLabel: { color: 'rgba(255,255,255,0.7)', fontSize: 15, flex: 1, lineHeight: 22 },
-  optionLabelSelected: { color: '#fafafa', fontWeight: '500' },
-  footer: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
+  optionIcon: { color: C.text.mut, fontFamily: F.body, fontSize: 16, width: 22, textAlign: 'center' },
+  optionLabel: { color: C.text.pri, fontFamily: F.body, fontSize: 15, flex: 1, lineHeight: 22 },
+  optionLabelSelected: { color: C.text.hero, fontFamily: F.bodySemiBold },
+  footer: { paddingHorizontal: S.lg, paddingBottom: S.lg },
   primaryBtn: {
-    backgroundColor: Colors.primary, borderRadius: BorderRadius.md,
+    backgroundColor: C.primary, borderRadius: R.card,
     paddingVertical: 16, alignItems: 'center',
   },
   primaryBtnDisabled: { opacity: 0.4 },
-  primaryBtnText: { color: '#fafafa', fontSize: 15, fontWeight: '600', letterSpacing: -0.005 },
+  primaryBtnText: { color: C.text.hero, fontSize: 15, fontFamily: F.bodySemiBold, letterSpacing: -0.005 },
 });

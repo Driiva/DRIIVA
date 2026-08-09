@@ -1,6 +1,6 @@
 import { Stack } from 'expo-router';
 import { OnboardingProvider } from '@/contexts/OnboardingContext';
-import { Colors } from '@/constants/theme';
+import { C } from '@/components/ui/theme';
 
 export default function OnboardingLayout() {
   return (
@@ -8,7 +8,7 @@ export default function OnboardingLayout() {
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: Colors.bg },
+          contentStyle: { backgroundColor: C.bg },
           animation: 'slide_from_right',
         }}
       />

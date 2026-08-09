@@ -14,7 +14,7 @@
  */
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { C, T, S, scoreColor } from './theme';
+import { C, T, F, S, scoreColor } from './theme';
 
 interface ScoreBreakdownBarProps {
   label: string;
@@ -77,8 +77,8 @@ const styles = StyleSheet.create({
   value: {
     width: 28,
     textAlign: 'right',
+    fontFamily: F.monoSemiBold,
     fontSize: 13,
-    fontWeight: '700',
     fontVariant: ['tabular-nums'],
   },
 });

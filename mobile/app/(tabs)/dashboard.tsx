@@ -10,7 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { firestore } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
-import { Colors, Spacing, FontSize, BorderRadius, scoreColor } from '@/constants/theme';
+import { C, F, FS, S, R, scoreColor } from '@/components/ui/theme';
 
 const { width } = Dimensions.get('window');
 
@@ -96,7 +96,7 @@ export default function Dashboard() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView
         contentContainerStyle={styles.scroll}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.primary} />}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
@@ -179,50 +179,50 @@ function ScoreBar({ label, value, weight }: { label: string; value: number; weig
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.bg },
-  scroll: { paddingHorizontal: Spacing.md, paddingBottom: 100 },
-  header: { marginTop: Spacing.md, marginBottom: Spacing.lg },
-  greeting: { fontSize: FontSize.xxl, fontWeight: '800', color: Colors.textPrimary },
-  subtitle: { fontSize: FontSize.md, color: Colors.textSecondary, marginTop: 2 },
+  container: { flex: 1, backgroundColor: C.bg },
+  scroll: { paddingHorizontal: S.md, paddingBottom: 100 },
+  header: { marginTop: S.md, marginBottom: S.lg },
+  greeting: { fontSize: FS.xxl, fontFamily: F.bodyBold, color: C.text.pri },
+  subtitle: { fontFamily: F.body, fontSize: FS.md, color: C.text.sec, marginTop: 2 },
 
-  scoreCard: { alignItems: 'center', marginBottom: Spacing.lg },
+  scoreCard: { alignItems: 'center', marginBottom: S.lg },
   scoreRing: {
     width: 160, height: 160, borderRadius: 80,
     borderWidth: 6, justifyContent: 'center', alignItems: 'center',
-    backgroundColor: Colors.bgCard,
+    backgroundColor: C.surface1,
   },
-  scoreNumber: { fontSize: FontSize.display, fontWeight: '900' },
-  scoreLabel: { fontSize: FontSize.xs, color: Colors.textSecondary, marginTop: -4 },
+  scoreNumber: { fontSize: FS.display, fontFamily: F.bodyBold },
+  scoreLabel: { fontFamily: F.body, fontSize: FS.xs, color: C.text.sec, marginTop: -4 },
 
-  statsRow: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.md },
+  statsRow: { flexDirection: 'row', gap: S.sm, marginBottom: S.md },
   statCard: {
-    flex: 1, backgroundColor: Colors.bgCard, borderRadius: BorderRadius.lg,
-    borderWidth: 1, borderColor: Colors.bgCardBorder, padding: Spacing.md, alignItems: 'center',
+    flex: 1, backgroundColor: C.surface1, borderRadius: R.card,
+    borderWidth: 1, borderColor: C.border, padding: S.md, alignItems: 'center',
   },
-  statValue: { fontSize: FontSize.xl, fontWeight: '800', color: Colors.textPrimary },
-  statLabel: { fontSize: FontSize.xs, color: Colors.textSecondary, marginTop: 2 },
+  statValue: { fontSize: FS.xl, fontFamily: F.bodyBold, color: C.text.pri },
+  statLabel: { fontFamily: F.body, fontSize: FS.xs, color: C.text.sec, marginTop: 2 },
 
   card: {
-    backgroundColor: Colors.bgCard, borderRadius: BorderRadius.lg,
-    borderWidth: 1, borderColor: Colors.bgCardBorder, padding: Spacing.md, marginBottom: Spacing.md,
+    backgroundColor: C.surface1, borderRadius: R.card,
+    borderWidth: 1, borderColor: C.border, padding: S.md, marginBottom: S.md,
   },
-  cardTitle: { fontSize: FontSize.lg, fontWeight: '700', color: Colors.textPrimary, marginBottom: Spacing.md },
+  cardTitle: { fontSize: FS.lg, fontFamily: F.bodyBold, color: C.text.pri, marginBottom: S.md },
 
-  scoreBarRow: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.sm },
+  scoreBarRow: { flexDirection: 'row', alignItems: 'center', marginBottom: S.sm },
   scoreBarLabel: { width: 90, flexDirection: 'row', alignItems: 'center', gap: 4 },
-  scoreBarText: { fontSize: FontSize.sm, color: Colors.textSecondary },
-  scoreBarWeight: { fontSize: FontSize.xs, color: Colors.textMuted },
-  scoreBarTrack: { flex: 1, height: 6, backgroundColor: Colors.bgElevated, borderRadius: 3, marginHorizontal: Spacing.sm },
+  scoreBarText: { fontFamily: F.body, fontSize: FS.sm, color: C.text.sec },
+  scoreBarWeight: { fontFamily: F.body, fontSize: FS.xs, color: C.text.mut },
+  scoreBarTrack: { flex: 1, height: 6, backgroundColor: C.surface2, borderRadius: 3, marginHorizontal: S.sm },
   scoreBarFill: { height: 6, borderRadius: 3 },
-  scoreBarValue: { width: 30, textAlign: 'right', fontSize: FontSize.sm, fontWeight: '700' },
+  scoreBarValue: { width: 30, textAlign: 'right', fontSize: FS.sm, fontFamily: F.bodyBold },
 
   tripRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingVertical: Spacing.sm, borderBottomWidth: 1, borderBottomColor: Colors.bgCardBorder,
+    paddingVertical: S.sm, borderBottomWidth: 1, borderBottomColor: C.border,
   },
-  tripRoute: { fontSize: FontSize.md, fontWeight: '600', color: Colors.textPrimary },
-  tripMeta: { fontSize: FontSize.xs, color: Colors.textSecondary, marginTop: 2 },
-  tripScore: { fontSize: FontSize.xl, fontWeight: '800' },
+  tripRoute: { fontSize: FS.md, fontFamily: F.bodySemiBold, color: C.text.pri },
+  tripMeta: { fontFamily: F.body, fontSize: FS.xs, color: C.text.sec, marginTop: 2 },
+  tripScore: { fontSize: FS.xl, fontFamily: F.bodyBold },
 
-  emptyText: { fontSize: FontSize.sm, color: Colors.textMuted, textAlign: 'center', paddingVertical: Spacing.lg },
+  emptyText: { fontFamily: F.body, fontSize: FS.sm, color: C.text.mut, textAlign: 'center', paddingVertical: S.lg },
 });

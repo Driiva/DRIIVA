@@ -6,7 +6,7 @@ import type { ReactNode } from 'react';
 import { View, Text, ScrollView, StyleSheet, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { C, T, S } from '@/components/ui/theme';
-import { GlassCard } from '@/components/ui/GlassCard';
+import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -35,7 +35,7 @@ export default function Terms() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScreenHeader title="Terms of service" subtitle="Effective March 2026 · Driiva Ltd (UK)" />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <GlassCard padding="lg">
+        <SurfaceCard padding="lg">
           <P>
             Driiva is intelligent car insurance where safe driving can earn you back
             a portion of your premium, year after year. By using our app, you agree
@@ -123,7 +123,7 @@ export default function Terms() {
               terms, see your policy document.
             </P>
           </Section>
-        </GlassCard>
+        </SurfaceCard>
       </ScrollView>
     </SafeAreaView>
   );

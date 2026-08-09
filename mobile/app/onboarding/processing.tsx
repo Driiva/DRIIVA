@@ -7,8 +7,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
-import { ScoreRing } from '@/components/onboarding/ScoreRing';
-import { Colors, Spacing } from '@/constants/theme';
+import { ScoreRing } from '@/components/ui/ScoreRing';
+import { C, F, S } from '@/components/ui/theme';
 
 // Wave 0 (0a): 'Community pool match found' claimed a matching step that
 // does not exist anywhere in the product. The two remaining lines describe
@@ -65,7 +65,7 @@ export default function Processing() {
 
         <View style={styles.ringWrap}>
           {started && (
-            <ScoreRing score={state.seedScore} size={180} label="Your score" animate />
+            <ScoreRing score={state.seedScore} size={180} label="Your score" animated />
           )}
         </View>
 
@@ -80,16 +80,16 @@ export default function Processing() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.bg },
-  progress: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm },
+  container: { flex: 1, backgroundColor: C.bg },
+  progress: { paddingHorizontal: S.lg, paddingTop: S.sm },
   content: {
     flex: 1,
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.xl,
+    paddingHorizontal: S.lg,
+    paddingTop: S.xl,
     alignItems: 'center',
   },
   headline: {
-    color: '#fafafa', fontSize: 22, fontWeight: '600',
+    color: C.text.hero, fontSize: 22, fontFamily: F.bodySemiBold,
     letterSpacing: -0.025, lineHeight: 28,
     marginBottom: 40, alignSelf: 'flex-start',
   },
@@ -106,11 +106,11 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: C.surface1,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: C.border,
   },
-  checkMark: { color: Colors.success, fontSize: 14, fontWeight: '700' },
-  checkLabel: { color: 'rgba(255,255,255,0.7)', fontSize: 14 },
+  checkMark: { color: C.success, fontSize: 14, fontFamily: F.bodyBold },
+  checkLabel: { color: C.text.pri, fontFamily: F.body, fontSize: 14 },
 });

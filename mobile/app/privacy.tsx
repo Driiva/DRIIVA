@@ -6,7 +6,7 @@ import type { ReactNode } from 'react';
 import { View, Text, ScrollView, StyleSheet, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { C, T, S } from '@/components/ui/theme';
-import { GlassCard } from '@/components/ui/GlassCard';
+import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -48,7 +48,7 @@ export default function Privacy() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScreenHeader title="Privacy policy" subtitle="Effective March 2026 · Driiva Ltd (UK)" />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <GlassCard padding="lg">
+        <SurfaceCard padding="lg">
           <P>
             At Driiva we treat your data as carefully as your no-claims bonus. This
             policy explains what we collect, why, how we protect it, and your
@@ -124,7 +124,7 @@ export default function Privacy() {
           <Section title="Contact">
             <P>For privacy questions, email <Link>info@driiva.co.uk</Link>.</P>
           </Section>
-        </GlassCard>
+        </SurfaceCard>
       </ScrollView>
     </SafeAreaView>
   );

@@ -1,17 +1,25 @@
+/**
+ * Not found - Driiva Mobile
+ * A wrong route is a small failure, not an event. It gets the same instrument
+ * surface as every other screen and a way back, with no exclamation.
+ */
 import { Link, Stack } from 'expo-router';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
-import { Text, View } from '@/components/Themed';
+import { C, T, S } from '@/components/ui/theme';
 
 export default function NotFoundScreen() {
   return (
     <>
-      <Stack.Screen options={{ title: 'Oops!' }} />
+      <Stack.Screen options={{ title: 'Not found' }} />
       <View style={styles.container}>
-        <Text style={styles.title}>This screen doesn't exist.</Text>
+        <Text style={styles.title}>This screen does not exist.</Text>
+        <Text style={styles.body}>
+          The link you followed points somewhere Driiva does not have a screen for.
+        </Text>
 
         <Link href="/" style={styles.link}>
-          <Text style={styles.linkText}>Go to home screen!</Text>
+          <Text style={styles.linkText}>Go to the dashboard</Text>
         </Link>
       </View>
     </>
@@ -23,18 +31,11 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 20,
+    padding: S.lg,
+    backgroundColor: C.bg,
   },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  link: {
-    marginTop: 15,
-    paddingVertical: 15,
-  },
-  linkText: {
-    fontSize: 14,
-    color: '#2e78b7',
-  },
+  title: { ...T.h1, color: C.text.hero, textAlign: 'center' },
+  body: { ...T.body, color: C.text.sec, textAlign: 'center', marginTop: S.sm },
+  link: { marginTop: S.lg, paddingVertical: S.md },
+  linkText: { ...T.h2, color: C.primary },
 });

@@ -23,7 +23,7 @@ import { firestore } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { C, T, S, R, scoreColor } from '@/components/ui/theme';
 import { maybeAskForReview } from '@/lib/review';
-import { GlassCard } from '@/components/ui/GlassCard';
+import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import { ScoreBreakdownBar } from '@/components/ui/ScoreBreakdownBar';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader';
@@ -254,7 +254,7 @@ export default function TripDetail() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <Header onBack={() => router.back()} />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <GlassCard padding="lg" style={{ marginBottom: S.md }}>
+        <SurfaceCard padding="lg" style={{ marginBottom: S.md }}>
           <View style={styles.headerRow}>
             <View style={{ flex: 1 }}>
               <Text style={styles.route}>{routeTitle}</Text>
@@ -270,9 +270,9 @@ export default function TripDetail() {
             <Stat label="Duration" value={`${durationMinutes} min`} />
             <Stat label="Status" value={trip.status} />
           </View>
-        </GlassCard>
+        </SurfaceCard>
 
-        <GlassCard padding="lg" style={{ marginBottom: S.md }}>
+        <SurfaceCard padding="lg" style={{ marginBottom: S.md }}>
           <Text style={styles.sectionTitle}>Route</Text>
           {points === undefined ? (
             <SkeletonLoader width="100%" height={200} borderRadius={R.card} />
@@ -297,9 +297,9 @@ export default function TripDetail() {
               No route was recorded for this trip.
             </Text>
           )}
-        </GlassCard>
+        </SurfaceCard>
 
-        <GlassCard padding="lg" style={{ marginBottom: S.md }}>
+        <SurfaceCard padding="lg" style={{ marginBottom: S.md }}>
           <Text style={styles.sectionTitle}>Score breakdown</Text>
           {hasBreakdown ? (
             <>
@@ -318,9 +318,9 @@ export default function TripDetail() {
           ) : (
             <Text style={styles.emptyLine}>Breakdown not available for this trip yet.</Text>
           )}
-        </GlassCard>
+        </SurfaceCard>
 
-        <GlassCard padding="lg">
+        <SurfaceCard padding="lg">
           <Text style={styles.sectionTitle}>Driving events</Text>
           {trip.events ? (
             <View style={styles.eventsGrid}>
@@ -332,7 +332,7 @@ export default function TripDetail() {
           ) : (
             <Text style={styles.emptyLine}>Event data not available for this trip yet.</Text>
           )}
-        </GlassCard>
+        </SurfaceCard>
       </ScrollView>
     </SafeAreaView>
   );

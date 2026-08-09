@@ -10,7 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { firestore } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { C, T, S, R } from '@/components/ui/theme';
-import { GlassCard } from '@/components/ui/GlassCard';
+import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader';
@@ -44,7 +44,7 @@ export default function Vehicle() {
         {vehicle === undefined ? (
           <SkeletonLoader width="100%" height={140} borderRadius={R.card} />
         ) : vehicle ? (
-          <GlassCard padding="lg">
+          <SurfaceCard padding="lg">
             <View style={styles.iconWrap}>
               <Ionicons name="car-sport-outline" size={28} color={C.primary} />
             </View>
@@ -52,7 +52,7 @@ export default function Vehicle() {
               {[vehicle.year, vehicle.make, vehicle.model].filter(Boolean).join(' ') || 'Vehicle'}
             </Text>
             {vehicle.color && <Text style={styles.detail}>{vehicle.color}</Text>}
-          </GlassCard>
+          </SurfaceCard>
         ) : (
           <EmptyState
             icon="car-outline"

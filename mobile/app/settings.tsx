@@ -12,7 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { router } from 'expo-router';
 import { C, T, S, R } from '@/components/ui/theme';
 import { registerForPush, unregisterPush, getPushPermission, type PushPermission } from '@/lib/push';
-import { GlassCard } from '@/components/ui/GlassCard';
+import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 
 export default function Settings() {
@@ -92,7 +92,7 @@ export default function Settings() {
       <ScreenHeader title="Settings" />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <Text style={styles.sectionTitle}>Preferences</Text>
-        <GlassCard padding="none" style={{ marginBottom: S.lg }}>
+        <SurfaceCard padding="none" style={{ marginBottom: S.lg }}>
           <View style={styles.row}>
             <Ionicons name="notifications-outline" size={20} color={C.text.sec} />
             <Text style={styles.rowLabel}>Notifications</Text>
@@ -118,7 +118,7 @@ export default function Settings() {
             <Text style={styles.rowLabel}>Appearance</Text>
             <Text style={styles.rowValue}>Dark</Text>
           </View>
-        </GlassCard>
+        </SurfaceCard>
 
         {permission === 'denied' && (
           <Text style={styles.permissionNote}>

@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
-import { Colors, Spacing, FontSize, BorderRadius } from '@/constants/theme';
+import { C, F, FS, S, R } from '@/components/ui/theme';
 
 export default function ForgotPassword() {
   const { resetPassword } = useAuth();
@@ -59,7 +59,7 @@ export default function ForgotPassword() {
           <TextInput
             style={styles.input}
             placeholder="Email"
-            placeholderTextColor={Colors.textMuted}
+            placeholderTextColor={C.text.mut}
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
@@ -71,7 +71,7 @@ export default function ForgotPassword() {
             onPress={handleReset}
             disabled={loading}
           >
-            {loading ? <ActivityIndicator color={Colors.textPrimary} /> : <Text style={styles.buttonText}>Send Reset Link</Text>}
+            {loading ? <ActivityIndicator color={C.text.pri} /> : <Text style={styles.buttonText}>Send Reset Link</Text>}
           </TouchableOpacity>
 
           <Link href="/(auth)/signin" asChild>
@@ -86,15 +86,15 @@ export default function ForgotPassword() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.bg },
-  content: { flex: 1, justifyContent: 'center', paddingHorizontal: Spacing.lg },
-  card: { backgroundColor: Colors.bgCard, borderRadius: BorderRadius.xl, borderWidth: 1, borderColor: Colors.bgCardBorder, padding: Spacing.lg },
-  title: { fontSize: FontSize.xl, fontWeight: '700', color: Colors.textPrimary, marginBottom: Spacing.sm },
-  body: { fontSize: FontSize.md, color: Colors.textSecondary, marginBottom: Spacing.lg, lineHeight: 22 },
-  input: { backgroundColor: Colors.bgInput, borderRadius: BorderRadius.md, paddingHorizontal: Spacing.md, paddingVertical: 14, fontSize: FontSize.md, color: Colors.textPrimary, borderWidth: 1, borderColor: Colors.bgCardBorder },
-  button: { backgroundColor: Colors.primary, borderRadius: BorderRadius.md, paddingVertical: 16, alignItems: 'center', marginTop: Spacing.md },
+  container: { flex: 1, backgroundColor: C.bg },
+  content: { flex: 1, justifyContent: 'center', paddingHorizontal: S.lg },
+  card: { backgroundColor: C.surface1, borderRadius: R.sheet, borderWidth: 1, borderColor: C.border, padding: S.lg },
+  title: { fontSize: FS.xl, fontFamily: F.bodyBold, color: C.text.pri, marginBottom: S.sm },
+  body: { fontFamily: F.body, fontSize: FS.md, color: C.text.sec, marginBottom: S.lg, lineHeight: 22 },
+  input: { backgroundColor: C.surface3, borderRadius: R.card, paddingHorizontal: S.md, paddingVertical: 14, fontFamily: F.body, fontSize: FS.md, color: C.text.pri, borderWidth: 1, borderColor: C.border },
+  button: { backgroundColor: C.primary, borderRadius: R.card, paddingVertical: 16, alignItems: 'center', marginTop: S.md },
   buttonDisabled: { opacity: 0.6 },
-  buttonText: { color: Colors.textPrimary, fontSize: FontSize.lg, fontWeight: '700' },
-  link: { alignItems: 'center', marginTop: Spacing.md },
-  linkText: { color: Colors.primaryLight, fontSize: FontSize.sm },
+  buttonText: { color: C.text.pri, fontSize: FS.lg, fontFamily: F.bodyBold },
+  link: { alignItems: 'center', marginTop: S.md },
+  linkText: { color: C.primaryLight, fontFamily: F.body, fontSize: FS.sm },
 });

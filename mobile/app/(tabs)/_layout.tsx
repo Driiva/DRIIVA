@@ -6,7 +6,7 @@
 import { Tabs } from 'expo-router';
 import { View, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Spacing } from '@/constants/theme';
+import { C, F, S } from '@/components/ui/theme';
 
 export default function TabLayout() {
   return (
@@ -14,8 +14,8 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: styles.tabBar,
-        tabBarActiveTintColor: Colors.primary,
-        tabBarInactiveTintColor: Colors.textMuted,
+        tabBarActiveTintColor: C.primary,
+        tabBarInactiveTintColor: C.text.mut,
         tabBarLabelStyle: styles.tabLabel,
       }}
     >
@@ -43,7 +43,7 @@ export default function TabLayout() {
           title: '',
           tabBarIcon: () => (
             <View style={styles.recordButton}>
-              <Ionicons name="radio-button-on" size={32} color={Colors.textPrimary} />
+              <Ionicons name="radio-button-on" size={32} color={C.text.pri} />
             </View>
           ),
         }}
@@ -72,26 +72,26 @@ export default function TabLayout() {
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: 'rgba(10, 14, 26, 0.95)',
-    borderTopColor: Colors.bgCardBorder,
+    backgroundColor: C.bg,
+    borderTopColor: C.border,
     borderTopWidth: 1,
     height: Platform.OS === 'ios' ? 88 : 64,
-    paddingTop: Spacing.xs,
-    paddingBottom: Platform.OS === 'ios' ? 28 : Spacing.xs,
+    paddingTop: S.xs,
+    paddingBottom: Platform.OS === 'ios' ? 28 : S.xs,
   },
   tabLabel: {
     fontSize: 10,
-    fontWeight: '600',
+    fontFamily: F.bodySemiBold,
   },
   recordButton: {
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: Colors.primary,
+    backgroundColor: C.primary,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: Platform.OS === 'ios' ? 20 : 10,
-    shadowColor: Colors.primary,
+    shadowColor: C.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 12,

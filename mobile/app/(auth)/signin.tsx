@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { Link } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
-import { Colors, Spacing, FontSize, BorderRadius } from '@/constants/theme';
+import { C, F, FS, S, R } from '@/components/ui/theme';
 import * as Haptics from 'expo-haptics';
 
 export default function SignIn() {
@@ -62,7 +62,7 @@ export default function SignIn() {
           <TextInput
             style={styles.input}
             placeholder="Email or username"
-            placeholderTextColor={Colors.textMuted}
+            placeholderTextColor={C.text.mut}
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
@@ -74,7 +74,7 @@ export default function SignIn() {
           <TextInput
             style={styles.input}
             placeholder="Password"
-            placeholderTextColor={Colors.textMuted}
+            placeholderTextColor={C.text.mut}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -88,7 +88,7 @@ export default function SignIn() {
             activeOpacity={0.8}
           >
             {loading ? (
-              <ActivityIndicator color={Colors.textPrimary} />
+              <ActivityIndicator color={C.text.pri} />
             ) : (
               <Text style={styles.buttonText}>Sign In</Text>
             )}
@@ -118,87 +118,91 @@ export default function SignIn() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.bg,
+    backgroundColor: C.bg,
   },
   content: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: Spacing.lg,
+    paddingHorizontal: S.lg,
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: Spacing.xxl,
+    marginBottom: S.xxl,
   },
   logoText: {
-    fontSize: FontSize.display,
-    fontWeight: '800',
-    color: Colors.textPrimary,
+    fontSize: FS.display,
+    fontFamily: F.display,
+    color: C.text.pri,
     letterSpacing: -1,
   },
   tagline: {
-    fontSize: FontSize.md,
-    color: Colors.textSecondary,
-    marginTop: Spacing.xs,
+    fontFamily: F.body,
+    fontSize: FS.md,
+    color: C.text.sec,
+    marginTop: S.xs,
   },
   card: {
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.xl,
+    backgroundColor: C.surface1,
+    borderRadius: R.sheet,
     borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-    padding: Spacing.lg,
+    borderColor: C.border,
+    padding: S.lg,
   },
   title: {
-    fontSize: FontSize.xl,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    marginBottom: Spacing.lg,
+    fontSize: FS.xl,
+    fontFamily: F.bodyBold,
+    color: C.text.pri,
+    marginBottom: S.lg,
   },
   input: {
-    backgroundColor: Colors.bgInput,
-    borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.md,
+    backgroundColor: C.surface3,
+    borderRadius: R.card,
+    paddingHorizontal: S.md,
     paddingVertical: 14,
-    fontSize: FontSize.md,
-    color: Colors.textPrimary,
-    marginBottom: Spacing.sm,
+    fontFamily: F.body,
+    fontSize: FS.md,
+    color: C.text.pri,
+    marginBottom: S.sm,
     borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
+    borderColor: C.border,
   },
   button: {
-    backgroundColor: Colors.primary,
-    borderRadius: BorderRadius.md,
+    backgroundColor: C.primary,
+    borderRadius: R.card,
     paddingVertical: 16,
     alignItems: 'center',
-    marginTop: Spacing.md,
+    marginTop: S.md,
   },
   buttonDisabled: {
     opacity: 0.6,
   },
   buttonText: {
-    color: Colors.textPrimary,
-    fontSize: FontSize.lg,
-    fontWeight: '700',
+    color: C.text.pri,
+    fontSize: FS.lg,
+    fontFamily: F.bodyBold,
   },
   link: {
     alignItems: 'center',
-    marginTop: Spacing.md,
+    marginTop: S.md,
   },
   linkText: {
-    color: Colors.primaryLight,
-    fontSize: FontSize.sm,
+    color: C.primaryLight,
+    fontFamily: F.body,
+    fontSize: FS.sm,
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: Spacing.lg,
+    marginTop: S.lg,
   },
   footerText: {
-    color: Colors.textSecondary,
-    fontSize: FontSize.md,
+    color: C.text.sec,
+    fontFamily: F.body,
+    fontSize: FS.md,
   },
   footerLink: {
-    color: Colors.primaryLight,
-    fontSize: FontSize.md,
-    fontWeight: '600',
+    color: C.primaryLight,
+    fontSize: FS.md,
+    fontFamily: F.bodySemiBold,
   },
 });

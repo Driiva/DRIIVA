@@ -16,7 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { firestore } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
-import { C, T, S, R } from '@/components/ui/theme';
+import { C, T, S, R, RGB, alpha } from '@/components/ui/theme';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 
@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
     borderColor: C.border,
     padding: S.md,
   },
-  rowUnread: { borderColor: 'rgba(91, 77, 201, 0.30)', backgroundColor: C.surface2 },
+  rowUnread: { borderColor: alpha(RGB.primary, 0.3), backgroundColor: C.surface2 },
 
   icon: {
     width: 36,

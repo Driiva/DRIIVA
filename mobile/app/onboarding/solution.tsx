@@ -3,7 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
-import { Colors, Spacing, BorderRadius } from '@/constants/theme';
+import { C, F, S, R } from '@/components/ui/theme';
 
 // FCA DISCLOSURE REQUIRED on financial claims before launch
 const ALL_SOLUTIONS = [
@@ -73,38 +73,38 @@ export default function PersonalisedSolution() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.bg },
-  progress: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm },
-  content: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: Spacing.lg },
-  back: { marginBottom: Spacing.lg },
-  backText: { color: 'rgba(255,255,255,0.4)', fontSize: 20 },
+  container: { flex: 1, backgroundColor: C.bg },
+  progress: { paddingHorizontal: S.lg, paddingTop: S.sm },
+  content: { paddingHorizontal: S.lg, paddingTop: S.md, paddingBottom: S.lg },
+  back: { marginBottom: S.lg },
+  backText: { color: C.text.mut, fontFamily: F.body, fontSize: 20 },
   headline: {
-    color: '#fafafa', fontSize: 26, fontWeight: '600',
+    color: C.text.hero, fontSize: 26, fontFamily: F.bodySemiBold,
     letterSpacing: -0.025, lineHeight: 32, marginBottom: 8,
   },
-  sub: { color: 'rgba(255,255,255,0.45)', fontSize: 15, marginBottom: 24 },
+  sub: { color: C.text.sec, fontFamily: F.body, fontSize: 15, marginBottom: 24 },
   solutions: { gap: 12 },
   solutionCard: {
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.lg,
+    backgroundColor: C.surface1,
+    borderRadius: R.card,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: C.border,
     padding: 18,
   },
   painText: {
-    color: 'rgba(255,255,255,0.4)', fontSize: 13,
-    fontWeight: '500', letterSpacing: -0.005,
+    color: C.text.mut, fontSize: 13,
+    fontFamily: F.bodySemiBold, letterSpacing: -0.005,
   },
   arrow: { marginVertical: 8 },
-  arrowText: { color: Colors.primary, fontSize: 16 },
+  arrowText: { color: C.primary, fontFamily: F.body, fontSize: 16 },
   fixText: {
-    color: '#fafafa', fontSize: 15,
-    lineHeight: 22, fontWeight: '400', letterSpacing: -0.005,
+    color: C.text.hero, fontSize: 15,
+    lineHeight: 22, fontFamily: F.body, letterSpacing: -0.005,
   },
-  footer: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
+  footer: { paddingHorizontal: S.lg, paddingBottom: S.lg },
   primaryBtn: {
-    backgroundColor: Colors.primary, borderRadius: BorderRadius.md,
+    backgroundColor: C.primary, borderRadius: R.card,
     paddingVertical: 16, alignItems: 'center',
   },
-  primaryBtnText: { color: '#fafafa', fontSize: 15, fontWeight: '600', letterSpacing: -0.005 },
+  primaryBtnText: { color: C.text.hero, fontSize: 15, fontFamily: F.bodySemiBold, letterSpacing: -0.005 },
 });

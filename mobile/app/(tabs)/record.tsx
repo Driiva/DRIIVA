@@ -34,7 +34,7 @@ import * as Haptics from 'expo-haptics';
 import * as Location from 'expo-location';
 import { projectedRefundCents } from '@driiva/scoring';
 import { C, T, S, R } from '@/components/ui/theme';
-import { GlassCard } from '@/components/ui/GlassCard';
+import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import { DriivButton } from '@/components/ui/DriivButton';
 import { RefundMoment } from '@/components/RefundMoment';
 import { useAuth } from '@/contexts/AuthContext';
@@ -383,7 +383,7 @@ export default function Record() {
         </Text>
 
         {phase === 'recording' && (
-          <GlassCard padding="lg" style={styles.liveCard}>
+          <SurfaceCard padding="lg" style={styles.liveCard}>
             <View style={styles.liveRow}>
               <LiveStat label="Time" value={formatDuration(elapsed)} />
               <LiveStat label="Distance" value={`${miles.toFixed(1)} mi`} />
@@ -395,11 +395,11 @@ export default function Record() {
                 route may be missing.
               </Text>
             )}
-          </GlassCard>
+          </SurfaceCard>
         )}
 
         {phase === 'confirming' && (
-          <GlassCard padding="lg" style={styles.liveCard}>
+          <SurfaceCard padding="lg" style={styles.liveCard}>
             <Text style={styles.question}>Was this you driving?</Text>
             <Text style={styles.questionMeta}>
               {miles.toFixed(1)} mi over {formatDuration(elapsed)}, {pointsCount} GPS points.
@@ -418,7 +418,7 @@ export default function Record() {
             <Text style={styles.questionFootnote}>
               A journey you did not drive is discarded and never scored.
             </Text>
-          </GlassCard>
+          </SurfaceCard>
         )}
 
         {phase !== 'confirming' && (

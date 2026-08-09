@@ -3,7 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
-import { Colors, Spacing, BorderRadius } from '@/constants/theme';
+import { C, F, S, R, RGB, alpha } from '@/components/ui/theme';
 
 const TOTAL = 14;
 
@@ -74,37 +74,38 @@ export default function Welcome() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.bg },
-  progress: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm },
-  content: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.xl, paddingBottom: Spacing.lg },
+  container: { flex: 1, backgroundColor: C.bg },
+  progress: { paddingHorizontal: S.lg, paddingTop: S.sm },
+  content: { paddingHorizontal: S.lg, paddingTop: S.xl, paddingBottom: S.lg },
   top: { marginBottom: 28 },
   eyebrow: {
-    color: Colors.primary,
+    color: C.primary,
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: F.bodySemiBold,
     letterSpacing: 0.1,
     textTransform: 'uppercase',
     marginBottom: 12,
   },
   headline: {
-    color: '#fafafa',
+    color: C.text.hero,
     fontSize: 28,
-    fontWeight: '600',
+    fontFamily: F.bodySemiBold,
     letterSpacing: -0.025,
     lineHeight: 34,
     marginBottom: 12,
   },
   sub: {
-    color: 'rgba(255,255,255,0.55)',
+    color: C.text.sec,
+    fontFamily: F.body,
     fontSize: 15,
     lineHeight: 23,
     letterSpacing: -0.005,
   },
   previewCard: {
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.xl,
+    backgroundColor: C.surface1,
+    borderRadius: R.sheet,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: C.border,
     padding: 20,
     marginBottom: 16,
   },
@@ -115,9 +116,9 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   leaderboardTitle: {
-    color: 'rgba(255,255,255,0.5)',
+    color: C.text.sec,
     fontSize: 11,
-    fontWeight: '500',
+    fontFamily: F.bodySemiBold,
     letterSpacing: 0.08,
     textTransform: 'uppercase',
   },
@@ -125,7 +126,7 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: Colors.success,
+    backgroundColor: C.success,
   },
   leaderRow: {
     flexDirection: 'row',
@@ -133,10 +134,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.04)',
+    borderBottomColor: C.hairline,
   },
   leaderRowYou: {
-    backgroundColor: 'rgba(107,95,220,0.08)',
+    backgroundColor: alpha(RGB.primary, 0.08),
     marginHorizontal: -8,
     paddingHorizontal: 8,
     borderRadius: 8,
@@ -144,12 +145,12 @@ const styles = StyleSheet.create({
   },
   leaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   leaderRight: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  leaderRank: { color: 'rgba(255,255,255,0.3)', fontSize: 12, width: 16 },
-  leaderName: { color: '#fafafa', fontSize: 14, fontWeight: '500' },
-  leaderNameYou: { color: Colors.primaryLight, fontWeight: '600' },
-  leaderScore: { color: 'rgba(255,255,255,0.5)', fontSize: 13, fontWeight: '600', width: 30, textAlign: 'right' },
-  leaderRefund: { color: Colors.success, fontSize: 14, fontWeight: '700', width: 50, textAlign: 'right' },
-  leaderRefundYou: { color: Colors.primaryLight },
+  leaderRank: { color: C.text.mut, fontFamily: F.body, fontSize: 12, width: 16 },
+  leaderName: { color: C.text.hero, fontSize: 14, fontFamily: F.bodySemiBold },
+  leaderNameYou: { color: C.primaryLight, fontFamily: F.bodySemiBold },
+  leaderScore: { color: C.text.sec, fontSize: 13, fontFamily: F.bodySemiBold, width: 30, textAlign: 'right' },
+  leaderRefund: { color: C.success, fontSize: 14, fontFamily: F.bodyBold, width: 50, textAlign: 'right' },
+  leaderRefundYou: { color: C.primaryLight },
   tickerRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -157,31 +158,33 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.04)',
+    borderTopColor: C.hairline,
   },
   tickerDot: {
-    width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.success,
+    width: 6, height: 6, borderRadius: 3, backgroundColor: C.success,
   },
-  tickerText: { color: 'rgba(255,255,255,0.4)', fontSize: 12 },
+  tickerText: { color: C.text.mut, fontFamily: F.body, fontSize: 12 },
   caveat: {
-    color: 'rgba(255,255,255,0.3)',
+    color: C.text.mut,
+    fontFamily: F.body,
     fontSize: 12,
     textAlign: 'center',
   },
   footer: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.lg,
+    paddingHorizontal: S.lg,
+    paddingBottom: S.lg,
     gap: 12,
   },
   primaryBtn: {
-    backgroundColor: Colors.primary,
-    borderRadius: BorderRadius.md,
+    backgroundColor: C.primary,
+    borderRadius: R.card,
     paddingVertical: 16,
     alignItems: 'center',
   },
-  primaryBtnText: { color: '#fafafa', fontSize: 15, fontWeight: '600', letterSpacing: -0.005 },
+  primaryBtnText: { color: C.text.hero, fontSize: 15, fontFamily: F.bodySemiBold, letterSpacing: -0.005 },
   secondaryLink: {
-    color: 'rgba(255,255,255,0.4)',
+    color: C.text.mut,
+    fontFamily: F.body,
     fontSize: 14,
     textAlign: 'center',
   },

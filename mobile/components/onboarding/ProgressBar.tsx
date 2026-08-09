@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
-import { Colors } from '@/constants/theme';
+import { C } from '@/components/ui/theme';
 
 interface Props {
   step: number;
@@ -29,13 +29,13 @@ export function ProgressBar({ step, total }: Props) {
 const styles = StyleSheet.create({
   track: {
     height: 3,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: C.surface2,
     borderRadius: 2,
     overflow: 'hidden',
   },
   fill: {
     height: 3,
-    backgroundColor: Colors.primary,
+    backgroundColor: C.primary,
     borderRadius: 2,
   },
 });

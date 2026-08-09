@@ -16,7 +16,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
-import { Colors, Spacing, BorderRadius } from '@/constants/theme';
+import { C, F, S, R } from '@/components/ui/theme';
 
 const PRINCIPLES = [
   {
@@ -79,37 +79,37 @@ export default function SocialProof() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.bg },
-  progress: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm },
-  content: { flex: 1, paddingTop: Spacing.md, paddingHorizontal: Spacing.lg },
-  back: { marginBottom: Spacing.lg },
-  backText: { color: 'rgba(255,255,255,0.4)', fontSize: 20 },
+  container: { flex: 1, backgroundColor: C.bg },
+  progress: { paddingHorizontal: S.lg, paddingTop: S.sm },
+  content: { flex: 1, paddingTop: S.md, paddingHorizontal: S.lg },
+  back: { marginBottom: S.lg },
+  backText: { color: C.text.mut, fontFamily: F.body, fontSize: 20 },
   headline: {
-    color: '#fafafa', fontSize: 26, fontWeight: '600',
+    color: C.text.hero, fontSize: 26, fontFamily: F.bodySemiBold,
     letterSpacing: -0.025, lineHeight: 32, marginBottom: 8,
   },
-  sub: { color: 'rgba(255,255,255,0.45)', fontSize: 15, marginBottom: 24 },
+  sub: { color: C.text.sec, fontFamily: F.body, fontSize: 15, marginBottom: 24 },
 
   list: { gap: 12 },
   card: {
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.lg,
+    backgroundColor: C.surface1,
+    borderRadius: R.card,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: C.border,
     padding: 18,
   },
-  cardTitle: { color: '#fafafa', fontSize: 15, fontWeight: '600', marginBottom: 6 },
-  cardBody: { color: 'rgba(255,255,255,0.55)', fontSize: 14, lineHeight: 21 },
+  cardTitle: { color: C.text.hero, fontSize: 15, fontFamily: F.bodySemiBold, marginBottom: 6 },
+  cardBody: { color: C.text.sec, fontFamily: F.body, fontSize: 14, lineHeight: 21 },
 
   disclaimer: {
-    color: 'rgba(255,255,255,0.25)', fontSize: 12,
-    lineHeight: 18, marginTop: Spacing.lg,
+    color: C.text.mut, fontFamily: F.body, fontSize: 12,
+    lineHeight: 18, marginTop: S.lg,
   },
 
-  footer: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
+  footer: { paddingHorizontal: S.lg, paddingBottom: S.lg },
   primaryBtn: {
-    backgroundColor: Colors.primary, borderRadius: BorderRadius.md,
+    backgroundColor: C.primary, borderRadius: R.card,
     paddingVertical: 16, alignItems: 'center',
   },
-  primaryBtnText: { color: '#fafafa', fontSize: 15, fontWeight: '600', letterSpacing: -0.005 },
+  primaryBtnText: { color: C.text.hero, fontSize: 15, fontFamily: F.bodySemiBold, letterSpacing: -0.005 },
 });

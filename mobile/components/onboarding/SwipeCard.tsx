@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import {
   View, Text, PanResponder, Animated, StyleSheet, Dimensions,
 } from 'react-native';
-import { Colors, BorderRadius } from '@/constants/theme';
+import { C, F, R, RGB, alpha } from '@/components/ui/theme';
 
 const { width } = Dimensions.get('window');
 const SWIPE_THRESHOLD = width * 0.3;
@@ -84,27 +84,27 @@ export function SwipeCard({ statement, index, total, onSwipe }: Props) {
 const styles = StyleSheet.create({
   card: {
     width: width - 48,
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.xl,
+    backgroundColor: C.surface1,
+    borderRadius: R.sheet,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: C.border,
     padding: 32,
     minHeight: 220,
     justifyContent: 'center',
     alignSelf: 'center',
   },
   counter: {
-    color: 'rgba(255,255,255,0.3)',
+    color: C.text.mut,
     fontSize: 11,
-    fontWeight: '500',
+    fontFamily: F.bodySemiBold,
     letterSpacing: 0.06,
     textTransform: 'uppercase',
     marginBottom: 20,
   },
   statement: {
-    color: '#fafafa',
+    color: C.text.hero,
     fontSize: 20,
-    fontWeight: '400',
+    fontFamily: F.body,
     lineHeight: 29,
     letterSpacing: -0.01,
   },
@@ -114,7 +114,8 @@ const styles = StyleSheet.create({
     marginTop: 28,
   },
   hint: {
-    color: 'rgba(255,255,255,0.3)',
+    color: C.text.mut,
+    fontFamily: F.body,
     fontSize: 12,
   },
   label: {
@@ -127,17 +128,17 @@ const styles = StyleSheet.create({
   },
   agreeLabel: {
     right: 20,
-    borderColor: Colors.success,
-    backgroundColor: 'rgba(34,197,94,0.12)',
+    borderColor: C.success,
+    backgroundColor: alpha(RGB.success, 0.12),
   },
   disagreeLabel: {
     left: 20,
-    borderColor: Colors.error,
-    backgroundColor: 'rgba(239,68,68,0.12)',
+    borderColor: C.error,
+    backgroundColor: alpha(RGB.error, 0.12),
   },
   labelText: {
-    color: '#fafafa',
+    color: C.text.hero,
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: F.bodyBold,
   },
 });

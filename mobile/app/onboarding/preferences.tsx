@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useOnboarding, DrivingFrequency, DrivingTime, DrivingRoutes } from '@/contexts/OnboardingContext';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
-import { Colors, Spacing, BorderRadius } from '@/constants/theme';
+import { C, F, S, R, RGB, alpha } from '@/components/ui/theme';
 import { seedScore as calcSeed } from '@/hooks/useTripSeed';
 
 const STEPS = [
@@ -94,19 +94,19 @@ export default function Preferences() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.bg },
-  progress: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm },
-  content: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: Spacing.lg },
-  back: { marginBottom: Spacing.lg },
-  backText: { color: 'rgba(255,255,255,0.4)', fontSize: 20 },
+  container: { flex: 1, backgroundColor: C.bg },
+  progress: { paddingHorizontal: S.lg, paddingTop: S.sm },
+  content: { paddingHorizontal: S.lg, paddingTop: S.md, paddingBottom: S.lg },
+  back: { marginBottom: S.lg },
+  backText: { color: C.text.mut, fontFamily: F.body, fontSize: 20 },
   stepIndicator: { flexDirection: 'row', gap: 6, marginBottom: 24 },
   stepDot: {
     width: 8, height: 8, borderRadius: 4,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: C.surface2,
   },
-  stepDotActive: { backgroundColor: Colors.primary },
+  stepDotActive: { backgroundColor: C.primary },
   headline: {
-    color: '#fafafa', fontSize: 26, fontWeight: '600',
+    color: C.text.hero, fontSize: 26, fontFamily: F.bodySemiBold,
     letterSpacing: -0.025, lineHeight: 32, marginBottom: 28,
   },
   options: { gap: 10 },
@@ -116,16 +116,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 16,
     paddingHorizontal: 18,
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.lg,
+    backgroundColor: C.surface1,
+    borderRadius: R.card,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: C.border,
   },
   optionSelected: {
-    borderColor: Colors.primary,
-    backgroundColor: 'rgba(107,95,220,0.12)',
+    borderColor: C.primary,
+    backgroundColor: alpha(RGB.primary, 0.12),
   },
-  optionText: { color: 'rgba(255,255,255,0.65)', fontSize: 15 },
-  optionTextSelected: { color: '#fafafa', fontWeight: '600' },
-  check: { color: Colors.primary, fontSize: 16, fontWeight: '700' },
+  optionText: { color: C.text.pri, fontFamily: F.body, fontSize: 15 },
+  optionTextSelected: { color: C.text.hero, fontFamily: F.bodySemiBold },
+  check: { color: C.primary, fontSize: 16, fontFamily: F.bodyBold },
 });
