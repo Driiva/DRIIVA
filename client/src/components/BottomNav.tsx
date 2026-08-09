@@ -2,6 +2,7 @@ import { useLocation, Link } from 'wouter';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Home, Map, Gift, User } from 'lucide-react';
 import { haptic } from '@/hooks/useHaptics';
+import { FixedLayer } from '@/components/motion/FixedLayer';
 
 const navItems = [
   { icon: Home, label: 'Home', path: '/dashboard' },
@@ -18,7 +19,12 @@ interface BottomNavProps {
 export const BottomNav: React.FC<BottomNavProps> = ({ badges }) => {
   const [location] = useLocation();
 
+  // Portalled to the body: PageTransition animates transform and filter on the
+  // routed subtree, and either property would make this nav a child of that
+  // containing block instead of the viewport, so it would slide on every
+  // navigation.
   return (
+    <FixedLayer>
     <nav
       className="fixed bottom-0 left-0 right-0 z-50"
       style={{
@@ -28,11 +34,10 @@ export const BottomNav: React.FC<BottomNavProps> = ({ badges }) => {
       }}
     >
       <div
-        className="border-t border-white/[0.06]"
+        className="border-t"
         style={{
-          background: 'rgba(15, 23, 42, 0.6)',
-          backdropFilter: 'blur(28px) saturate(150%)',
-          WebkitBackdropFilter: 'blur(28px) saturate(150%)',
+          background: 'var(--app-surface-1)',
+          borderColor: 'var(--app-border)',
           boxShadow: '0 -8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.06)',
         }}
       >
@@ -57,15 +62,17 @@ export const BottomNav: React.FC<BottomNavProps> = ({ badges }) => {
                   className="flex flex-col items-center gap-0.5 px-4 py-1.5 justify-center"
                 >
                   <div className="relative w-10 h-8 flex items-center justify-center">
-                    {/* Active pill background */}
+                    {/* Active indicator. A chamfered tile, not a capsule, and
+                        tinted with the one accent rather than emerald: green
+                        on this product means a positive driving signal. */}
                     {isActive && (
                       <motion.div
-                        layoutId="nav-active-pill"
-                        className="absolute inset-x-0 -inset-y-0.5 rounded-full"
+                        layoutId="nav-active-tile"
+                        className="absolute inset-x-0 -inset-y-0.5"
                         style={{
-                          background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.18) 0%, rgba(6, 182, 212, 0.12) 100%)',
-                          border: '1px solid rgba(16, 185, 129, 0.15)',
-                          boxShadow: '0 0 12px rgba(16, 185, 129, 0.1)',
+                          borderRadius: 'var(--radius-md)',
+                          background: 'rgba(var(--app-primary-rgb), 0.16)',
+                          border: '1px solid rgba(var(--app-primary-rgb), 0.22)',
                         }}
                         transition={{ type: "spring", stiffness: 400, damping: 28 }}
                       />
@@ -74,7 +81,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ badges }) => {
                     <Icon
                       className={`w-[22px] h-[22px] relative z-10 transition-all duration-200 ${
                         isActive
-                          ? 'text-emerald-400'
+                          ? 'text-[var(--app-primary)]'
                           : 'text-white/45'
                       }`}
                       strokeWidth={isActive ? 2.2 : 1.8}
@@ -85,7 +92,12 @@ export const BottomNav: React.FC<BottomNavProps> = ({ badges }) => {
                       <motion.div
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
-                        className="absolute -top-1 -right-1 min-w-[16px] h-4 flex items-center justify-center rounded-full bg-red-500 border border-[rgba(15,23,42,0.8)] px-1"
+                        className="absolute -top-1 -right-1 min-w-[16px] h-4 flex items-center justify-center px-1"
+                        style={{
+                          borderRadius: 'var(--radius-sm)',
+                          background: 'var(--err)',
+                          border: '1px solid var(--app-bg)',
+                        }}
                       >
                         <span className="text-[9px] font-bold text-white leading-none">
                           {badge > 99 ? '99+' : badge}
@@ -96,7 +108,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ badges }) => {
 
                   <span className={`text-[10px] font-medium transition-all duration-200 ${
                     isActive
-                      ? 'text-emerald-400'
+                      ? 'text-[var(--app-primary)]'
                       : 'text-white/35'
                   }`}>
                     {label}
@@ -108,5 +120,6 @@ export const BottomNav: React.FC<BottomNavProps> = ({ badges }) => {
         </div>
       </div>
     </nav>
+    </FixedLayer>
   );
 };
