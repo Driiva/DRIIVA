@@ -311,11 +311,11 @@ export default function TrustPage() {
           */}
           <div className="flex flex-wrap gap-2">
             <RegBadge label="Pending FCA authorisation" color="var(--app-primary)" />
-            <RegBadge label="UK GDPR Compliant" color="#10B981" />
+            <RegBadge label="UK GDPR Compliant" color="var(--ok)" />
             <RegBadge label="ICO Registered" color="var(--app-primary)" />
-            <RegBadge label="No Data Sold" color="#10B981" />
+            <RegBadge label="No Data Sold" color="var(--ok)" />
           </div>
-          <p className="text-xs text-white/50 mt-3 leading-relaxed">
+          <p className="text-[15px] text-white/60 mt-3 leading-relaxed">
             Driiva Ltd's insurance product is pending FCA authorisation. We do not
             currently hold permission to carry out regulated insurance activities.
           </p>

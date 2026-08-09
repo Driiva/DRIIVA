@@ -205,6 +205,15 @@ service cloud.firestore {
     match /communityPool/{poolId} {
       allow read: if true;
       allow write: if false;
+
+      // Wave B: closed periods, archived by finalizePoolPeriod before the
+      // live document rolls forward. Aggregate figures only, no per-user
+      // data, so it inherits the parent's public read. Written by the
+      // scheduled function via the Admin SDK, never by a client.
+      match /history/{period} {
+        allow read: if true;
+        allow write: if false;
+      }
     }
 
     // =========================================================================

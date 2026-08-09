@@ -136,6 +136,37 @@ export const finalizePoolPeriod = functions
         });
       }
       
+      /*
+       * Wave B: archive the period that just closed before the pool document
+       * is rolled forward.
+       *
+       * `communityPool/current` is a single mutable snapshot, so finalising a
+       * period previously destroyed every trace of it. There was no history
+       * anywhere in the product, which is why the pool could only ever be
+       * drawn as a single instant. This writes what the period ACTUALLY ended
+       * at, copied from the live document; it invents nothing and adds no
+       * funding path.
+       */
+      const historyRef = db
+        .collection(COLLECTION_NAMES.COMMUNITY_POOL)
+        .doc('current')
+        .collection('history')
+        .doc(previousPeriod);
+
+      batch.set(historyRef, {
+        period: previousPeriod,
+        periodType: pool.periodType,
+        totalPoolCents: pool.totalPoolCents,
+        totalContributionsCents: pool.totalContributionsCents,
+        totalPayoutsCents: pool.totalPayoutsCents,
+        activeParticipants: pool.activeParticipants,
+        averagePoolScore: pool.averagePoolScore,
+        safetyFactor: pool.safetyFactor,
+        claimsThisPeriod: pool.claimsThisPeriod,
+        sharesFinalized: shares.length,
+        archivedAt: now,
+      });
+
       // Update pool document for new period
       const { start, end } = getPoolPeriodDates('monthly');
       

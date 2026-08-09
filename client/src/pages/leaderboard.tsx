@@ -35,6 +35,7 @@ import { useFriends } from '@/hooks/useFriends';
 import { useAuth } from '@/contexts/AuthContext';
 import { EmptyState, SkeletonList, SkeletonStat } from '@/components/ui/EmptyState';
 import { InviteSheet } from '@/components/InviteSheet';
+import { PoolPanel } from '@/components/PoolPanel';
 
 const PAGE_SIZE = 25;
 
@@ -251,6 +252,7 @@ export default function LeaderboardPage() {
   const {
     pool,
     poolLoading,
+    userShare,
     leaderboard,
     leaderboardLoading,
     leaderboardError,
@@ -405,6 +407,15 @@ export default function LeaderboardPage() {
             </CardContent>
           </Card>
         </motion.div>
+
+        <PoolPanel
+          activeParticipants={activeParticipants}
+          averagePoolScore={pool?.averagePoolScore ?? 0}
+          safetyFactor={pool?.safetyFactor ?? 0}
+          userSharePercentage={userShare?.sharePercentage ?? 0}
+          userWeightedScore={Math.round(userShare?.weightedScore ?? 0)}
+          loading={poolLoading}
+        />
 
         {/* Rankings */}
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>

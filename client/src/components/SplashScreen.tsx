@@ -48,8 +48,11 @@ export default function SplashScreen({ children }: { children: ReactNode }) {
             <div
               className="absolute inset-0"
               style={{
+                // Ink ladder, not slate. This carried #0f172a and #1e293b,
+                // two stops of the retired Tailwind slate palette, on the one
+                // surface that renders over every route.
                 background:
-                  'linear-gradient(160deg, #1a0a12 0%, #1c0f1e 20%, #0f172a 50%, #1e293b 80%, #1a0a12 100%)',
+                  'linear-gradient(160deg, var(--ink) 0%, var(--ink-2) 25%, var(--ink-4) 55%, var(--ink-5) 80%, var(--ink) 100%)',
               }}
             />
 
