@@ -299,12 +299,21 @@ export default function TrustPage() {
         {/* ── 3. Regulatory Badges ── */}
         <GlassSection>
           <h2 className="text-lg font-semibold mb-4">Regulatory Status</h2>
+          {/*
+            Wave 0 (0b): the badge here read "FCA Registered", which is a
+            statement of regulated status Driiva does not currently hold. It is
+            now stated as the pending position the rest of the product uses.
+          */}
           <div className="flex flex-wrap gap-2">
-            <RegBadge label="FCA Registered" color="#6366F1" />
+            <RegBadge label="Pending FCA authorisation" color="#6366F1" />
             <RegBadge label="UK GDPR Compliant" color="#10B981" />
             <RegBadge label="ICO Registered" color="#6366F1" />
             <RegBadge label="No Data Sold" color="#10B981" />
           </div>
+          <p className="text-xs text-white/50 mt-3 leading-relaxed">
+            Driiva Ltd's insurance product is pending FCA authorisation. We do not
+            currently hold permission to carry out regulated insurance activities.
+          </p>
         </GlassSection>
 
         {/* ── 4. Underwriting Disclosure ── */}
