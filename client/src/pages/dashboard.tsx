@@ -211,8 +211,6 @@ export default function Dashboard() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [mapExpanded, setMapExpanded] = useState(false);
-  const [showDeepInsight, setShowDeepInsight] = useState(false);
-  const [currentInsightIndex] = useState(() => Math.floor(Math.random() * 7));
 
   // Resolve userId from AuthContext (no redundant onAuthStateChanged)
   const firebaseUserId = isDemoMode ? null : (user?.id ?? null);
@@ -632,17 +630,7 @@ export default function Dashboard() {
         <motion.div variants={item} className="mb-4">
           {(() => {
             const tip = getAiDriivaTip(drivingScore);
-            
-            const DEEP_INSIGHTS = [
-              { icon: '🎯', text: 'Great smooth braking on your last 3 trips! Keep that gentle touch on the pedal—it reduces wear and boosts your safety score.' },
-              { icon: '⚠️', text: 'Watch your speed—you went 8mph over the limit on Main Street yesterday. Staying within limits protects your score and wallet.' },
-              { icon: '🌙', text: 'Night driving can be tricky. Extra caution after sunset pays off—reduced visibility means slower reactions, so give yourself more time.' },
-              { icon: '⛽', text: 'Tip: Gradual acceleration uses 20% less fuel and boosts your efficiency score. Think of the throttle as a dimmer, not a switch.' },
-              { icon: '🔄', text: 'Sharp turns detected on Oak Road. Slow down before the bend, not during it—smoother cornering = safer driving = better scores.' },
-              { icon: '📈', text: 'You\'re on a 5-trip streak above 85 points. Consistency is key—keep it up and your refund rate climbs steadily!' },
-              { icon: '💰', text: 'Your safe driving has contributed £12.40 to the community pool this month. Every safe mile helps the whole community earn more.' }
-            ];
-            
+
             return (
               <div className="dashboard-glass-card relative overflow-hidden">
                 {/* Premium gradient glow border */}
@@ -670,40 +658,13 @@ export default function Dashboard() {
                   <p className="text-xs text-white/70 leading-relaxed">{tip.tip}</p>
                 </div>
                 
-                <AnimatePresence>
-                  {showDeepInsight && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="mb-3 overflow-hidden"
-                    >
-                      <div className="p-3 rounded-xl bg-indigo-500/10 border border-indigo-400/20">
-                        <p className="text-sm text-indigo-200 leading-relaxed">
-                          {DEEP_INSIGHTS[currentInsightIndex].icon} {DEEP_INSIGHTS[currentInsightIndex].text}
-                        </p>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-                
-                <button
-                  onClick={() => setShowDeepInsight(!showDeepInsight)}
-                  className="w-full py-2 rounded-lg bg-indigo-500/15 border border-indigo-400/25 text-indigo-300 text-xs font-medium hover:bg-indigo-500/25 transition-all flex items-center justify-center gap-1.5"
-                >
-                  {showDeepInsight ? (
-                    <>
-                      Hide Insight
-                      <ChevronDown className="w-3.5 h-3.5" />
-                    </>
-                  ) : (
-                    <>
-                      Get Deep Insight
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </>
-                  )}
-                </button>
+                {/*
+                  Wave 0 (0a): the "Get Deep Insight" expander rendered a
+                  hardcoded array of invented trip events (streets, speeds, a
+                  pool contribution figure) picked at random and presented as
+                  personalised analysis. Deleted rather than restated. Per-trip
+                  analysis returns when it reads real trip data.
+                */}
               </div>
             );
           })()}

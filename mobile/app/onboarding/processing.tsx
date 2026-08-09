@@ -10,10 +10,12 @@ import { ProgressBar } from '@/components/onboarding/ProgressBar';
 import { ScoreRing } from '@/components/onboarding/ScoreRing';
 import { Colors, Spacing } from '@/constants/theme';
 
+// Wave 0 (0a): 'Community pool match found' claimed a matching step that
+// does not exist anywhere in the product. The two remaining lines describe
+// what the seed questionnaire actually does.
 const ITEMS = [
   { label: 'Driving style assessed', delay: 600 },
-  { label: 'Community pool match found', delay: 1200 },
-  { label: 'Your EcoScore baseline set', delay: 1800 },
+  { label: 'Your EcoScore baseline set', delay: 1200 },
 ];
 
 function CheckItem({ label, delay }: { label: string; delay: number }) {

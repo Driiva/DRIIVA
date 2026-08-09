@@ -53,7 +53,7 @@ export default function ViralMoment() {
 
           <View style={styles.poolRow}>
             <View style={styles.liveDot} />
-            <Text style={styles.poolText}>117 drivers in your community pool. Growing.</Text>
+            <Text style={styles.poolText}>Your pool opens when the product goes live.</Text>
           </View>
         </View>
 

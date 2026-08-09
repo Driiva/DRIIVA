@@ -77,120 +77,14 @@ function defToAchievement(
   };
 }
 
-// Demo achievements data
-const DEMO_ACHIEVEMENTS: Achievement[] = [
-  // Safety milestones
-  {
-    id: 'first-trip',
-    title: 'First Journey',
-    description: 'Complete your first tracked trip',
-    icon: Car,
-    color: 'text-emerald-400',
-    bgColor: 'from-emerald-500/20 to-emerald-600/20',
-    borderColor: 'border-emerald-500/30',
-    unlocked: true,
-    unlockedDate: '2026-01-15',
-    category: 'milestone',
-  },
-  {
-    id: 'smooth-operator',
-    title: 'Smooth Operator',
-    description: '10 trips without hard braking',
-    icon: Shield,
-    color: 'text-blue-400',
-    bgColor: 'from-blue-500/20 to-blue-600/20',
-    borderColor: 'border-blue-500/30',
-    unlocked: true,
-    unlockedDate: '2026-01-28',
-    category: 'safety',
-  },
-  {
-    id: 'century-club',
-    title: 'Century Club',
-    description: 'Complete 100 safe trips',
-    icon: Target,
-    color: 'text-purple-400',
-    bgColor: 'from-purple-500/20 to-purple-600/20',
-    borderColor: 'border-purple-500/30',
-    unlocked: false,
-    progress: 47,
-    maxProgress: 100,
-    category: 'milestone',
-  },
-  {
-    id: 'night-owl',
-    title: 'Night Owl',
-    description: 'Complete 10 trips after 9pm safely',
-    icon: Star,
-    color: 'text-indigo-400',
-    bgColor: 'from-indigo-500/20 to-indigo-600/20',
-    borderColor: 'border-indigo-500/30',
-    unlocked: false,
-    progress: 3,
-    maxProgress: 10,
-    category: 'safety',
-  },
-  // Community contributions
-  {
-    id: 'top-driver',
-    title: 'Top 10% Driver',
-    description: 'Achieve a safety score in the top 10%',
-    icon: Trophy,
-    color: 'text-amber-400',
-    bgColor: 'from-amber-500/20 to-amber-600/20',
-    borderColor: 'border-amber-500/30',
-    unlocked: true,
-    unlockedDate: '2026-02-01',
-    category: 'community',
-  },
-  {
-    id: 'community-champion',
-    title: 'Community Champion',
-    description: 'Contribute to the pool for 3 consecutive months',
-    icon: Users,
-    color: 'text-pink-400',
-    bgColor: 'from-pink-500/20 to-pink-600/20',
-    borderColor: 'border-pink-500/30',
-    unlocked: false,
-    progress: 1,
-    maxProgress: 3,
-    category: 'community',
-  },
-  // Refund achievements
-  {
-    id: 'first-refund',
-    title: 'First Refund',
-    description: 'Earn your first premium refund',
-    icon: Zap,
-    color: 'text-cyan-400',
-    bgColor: 'from-cyan-500/20 to-cyan-600/20',
-    borderColor: 'border-cyan-500/30',
-    unlocked: true,
-    unlockedDate: '2026-02-03',
-    category: 'refund',
-  },
-  {
-    id: 'refund-master',
-    title: 'Refund Master',
-    description: 'Earn £100+ in total refunds',
-    icon: Target,
-    color: 'text-teal-400',
-    bgColor: 'from-teal-500/20 to-teal-600/20',
-    borderColor: 'border-teal-500/30',
-    unlocked: false,
-    progress: 62,
-    maxProgress: 100,
-    category: 'refund',
-  },
-];
-
-// Empty achievements for new/real users (before data fetch)
-const EMPTY_ACHIEVEMENTS: Achievement[] = DEMO_ACHIEVEMENTS.map(a => ({
-  ...a,
-  unlocked: false,
-  unlockedDate: undefined,
-  progress: 0,
-}));
+/*
+  Wave 0 (0a): the hardcoded DEMO_ACHIEVEMENTS catalogue was deleted. It
+  carried invented unlock dates (2026-01-15) and invented progress counters
+  (47/100 trips, 62/100 pounds refunded), and every real user hit it through
+  EMPTY_ACHIEVEMENTS on the not-configured, not-seeded and error paths. The
+  page now shows only achievement definitions that exist in Firestore, and
+  says so plainly when there are none.
+*/
 
 const categoryLabels: Record<string, string> = {
   safety: 'Safe Driving',
@@ -212,20 +106,14 @@ export default function Achievements() {
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   useEffect(() => {
-    const demoModeActive = sessionStorage.getItem('driiva-demo-mode') === 'true';
-    
-    if (demoModeActive) {
-      setIsDemoMode(true);
-      setAchievements(DEMO_ACHIEVEMENTS);
-      setLoading(false);
-      return;
-    }
+    setIsDemoMode(sessionStorage.getItem('driiva-demo-mode') === 'true');
 
     if (!user?.id || !isFirebaseConfigured) {
-      setAchievements(EMPTY_ACHIEVEMENTS);
+      setAchievements([]);
       setLoading(false);
       return;
     }
@@ -243,15 +131,15 @@ export default function Achievements() {
 
         const unlockMap = new Map(userRecords.map(r => [r.achievementId, r]));
 
-        if (defs.length > 0) {
-          setAchievements(defs.map(d => defToAchievement(d, unlockMap.get(d.id))));
-        } else {
-          // Definitions not yet seeded — fall back to empty demo-shaped list
-          setAchievements(EMPTY_ACHIEVEMENTS);
-        }
+        // An empty definitions collection is an honest empty state, not a
+        // cue to substitute a catalogue nobody has seeded.
+        setAchievements(defs.map(d => defToAchievement(d, unlockMap.get(d.id))));
       } catch (err) {
         console.error('[Achievements] Failed to load:', err);
-        setAchievements(EMPTY_ACHIEVEMENTS);
+        if (!cancelled) {
+          setAchievements([]);
+          setLoadError(true);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -344,7 +232,7 @@ export default function Achievements() {
           <div className="h-3 bg-white/10 rounded-full overflow-hidden">
             <motion.div
               initial={{ width: 0 }}
-              animate={{ width: `${(unlockedCount / totalCount) * 100}%` }}
+              animate={{ width: totalCount > 0 ? `${(unlockedCount / totalCount) * 100}%` : '0%' }}
               transition={{ delay: 0.3, duration: 0.8, ease: "easeOut" }}
               className="h-full bg-gradient-to-r from-amber-500 to-amber-400 rounded-full"
             />
@@ -465,7 +353,21 @@ export default function Achievements() {
             className="text-center py-12"
           >
             <Trophy className="w-16 h-16 text-white/20 mx-auto mb-4" />
-            <p className="text-white/60">No achievements in this category yet</p>
+            {loadError ? (
+              <>
+                <p className="text-white/60">We could not load your achievements.</p>
+                <p className="text-white/40 text-sm mt-1">Check your connection and try again.</p>
+              </>
+            ) : totalCount === 0 ? (
+              <>
+                <p className="text-white/60">No achievements yet.</p>
+                <p className="text-white/40 text-sm mt-1">
+                  They unlock as you record trips.
+                </p>
+              </>
+            ) : (
+              <p className="text-white/60">No achievements in this category yet</p>
+            )}
           </motion.div>
         )}
       </div>
