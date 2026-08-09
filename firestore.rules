@@ -390,7 +390,24 @@ service cloud.firestore {
     // Authenticated users can submit feedback; no client reads (admin SDK only).
 
     match /feedback/{docId} {
-      allow create: if isAuthenticated();
+      /*
+       * Wave D: create was `isAuthenticated()` and nothing else, so any signed
+       * -in user could file feedback under somebody else's uid, with a rating
+       * outside the scale and a message of unbounded length. None of that is
+       * catastrophic on its own; together it means the feedback table cannot
+       * be trusted as evidence of anything, which is the only reason it exists.
+       *
+       * Write-only by design: a user files feedback and cannot read, edit or
+       * withdraw it, and cannot read anybody else's.
+       */
+      allow create: if isAuthenticated()
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.rating is int
+                    && request.resource.data.rating >= 1
+                    && request.resource.data.rating <= 5
+                    && request.resource.data.message is string
+                    && request.resource.data.message.size() <= 2000
+                    && request.resource.data.platform in ['web', 'ios', 'android'];
       allow read, update, delete: if false;
     }
 
