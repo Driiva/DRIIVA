@@ -14,6 +14,25 @@ import { Colors, Spacing, FontSize, BorderRadius, scoreColor } from '@/constants
 
 const { width } = Dimensions.get('window');
 
+/**
+ * Mirrors RecentTripSummary in packages/contracts (and the RecentTripSummary
+ * the trip-completion trigger writes). Metres and seconds; converted to miles
+ * and minutes only where they are rendered.
+ *
+ * Wave 0 (0e): this interface used to declare `id`, `distanceMeters` and
+ * `durationSeconds` against a writer that produced `tripId`, `distanceMiles`
+ * and `durationMinutes`, so every row rendered "NaN mi · NaN min" under an
+ * undefined React key the moment a real trip landed. The writer now emits
+ * metres and seconds and this reader matches it.
+ */
+interface RecentTrip {
+  tripId: string;
+  score: number;
+  distanceMeters: number;
+  durationSeconds: number;
+  routeSummary?: string;
+}
+
 interface DashboardData {
   overallScore: number;
   totalTrips: number;
@@ -25,14 +44,7 @@ interface DashboardData {
     corneringScore: number;
     phoneUsageScore: number;
   };
-  recentTrips: Array<{
-    id: string;
-    score: number;
-    distanceMeters: number;
-    durationSeconds: number;
-    startedAt: string;
-    routeSummary?: string;
-  }>;
+  recentTrips: RecentTrip[];
 }
 
 export default function Dashboard() {
@@ -53,7 +65,12 @@ export default function Dashboard() {
 
         const profile = userData.drivingProfile || {};
         setData({
-          overallScore: profile.overallSafetyScore ?? 0,
+          // Wave 0 (0e): this read `profile.overallSafetyScore`, a field no
+          // writer has ever written, so the headline number of a telematics
+          // app was pinned at 0 in the red tier forever. `currentScore` is the
+          // canonical field in packages/contracts and the one every writer
+          // (provisionUser, trip triggers, damoovSync) actually sets.
+          overallScore: profile.currentScore ?? 0,
           totalTrips: profile.totalTrips ?? 0,
           totalMiles: profile.totalMiles ?? 0,
           scoreBreakdown: profile.scoreBreakdown ?? {
@@ -120,7 +137,7 @@ export default function Dashboard() {
             <Text style={styles.emptyText}>No trips yet. Start driving to see your score!</Text>
           ) : (
             data?.recentTrips.slice(0, 5).map((trip) => (
-              <View key={trip.id} style={styles.tripRow}>
+              <View key={trip.tripId} style={styles.tripRow}>
                 <View>
                   <Text style={styles.tripRoute}>{trip.routeSummary || 'Trip'}</Text>
                   <Text style={styles.tripMeta}>

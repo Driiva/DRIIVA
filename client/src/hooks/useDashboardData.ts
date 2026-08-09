@@ -131,9 +131,11 @@ function summaryToDisplayTrip(summary: RecentTripSummary): DashboardTrip {
     from: summary.routeSummary.split(' → ')[0] || 'Unknown',
     to: summary.routeSummary.split(' → ')[1] || 'Unknown',
     score: Math.round(summary.score),
-    distance: Math.round(summary.distanceMiles * 10) / 10,
+    // Wave 0 (0e): the summary stores metres and seconds (the same units as
+    // the trip document). Miles and minutes are produced here, at the edge.
+    distance: Math.round((summary.distanceMeters / 1609.34) * 10) / 10,
     date: formatTripDate(summary.endedAt),
-    duration: Math.round(summary.durationMinutes),
+    duration: Math.round(summary.durationSeconds / 60),
   };
 }
 

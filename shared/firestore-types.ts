@@ -104,8 +104,8 @@ export interface RecentTripSummary {
   tripId: string;
   startedAt: Timestamp;
   endedAt: Timestamp;
-  distanceMiles: number;
-  durationMinutes: number;
+  distanceMeters: number;  // Wave 0 (0e): metres, not miles
+  durationSeconds: number;  // Wave 0 (0e): seconds, not minutes
   score: number;
   routeSummary: string;           // "Home → Work"
 }

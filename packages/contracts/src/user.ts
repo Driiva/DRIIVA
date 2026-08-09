@@ -18,12 +18,11 @@ export type UnitSystem = z.infer<typeof UnitSystemSchema>;
  * Denormalized onto the user doc for fast dashboard reads.
  * Source: shared/firestore-types.ts `DrivingProfileData` (~L67-76).
  *
- * Quirk 6.2: mobile reads `drivingProfile.overallSafetyScore`
- * (dashboard.tsx:54-56) but every writer (Cloud Functions, damoovSync) writes
- * `currentScore` - that field has never existed on a real document. The
- * schema uses `currentScore`, the REAL writer's field, not the broken
- * reader's; mobile shows 0 forever until that reader is fixed (tracked
- * outside this contracts package).
+ * Quirk 6.2 (RESOLVED in Wave 0, 0e): mobile used to read
+ * `drivingProfile.overallSafetyScore` while every writer (Cloud Functions,
+ * damoovSync, provisionUser) wrote `currentScore`, so the mobile safety score
+ * sat at 0 forever. `currentScore` is the canonical field and the mobile
+ * reader now uses it. Do not reintroduce a second name for this value.
  */
 export const DrivingProfileDataSchema = z.object({
   currentScore: z.number().int().min(0).max(100),
@@ -38,15 +37,32 @@ export const DrivingProfileDataSchema = z.object({
 });
 export type DrivingProfileData = z.infer<typeof DrivingProfileDataSchema>;
 
+/**
+ * RECENT TRIP SUMMARY
+ * ===================
+ * Denormalized onto the user doc (max 3, FIFO) by the trip-completion
+ * trigger.
+ *
+ * UNIT CONVENTION (Wave 0, 0e): distance is METRES and duration is SECONDS,
+ * as integers, matching TripDocument in ./trip.ts. Conversion to miles and
+ * minutes happens at the render edge and nowhere else.
+ *
+ * This summary previously stored `distanceMiles`/`durationMinutes` while the
+ * trip document it summarises stored metres and seconds, so the codebase
+ * carried two units for one quantity. Mobile read `distanceMeters` off this
+ * summary and rendered "NaN mi" the moment a real trip landed. One convention
+ * removes the class of bug rather than the instance.
+ */
 export const RecentTripSummarySchema = z.object({
   tripId: z.string(),
   startedAt: FirestoreTimestampSchema,
   endedAt: FirestoreTimestampSchema,
-  distanceMiles: z.number(),
-  durationMinutes: z.number(),
+  distanceMeters: z.number().int().min(0),
+  durationSeconds: z.number().int().min(0),
   score: z.number().int().min(0).max(100),
   routeSummary: z.string(),
 });
+export type RecentTripSummary = z.infer<typeof RecentTripSummarySchema>;
 
 export const UserSettingsSchema = z.object({
   notificationsEnabled: z.boolean(),

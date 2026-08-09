@@ -110,12 +110,19 @@ export interface TripDocument {
   segmentation?: TripSegmentationSummary;
 }
 
+/**
+ * Denormalized trip summary on the user doc (max 3, FIFO).
+ *
+ * UNIT CONVENTION (Wave 0, 0e): metres and seconds as integers, matching
+ * TripDocument above and packages/contracts RecentTripSummarySchema. Miles and
+ * minutes are a rendering concern only.
+ */
 export interface RecentTripSummary {
   tripId: string;
   startedAt: Timestamp;
   endedAt: Timestamp;
-  distanceMiles: number;
-  durationMinutes: number;
+  distanceMeters: number;
+  durationSeconds: number;
   score: number;
   routeSummary: string;
 }

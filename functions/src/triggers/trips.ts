@@ -602,8 +602,10 @@ export async function updateDriverProfileAndPoolShare(
       tripId,
       startedAt: trip.startedAt,
       endedAt: trip.endedAt,
-      distanceMiles: Math.round(distanceMiles * 100) / 100,
-      durationMinutes: Math.round(durationMinutes),
+      // Metres and seconds, straight off the trip document. See the unit
+      // convention on RecentTripSummary in ../types.ts.
+      distanceMeters: Math.round(trip.distanceMeters),
+      durationSeconds: Math.round(trip.durationSeconds),
       score: trip.score,
       routeSummary: buildRouteSummary(trip.startLocation, trip.endLocation),
     };
