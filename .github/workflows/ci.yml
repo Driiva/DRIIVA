@@ -43,6 +43,11 @@ jobs:
       - name: Mobile design laws
         run: npm run design:laws:mobile
 
+      # Static sweep for invented money, people and regulatory claims on the
+      # web surfaces. Every hit is either deleted or acknowledged by name.
+      - name: Fabrication laws
+        run: npm run fabrication:laws
+
   build:
     name: Build (client + server)
     runs-on: ubuntu-latest
