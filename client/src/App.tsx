@@ -26,6 +26,7 @@ const Rewards = lazy(() => import('./pages/rewards'));
 const Support = lazy(() => import('./pages/support'));
 const TripRecording = lazy(() => import('./pages/trip-recording'));
 const LeaderboardPage = lazy(() => import('./pages/leaderboard'));
+const InvitePage = lazy(() => import('./pages/invite'));
 const PolicyPage = lazy(() => import('./pages/policy'));
 const Terms = lazy(() => import('./pages/terms'));
 const Privacy = lazy(() => import('./pages/privacy'));
@@ -49,6 +50,7 @@ import SplashScreen from './components/SplashScreen';
 import BrandedLoader from './components/BrandedLoader';
 import PageTransition from './components/PageTransition';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { usePendingInvite } from './hooks/usePendingInvite';
 
 function AdminRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -118,8 +120,13 @@ export default function App() {
 
 function AppContent() {
   const { isOnline } = useOnlineStatusContext();
-  const { loading } = useAuth();
+  const { loading, user } = useAuth();
   const [location] = useLocation();
+
+  // Redeems an invite stashed before sign-up, once there is a user to attach
+  // the friendship to. Without this the code dies at the sign-up redirect and
+  // the friendship silently never forms.
+  usePendingInvite(user?.id ?? null);
 
   // Block all route rendering until auth state is resolved — prevents white
   // flash and false redirects to /verify-email for already-authenticated users.
@@ -151,6 +158,9 @@ function AppContent() {
           <Route path="/terms" component={Terms} />
           <Route path="/privacy" component={Privacy} />
           <Route path="/trust" component={TrustPage} />
+          {/* Invite deep link. Public: an invited person may not have an
+              account yet, and the page carries the code through sign-up. */}
+          <Route path="/invite/:code" component={InvitePage} />
 
           {/* Auth routes - redirect to dashboard if already logged in */}
           <Route path="/signin">

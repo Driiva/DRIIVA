@@ -117,11 +117,17 @@ function renderSignup() {
 }
 
 async function fillAndSubmit() {
-  await userEvent.type(screen.getByPlaceholderText(/enter your full name/i), 'Test User');
-  await userEvent.type(screen.getByPlaceholderText(/enter your email/i), 'test@gmail.com');
-  await userEvent.type(screen.getByPlaceholderText(/create a password/i), 'password123');
-  await userEvent.type(screen.getByPlaceholderText(/confirm your password/i), 'password123');
-  await userEvent.click(screen.getByRole('button', { name: /create account/i }));
+  // delay: null types the whole string in one go instead of awaiting a timer
+  // between keystrokes. Forty-five characters of simulated typing, each one
+  // re-rendering the form, was overrunning the 5s default whenever the full
+  // 48-file suite ran in parallel: these three tests failed under load and
+  // passed in isolation, which reads as a real regression every time.
+  const user = userEvent.setup({ delay: null });
+  await user.type(screen.getByPlaceholderText(/enter your full name/i), 'Test User');
+  await user.type(screen.getByPlaceholderText(/enter your email/i), 'test@gmail.com');
+  await user.type(screen.getByPlaceholderText(/create a password/i), 'password123');
+  await user.type(screen.getByPlaceholderText(/confirm your password/i), 'password123');
+  await user.click(screen.getByRole('button', { name: /create account/i }));
 }
 
 // ---------------------------------------------------------------------------

@@ -51,3 +51,57 @@ describe('weekly leaderboard period ID', () => {
     expect(getIsoWeekPeriod(newYearsDay).startsWith('2026-')).toBe(true);
   });
 });
+
+/**
+ * Wave B: the same divergence survived in getPreviousPeriod inside
+ * functions/src/scheduled/leaderboard.ts, which is what the movement
+ * indicators are computed against. That one fails quietly: the previous-week
+ * lookup simply misses, every `change` becomes 0, and the board looks frozen
+ * rather than broken. These pin the previous-week ID to the same derivation.
+ */
+describe('previous weekly period ID', () => {
+  /** Byte-for-byte the derivation now used by getPreviousPeriod. */
+  function previousWeekPeriod(now: Date): string {
+    return getIsoWeekPeriod(new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000));
+  }
+
+  /**
+   * The retired derivation: calendar year of the previous-week date, paired
+   * with an ISO week number. Kept here ONLY so the cases below can prove they
+   * discriminate. The first draft of this test used 5 Jan, where both
+   * derivations happen to agree, so it would have passed against the bug.
+   */
+  function retiredDerivation(now: Date): string {
+    const prev = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const d = new Date(Date.UTC(prev.getFullYear(), prev.getMonth(), prev.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    const weekNum = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+    return `${prev.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+  }
+
+  // Dates where the two derivations genuinely disagree, with the answer the
+  // leaderboard documents actually use.
+  const DISCRIMINATING: ReadonlyArray<readonly [string, string, string]> = [
+    ['2027-01-08', '2026-W53', '2027-W53'],
+    ['2026-01-07', '2026-W01', '2025-W01'],
+  ];
+
+  it.each(DISCRIMINATING)('%s resolves to %s, not %s', (iso, expected, retired) => {
+    const date = new Date(`${iso}T12:00:00Z`);
+    expect(previousWeekPeriod(date)).toBe(expected);
+    // Proves the case is load-bearing: the old derivation really did differ.
+    expect(retiredDerivation(date)).toBe(retired);
+    expect(previousWeekPeriod(date)).not.toBe(retiredDerivation(date));
+  });
+
+  it('always names a real week immediately before the current one', () => {
+    for (const iso of BOUNDARY_DATES) {
+      const date = new Date(`${iso}T12:00:00Z`);
+      const previous = previousWeekPeriod(date);
+      expect(previous).not.toBe(getIsoWeekPeriod(date));
+      expect(previous).toMatch(/^\d{4}-W\d{2}$/);
+    }
+  });
+});
