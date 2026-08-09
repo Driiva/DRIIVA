@@ -4,10 +4,11 @@
  * Shows user's trip history with pull-to-refresh, swipeable cards, and shimmer loading.
  */
 
-import { useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
 import { collection, query, where, orderBy, limit } from 'firebase/firestore';
+import type { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import { PageWrapper } from '../components/PageWrapper';
 import { BottomNav } from '../components/BottomNav';
 import { Map, Car, AlertCircle, Play, Navigation, RefreshCw, ChevronLeft } from "lucide-react";
@@ -24,6 +25,11 @@ import { useHaptics } from '@/hooks/useHaptics';
 import { AnimatedNumber } from '@/components/AnimatedNumber';
 import { container, item } from '@/lib/animations';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { useCursorPagination } from '@/hooks/useCursorPagination';
+import { encodeCursor } from '../../../shared/pagination';
+
+/** Rows per page. The realtime head fetches this many; older pages match it. */
+const TRIPS_PAGE_SIZE = 25;
 
 // ============================================================================
 // DEMO DATA
@@ -114,28 +120,92 @@ export default function Trips() {
   // endedAt yet. The status `in` filter is served by the existing composite
   // index (userId, status, startedAt); a status-less query would need a new
   // index that is not deployed.
-  const tripsQuery = useMemo(() => {
+  // Ordering and filters only. The realtime head applies its own limit; the
+  // pagination hook applies pageSize + 1 per older page from the same base.
+  const baseTripsQuery = useMemo(() => {
     if (isDemoMode || !user?.id || !isFirebaseConfigured || !db) return null;
     return query(
       collection(db, COLLECTION_NAMES.TRIPS),
       where('userId', '==', user.id),
       where('status', 'in', ['recording', 'processing', 'completed']),
       orderBy('startedAt', 'desc'),
-      limit(50),
     );
   }, [isDemoMode, user?.id]);
+
+  const tripsQuery = useMemo(
+    () => (baseTripsQuery ? query(baseTripsQuery, limit(TRIPS_PAGE_SIZE)) : null),
+    [baseTripsQuery],
+  );
 
   const { data: tripsData, loading, error: queryError, refresh } = useFirestoreQuery<TripDocument[]>(
     tripsQuery,
     { transform: (snapshot) => snapshot.docs.map(d => d.data() as TripDocument) },
   );
-  const trips = tripsData ?? [];
+  const headTrips = useMemo(() => tripsData ?? [], [tripsData]);
+
+  const transformTrip = useCallback(
+    (snapshot: QueryDocumentSnapshot<DocumentData>) => snapshot.data() as TripDocument,
+    [],
+  );
+  const {
+    items: olderTrips,
+    loadingMore,
+    hasMore,
+    error: paginationError,
+    loadMore,
+    reset: resetPagination,
+  } = useCursorPagination<TripDocument>(baseTripsQuery, transformTrip, TRIPS_PAGE_SIZE);
+
+  // Older pages are keyed off the head, so a change of user or filter must drop
+  // them rather than leave one driver's history stitched below another's.
+  useEffect(() => {
+    resetPagination();
+  }, [baseTripsQuery, resetPagination]);
+
+  // A trip can appear in both the head and an older page if a new trip lands
+  // between the two reads and shifts the window. Render by id, once.
+  const trips = useMemo(() => {
+    const seen = new Set<string>();
+    return [...headTrips, ...olderTrips].filter((t) => {
+      if (seen.has(t.tripId)) return false;
+      seen.add(t.tripId);
+      return true;
+    });
+  }, [headTrips, olderTrips]);
+
+  // Continue after the last trip currently rendered.
+  const headCursor = useMemo(() => {
+    const last = headTrips[headTrips.length - 1];
+    return last ? encodeCursor(`${COLLECTION_NAMES.TRIPS}/${last.tripId}`) : null;
+  }, [headTrips]);
+
+  // Infinite scroll: load the next page when the sentinel below the list comes
+  // into view. Only armed once the head page is full, because a short head page
+  // is already the whole history.
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const canPaginate = headTrips.length >= TRIPS_PAGE_SIZE && hasMore && !paginationError;
+
+  useEffect(() => {
+    const node = sentinelRef.current;
+    if (!node || !canPaginate || typeof IntersectionObserver === 'undefined') return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) void loadMore(headCursor);
+      },
+      { rootMargin: '200px' },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [canPaginate, headCursor, loadMore]);
+
   const error = queryError ? 'Failed to load trips. Please try again.' : null;
 
   // Pull-to-refresh (realtime already keeps the list current; this stays for
   // the familiar gesture and to force a re-subscribe on demand).
   const pullToRefresh = usePullToRefresh({
     onRefresh: async () => {
+      resetPagination();
       refresh();
       await new Promise(r => setTimeout(r, 400));
     },
@@ -340,6 +410,44 @@ export default function Trips() {
               );
             })}
           </motion.div>
+        )}
+
+        {/* Infinite scroll sentinel and its states. Rendered below the list so
+            the observer only fires once the reader has reached the bottom. */}
+        {hasRealTrips && !loading && !error && (
+          <div className="mt-4" data-testid="trips-pagination">
+            <div ref={sentinelRef} aria-hidden="true" />
+
+            {loadingMore && (
+              <div className="space-y-3" data-testid="trips-loading-more">
+                <TripCardShimmer />
+              </div>
+            )}
+
+            {paginationError && !loadingMore && (
+              <div className="text-center py-4">
+                <p className="text-sm text-white/50 mb-3">Could not load older trips.</p>
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => { haptics.light(); void loadMore(headCursor); }}
+                  className="inline-flex items-center gap-2 px-4 py-2 text-[13px] text-white/70"
+                  style={{
+                    borderRadius: 'var(--radius-button)',
+                    background: 'rgba(255,255,255,0.06)',
+                  }}
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Try again
+                </motion.button>
+              </div>
+            )}
+
+            {!hasMore && trips.length > TRIPS_PAGE_SIZE && (
+              <p className="text-center text-[13px] text-white/35 py-4">
+                That is your full trip history.
+              </p>
+            )}
+          </div>
         )}
 
         {/* Start Trip Button */}

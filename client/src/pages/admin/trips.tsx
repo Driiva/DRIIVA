@@ -1,7 +1,8 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
-  collectionGroup, getDocs, query, orderBy, limit, Timestamp,
+  collectionGroup, query, orderBy, Timestamp,
+  type QueryDocumentSnapshot, type DocumentData,
 } from 'firebase/firestore';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
@@ -11,6 +12,10 @@ import { db } from '@/lib/firebase';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { KPICard } from '@/components/admin/KPICard';
 import { container } from '@/lib/animations';
+import { useCursorPagination } from '@/hooks/useCursorPagination';
+
+/** Rows per page in the fleet table. */
+const ADMIN_TRIPS_PAGE_SIZE = 25;
 
 interface TripRow {
   id: string;
@@ -53,41 +58,44 @@ const tooltipStyle = {
 };
 
 export default function AdminTrips() {
-  const [trips, setTrips] = useState<TripRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const baseQuery = useMemo(
+    () => (db ? query(collectionGroup(db, 'trips'), orderBy('startedAt', 'desc')) : null),
+    [],
+  );
 
-  useEffect(() => {
-    if (!db) return;
-    (async () => {
-      try {
-        const q = query(
-          collectionGroup(db, 'trips'),
-          orderBy('startedAt', 'desc'),
-          limit(100),
-        );
-        const snap = await getDocs(q);
-        const rows: TripRow[] = snap.docs.map((doc) => {
-          const d = doc.data();
-          const events = d.events || {};
-          return {
-            id: doc.id,
-            userId: d.userId || doc.ref.parent.parent?.id || '--',
-            userEmail: d.userEmail || d.userId || '--',
-            date: toDate(d.startedAt),
-            distanceKm: Math.round((d.distanceMeters || 0) / 1000 * 10) / 10,
-            durationMin: Math.round((d.durationSeconds || 0) / 60),
-            score: d.score || 0,
-            hardEvents: (events.hardBraking || 0) + (events.hardAcceleration || 0),
-          };
-        });
-        setTrips(rows);
-      } catch (err) {
-        console.error('[AdminTrips] load error:', err);
-      } finally {
-        setLoading(false);
-      }
-    })();
+  const toRow = useCallback((doc: QueryDocumentSnapshot<DocumentData>): TripRow => {
+    const d = doc.data();
+    const events = d.events || {};
+    return {
+      id: doc.id,
+      userId: d.userId || doc.ref.parent.parent?.id || '--',
+      userEmail: d.userEmail || d.userId || '--',
+      date: toDate(d.startedAt),
+      distanceKm: Math.round((d.distanceMeters || 0) / 1000 * 10) / 10,
+      durationMin: Math.round((d.durationSeconds || 0) / 60),
+      score: d.score || 0,
+      hardEvents: (events.hardBraking || 0) + (events.hardAcceleration || 0),
+    };
   }, []);
+
+  const {
+    items: trips,
+    loadingMore,
+    hasMore,
+    error: loadError,
+    loadMore,
+  } = useCursorPagination<TripRow>(baseQuery, toRow, ADMIN_TRIPS_PAGE_SIZE);
+
+  // First page on mount. Subsequent pages come from the Load more button, so an
+  // admin opening this page reads 26 documents rather than 100.
+  const requestedFirstPage = useRef(false);
+  useEffect(() => {
+    if (requestedFirstPage.current || !baseQuery) return;
+    requestedFirstPage.current = true;
+    void loadMore();
+  }, [baseQuery, loadMore]);
+
+  const loading = loadingMore && trips.length === 0;
 
   const stats = useMemo(() => {
     const now = new Date();
@@ -134,7 +142,10 @@ export default function AdminTrips() {
   const bucketColors = ['#ef4444', '#f59e0b', '#eab308', '#22d3ee', '#10b981'];
 
   return (
-    <AdminLayout title="Trip Intelligence" subtitle="Fleet-wide trip analytics">
+    <AdminLayout
+      title="Trip Intelligence"
+      subtitle="Fleet-wide trip analytics. Figures cover the trips loaded below, newest first."
+    >
       <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
         {/* Summary cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -167,7 +178,12 @@ export default function AdminTrips() {
         {/* Recent trips table */}
         <div className="dashboard-glass-card overflow-hidden !p-0">
           <div className="px-4 py-3 border-b border-white/[0.06]">
-            <h3 className="text-sm font-medium text-white/60">Recent Trips (last 100)</h3>
+            <h3 className="text-sm font-medium text-white/60">
+              Recent Trips
+              {trips.length > 0 && (
+                <span className="text-white/35 font-normal"> ({trips.length} loaded)</span>
+              )}
+            </h3>
           </div>
           {loading ? (
             <div className="p-12 text-center">
@@ -206,7 +222,7 @@ export default function AdminTrips() {
                       <td className="px-4 py-3 text-white/60 tabular-nums">{t.hardEvents}</td>
                     </tr>
                   ))}
-                  {trips.length === 0 && (
+                  {trips.length === 0 && !loadError && (
                     <tr>
                       <td colSpan={6} className="px-4 py-12 text-center text-white/30">
                         No trips recorded yet
@@ -215,6 +231,38 @@ export default function AdminTrips() {
                   )}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {loadError && (
+            <div className="px-4 py-6 text-center">
+              <p className="text-sm text-red-300/80 mb-3">Could not load trips.</p>
+              <button
+                onClick={() => void loadMore()}
+                className="px-4 py-2 text-xs text-white/70 bg-white/[0.06] hover:bg-white/[0.1] transition-colors"
+                style={{ borderRadius: 'var(--radius-button, 12px)' }}
+              >
+                Try again
+              </button>
+            </div>
+          )}
+
+          {!loading && !loadError && hasMore && (
+            <div className="px-4 py-4 border-t border-white/[0.06] text-center">
+              <button
+                onClick={() => void loadMore()}
+                disabled={loadingMore}
+                className="px-4 py-2 text-xs text-white/70 bg-white/[0.06] hover:bg-white/[0.1] disabled:opacity-40 transition-colors"
+                style={{ borderRadius: 'var(--radius-button, 12px)' }}
+              >
+                {loadingMore ? 'Loading' : `Load ${ADMIN_TRIPS_PAGE_SIZE} more`}
+              </button>
+            </div>
+          )}
+
+          {!loading && !hasMore && trips.length > ADMIN_TRIPS_PAGE_SIZE && (
+            <div className="px-4 py-4 border-t border-white/[0.06] text-center text-xs text-white/30">
+              All trips loaded.
             </div>
           )}
         </div>
