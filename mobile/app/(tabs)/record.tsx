@@ -86,6 +86,7 @@ export default function Record() {
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startMsRef = useRef(0);
   const finalFixRef = useRef<{ lat: number; lng: number } | null>(null);
+  const scoreWatchRef = useRef<(() => void) | null>(null);
   const baselineRef = useRef<{ score: number | null; premiumCents: number | null }>({
     score: null,
     premiumCents: null,
@@ -98,10 +99,15 @@ export default function Record() {
       clearInterval(tickRef.current);
       tickRef.current = null;
     }
+    // The trip-scored listener outlives the GPS watch by design (it is waiting
+    // on the server), but it must not outlive the screen.
+    scoreWatchRef.current?.();
+    scoreWatchRef.current = null;
   }, []);
 
-  // A recording left running when the screen unmounts would keep a GPS watch
-  // and an interval alive against a screen nobody is looking at.
+  // A recording left running when the screen unmounts would keep a GPS watch,
+  // an interval and a Firestore listener alive against a screen nobody is
+  // looking at.
   useEffect(() => teardown, [teardown]);
 
   const handleSample = useCallback((fix: Location.LocationObject) => {
@@ -243,7 +249,8 @@ export default function Record() {
           const data = doc.data() as { status?: string; score?: number };
           if (data.status !== 'completed') return;
 
-          unsubscribe();
+          scoreWatchRef.current?.();
+          scoreWatchRef.current = null;
 
           const baseline = baselineRef.current;
           let newOverall: number | null = null;
@@ -276,7 +283,7 @@ export default function Record() {
           });
         });
 
-      return unsubscribe;
+      scoreWatchRef.current = unsubscribe;
     },
     [user],
   );
