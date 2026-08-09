@@ -30,6 +30,17 @@ config.watchFolders = [
   path.resolve(repoRoot, 'packages'),
 ];
 
+// Sources under packages/ are watched but live outside the Metro project root,
+// so Metro walks up from THEIR directory looking for node_modules and never
+// reaches mobile/node_modules. packages/contracts imports zod, which made
+// `expo export` fail to resolve it the moment a screen imported @driiva/contracts,
+// while tsc stayed clean because TypeScript resolves it from the repo root.
+// Both roots are searched explicitly.
+config.resolver.nodeModulesPaths = [
+  path.resolve(projectRoot, 'node_modules'),
+  path.resolve(repoRoot, 'node_modules'),
+];
+
 config.resolver.extraNodeModules = {
   ...(config.resolver.extraNodeModules ?? {}),
   '@shared': path.resolve(repoRoot, 'shared'),
