@@ -1,9 +1,20 @@
 /**
  * Animated number counter that smoothly transitions between values.
  * Used for scores, stats, and financial figures.
+ *
+ * Three behaviours ported from the StrydeOS StatCard count-up:
+ *
+ * 1. It waits until the figure is actually on screen. Counting on mount meant
+ *    the pool total below the fold had finished animating before the reader
+ *    ever scrolled to it, so the effect was paid for and never seen.
+ * 2. It respects prefers-reduced-motion by rendering the final value at once.
+ *    The figure is information; it is never withheld for the sake of an effect.
+ * 3. Tabular figures, so digits hold their columns instead of jittering the
+ *    width of the number on every frame of the count.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { animate } from 'framer-motion';
+import { EASE_FAST, prefersReducedMotion } from '@/components/motion/motion-tokens';
 
 interface AnimatedNumberProps {
   value: number;
@@ -23,7 +34,7 @@ interface AnimatedNumberProps {
 
 export function AnimatedNumber({
   value,
-  duration = 1.2,
+  duration = 0.8,
   decimals = 0,
   prefix = '',
   suffix = '',
@@ -41,24 +52,51 @@ export function AnimatedNumber({
     const to = value;
     prevValue.current = value;
 
-    if (from === to) {
+    const settle = () => {
       node.textContent = formatNumber(to, decimals, prefix, suffix, locale);
+    };
+
+    if (from === to || prefersReducedMotion()) {
+      settle();
       return;
     }
 
-    const controls = animate(from, to, {
-      duration,
-      ease: [0.16, 1, 0.3, 1], // smoothDecel
-      onUpdate: (v) => {
-        node.textContent = formatNumber(v, decimals, prefix, suffix, locale);
-      },
-    });
+    let controls: { stop: () => void } | undefined;
 
-    return () => controls.stop();
+    const run = () => {
+      controls = animate(from, to, {
+        duration,
+        ease: EASE_FAST,
+        onUpdate: (v) => {
+          node.textContent = formatNumber(v, decimals, prefix, suffix, locale);
+        },
+      });
+    };
+
+    if (typeof IntersectionObserver === 'undefined') {
+      run();
+      return () => controls?.stop();
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          run();
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.3 },
+    );
+    observer.observe(node);
+
+    return () => {
+      observer.disconnect();
+      controls?.stop();
+    };
   }, [value, duration, decimals, prefix, suffix, locale]);
 
   return (
-    <span ref={ref} className={className}>
+    <span ref={ref} className={`tabular ${className}`} data-readout>
       {formatNumber(0, decimals, prefix, suffix, locale)}
     </span>
   );

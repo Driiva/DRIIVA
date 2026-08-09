@@ -19,38 +19,23 @@ import { BottomNav } from '../components/BottomNav';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useCommunityData, LeaderboardEntry } from '@/hooks/useCommunityData';
 import { useAuth } from '@/contexts/AuthContext';
+import { EmptyState, SkeletonList, SkeletonStat } from '@/components/ui/EmptyState';
 
 // ============================================================================
 // SKELETON COMPONENTS
 // ============================================================================
 
+// Both skeletons defer to the shared system so every surface in the app
+// waits in the same visual language.
 function LeaderboardSkeleton() {
-  return (
-    <div className="space-y-3">
-      {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-        <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-white/5 animate-pulse">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-full bg-white/10" />
-            <div className="h-4 w-24 bg-white/10 rounded" />
-          </div>
-          <div className="flex items-center space-x-3">
-            <div className="h-5 w-10 bg-white/10 rounded" />
-            <div className="h-4 w-8 bg-white/10 rounded" />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
+  return <SkeletonList count={8} />;
 }
 
 function StatsSkeleton() {
   return (
-    <div className="grid grid-cols-3 gap-4 animate-pulse">
+    <div className="grid grid-cols-3 gap-4">
       {[1, 2, 3].map(i => (
-        <div key={i} className="text-center">
-          <div className="h-6 w-16 mx-auto bg-white/10 rounded mb-1" />
-          <div className="h-3 w-12 mx-auto bg-white/10 rounded" />
-        </div>
+        <SkeletonStat key={i} />
       ))}
     </div>
   );
@@ -424,13 +409,11 @@ export default function LeaderboardPage() {
                   </button>
                 </div>
               ) : rankings.length === 0 ? (
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-4">
-                    <Users className="w-8 h-8 text-white/40" />
-                  </div>
-                  <p className="text-gray-400">No rankings yet this period</p>
-                  <p className="text-gray-500 text-xs mt-1">Complete trips to appear on the leaderboard</p>
-                </div>
+                <EmptyState
+                  icon={<Users size={24} strokeWidth={2} />}
+                  heading="No rankings yet this period"
+                  subtext="The board fills as drivers complete scored trips. Yours will appear here once your first trip of the period lands."
+                />
               ) : (
                 <div className="space-y-3">
                   <AnimatePresence mode="wait">

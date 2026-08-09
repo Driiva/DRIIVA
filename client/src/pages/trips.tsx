@@ -23,6 +23,7 @@ import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { useHaptics } from '@/hooks/useHaptics';
 import { AnimatedNumber } from '@/components/AnimatedNumber';
 import { container, item } from '@/lib/animations';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 // ============================================================================
 // DEMO DATA
@@ -243,33 +244,26 @@ export default function Trips() {
 
         {/* Empty state */}
         {isEmpty && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="dashboard-glass-card p-8 text-center"
-          >
-            <motion.div
-              animate={{ scale: [1, 1.05, 1] }}
-              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-              className="w-20 h-20 rounded-full bg-gradient-to-br from-white/[0.08] to-white/[0.03] flex items-center justify-center mx-auto mb-5 border border-white/[0.06]"
-            >
-              <Car className="w-10 h-10 text-white/30" />
-            </motion.div>
-            <h3 className="text-white/80 font-semibold text-lg mb-2">No trips yet</h3>
-            <p className="text-white/40 text-sm mb-6">
-              Start your first trip to see your driving history and scores here.
-            </p>
-            <motion.button
-              whileTap={{ scale: 0.96 }}
-              onClick={() => { haptics.medium(); setLocation('/trip-recording'); }}
-              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border border-emerald-500/30 text-emerald-300 font-semibold hover:from-emerald-500/30 hover:to-teal-500/30 transition-all"
-            >
-              <Play className="w-4 h-4" />
-              Start Your First Trip
-              <Navigation className="w-4 h-4" />
-            </motion.button>
-          </motion.div>
+          <EmptyState
+            icon={<Car size={24} strokeWidth={2} />}
+            heading="No trips yet"
+            subtext="Your driving history and scores appear here once your first trip has been recorded and scored."
+            action={
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={() => { haptics.medium(); setLocation('/trip-recording'); }}
+                className="inline-flex items-center gap-2 px-5 py-3 text-[14px] font-medium"
+                style={{
+                  borderRadius: 'var(--radius-button)',
+                  background: 'var(--app-primary)',
+                  color: 'var(--app-text-hero)',
+                }}
+              >
+                <Play className="w-4 h-4" />
+                Record your first trip
+              </motion.button>
+            }
+          />
         )}
 
         {/* Demo trips list - using SwipeTripCard */}
