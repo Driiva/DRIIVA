@@ -11,6 +11,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, MapPin, Clock, Route, Gauge, AlertTriangle, Loader2 } from 'lucide-react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '@/lib/firebase';
+import { getTripPoints } from '@/lib/firestore';
 import { PageWrapper } from '../components/PageWrapper';
 import { BottomNav } from '../components/BottomNav';
 import DrivingAIFeedbackWidget from '../components/DrivingAIFeedbackWidget';
@@ -76,12 +77,14 @@ export default function TripDetail() {
 
     (async () => {
       try {
-        const pointsSnap = await getDoc(doc(db, 'tripPoints', tripId));
+        // Wave 0 (0g): this read the parent tripPoints doc's `points` array
+        // directly. The recorder creates that array empty and streams every
+        // GPS point into the `batches` subcollection instead, so the array was
+        // empty for every real trip and the Route card never rendered.
+        // getTripPoints falls back to the batches, which is why it exists.
+        const tripPoints = await getTripPoints(tripId);
         if (cancelled) return;
-        if (pointsSnap.exists()) {
-          const data = pointsSnap.data();
-          setPoints((data?.points ?? []) as TripPoint[]);
-        }
+        setPoints(tripPoints);
       } catch (err) {
         console.error('[TripDetail] Points load error:', err);
       } finally {

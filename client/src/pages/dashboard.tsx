@@ -16,6 +16,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from 'wouter';
 import { collection, doc, getDoc } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '@/lib/firebase';
+import { getTripPoints } from '@/lib/firestore';
 import {
   Car, FileText, AlertCircle, TrendingUp, ChevronRight,
   Bell, ChevronDown, ChevronUp, MapPin, Users, Trophy, Target,
@@ -333,10 +334,12 @@ export default function Dashboard() {
     let cancelled = false;
     (async () => {
       try {
-        const pointsDoc = await getDoc(doc(db, 'tripPoints', lastTrip.id));
-        if (cancelled || !pointsDoc.exists()) return;
-        const data = pointsDoc.data();
-        const points = (data?.points ?? []) as Array<{ lat: number; lng: number; t: number }>;
+        // Wave 0 (0g): reads through getTripPoints so the batches
+        // subcollection the recorder actually writes to is included. Reading
+        // the parent doc's points array alone left this empty for every real
+        // trip, so the dashboard polyline never appeared.
+        const points = await getTripPoints(lastTrip.id);
+        if (cancelled) return;
         if (points.length >= 2) {
           const sorted = [...points].sort((a, b) => a.t - b.t);
           setLastTripRoutePoints(sorted.map((p) => ({ lat: p.lat, lng: p.lng })));
@@ -806,6 +809,22 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className="space-y-3">
+              {/*
+                Wave 0 (0h): there is no funding path into the pool yet. The
+                contribution callable has no callers and trip completion never
+                creates a share, so this card renders a full economy that
+                nothing fills. Rather than invent one (the pool money model is
+                still an open decision), say so while the pool is empty.
+              */}
+              {!isDemoMode && poolTotal === 0 && (
+                <div className="rounded-xl bg-white/[0.03] border border-white/10 p-3">
+                  <p className="text-xs text-white/70 leading-relaxed">
+                    Contributions start when the insurance product launches.
+                    Your score is being tracked now and will set your share of
+                    the pool from day one.
+                  </p>
+                </div>
+              )}
               <div className="flex items-center justify-between">
                 <span className="text-white/60 text-sm">Total Pool</span>
                 <AnimatedNumber value={poolTotal} prefix="£" locale className="text-white font-semibold" />
