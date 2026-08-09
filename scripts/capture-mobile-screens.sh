@@ -32,11 +32,11 @@ open_route() {
 
 echo "Capturing to $OUT"
 
-# Tab bar surfaces
-for route in "(tabs)/dashboard:dashboard" "(tabs)/trips:trips" "(tabs)/record:record" \
-             "(tabs)/rewards:rewards" "(tabs)/profile:profile"; do
-  open_route "${route%%:*}"
-  shot "${route##*:}" 3
+# Tab bar surfaces. expo-router route groups are parenthesised in the file tree
+# but absent from the URL, so these are /dashboard and not /(tabs)/dashboard.
+for route in dashboard trips record rewards profile; do
+  open_route "$route"
+  shot "$route" 3
 done
 
 # Stack screens reached from the profile menu, plus the Wave B leaderboard.
