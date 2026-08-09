@@ -7,9 +7,11 @@
  * such as BottomNav renders through FixedLayer instead of staying inside the
  * routed subtree.
  *
- * Perceived cost is one duration, not two: AnimatePresence in "wait" mode runs
- * the exit before the enter, so the numbers here are chosen to keep the pair
- * inside the 350ms budget.
+ * AnimatePresence in "wait" mode runs the exit BEFORE the enter, so the reader
+ * waits for both. The pair is budgeted at 350ms, which is why each half is
+ * 160ms rather than the 400ms the StrydeOS original uses for its single-shot
+ * transition. Change one and you have changed the perceived cost of every
+ * navigation in the app.
  */
 import type { ReactNode } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
@@ -32,7 +34,7 @@ export default function PageTransition({ children, className = '' }: PageTransit
         initial={reduce ? { opacity: 0 } : { opacity: 0, y: 6, filter: 'blur(2px)' }}
         animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
         exit={reduce ? { opacity: 0 } : { opacity: 0, y: -4, filter: 'blur(1px)' }}
-        transition={{ duration: reduce ? 0.12 : 0.22, ease: EASE_FAST }}
+        transition={{ duration: reduce ? 0.1 : 0.16, ease: EASE_FAST }}
         className={className}
       >
         {children}
