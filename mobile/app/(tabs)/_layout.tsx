@@ -66,10 +66,6 @@ export default function TabLayout() {
           ),
         }}
       />
-
-      {/* Hide template screens */}
-      <Tabs.Screen name="index" options={{ href: null }} />
-      <Tabs.Screen name="two" options={{ href: null }} />
     </Tabs>
   );
 }

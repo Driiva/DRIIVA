@@ -11,6 +11,7 @@
  * 7. 16px universal card radius, 24px for sheets
  * 8. Fixed row heights: 72px trips, 64px stats, 48px settings
  */
+import type { TextStyle } from 'react-native';
 
 // ─── COLOURS ─────────────────────────────────────────────────────────────────
 
@@ -74,19 +75,34 @@ export function scoreColor(s: number): string {
   return C.error;
 }
 
+// ─── FONT FAMILIES ───────────────────────────────────────────────────────────
+// Instrument Sans = body (both platforms). Inter Tight = display.
+// JetBrains Mono = eyebrows/labels/stats. Three weights max per family.
+// Keys must match the useFonts() map in app/_layout.tsx exactly.
+
+export const F = {
+  body: 'InstrumentSans-Regular',
+  bodySemiBold: 'InstrumentSans-SemiBold',
+  bodyBold: 'InstrumentSans-Bold',
+  display: 'InterTight-Bold',
+  displaySemiBold: 'InterTight-SemiBold',
+  mono: 'JetBrainsMono-Regular',
+  monoSemiBold: 'JetBrainsMono-SemiBold',
+} as const;
+
 // ─── TYPOGRAPHY ──────────────────────────────────────────────────────────────
 // Three weights only: 400, 600, 700. Tabular figures on all numbers.
 
 export const T = {
-  hero:    { fontSize: 42, fontWeight: '700' as const, letterSpacing: -1.5, fontVariant: ['tabular-nums' as const] },
-  h1:      { fontSize: 24, fontWeight: '700' as const, letterSpacing: -0.5 },
-  h2:      { fontSize: 17, fontWeight: '600' as const },
-  body:    { fontSize: 15, fontWeight: '400' as const, lineHeight: 22 },
-  label:   { fontSize: 13, fontWeight: '600' as const },
-  caption: { fontSize: 11, fontWeight: '400' as const },
-  number:  { fontSize: 15, fontWeight: '700' as const, fontVariant: ['tabular-nums' as const] },
-  stat:    { fontSize: 22, fontWeight: '700' as const, fontVariant: ['tabular-nums' as const] },
-} as const;
+  hero:    { fontFamily: F.monoSemiBold, fontSize: 42, letterSpacing: -1.5, fontVariant: ['tabular-nums' as const] },
+  h1:      { fontFamily: F.display, fontSize: 24, letterSpacing: -0.5 },
+  h2:      { fontFamily: F.bodySemiBold, fontSize: 17 },
+  body:    { fontFamily: F.body, fontSize: 15, lineHeight: 22 },
+  label:   { fontFamily: F.monoSemiBold, fontSize: 13 },
+  caption: { fontFamily: F.body, fontSize: 11 },
+  number:  { fontFamily: F.monoSemiBold, fontSize: 15, fontVariant: ['tabular-nums' as const] },
+  stat:    { fontFamily: F.monoSemiBold, fontSize: 22, fontVariant: ['tabular-nums' as const] },
+} satisfies Record<string, TextStyle>;
 
 // ─── SPACING ─────────────────────────────────────────────────────────────────
 
