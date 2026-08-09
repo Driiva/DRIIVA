@@ -18,11 +18,43 @@ async function getUserTokens(userId: string): Promise<string[]> {
   return (user.fcmTokens ?? []).filter(Boolean);
 }
 
+/**
+ * Sends the push AND records it.
+ *
+ * Wave D: these sends were fire-and-forget, so a notification existed only as
+ * a banner on a locked phone. Miss it and it was gone; there was nothing for
+ * an in-app notification centre to read, and no way to answer "what did you
+ * tell me last week". Every send is now persisted to
+ * users/{uid}/notifications, which is what the centre reads.
+ *
+ * The record is written even when the user has no tokens registered. Somebody
+ * who has not enabled push has still had the thing happen to them, and should
+ * see it next time they open the app.
+ */
 async function sendToTokens(
+  userId: string,
   tokens: string[],
   notification: { title: string; body: string },
   data?: Record<string, string>,
 ): Promise<void> {
+  try {
+    await db
+      .collection(COLLECTION_NAMES.USERS)
+      .doc(userId)
+      .collection('notifications')
+      .add({
+        title: notification.title,
+        body: notification.body,
+        type: data?.type ?? 'general',
+        data: data ?? {},
+        read: false,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+  } catch (err) {
+    // A failed record must not stop the push going out.
+    functions.logger.warn('[Push] could not record notification:', err);
+  }
+
   if (tokens.length === 0) return;
 
   const message: admin.messaging.MulticastMessage = {
@@ -56,10 +88,11 @@ export async function notifyTripComplete(
 ): Promise<void> {
   const tokens = await getUserTokens(userId);
   await sendToTokens(
+    userId,
     tokens,
     {
-      title: 'Trip Scored',
-      body: `Your trip scored ${Math.round(score)}/100. ${score >= 80 ? 'Great driving!' : 'Keep improving!'}`,
+      title: 'Trip scored',
+      body: `Your trip scored ${Math.round(score)}/100. ${score >= 80 ? 'Strong drive.' : 'Room to improve.'}`,
     },
     { type: 'trip_complete', tripId },
   );
@@ -76,9 +109,10 @@ export async function notifyAchievementsUnlocked(
   const tokens = await getUserTokens(userId);
   const nameList = achievementNames.join(', ');
   await sendToTokens(
+    userId,
     tokens,
     {
-      title: 'Achievement Unlocked!',
+      title: 'Achievement unlocked',
       body: `You earned: ${nameList}`,
     },
     { type: 'achievement_unlocked' },
@@ -96,10 +130,11 @@ export async function sendWeeklySummaryToUser(
 ): Promise<void> {
   const tokens = await getUserTokens(userId);
   await sendToTokens(
+    userId,
     tokens,
     {
-      title: 'Your Weekly Summary',
-      body: `This week: ${trips} trips, ${miles} miles, avg score ${score}. Keep it up!`,
+      title: 'Your weekly summary',
+      body: `This week: ${trips} trips, ${miles} miles, average score ${score}.`,
     },
     { type: 'weekly_summary' },
   );

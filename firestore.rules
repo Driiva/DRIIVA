@@ -102,6 +102,22 @@ service cloud.firestore {
       }
 
       // User achievements (unlocked by Cloud Functions; client read-only)
+      /*
+       * NOTIFICATIONS (Wave D). Written only by Cloud Functions via the Admin
+       * SDK when something actually happens. The client may read its own and
+       * mark them read, and nothing else: a client that could create these
+       * could fabricate a notification claiming a refund had landed.
+       */
+      match /notifications/{notificationId} {
+        allow read: if isOwner(userId);
+        allow create, delete: if false;
+        // Marking read is the ONLY field a client may move.
+        allow update: if isOwner(userId)
+                      && request.resource.data.diff(resource.data).affectedKeys()
+                           .hasOnly(['read'])
+                      && request.resource.data.read is bool;
+      }
+
       match /achievements/{achId} {
         allow read: if isOwner(userId);
         allow write: if false;
