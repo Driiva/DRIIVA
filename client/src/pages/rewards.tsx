@@ -83,12 +83,6 @@ export default function Rewards() {
     return states;
   })();
 
-  const handleRewardRedeem = useCallback((rewardId: string) => {
-    toast({
-      title: 'Redemption Coming Soon',
-      description: 'Reward redemption will be available when partnerships go live. Your milestone is saved.',
-    });
-  }, [toast]);
 
   useEffect(() => {
     if (!user?.id || !isFirebaseConfigured) {
@@ -391,7 +385,6 @@ export default function Rewards() {
               <RewardsTimeline
                 daysActive={streakDays}
                 rewardStates={rewardStates}
-                onRedeem={handleRewardRedeem}
               />
             )}
 

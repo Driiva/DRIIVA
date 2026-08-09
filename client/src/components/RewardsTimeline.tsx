@@ -8,14 +8,20 @@
  *   - Horizontal timeline on desktop (≥768px)
  *
  * States per reward:
- *   - locked   — 40% opacity, blur overlay, "X days to go" counter
- *   - unlocked — full opacity, emerald glow, "Redeem Now" CTA
- *   - claimed  — purple "Claimed ✓" badge, no CTA
+ *   - locked   - 40% opacity, blur overlay, "X days to go" counter
+ *   - unlocked - full opacity, emerald glow, earned-but-not-redeemable notice
+ *   - claimed  - purple "Claimed" badge, no CTA
  *
  * FCA compliance:
  *   - Every reward is framed as community/behaviour recognition
  *   - No guaranteed financial benefit tied to insurance outcomes
  *   - No countdown urgency timers, no fake scarcity
+ *
+ * Wave 0 (0c): named partner vouchers (Tesco, RAC, Halfords, Nectar, Amazon)
+ * and their cash values were removed from every tier, and the "Redeem Now"
+ * button was replaced with a plain notice. No partnership existed, and the
+ * button's only effect was a toast apologising for that. These are recognition
+ * milestones until a real redemption path ships.
  */
 
 import { motion } from 'framer-motion';
@@ -36,7 +42,6 @@ interface RewardTier {
   copy: string;
   unlockDay: number;
   unlockCriteria: string;
-  rewardValue: string;
   hashtag: string;
   icon: string;
 }
@@ -46,12 +51,11 @@ const REWARD_TIERS: RewardTier[] = [
     id: 'day5',
     milestone: '#Day5',
     tag: 'First Miles',
-    title: '"First Miles" Badge + £5 Tesco Clubcard Voucher',
-    description: 'Complete 5 days as a Driiva driver with avg score ≥ 60',
-    copy: "Five days in. You're already saving. First treat's on us.",
+    title: '"First Miles" recognition',
+    description: 'Complete 5 days as a Driiva driver with avg score >= 60',
+    copy: "Five days in. Your score is already working for you.",
     unlockDay: 5,
-    unlockCriteria: '5 active days, avg score ≥ 60',
-    rewardValue: '£5 Tesco Clubcard',
+    unlockCriteria: '5 active days, avg score 60 or above',
     hashtag: '#DriveBetter',
     icon: '🏅',
   },
@@ -59,12 +63,11 @@ const REWARD_TIERS: RewardTier[] = [
     id: 'day10',
     milestone: '#Day10',
     tag: 'Smooth Operator',
-    title: '"Smooth Operator" + Free RAC Roadside Rescue Trial',
-    description: '10 consecutive active driving days, avg score ≥ 65',
-    copy: "Ten days of clean driving. We've got your back on the road too.",
+    title: '"Smooth Operator" recognition',
+    description: '10 consecutive active driving days, avg score >= 65',
+    copy: "Ten days of clean driving. That consistency is the whole game.",
     unlockDay: 10,
-    unlockCriteria: '10 consecutive days, avg score ≥ 65',
-    rewardValue: 'RAC 30-day trial',
+    unlockCriteria: '10 consecutive days, avg score 65 or above',
     hashtag: '#TeamDriiva',
     icon: '🛡️',
   },
@@ -72,12 +75,11 @@ const REWARD_TIERS: RewardTier[] = [
     id: 'team_driiva',
     milestone: '#TeamDriiva',
     tag: 'Community Booster',
-    title: '"Community Booster" + £10 Halfords Motoring Club Credit',
+    title: '"Community Booster" recognition',
     description: 'Refer 1 friend (5 active days) OR reach Day 30 in top 40% pool',
-    copy: 'Your driving lifts the whole pool. The community rewards that.',
+    copy: 'Your driving lifts the whole pool. The community notices that.',
     unlockDay: 30,
     unlockCriteria: '1 referral OR Day 30 top 40%',
-    rewardValue: '£10 Halfords',
     hashtag: '#TeamDriiva',
     icon: '👥',
   },
@@ -85,12 +87,11 @@ const REWARD_TIERS: RewardTier[] = [
     id: 'month3',
     milestone: '#Month3',
     tag: 'Eco Driver',
-    title: '"Eco Driver" Badge + 500 Nectar Points',
-    description: '90-day rolling EcoScore ≥ 70 (smooth throttle, low harsh accel)',
-    copy: "Three months of clean miles. Sainsbury's says thank you.",
+    title: '"Eco Driver" recognition',
+    description: '90-day rolling EcoScore >= 70 (smooth throttle, low harsh accel)',
+    copy: "Three months of clean miles. Smooth throttle, lower risk.",
     unlockDay: 90,
-    unlockCriteria: '90-day EcoScore ≥ 70',
-    rewardValue: '500 Nectar pts (~£2.50)',
+    unlockCriteria: '90-day EcoScore 70 or above',
     hashtag: '#DriveBetter',
     icon: '🌱',
   },
@@ -98,12 +99,11 @@ const REWARD_TIERS: RewardTier[] = [
     id: 'anniversary',
     milestone: '#Anniversary',
     tag: 'Driiva OG',
-    title: '"Driiva OG" Status + £25 Amazon Gift Card + Pool Priority',
-    description: '12-month active member, avg annual score ≥ 70',
-    copy: "One year. You didn't just drive safer — you made everyone safer. OG status: unlocked.",
+    title: '"Driiva OG" recognition',
+    description: '12-month active member, avg annual score >= 70',
+    copy: "One year. You did not just drive safer, you made everyone safer.",
     unlockDay: 365,
-    unlockCriteria: '12 months active, avg score ≥ 70',
-    rewardValue: '£25 Amazon + Pool Priority',
+    unlockCriteria: '12 months active, avg score 70 or above',
     hashtag: '#TeamDriiva',
     icon: '⭐',
   },
@@ -122,7 +122,6 @@ export interface RewardState {
 interface RewardsTimelineProps {
   daysActive: number;
   rewardStates: RewardState[];
-  onRedeem?: (rewardId: string) => void;
   className?: string;
 }
 
@@ -186,12 +185,10 @@ function RewardNode({
   tier,
   state,
   daysActive,
-  onRedeem,
 }: {
   tier: RewardTier;
   state: RewardState | undefined;
   daysActive: number;
-  onRedeem?: (rewardId: string) => void;
 }) {
   const status: RewardStatus = state?.status ?? 'locked';
   const daysToGo = Math.max(0, tier.unlockDay - daysActive);
@@ -243,7 +240,6 @@ function RewardNode({
         </span>
         <div className="flex-1 min-w-0">
           <h4 className="text-sm font-semibold text-white leading-snug">{tier.tag}</h4>
-          <p className="text-xs text-white/50 mt-0.5">{tier.rewardValue}</p>
         </div>
       </div>
 
@@ -259,18 +255,21 @@ function RewardNode({
 
       {/* Actions */}
       <div className="flex items-center gap-2">
-        {isUnlocked && onRedeem && (
-          <button
-            onClick={() => onRedeem(tier.id)}
-            className="flex-1 py-2 rounded-xl text-sm font-medium
-              bg-emerald-500/20 border border-emerald-500/30 text-emerald-300
-              hover:bg-emerald-500/30 transition-all
-              flex items-center justify-center gap-2 min-h-[44px]"
-            aria-label={`Redeem ${tier.tag} reward`}
+        {/*
+          Wave 0 (0c): this was a "Redeem Now" button whose only effect was a
+          toast apologising that redemption does not exist. A control that
+          cannot do the thing it names is worse than no control, so the state
+          is now stated rather than offered.
+        */}
+        {isUnlocked && (
+          <div
+            className="flex-1 py-2 px-3 rounded-xl text-xs
+              bg-white/5 border border-white/10 text-white/60
+              flex items-center justify-center gap-2 min-h-[44px] text-center"
           >
-            <Gift className="w-4 h-4" />
-            Redeem Now
-          </button>
+            <Gift className="w-4 h-4 flex-shrink-0" />
+            Earned. Partner rewards are not live yet.
+          </div>
         )}
 
         {isClaimed && state?.redemptionCode && (
@@ -318,7 +317,6 @@ function RewardNode({
 export default function RewardsTimeline({
   daysActive,
   rewardStates,
-  onRedeem,
   className = '',
 }: RewardsTimelineProps) {
   const stateMap = new Map(rewardStates.map(s => [s.rewardId, s]));
@@ -360,7 +358,6 @@ export default function RewardsTimeline({
               tier={tier}
               state={stateMap.get(tier.id)}
               daysActive={daysActive}
-              onRedeem={onRedeem}
             />
           </div>
         ))}
