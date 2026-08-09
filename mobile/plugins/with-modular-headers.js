@@ -41,17 +41,32 @@ const fs = require('fs');
 const path = require('path');
 
 /**
- * Exactly the pods CocoaPods named as missing modules, plus the Firestore
- * internals behind the same complaint. Deliberately excludes gRPC-Core and
- * gRPC-C++: see the note above.
+ * The pods CocoaPods named as missing modules, the Firestore internals behind
+ * the same complaint, and the three Swift pods themselves.
+ *
+ * FirebaseAuth, FirebaseFirestore and FirebaseMessaging are on this list for a
+ * different reason to the rest. Marking only their DEPENDENCIES modular got the
+ * build all the way to the final pods and then failed with:
+ *
+ *   Pods/RNFBMessaging: 'FirebaseAuth/FirebaseAuth-Swift.h' file not found
+ *   (Headers/Private/Firebase/Firebase.h:40)
+ *
+ * FirebaseAuth is itself a Swift pod. The Firebase umbrella header imports its
+ * generated -Swift.h, and that header only lands somewhere an importer can see
+ * it when the pod is built with modular headers.
+ *
+ * Deliberately excludes gRPC-Core and gRPC-C++: see the note above.
  */
 const MODULAR_PODS = [
   'FirebaseCore',
   'FirebaseCoreInternal',
   'FirebaseCoreExtension',
+  'FirebaseAuth',
   'FirebaseAuthInterop',
   'FirebaseAppCheckInterop',
+  'FirebaseFirestore',
   'FirebaseFirestoreInternal',
+  'FirebaseMessaging',
   'GoogleUtilities',
   'RecaptchaInterop',
 ];
