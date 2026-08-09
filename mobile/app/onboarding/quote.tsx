@@ -11,7 +11,7 @@ import { refundEstimate } from '@/hooks/useTripSeed';
 import { joinWaitlist, WaitlistError } from '@/lib/waitlist';
 
 // FCA DISCLOSURE REQUIRED - all financial figures are illustrative before product launch
-// TODO: Root Platform API integration — Sprint 5
+// TODO: Root Platform API integration - Sprint 5
 export default function Quote() {
   const router = useRouter();
   const { user, markOnboardingComplete } = useAuth();
@@ -21,7 +21,7 @@ export default function Quote() {
   const [joined, setJoined] = useState(false);
   const [waitlistError, setWaitlistError] = useState<string | null>(null);
 
-  const refund = refundEstimate(state.seedScore); // ESTIMATE — subject to actuarial review
+  const refund = refundEstimate(state.seedScore); // ESTIMATE - subject to actuarial review
   const minRefund = Math.round(refund * 0.8);
   const maxRefund = Math.round(refund * 1.2);
 
@@ -72,13 +72,13 @@ export default function Quote() {
         <View style={styles.scoreCard}>
           <ScoreRing score={state.seedScore} size={120} label="Your score" animated={false} />
           <View style={styles.refundEstimate}>
-            <Text style={styles.refundLabel}>Drive like today — earn back</Text>
-            {/* ESTIMATE — subject to actuarial review */}
-            <Text style={styles.refundRange}>£{minRefund}–£{maxRefund} this year</Text>
+            <Text style={styles.refundLabel}>Drive like today, earn back</Text>
+            {/* ESTIMATE - subject to actuarial review */}
+            <Text style={styles.refundRange}>£{minRefund} to £{maxRefund} this year</Text>
           </View>
         </View>
 
-        {/* TODO: Root Platform API — Sprint 5 */}
+        {/* TODO: Root Platform API - Sprint 5 */}
         <View style={styles.quoteStub}>
           <Text style={styles.quoteStubEyebrow}>Quote</Text>
           <Text style={styles.quoteStubTitle}>Launching soon.</Text>

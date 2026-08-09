@@ -7,21 +7,21 @@ import { ScoreRing } from '@/components/ui/ScoreRing';
 import { C, F, S, R, RGB, alpha } from '@/components/ui/theme';
 import { refundEstimate, scorePercentile } from '@/hooks/useTripSeed';
 
-// FCA DISCLOSURE REQUIRED — refund estimates are illustrative, not guaranteed
+// FCA DISCLOSURE REQUIRED - refund estimates are illustrative, not guaranteed
 export default function ViralMoment() {
   const router = useRouter();
   const { state } = useOnboarding();
   const { seedScore } = state;
 
   const percentile = scorePercentile(seedScore);
-  const refund = refundEstimate(seedScore); // ESTIMATE — subject to actuarial review
+  const refund = refundEstimate(seedScore); // ESTIMATE - subject to actuarial review
   const minRefund = Math.round(refund * 0.8);
   const maxRefund = Math.round(refund * 1.2);
 
   const handleShare = async () => {
     try {
       await Share.share({
-        message: `I just scored ${seedScore}/100 on Driiva — a fairer way to do car insurance that gives safe drivers their premium back. Join the waitlist: driiva.co.uk`,
+        message: `I just scored ${seedScore}/100 on Driiva, a fairer way to do car insurance that gives safe drivers their premium back. Join the waitlist: driiva.co.uk`,
         title: `My Driiva Score: ${seedScore}/100`,
       });
     } catch {
@@ -37,7 +37,7 @@ export default function ViralMoment() {
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.headline}>
-          {`Score: ${seedScore}/100 — you'd be in the top ${percentile}% of the Driiva community.`}
+          {`Score: ${seedScore}/100. You would be in the top ${percentile}% of the Driiva community.`}
         </Text>
 
         <View style={styles.heroCard}>
@@ -47,8 +47,8 @@ export default function ViralMoment() {
 
           <View style={styles.refundRow}>
             <Text style={styles.refundLabel}>Estimated annual refund at this score</Text>
-            {/* ESTIMATE — subject to actuarial review */}
-            <Text style={styles.refundValue}>£{minRefund}–£{maxRefund}</Text>
+            {/* ESTIMATE - subject to actuarial review */}
+            <Text style={styles.refundValue}>£{minRefund} to £{maxRefund}</Text>
           </View>
 
           <View style={styles.poolRow}>
@@ -62,7 +62,7 @@ export default function ViralMoment() {
         </TouchableOpacity>
 
         <Text style={styles.shareHint}>
-          Every share brings another safe driver into your community pool — growing everyone's refund.
+          Every share brings another safe driver into your community pool, which grows everyone's refund.
         </Text>
 
         <View style={styles.disclaimer}>

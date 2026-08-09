@@ -1,5 +1,5 @@
 /**
- * Driiva Component Library v4 — Mobile
+ * Driiva Component Library v4 - Mobile
  *
  * Built with 20 premium design rules from competitive research:
  * Root, Lemonade, Revolut, Monzo, Tesla, Cash App, Robinhood.
@@ -7,7 +7,7 @@
  * Key principles applied:
  * - One accent colour (#5b4dc9) for all interactive elements
  * - Score colours earned through data only (green/amber/red)
- * - Solid dark surfaces, glass reserved for hero elements
+ * - Solid dark surfaces everywhere; glass is the marketing mode, never here
  * - Three font weights: 400/600/700
  * - Tabular figures on all numbers
  * - Fixed row heights for perceived quality

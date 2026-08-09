@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
@@ -9,11 +10,11 @@ import { C, F, S, R } from '@/components/ui/theme';
 const ALL_SOLUTIONS = [
   {
     pain: "Never rewarded for safe driving",
-    fix: "Your trip score funds your refund. Drive well, earn back up to 15% of your premium.", // ESTIMATE — subject to actuarial review
+    fix: "Your trip score funds your refund. Drive well, earn back up to 15% of your premium.", // ESTIMATE - subject to actuarial review
   },
   {
     pain: "Insurer keeps your data",
-    fix: "Your EcoScore and Night Owl Index are yours — visible in your dashboard, always.",
+    fix: "Your EcoScore and Night Owl Index are yours, visible in your dashboard, always.",
   },
   {
     pain: "Black box felt invasive",
@@ -21,7 +22,7 @@ const ALL_SOLUTIONS = [
   },
   {
     pain: "System feels opaque",
-    fix: "Community pool is transparent: 60–70% covers claims, 15% surplus redistributed. You can see the maths.", // VERIFY with actuary
+    fix: "Community pool is transparent: 60 to 70% covers claims, 15% surplus redistributed. You can see the maths.", // VERIFY with actuary
   },
 ];
 
@@ -41,7 +42,7 @@ export default function PersonalisedSolution() {
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <TouchableOpacity onPress={() => router.back()} style={styles.back}>
-          <Text style={styles.backText}>←</Text>
+          <Ionicons name="chevron-back" size={20} color={C.text.mut} />
         </TouchableOpacity>
         <Text style={styles.headline}>Here's how Driiva fixes exactly that.</Text>
         <Text style={styles.sub}>Matched to what you told us matters.</Text>
@@ -51,7 +52,7 @@ export default function PersonalisedSolution() {
             <View key={i} style={styles.solutionCard}>
               <Text style={styles.painText}>{s.pain}</Text>
               <View style={styles.arrow}>
-                <Text style={styles.arrowText}>↓</Text>
+                <Ionicons name="arrow-down" size={16} color={C.text.mut} />
               </View>
               <Text style={styles.fixText}>{s.fix}</Text>
             </View>

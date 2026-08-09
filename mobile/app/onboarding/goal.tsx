@@ -1,17 +1,18 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
 import { C, F, S, R, RGB, alpha } from '@/components/ui/theme';
 
 const OPTIONS = [
-  { icon: '£', label: 'Save money on insurance' },
-  { icon: '✓', label: 'Be rewarded for driving safely' },
-  { icon: '◎', label: 'Join a fairer, more transparent system' },
-  { icon: '↗', label: 'Understand my own driving data' },
-  { icon: '◉', label: 'Be part of a community that benefits together' },
+  { icon: 'cash-outline', label: 'Save money on insurance' },
+  { icon: 'checkmark-circle-outline', label: 'Be rewarded for driving safely' },
+  { icon: 'locate-outline', label: 'Join a fairer, more transparent system' },
+  { icon: 'stats-chart-outline', label: 'Understand my own driving data' },
+  { icon: 'people-outline', label: 'Be part of a community that benefits together' },
 ];
 
 export default function GoalQuestion() {
@@ -33,7 +34,7 @@ export default function GoalQuestion() {
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <TouchableOpacity onPress={() => router.back()} style={styles.back}>
-          <Text style={styles.backText}>←</Text>
+          <Ionicons name="chevron-back" size={20} color={C.text.mut} />
         </TouchableOpacity>
         <Text style={styles.headline}>What matters most to you?</Text>
         <Text style={styles.sub}>Choose the one that resonates most.</Text>
@@ -46,7 +47,7 @@ export default function GoalQuestion() {
               onPress={() => setSelected(i)}
               activeOpacity={0.7}
             >
-              <Text style={styles.optionIcon}>{opt.icon}</Text>
+              <Ionicons name={opt.icon as never} size={20} color={C.primary} style={styles.optionIcon} />
               <Text style={[styles.optionLabel, selected === i && styles.optionLabelSelected]}>
                 {opt.label}
               </Text>

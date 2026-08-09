@@ -14,6 +14,7 @@
  */
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
 import { C, F, S, R } from '@/components/ui/theme';
@@ -44,7 +45,7 @@ export default function SocialProof() {
 
       <View style={styles.content}>
         <TouchableOpacity onPress={() => router.back()} style={styles.back}>
-          <Text style={styles.backText}>←</Text>
+          <Ionicons name="chevron-back" size={20} color={C.text.mut} />
         </TouchableOpacity>
 
         <Text style={styles.headline}>Insurance that pays attention.</Text>

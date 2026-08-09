@@ -1,5 +1,5 @@
 /**
- * ScoreBreakdownBar — One scoring dimension as a labelled progress bar.
+ * ScoreBreakdownBar - One scoring dimension as a labelled progress bar.
  *
  * Rule 6: Score colours earned through data only.
  * Rule 4: Tabular figures on the value.

@@ -1,5 +1,5 @@
 /**
- * SkeletonLoader — Animated shimmer placeholder.
+ * SkeletonLoader - Animated shimmer placeholder.
  *
  * Rule 13: The loading state IS the design.
  * Matches the exact dimensions of the content it replaces.

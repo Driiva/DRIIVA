@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -49,22 +50,22 @@ export default function MotionPriming() {
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <TouchableOpacity onPress={() => router.back()} style={styles.back}>
-          <Text style={styles.backText}>←</Text>
+          <Ionicons name="chevron-back" size={20} color={C.text.mut} />
         </TouchableOpacity>
 
         <View style={styles.iconWrap}>
-          <Text style={styles.icon}>↻</Text>
+          <Ionicons name="sync-outline" size={28} color={C.primary} />
         </View>
 
-        <Text style={styles.headline}>Motion sensors score your smoothness — no extra effort.</Text>
+        <Text style={styles.headline}>Motion sensors score your smoothness, with no extra effort.</Text>
         <Text style={styles.sub}>
-          Acceleration, braking, cornering — your phone's already tracking this. Driiva just makes it useful.
+          Acceleration, braking, cornering: your phone is already tracking this. Driiva just makes it useful.
         </Text>
 
         <View style={styles.bullets}>
           {BULLETS.map((b, i) => (
             <View key={i} style={styles.bullet}>
-              <Text style={styles.bulletDot}>✓</Text>
+              <Ionicons name="checkmark" size={14} color={C.primary} />
               <Text style={styles.bulletText}>{b}</Text>
             </View>
           ))}

@@ -1,5 +1,5 @@
 /**
- * DriivButton — Primary CTA with haptic feedback.
+ * DriivButton - Primary CTA with haptic feedback.
  *
  * Rule 1: Primary purple for interactive. No amber buttons.
  * Rule 11: Haptics on every press.

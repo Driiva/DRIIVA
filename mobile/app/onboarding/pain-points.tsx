@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
@@ -9,7 +10,7 @@ import { C, F, S, R, RGB, alpha } from '@/components/ui/theme';
 const OPTIONS = [
   "I've never claimed but my premium keeps rising",
   'My insurer uses my data but never shares it with me',
-  'I had to install a black box — it felt invasive',
+  'I had to install a black box, and it felt invasive',
   'I drive carefully but get the same rate as everyone else',
   'The whole system feels opaque and unfair',
   "I don't know where my money actually goes",
@@ -39,7 +40,7 @@ export default function PainPoints() {
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <TouchableOpacity onPress={() => router.back()} style={styles.back}>
-          <Text style={styles.backText}>←</Text>
+          <Ionicons name="chevron-back" size={20} color={C.text.mut} />
         </TouchableOpacity>
         <Text style={styles.headline}>What frustrates you most about car insurance?</Text>
         <Text style={styles.sub}>Select all that apply.</Text>
@@ -55,7 +56,7 @@ export default function PainPoints() {
                 activeOpacity={0.7}
               >
                 <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
-                  {isSelected && <Text style={styles.checkmark}>✓</Text>}
+                  {isSelected && <Ionicons name="checkmark" size={14} color={C.primary} />}
                 </View>
                 <Text style={[styles.optionLabel, isSelected && styles.optionLabelSelected]}>
                   {opt}

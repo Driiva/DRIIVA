@@ -1,5 +1,5 @@
 /**
- * Root Layout — Driiva Mobile
+ * Root Layout - Driiva Mobile
  * Wraps the entire app with auth, query client, and theme providers.
  * Auth-gates the main tabs behind login.
  */

@@ -3,9 +3,21 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
-import { C, F, S, R, RGB, alpha } from '@/components/ui/theme';
+import { C, F, S, R } from '@/components/ui/theme';
 
 const TOTAL = 14;
+
+/**
+ * The proposition, stated plainly. This card used to be a mock leaderboard
+ * with two invented drivers, two invented refunds and a ticker claiming a
+ * GBP 47 refund was processing. None of it was real, and Driiva has never
+ * paid a refund, so the first screen a driver saw opened with a fabrication.
+ */
+const STEPS = [
+  { title: 'Drive as you already do', text: 'Your phone scores each trip. No black box to fit.' },
+  { title: 'Your score sets your share', text: 'Safer driving earns a larger share of the community pool.' },
+  { title: 'The surplus comes back', text: 'What the pool does not pay out in claims returns to safe drivers.' },
+];
 
 export default function Welcome() {
   const router = useRouter();
@@ -27,38 +39,29 @@ export default function Welcome() {
           <Text style={styles.eyebrow}>Driiva</Text>
           <Text style={styles.headline}>Your driving is worth more than you're being paid for.</Text>
           <Text style={styles.sub}>
-            Join the community where safe drivers get rewarded — not just insured.
+            Join the community where safe drivers get rewarded, not just insured.
           </Text>
         </View>
 
         <View style={styles.previewCard}>
           <View style={styles.leaderboardHeader}>
-            <Text style={styles.leaderboardTitle}>Community pool</Text>
-            <View style={styles.liveDot} />
+            <Text style={styles.leaderboardTitle}>How it works</Text>
           </View>
-          {[
-            { name: 'J. Williams', score: 94, refund: '£182' },
-            { name: 'P. Sharma', score: 91, refund: '£167' },
-            { name: 'You', score: '—', refund: '?' },
-          ].map((row, i) => (
-            <View key={i} style={[styles.leaderRow, i === 2 && styles.leaderRowYou]}>
-              <View style={styles.leaderLeft}>
-                <Text style={styles.leaderRank}>{i + 1}</Text>
-                <Text style={[styles.leaderName, i === 2 && styles.leaderNameYou]}>{row.name}</Text>
-              </View>
-              <View style={styles.leaderRight}>
-                <Text style={styles.leaderScore}>{row.score}</Text>
-                <Text style={[styles.leaderRefund, i === 2 && styles.leaderRefundYou]}>{row.refund}</Text>
+          {STEPS.map((step, i) => (
+            <View key={step.title} style={[styles.stepRow, i === STEPS.length - 1 && styles.stepRowLast]}>
+              <Text style={styles.stepIndex}>{i + 1}</Text>
+              <View style={styles.stepBody}>
+                <Text style={styles.stepTitle}>{step.title}</Text>
+                <Text style={styles.stepText}>{step.text}</Text>
               </View>
             </View>
           ))}
-          <View style={styles.tickerRow}>
-            <View style={styles.tickerDot} />
-            <Text style={styles.tickerText}>£47 refund processing now</Text>
-          </View>
         </View>
 
-        <Text style={styles.caveat}>Up to 15% of your premium back. No black box required.</Text>
+        <Text style={styles.caveat}>
+          Refunds depend on your policy, your claims and how the pool performs. Driiva Ltd is
+          pending FCA authorisation.
+        </Text>
       </ScrollView>
 
       <View style={styles.footer}>
@@ -110,9 +113,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   leaderboardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     marginBottom: 14,
   },
   leaderboardTitle: {
@@ -122,48 +122,26 @@ const styles = StyleSheet.create({
     letterSpacing: 0.08,
     textTransform: 'uppercase',
   },
-  liveDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: C.success,
-  },
-  leaderRow: {
+  stepRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 10,
+    alignItems: 'flex-start',
+    gap: 12,
+    paddingBottom: 12,
+    marginBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: C.hairline,
   },
-  leaderRowYou: {
-    backgroundColor: alpha(RGB.primary, 0.08),
-    marginHorizontal: -8,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-    borderBottomWidth: 0,
+  stepRowLast: { paddingBottom: 0, marginBottom: 0, borderBottomWidth: 0 },
+  stepIndex: {
+    color: C.text.mut,
+    fontFamily: F.monoSemiBold,
+    fontSize: 12,
+    width: 14,
+    fontVariant: ['tabular-nums'],
   },
-  leaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  leaderRight: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  leaderRank: { color: C.text.mut, fontFamily: F.body, fontSize: 12, width: 16 },
-  leaderName: { color: C.text.hero, fontSize: 14, fontFamily: F.bodySemiBold },
-  leaderNameYou: { color: C.primaryLight, fontFamily: F.bodySemiBold },
-  leaderScore: { color: C.text.sec, fontSize: 13, fontFamily: F.bodySemiBold, width: 30, textAlign: 'right' },
-  leaderRefund: { color: C.success, fontSize: 14, fontFamily: F.bodyBold, width: 50, textAlign: 'right' },
-  leaderRefundYou: { color: C.primaryLight },
-  tickerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: C.hairline,
-  },
-  tickerDot: {
-    width: 6, height: 6, borderRadius: 3, backgroundColor: C.success,
-  },
-  tickerText: { color: C.text.mut, fontFamily: F.body, fontSize: 12 },
+  stepBody: { flex: 1, minWidth: 0 },
+  stepTitle: { color: C.text.hero, fontFamily: F.bodySemiBold, fontSize: 14 },
+  stepText: { color: C.text.sec, fontFamily: F.body, fontSize: 13, lineHeight: 19, marginTop: 2 },
   caveat: {
     color: C.text.mut,
     fontFamily: F.body,

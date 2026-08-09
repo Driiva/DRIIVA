@@ -47,7 +47,7 @@ export const C = {
     indigo: '#3b2d8b',
   },
 
-  // Primary interactive (one colour rule — this is the ONLY UI accent)
+  // Primary interactive (one colour rule - this is the ONLY UI accent)
   primary: '#5b4dc9',
   primaryLight: '#8b7de8',
 
@@ -57,7 +57,7 @@ export const C = {
   error: '#EF4444',
   teal: '#2DD4BF',
 
-  // Dark scale (solid shades, not rgba — Rule 7 from research)
+  // Dark scale (solid shades, not rgba - Rule 7 from research)
   bg: '#0a0a14',           // Near-black, faint blue undertone
   surface1: '#12111f',     // Cards
   surface2: '#1a1830',     // Elevated cards, active states
@@ -79,7 +79,7 @@ export const C = {
     mut: '#5c5c70',     // Timestamps, tertiary
   },
 
-  // Score ring gradient stops (amber → indigo, the brand identity)
+  // Score ring gradient stops (amber to indigo, the brand identity)
   ring: [
     { o: '0%', c: '#d4850a' },
     { o: '33%', c: '#a04c2a' },

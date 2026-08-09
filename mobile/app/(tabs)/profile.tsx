@@ -1,5 +1,5 @@
 /**
- * Profile — Driiva Mobile
+ * Profile - Driiva Mobile
  */
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';

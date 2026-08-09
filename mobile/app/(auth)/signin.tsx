@@ -1,5 +1,5 @@
 /**
- * Sign In — Driiva Mobile
+ * Sign In - Driiva Mobile
  * Matches the web app's glassmorphic sign-in page.
  */
 import { useState } from 'react';

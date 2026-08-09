@@ -186,7 +186,7 @@ export default function Dashboard() {
     return unsubscribe;
   }, []);
 
-  // The rank tile was a literal "--". The weekly board is real now, so the
+  // The rank tile was a hardcoded placeholder. The weekly board is real now, so the
   // tile either carries a real standing or is not drawn at all.
   useEffect(() => {
     if (!user?.id) return;

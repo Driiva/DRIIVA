@@ -60,7 +60,7 @@ export default function TripDemo() {
             </View>
 
             <Text style={styles.simNote}>
-              {/* Simulated score — not based on actual driving data until account is active */}
+              {/* Simulated score - not based on actual driving data until account is active */}
               Score simulated based on your driving profile. Real scores activate after your first live trip.
             </Text>
           </View>

@@ -1,5 +1,5 @@
 /**
- * Tab Navigation — Driiva Mobile
+ * Tab Navigation - Driiva Mobile
  * 5 tabs matching the web app's BottomNav:
  * Dashboard | Trips | Record (center, prominent) | Rewards | Profile
  */

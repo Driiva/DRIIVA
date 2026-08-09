@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import {
   View, Text, PanResponder, Animated, StyleSheet, Dimensions,
 } from 'react-native';
@@ -74,8 +75,14 @@ export function SwipeCard({ statement, index, total, onSwipe }: Props) {
       <Text style={styles.statement}>{statement}</Text>
 
       <View style={styles.hints}>
-        <Text style={styles.hint}>← Not really</Text>
-        <Text style={styles.hint}>Yes, that's me →</Text>
+        <View style={styles.hintRow}>
+          <Ionicons name="chevron-back" size={12} color={C.text.mut} />
+          <Text style={styles.hint}>Not really</Text>
+        </View>
+        <View style={styles.hintRow}>
+          <Text style={styles.hint}>Yes, that's me</Text>
+          <Ionicons name="chevron-forward" size={12} color={C.text.mut} />
+        </View>
       </View>
     </Animated.View>
   );
@@ -108,6 +115,7 @@ const styles = StyleSheet.create({
     lineHeight: 29,
     letterSpacing: -0.01,
   },
+  hintRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   hints: {
     flexDirection: 'row',
     justifyContent: 'space-between',

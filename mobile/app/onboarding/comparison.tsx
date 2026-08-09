@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
 import { C, F, S, R, RGB, alpha } from '@/components/ui/theme';
@@ -8,7 +9,7 @@ const ROWS = [
   { label: 'Premium surplus', old: 'Kept by insurer', driiva: 'Redistributed to community' },
   { label: 'Your data', old: 'Their asset', driiva: 'Your dashboard' },
   { label: 'Hardware required', old: 'Black box install', driiva: 'Phone only' },
-  { label: 'Safe driving reward', old: 'None', driiva: 'Up to 15% back' }, // ESTIMATE — subject to actuarial review
+  { label: 'Safe driving reward', old: 'None', driiva: 'Up to 15% back' }, // ESTIMATE - subject to actuarial review
 ];
 
 export default function Comparison() {
@@ -22,7 +23,7 @@ export default function Comparison() {
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <TouchableOpacity onPress={() => router.back()} style={styles.back}>
-          <Text style={styles.backText}>←</Text>
+          <Ionicons name="chevron-back" size={20} color={C.text.mut} />
         </TouchableOpacity>
         <Text style={styles.headline}>The old way vs the Driiva way.</Text>
         <Text style={styles.sub}>Same car. Very different deal.</Text>

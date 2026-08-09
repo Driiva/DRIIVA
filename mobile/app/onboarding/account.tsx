@@ -27,7 +27,7 @@ export default function Account() {
 
         <Text style={styles.headline}>You're in, {firstName}.</Text>
         <Text style={styles.sub}>
-          Your driving profile is saved. Your score is locked in. One step left — get your quote.
+          Your driving profile is saved. Your score is locked in. One step left: get your quote.
         </Text>
 
         <View style={styles.summaryCard}>

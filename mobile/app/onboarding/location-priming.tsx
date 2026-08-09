@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -9,7 +10,7 @@ import { C, F, S, R, RGB, alpha } from '@/components/ui/theme';
 
 const BULLETS = [
   'Trip detection starts and stops automatically.',
-  'Your route data stays private — it is yours.',
+  'Your route data stays private. It is yours.',
   'No GPS logging when you are not driving.',
 ];
 
@@ -49,14 +50,14 @@ export default function LocationPriming() {
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <TouchableOpacity onPress={() => router.back()} style={styles.back}>
-          <Text style={styles.backText}>←</Text>
+          <Ionicons name="chevron-back" size={20} color={C.text.mut} />
         </TouchableOpacity>
 
         <View style={styles.iconWrap}>
-          <Text style={styles.icon}>◎</Text>
+          <Ionicons name="locate-outline" size={28} color={C.primary} />
         </View>
 
-        <Text style={styles.headline}>Your phone detects every trip — hands-free, always.</Text>
+        <Text style={styles.headline}>Your phone detects every trip, hands-free, always.</Text>
         <Text style={styles.sub}>
           Driiva uses your location silently in the background. You never have to open the app while driving.
         </Text>
@@ -64,7 +65,7 @@ export default function LocationPriming() {
         <View style={styles.bullets}>
           {BULLETS.map((b, i) => (
             <View key={i} style={styles.bullet}>
-              <Text style={styles.bulletDot}>✓</Text>
+              <Ionicons name="checkmark" size={14} color={C.primary} />
               <Text style={styles.bulletText}>{b}</Text>
             </View>
           ))}

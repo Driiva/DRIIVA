@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useOnboarding, DrivingFrequency, DrivingTime, DrivingRoutes } from '@/contexts/OnboardingContext';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
@@ -61,7 +62,7 @@ export default function Preferences() {
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <TouchableOpacity onPress={step > 0 ? () => setStep(s => s - 1) : () => router.back()} style={styles.back}>
-          <Text style={styles.backText}>←</Text>
+          <Ionicons name="chevron-back" size={20} color={C.text.mut} />
         </TouchableOpacity>
 
         <View style={styles.stepIndicator}>
@@ -83,7 +84,7 @@ export default function Preferences() {
                 activeOpacity={0.7}
               >
                 <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>{opt}</Text>
-                {isSelected && <Text style={styles.check}>✓</Text>}
+                {isSelected && <Ionicons name="checkmark" size={14} color={C.primary} />}
               </TouchableOpacity>
             );
           })}

@@ -106,3 +106,36 @@ Merge order: 0-truth -> a-mobile -> m-marketing -> a-web (1 conflict, trust.tsx,
 - Wave E (iOS unblock + on-device capture): task/premium-e-ios created, agent hit the account session limit at 17:30, resets 19:30. NOT started.
 - axe accessibility: never run.
 - Wave D (rewards truth, notifications, feedback prompt, starting-score explainer): not started.
+
+## Wave D merged - SEVEN waves now integrated on premium-lift/main (9 Aug)
+Clean merge. Verified: tsc CLEAN; vitest 597 passed | 2 todo | 0 failed (54 files); rules 136 passed (11 files, was 117/9); integration 29 passed (7 files, was 19/5); design laws green; mobile tsc no new errors (same 3 pre-existing).
+Main baseline was 518 -> now 597. Rules 92 -> 136. Integration 4 -> 29.
+
+## D4: THE STARTING-SCORE DISCREPANCY - NEEDS JAMAL
+Keith assumed 70. **The code writes 100** (functions/src/utils/provisionUser.ts sets currentScore + all five breakdown factors to 100).
+The bigger issue is the mechanic, not the number: the trigger does `oldWeight === 0 ? trip.score : weightedAverage(...)`, so **the starting score is REPLACED OUTRIGHT by the first trip**, not weighted into an average. Consequences:
+- A new driver is handed a perfect 100 they did not earn, and their first real trip can only move it down unless they score exactly 100. For a record-rebuilding product, that is backwards.
+- Any copy saying "protect/maintain/keep your 100" would be FALSE. A test now asserts our copy never uses those phrases.
+Shipped as truth not guess: STARTING_SCORE lives in @driiva/contracts, provisionUser imports it (no literal), the explainer quotes the constant, and tests pin BOTH the constant to what buildProvisionedUserDoc writes AND the "replaced outright" claim against the trigger source. Changing 100 -> 70 is now one line with a drift test.
+
+## D: THREE THINGS FOUND OUTSIDE THE BRIEF
+1. **PRIVILEGE BUG (security).** functions/src/http/achievements.ts seedAchievements docstring said "Callable by admin users only" and checked only that a session existed - ANY signed-in user could rewrite the achievement catalogue every other user reads. Now verifies isAdmin and logs refusals. The gap between comment and check is why it survived review.
+2. **Silent-empty failure.** The web achievements page read definitions from a top-level collection only that admin callable populates, so in any environment where nobody ran it the page rendered nothing even for users with real unlocks. Catalogue now ships in contracts; only UNLOCKS come from Firestore; the server throws at module load if a badge has no unlock predicate.
+3. **Unvalidated feedback.** Create was isAuthenticated() and nothing else - anyone could file under another user's uid, rating off-scale, unbounded message. Now validated, still write-only.
+
+## D: THE PUSH-TOKEN TRAP (would have failed silently forever)
+Server sends via admin.messaging().sendEachForMulticast, which needs **FCM** registration tokens. An **Expo** push token is a different thing FCM cannot deliver to - registering one would have written a field that LOOKS correct, passes any test asserting "a token was written", and delivers nothing forever. Token now comes from @react-native-firebase/messaging (already a dep); expo-notifications still does the permission prompt + foreground presentation.
+Related: the settings toggle wrote `true` and nothing else while the weekly cron skips users with no fcmTokens - switching notifications ON genuinely delivered nothing. Now registers on / unregisters off / refuses to record a preference the OS will not honour.
+app.json "remote-notification" is now justified by a real implementation. "location" deliberately untouched - still Jamal's call.
+
+## D: notifications became RECORDS
+Sends were fire-and-forget so a notification existed only as a banner; nothing for a centre to read. Same shape as Wave B's pool history, same answer: sendToTokens persists to users/{uid}/notifications BEFORE sending, including when the user has no tokens. Rules: owner may read and flip exactly one boolean (`read`); **create is DENIED** - a client that could create these could fabricate "your refund has landed".
+
+## Test determinism (second fix, different cause)
+3-5 client tests failed per run, different set each time, all passing in isolation. Wave B's userEvent typing fix did NOT help - the cost is full-page jsdom renders, not keystrokes. testTimeout raised to 20s with reasoning in the config; three consecutive full runs now identical.
+
+## STILL OPEN
+- Wave E (iOS unblock + on-device capture): running.
+- No mobile screen verified on-device anywhere in this lift. D2 push is code-complete, NOT shipped - cannot be proven without a build and a real APNs round trip.
+- No mobile feedback FORM (web FeedbackModal exists with 9 rules tests). Small addition if wanted.
+- axe accessibility: never run.

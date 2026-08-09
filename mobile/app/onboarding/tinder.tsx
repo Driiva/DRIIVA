@@ -9,7 +9,7 @@ import { C, F, S } from '@/components/ui/theme';
 
 const STATEMENTS = [
   "I've driven carefully for years and never once been rewarded for it.",
-  "My insurance premium went up at renewal — even though I didn't claim.",
+  "My insurance premium went up at renewal, even though I didn't claim.",
   "I have no idea what happens to my premium money.",
   "I'd switch insurers if I actually trusted the alternative.",
 ];

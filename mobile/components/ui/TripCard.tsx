@@ -1,5 +1,5 @@
 /**
- * TripCard — Single trip row in lists.
+ * TripCard - Single trip row in lists.
  *
  * Rule 3: Fixed 72px row height. No exceptions.
  * Rule 4: Tabular figures on score and metrics.

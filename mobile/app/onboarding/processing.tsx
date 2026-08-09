@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import Animated, {
   useSharedValue, useAnimatedStyle, withTiming, withDelay,
@@ -34,7 +35,7 @@ function CheckItem({ label, delay }: { label: string; delay: number }) {
 
   return (
     <Animated.View style={[styles.checkItem, style]}>
-      <Text style={styles.checkMark}>✓</Text>
+      <Ionicons name="checkmark" size={28} color={C.success} />
       <Text style={styles.checkLabel}>{label}</Text>
     </Animated.View>
   );
@@ -47,7 +48,7 @@ export default function Processing() {
 
   useEffect(() => {
     setStarted(true);
-    saveToFirestore().catch(() => {}); // fire and forget — non-blocking
+    saveToFirestore().catch(() => {}); // fire and forget - non-blocking
     const timer = setTimeout(() => {
       router.push('/onboarding/trip-demo');
     }, 2800);

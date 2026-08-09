@@ -223,7 +223,7 @@ export default function TripDetail() {
   const dateLabel = formatDate(trip.startedAt);
   const startLabel = trip.startLocation?.address?.split(',')[0] || null;
   const endLabel = trip.endLocation?.address?.split(',')[0] || null;
-  const routeTitle = trip.routeSummary || (startLabel && endLabel ? `${startLabel} → ${endLabel}` : 'Trip');
+  const routeTitle = trip.routeSummary || (startLabel && endLabel ? `${startLabel} to ${endLabel}` : 'Trip');
 
   // Weights read from the scoring package, paired with the factor each one
   // actually multiplies in computeDrivingScore. Adding a sixth factor there
