@@ -35,19 +35,19 @@ export default function Profile() {
 
         {/* Menu items */}
         <View style={styles.card}>
-          <MenuItem icon="settings-outline" label="Settings" onPress={() => {}} />
-          <MenuItem icon="car-outline" label="Vehicle" onPress={() => {}} />
-          <MenuItem icon="shield-checkmark-outline" label="Policy" onPress={() => {}} />
-          <MenuItem icon="trophy-outline" label="Achievements" onPress={() => {}} />
-          <MenuItem icon="bar-chart-outline" label="Leaderboard" onPress={() => {}} />
-          <MenuItem icon="help-circle-outline" label="Support" onPress={() => {}} />
+          <MenuItem icon="settings-outline" label="Settings" onPress={() => router.push('/settings')} />
+          <MenuItem icon="car-outline" label="Vehicle" onPress={() => router.push('/vehicle')} />
+          <MenuItem icon="shield-checkmark-outline" label="Policy" onPress={() => router.push('/policy')} />
+          <MenuItem icon="trophy-outline" label="Achievements" onPress={() => router.push('/achievements')} />
+          <MenuItem icon="bar-chart-outline" label="Leaderboard" onPress={() => router.push('/leaderboard')} />
+          <MenuItem icon="help-circle-outline" label="Support" onPress={() => router.push('/support')} />
         </View>
 
         {/* Legal */}
         <View style={styles.card}>
-          <MenuItem icon="document-text-outline" label="Privacy Policy" onPress={() => {}} />
-          <MenuItem icon="document-outline" label="Terms of Service" onPress={() => {}} />
-          <MenuItem icon="shield-outline" label="Trust Centre" onPress={() => {}} />
+          <MenuItem icon="document-text-outline" label="Privacy Policy" onPress={() => router.push('/privacy')} />
+          <MenuItem icon="document-outline" label="Terms of Service" onPress={() => router.push('/terms')} />
+          <MenuItem icon="shield-outline" label="Trust Centre" onPress={() => router.push('/trust')} />
         </View>
 
         {/* Sign out */}
