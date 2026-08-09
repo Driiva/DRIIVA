@@ -71,7 +71,7 @@ function formatNum(n: number): string {
   return n.toLocaleString();
 }
 
-const DONUT_COLORS = ['#22d3ee', '#8b5cf6', '#f59e0b', '#10b981'];
+const DONUT_COLORS = ['#5b4dc9', '#8b8b9e', '#f59e0b', '#10b981'];
 
 const tooltipStyle = {
   contentStyle: {
@@ -300,7 +300,7 @@ export default function AdminOverview() {
                   <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.4)' }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 11, fill: 'rgba(255,255,255,0.4)' }} axisLine={false} tickLine={false} allowDecimals={false} />
                   <Tooltip {...tooltipStyle} />
-                  <Bar dataKey="count" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="count" fill="#5b4dc9" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

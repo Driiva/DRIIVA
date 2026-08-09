@@ -179,7 +179,7 @@ function PeriodTabs({ selected, onChange }: PeriodTabsProps) {
           onClick={() => onChange(tab.id)}
           className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
             selected === tab.id 
-              ? 'bg-gradient-to-r from-[#06B6D4] to-[#3B82F6] text-white' 
+              ? 'bg-[var(--app-primary)] text-white' 
               : 'text-gray-400 hover:text-white'
           }`}
         >
@@ -298,7 +298,7 @@ export default function LeaderboardPage() {
                   <RefreshCw className={`w-4 h-4 text-white ${leaderboardLoading ? 'animate-spin' : ''}`} />
                 </button>
               )}
-              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-[#06B6D4] to-[#3B82F6] flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full bg-[var(--app-primary)] flex items-center justify-center">
                 <Trophy className="w-5 h-5 text-white" />
               </div>
             </div>

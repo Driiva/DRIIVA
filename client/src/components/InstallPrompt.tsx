@@ -139,7 +139,7 @@ export default function InstallPrompt() {
               onClick={installAndroid}
               className="text-white text-sm font-semibold px-4 py-2 rounded-xl flex-shrink-0"
               style={{
-                background: 'linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #1e3a8a 100%)',
+                background: 'var(--app-primary)',
                 boxShadow: '0 4px 16px rgba(59, 130, 246, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15)',
               }}
             >

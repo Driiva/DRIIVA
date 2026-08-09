@@ -1,6 +1,47 @@
 @import "tailwindcss";
 @config "../../tailwind.config.ts";
 
+/* ────────────────────────────────────────────────────────────
+   SELF-HOSTED TYPE - no external font host, no render-blocking
+   third-party request. Variable axes, latin subsets only.
+   Instrument Sans = body, Inter Tight = display,
+   JetBrains Mono = eyebrows, labels and stats.
+   ──────────────────────────────────────────────────────────── */
+@font-face {
+  font-family: 'Instrument Sans';
+  font-style: normal;
+  font-weight: 400 700;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url('/fonts/instrument-sans-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Instrument Sans';
+  font-style: normal;
+  font-weight: 400 700;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url('/fonts/instrument-sans-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Inter Tight';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/inter-tight-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url('/fonts/jetbrains-mono-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 /* iOS Safe Area Support */
 @supports (padding: env(safe-area-inset-top)) {
   .pb-safe { 
@@ -26,10 +67,11 @@ html {
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif;
+  font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: linear-gradient(180deg, #F9FAFB 0%, #F3F4F6 100%);
+  background: var(--app-bg);
+  color: var(--app-text-pri);
   touch-action: manipulation;
   overscroll-behavior: contain;
 }
@@ -49,14 +91,9 @@ button, a, input, select, textarea, [role="button"] {
   position: fixed;
   inset: 0;
   z-index: -1;
-  /* Fallback when no inline background-image */
-  background: linear-gradient(135deg,
-    var(--neutral-900) 0%,
-    #1e1b4b 25%,
-    #312e81 50%,
-    #1e3a8a 75%,
-    var(--neutral-900) 100%
-  );
+  /* Fallback when the brand wash PNG has not painted yet. Flat ink,
+     not a recreated gradient - the wash is an asset, never CSS. */
+  background: var(--app-bg);
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
@@ -83,28 +120,78 @@ button, a, input, select, textarea, [role="button"] {
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-/* Professional Design System Foundation v2.0 */
+/* ────────────────────────────────────────────────────────────
+   DRIIVA TOKENS - the single palette source for the client app.
+   Mirrors design-system/colors_and_type.css. The app runs in
+   INSTRUMENT mode: solid dark surfaces, one accent, colour earned.
+   Glass belongs to the marketing site and never mixes in here.
+
+   Names below the canonical block are compatibility aliases kept
+   so existing rules resolve; they point AT the canon, they do not
+   carry their own values. Never add a literal hex to a component.
+   ──────────────────────────────────────────────────────────── */
 :root {
-  /* Core Brand Colors - Purple/Blue Tech Gradient */
-  --brand-purple-500: #8B5CF6;
-  --brand-purple-400: #A78BFA;
-  --brand-purple-600: #7C3AED;
-  --brand-blue-500: #3B82F6;
-  --brand-blue-400: #60A5FA;
-  --brand-blue-600: #2563EB;
-  
-  /* Neutral Palette - Dark Tech Theme */
-  --neutral-900: #0F172A;
-  --neutral-800: #1E293B;
-  --neutral-700: #334155;
-  --neutral-600: #475569;
-  --neutral-500: #64748B;
-  --neutral-400: #94A3B8;
-  --neutral-300: #CBD5E1;
-  --neutral-200: #E2E8F0;
-  --neutral-100: #F1F5F9;
-  --neutral-50: #F8FAFC;
-  
+  /* ── Instrument surfaces - the app's ground truth ────────── */
+  --app-bg:        #0a0a14;
+  --app-surface-1: #12111f;
+  --app-surface-2: #1a1830;
+  --app-surface-3: #241f40;
+  --app-primary:   #5b4dc9;
+  --app-primary-rgb: 91, 77, 201;
+  --app-text-hero: #f8fafc;
+  --app-text-pri:  #e8eaf0;
+  --app-text-sec:  #8b8b9e;
+  --app-text-mut:  #5c5c70;
+  --app-border:    rgba(255, 255, 255, 0.08);
+
+  /* ── Ink ladder - tonal depth, value not hue ─────────────── */
+  --ink:   #050509;
+  --ink-1: #0a0a12;
+  --ink-2: #0f0f1b;
+  --ink-3: #141425;
+  --ink-4: #1a1a2e;
+  --ink-5: #222238;
+
+  /* ── Brand gradient - hairlines and brand surfaces ONLY.
+     Never a headline fill, never a page wash in CSS. ──────── */
+  --brand-amber:  #d4850a;
+  --brand-burnt:  #a04c2a;
+  --brand-violet: #6b3fa0;
+  --brand-indigo: #3b2d8b;
+  --gradient-brand: linear-gradient(135deg,
+    var(--brand-amber) 0%,
+    var(--brand-burnt) 30%,
+    var(--brand-violet) 65%,
+    var(--brand-indigo) 100%);
+
+  /* ── Semantic - earned colour, nothing decorative ────────── */
+  --ok:   #10b981;
+  --warn: #f59e0b;
+  --err:  #ef4444;
+  --teal: #2dd4bf;
+
+  /* ── Hairlines ───────────────────────────────────────────── */
+  --hairline:        rgba(255, 255, 255, 0.06);
+  --hairline-hi:     rgba(255, 255, 255, 0.10);
+  --hairline-bright: rgba(255, 255, 255, 0.16);
+
+  /* ── Type stack ──────────────────────────────────────────── */
+  --font-body:    'Instrument Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-display: 'Inter Tight', 'Instrument Sans', -apple-system, sans-serif;
+  --font-mono:    'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* ── Compatibility aliases - resolve to the canon above ─── */
+  --neutral-900: var(--app-bg);
+  --neutral-800: var(--app-surface-1);
+  --neutral-700: var(--app-surface-2);
+  --neutral-600: var(--app-surface-3);
+  --neutral-500: var(--app-text-mut);
+  --neutral-400: var(--app-text-sec);
+  --neutral-300: rgba(255, 255, 255, 0.70);
+  --neutral-200: rgba(255, 255, 255, 0.86);
+  --neutral-100: var(--app-text-pri);
+  --neutral-50:  var(--app-text-hero);
+
   /* Glass Morphism Tokens - Premium Tech Feel */
   --glass-white-5: rgba(255, 255, 255, 0.05);
   --glass-white-8: rgba(255, 255, 255, 0.08);
@@ -165,41 +252,48 @@ button, a, input, select, textarea, [role="button"] {
   --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.12);
   --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.16);
   --shadow-xl: 0 16px 32px rgba(0, 0, 0, 0.20);
-  --shadow-glow-purple: 0 0 24px rgba(139, 92, 246, 0.3);
-  --shadow-glow-blue: 0 0 24px rgba(59, 130, 246, 0.3);
-  
-  /* Animation Durations */
+  --shadow-glow-accent: 0 0 24px rgba(var(--app-primary-rgb), 0.30);
+
+  /* Animation Durations - the 150-450ms band, nothing outside it */
   --duration-instant: 50ms;
   --duration-fast: 150ms;
   --duration-base: 250ms;
   --duration-slow: 350ms;
-  --duration-slower: 500ms;
-  
-  /* Easing Functions */
-  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
-  
-  /* Status Colors - Tech Palette */
-  --success-green: #10B981;
-  --warning-amber: #F59E0B;
-  --error-red: #EF4444;
-  --info-blue: #3B82F6;
-  
-  /* Backward compatibility */
-  --primary-purple: var(--brand-purple-500);
-  --secondary-blue: var(--brand-blue-500);
-  --primary-blue: var(--brand-blue-500);
+  --duration-slower: 450ms;
+
+  /* ── Motion vocabulary: TWO eases, no third ──────────────────
+     --spring    press and hover, the overshoot you feel on touch
+     --ease-fast reveals, entrances, anything arriving
+     ---------------------------------------------------------- */
+  --spring:    cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-fast: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Aliases so existing rules land on the canonical curves */
+  --ease-smooth: var(--ease-fast);
+  --ease-bounce: var(--spring);
+  --ease-out:    var(--ease-fast);
+
+  /* Status - earned colour only */
+  --success-green:  var(--ok);
+  --warning-amber:  var(--warn);
+  --warning-yellow: var(--warn);
+  --error-red:      var(--err);
+  --info-accent:    var(--app-primary);
+
+  /* Backward compatibility - every alias resolves to the canon */
+  --primary-purple: var(--app-primary);
+  --secondary-blue: var(--app-primary);
+  --primary-blue:   var(--app-primary);
+  --accent:         var(--app-primary);
   --glass-overlay: var(--glass-white-10);
   --glass-overlay-subtle: var(--glass-white-8);
-  --glass-border: var(--glass-white-15);
+  --glass-border: var(--app-border);
   --glass-shadow: var(--shadow-md);
-  --font-display: var(--font-3xl);
   --font-heading: var(--font-xl);
-  --font-body: var(--font-base);
   --font-caption: var(--font-xs);
   --blur-glass: var(--glass-blur-md);
   --radius-button: var(--radius-md);
-  --radius-card: var(--radius-lg);
+  /* 16px on every app card. Deviation is defect. */
+  --radius-card: var(--radius-xl);
   --radius-container: var(--radius-xl);
 }
 
@@ -480,10 +574,41 @@ input:focus, select:focus, textarea:focus {
   to { transform: rotate(360deg); }
 }
 
-/* Professional Font System - Inter for Polish */
-body, h1, h2, h3, h4, h5, h6, p, span, div, button, input, select, textarea, a {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif !important;
-  letter-spacing: -0.01em;
+/* ────────────────────────────────────────────────────────────
+   TYPE - three families, three roles, no !important.
+   The old rule here forced Inter onto every element with
+   !important, which meant no component could ever set a display
+   or mono face. Inheritance from body does the same job and
+   leaves the cascade usable.
+   ──────────────────────────────────────────────────────────── */
+button, input, select, textarea {
+  font-family: inherit;
+}
+
+h1, h2, h3, h4, h5, h6, .font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+  color: var(--app-text-hero);
+}
+
+/* Eyebrows, labels and stat captions - the mono voice */
+.eyebrow, .stat-label, .font-mono, code, kbd, samp {
+  font-family: var(--font-mono);
+  font-feature-settings: 'tnum' 1;
+}
+
+.eyebrow, .stat-label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--app-text-sec);
+}
+
+/* Every numeric readout holds its columns */
+.tabular, .stat-value, [data-readout] {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
 }
 
 /* Professional Animations & Micro-Interactions */
@@ -661,7 +786,7 @@ select:focus {
   width: 100%;
   height: 100%;
   z-index: -2;
-  background: linear-gradient(135deg, #7B3A15 0%, #5B2520 15%, #3A1530 35%, #251540 55%, #181535 75%, #0A0820 100%);
+  background: linear-gradient(135deg, var(--brand-amber) 0%, var(--brand-burnt) 22%, var(--brand-violet) 55%, var(--brand-indigo) 80%, var(--ink) 100%);
   background-size: 200% 200%;
   animation: gradientShift 20s ease-in-out infinite;
 }
@@ -969,12 +1094,12 @@ select:focus {
 }
 
 .hero-cta-blue {
-  background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #1e3a8a 100%);
-  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  background: var(--app-primary);
+  box-shadow: 0 4px 16px rgba(var(--app-primary-rgb), 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 .hero-cta-blue:hover {
-  background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #1e40af 100%);
+  background: var(--app-surface-3);
 }
 
 .hero-cta-green {

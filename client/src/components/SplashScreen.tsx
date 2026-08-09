@@ -183,7 +183,7 @@ export default function SplashScreen({ children }: { children: ReactNode }) {
                   className="h-full rounded-full"
                   style={{
                     background:
-                      'linear-gradient(90deg, #10B981, #3B82F6)',
+                      'linear-gradient(90deg, var(--ok), var(--app-primary))',
                   }}
                   initial={{ width: '0%' }}
                   animate={{ width: '100%' }}

@@ -142,7 +142,7 @@ const TripTimeline: React.FC<TripTimelineProps> = ({ trips }) => {
       >
         <div className="relative">
           {/* Timeline line */}
-          <div className="absolute left-8 top-0 bottom-0 w-px bg-gradient-to-b from-[#06B6D4] via-[#3B82F6] to-[#A855F7] opacity-60" />
+          <div className="absolute left-8 top-0 bottom-0 w-px opacity-60" style={{ background: 'linear-gradient(to bottom, var(--app-primary), transparent)' }} />
           
           {sortedDates.map((date, dateIndex) => (
             <div key={date} className="relative">
