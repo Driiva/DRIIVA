@@ -92,6 +92,8 @@ export interface UserPoolShareData {
 
 export interface LeaderboardEntry {
   rank: number;
+  /** Needed to filter the board by the viewer's real friendships (Wave B). */
+  userId: string;
   displayName: string;
   anonymizedName: string; // e.g., "Driver #42" or "speedracer_***"
   score: number;
@@ -204,6 +206,7 @@ function transformRanking(
   
   return {
     rank: ranking.rank,
+    userId: ranking.userId,
     displayName: ranking.displayName,
     anonymizedName: anonymizeName(ranking.displayName, ranking.rank),
     score: Math.round(ranking.score),

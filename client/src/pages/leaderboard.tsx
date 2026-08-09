@@ -1,32 +1,47 @@
 /**
  * LEADERBOARD PAGE
  * ================
- * Displays community rankings with real Firestore data.
- * 
- * Features:
- *   - Weekly/Monthly/All-time period switching
- *   - Real-time rank updates
- *   - User's position highlighted
- *   - Anonymized driver names for privacy
+ * Community rankings, read from the real `leaderboard` collection that the
+ * scheduled function recomputes every 15 minutes.
+ *
+ * Scope: global (everyone) or friends (the viewer's social graph). The friends
+ * board is the global board filtered by real friendships, not a second data
+ * source, so a friend's rank always agrees with their rank overall.
+ *
+ * Pagination is in-memory by design. A board is ONE Firestore document holding
+ * at most 100 rankings, so the page is already loaded by the time it renders;
+ * slicing it is honest and a cursor would be theatre. If the board ever
+ * outgrows a single document, this is the seam to change.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'wouter';
-import { ArrowLeft, Trophy, TrendingUp, TrendingDown, Minus, RefreshCw, Users } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import {
+  ArrowLeft,
+  Trophy,
+  ChevronUp,
+  ChevronDown,
+  Minus,
+  RefreshCw,
+  Users,
+  UserPlus,
+} from 'lucide-react';
+import { motion } from 'framer-motion';
 import { PageWrapper } from '../components/PageWrapper';
 import { BottomNav } from '../components/BottomNav';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useCommunityData, LeaderboardEntry } from '@/hooks/useCommunityData';
+import { useFriends } from '@/hooks/useFriends';
 import { useAuth } from '@/contexts/AuthContext';
 import { EmptyState, SkeletonList, SkeletonStat } from '@/components/ui/EmptyState';
+import { InviteSheet } from '@/components/InviteSheet';
+
+const PAGE_SIZE = 25;
 
 // ============================================================================
-// SKELETON COMPONENTS
+// SKELETONS
 // ============================================================================
 
-// Both skeletons defer to the shared system so every surface in the app
-// waits in the same visual language.
 function LeaderboardSkeleton() {
   return <SkeletonList count={8} />;
 }
@@ -34,7 +49,7 @@ function LeaderboardSkeleton() {
 function StatsSkeleton() {
   return (
     <div className="grid grid-cols-3 gap-4">
-      {[1, 2, 3].map(i => (
+      {[1, 2, 3].map((i) => (
         <SkeletonStat key={i} />
       ))}
     </div>
@@ -42,141 +57,161 @@ function StatsSkeleton() {
 }
 
 // ============================================================================
-// HELPER COMPONENTS
+// ROW PARTS
 // ============================================================================
 
-interface RankBadgeProps {
-  rank: number;
-}
-
-function RankBadge({ rank }: RankBadgeProps) {
-  const getColor = () => {
-    if (rank === 1) return "bg-yellow-500 text-black";
-    if (rank === 2) return "bg-gray-400 text-black";
-    if (rank === 3) return "bg-orange-500 text-black";
-    return "bg-gray-600 text-white";
-  };
-
+/**
+ * Rank marker. The top three are distinguished by WEIGHT and a filled surface
+ * rather than by gold, silver and bronze: medal colours are three more hues on
+ * a surface whose whole discipline is one accent, and they carry no meaning a
+ * position number does not already carry.
+ */
+function RankBadge({ rank, isCurrentUser }: { rank: number; isCurrentUser: boolean }) {
+  const podium = rank <= 3;
   return (
-    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${getColor()}`}>
+    <div
+      className="w-8 h-8 flex items-center justify-center text-[13px] tabular shrink-0"
+      style={{
+        borderRadius: 'var(--radius-md)',
+        background: isCurrentUser
+          ? 'var(--app-primary)'
+          : podium
+            ? 'rgba(var(--app-primary-rgb), 0.18)'
+            : 'var(--app-surface-2)',
+        color: isCurrentUser
+          ? 'var(--app-text-hero)'
+          : podium
+            ? 'var(--app-primary)'
+            : 'var(--app-text-sec)',
+        fontWeight: podium || isCurrentUser ? 600 : 500,
+      }}
+    >
       {rank}
     </div>
   );
 }
 
-interface ChangeIndicatorProps {
-  change: number;
-  changeType: 'up' | 'down' | 'same';
-}
-
-function ChangeIndicator({ change, changeType }: ChangeIndicatorProps) {
-  const getIcon = () => {
-    switch (changeType) {
-      case "up": return <TrendingUp className="w-3 h-3 text-green-400" />;
-      case "down": return <TrendingDown className="w-3 h-3 text-red-400" />;
-      default: return <Minus className="w-3 h-3 text-gray-400" />;
-    }
-  };
-
-  const getColor = () => {
-    switch (changeType) {
-      case "up": return "text-green-400";
-      case "down": return "text-red-400";
-      default: return "text-gray-400";
-    }
-  };
+/**
+ * Movement since the previous period. Direction is carried by the ICON as well
+ * as the colour, because up-green against down-red is the single most common
+ * thing a colour-blind reader cannot separate.
+ */
+function ChangeIndicator({ change }: { change: number }) {
+  const Icon = change > 0 ? ChevronUp : change < 0 ? ChevronDown : Minus;
+  const colour =
+    change > 0 ? 'var(--ok)' : change < 0 ? 'var(--app-text-sec)' : 'var(--app-text-mut)';
+  const label = change > 0 ? `up ${change}` : change < 0 ? `down ${Math.abs(change)}` : 'no change';
 
   return (
-    <div className="flex items-center space-x-1">
-      {getIcon()}
-      <span className={`text-xs font-medium ${getColor()}`}>
-        {change === 0 ? "0" : change > 0 ? `+${change}` : `${change}`}
+    <div className="flex items-center gap-0.5 w-12 justify-end" title={label}>
+      <Icon size={14} strokeWidth={2.5} color={colour} aria-hidden="true" />
+      <span className="text-[12px] tabular" style={{ color: colour }}>
+        {change === 0 ? '0' : Math.abs(change)}
       </span>
+      <span className="sr-only">{label}</span>
     </div>
   );
 }
 
-interface LeaderboardRowProps {
-  entry: LeaderboardEntry;
-  index: number;
-}
-
-function LeaderboardRow({ entry, index }: LeaderboardRowProps) {
+function LeaderboardRow({ entry, index }: { entry: LeaderboardEntry; index: number }) {
   return (
     <motion.div
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: index * 0.05, duration: 0.3 }}
-      className={`flex items-center justify-between p-3 rounded-xl transition-all duration-200 ${
-        entry.isCurrentUser 
-          ? "bg-blue-500/20 border border-blue-400/30" 
-          : "bg-white/5 hover:bg-white/10"
-      }`}
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: Math.min(index, 12) * 0.02, duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+      className="flex items-center justify-between p-3"
+      style={{
+        borderRadius: 'var(--radius-card)',
+        background: entry.isCurrentUser
+          ? 'rgba(var(--app-primary-rgb), 0.12)'
+          : 'var(--app-surface-1)',
+        border: entry.isCurrentUser
+          ? '1px solid rgba(var(--app-primary-rgb), 0.30)'
+          : '1px solid var(--app-border)',
+      }}
     >
-      <div className="flex items-center space-x-3">
-        <RankBadge rank={entry.rank} />
-        <div>
-          <div className={`text-sm font-medium ${
-            entry.isCurrentUser ? "text-blue-300" : "text-white"
-          }`}>
+      <div className="flex items-center gap-3 min-w-0">
+        <RankBadge rank={entry.rank} isCurrentUser={entry.isCurrentUser} />
+        <div className="min-w-0">
+          <div
+            className="text-[15px] truncate"
+            style={{ color: entry.isCurrentUser ? 'var(--app-primary)' : 'var(--app-text-pri)' }}
+          >
             {entry.anonymizedName}
             {entry.isCurrentUser && (
-              <span className="ml-2 text-xs text-blue-400">(You)</span>
+              <span className="ml-2 text-[13px]" style={{ color: 'var(--app-text-sec)' }}>
+                you
+              </span>
             )}
           </div>
-          <div className="text-xs text-gray-500">
-            {entry.totalTrips} trips • {Math.round(entry.totalMiles)} mi
+          <div className="text-[13px]" style={{ color: 'var(--app-text-sec)' }}>
+            <span className="tabular">{entry.totalTrips}</span> trips ·{' '}
+            <span className="tabular">{Math.round(entry.totalMiles)}</span> mi
           </div>
         </div>
       </div>
-      
-      <div className="flex items-center space-x-3">
-        <div className="text-right">
-          <div className="text-lg font-bold text-white">{entry.score}</div>
+
+      <div className="flex items-center gap-3 shrink-0">
+        <div className="text-[18px] tabular" style={{ color: 'var(--app-text-hero)', fontWeight: 600 }}>
+          {entry.score}
         </div>
-        <ChangeIndicator change={entry.change} changeType={entry.changeType} />
+        <ChangeIndicator change={entry.change} />
       </div>
     </motion.div>
   );
 }
 
 // ============================================================================
-// PERIOD TABS
+// TABS
 // ============================================================================
 
-interface PeriodTabsProps {
-  selected: 'weekly' | 'monthly' | 'all_time';
-  onChange: (period: 'weekly' | 'monthly' | 'all_time') => void;
-}
+type PeriodType = 'weekly' | 'monthly' | 'all_time';
+type Scope = 'global' | 'friends';
 
-function PeriodTabs({ selected, onChange }: PeriodTabsProps) {
-  const tabs = [
-    { id: 'weekly' as const, label: 'This Week' },
-    { id: 'monthly' as const, label: 'This Month' },
-    { id: 'all_time' as const, label: 'All Time' },
-  ];
-
+function SegmentedTabs<T extends string>({
+  tabs,
+  selected,
+  onChange,
+  ariaLabel,
+}: {
+  tabs: ReadonlyArray<{ id: T; label: string }>;
+  selected: T;
+  onChange: (id: T) => void;
+  ariaLabel: string;
+}) {
   return (
-    <div className="flex bg-white/5 rounded-xl p-1 mb-4">
-      {tabs.map(tab => (
-        <button
-          key={tab.id}
-          onClick={() => onChange(tab.id)}
-          className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-            selected === tab.id 
-              ? 'bg-[var(--app-primary)] text-white' 
-              : 'text-gray-400 hover:text-white'
-          }`}
-        >
-          {tab.label}
-        </button>
-      ))}
+    <div
+      role="tablist"
+      aria-label={ariaLabel}
+      className="flex p-1 mb-4"
+      style={{ borderRadius: 'var(--radius-card)', background: 'var(--app-surface-1)' }}
+    >
+      {tabs.map((tab) => {
+        const active = selected === tab.id;
+        return (
+          <button
+            key={tab.id}
+            role="tab"
+            aria-selected={active}
+            onClick={() => onChange(tab.id)}
+            className="flex-1 py-2 px-3 text-[14px] transition-colors"
+            style={{
+              borderRadius: 'var(--radius-md)',
+              background: active ? 'var(--app-primary)' : 'transparent',
+              color: active ? 'var(--app-text-hero)' : 'var(--app-text-sec)',
+              fontWeight: active ? 600 : 500,
+            }}
+          >
+            {tab.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
 
 // ============================================================================
-// MAIN COMPONENT
+// PAGE
 // ============================================================================
 
 /**
@@ -189,15 +224,26 @@ function formatPoolTotal(pounds: number): string {
   return `£${Math.round(pounds)}`;
 }
 
+const PERIOD_TABS = [
+  { id: 'weekly' as const, label: 'This week' },
+  { id: 'monthly' as const, label: 'This month' },
+  { id: 'all_time' as const, label: 'All time' },
+];
+
+const SCOPE_TABS = [
+  { id: 'global' as const, label: 'Global' },
+  { id: 'friends' as const, label: 'Friends' },
+];
+
 export default function LeaderboardPage() {
   const { user } = useAuth();
   const [isDemoMode, setIsDemoMode] = useState(false);
+  const [scope, setScope] = useState<Scope>('global');
+  const [page, setPage] = useState(0);
+  const [inviteOpen, setInviteOpen] = useState(false);
 
   useEffect(() => {
-    const demoModeActive = sessionStorage.getItem('driiva-demo-mode') === 'true';
-    if (demoModeActive) {
-      setIsDemoMode(true);
-    }
+    if (sessionStorage.getItem('driiva-demo-mode') === 'true') setIsDemoMode(true);
   }, []);
 
   const firebaseUserId = isDemoMode ? null : (user?.id ?? null);
@@ -212,142 +258,147 @@ export default function LeaderboardPage() {
     setLeaderboardPeriodType,
   } = useCommunityData(firebaseUserId);
 
-  // Demo mode fallback data
-  const demoLeaderboard: LeaderboardEntry[] = [
-    { rank: 1, displayName: "speedracer42", anonymizedName: "speed***", score: 87, totalMiles: 1234, totalTrips: 45, change: -2, changeType: "down", isCurrentUser: false },
-    { rank: 2, displayName: "safejenny", anonymizedName: "safej***", score: 85, totalMiles: 987, totalTrips: 38, change: 3, changeType: "up", isCurrentUser: false },
-    { rank: 3, displayName: "carlover88", anonymizedName: "carlo***", score: 83, totalMiles: 856, totalTrips: 32, change: 0, changeType: "same", isCurrentUser: false },
-    { rank: 4, displayName: "roadmaster", anonymizedName: "roadm***", score: 82, totalMiles: 765, totalTrips: 28, change: 7, changeType: "up", isCurrentUser: false },
-    { rank: 5, displayName: "eco_driver", anonymizedName: "eco_d***", score: 81, totalMiles: 654, totalTrips: 24, change: -1, changeType: "down", isCurrentUser: false },
-    { rank: 6, displayName: "nighthawk", anonymizedName: "night***", score: 80, totalMiles: 543, totalTrips: 20, change: 2, changeType: "up", isCurrentUser: false },
-    { rank: 7, displayName: "citycommuter", anonymizedName: "cityc***", score: 79, totalMiles: 432, totalTrips: 18, change: -4, changeType: "down", isCurrentUser: false },
-    { rank: 8, displayName: "highway_hero", anonymizedName: "highw***", score: 78, totalMiles: 321, totalTrips: 15, change: 1, changeType: "up", isCurrentUser: false },
-    { rank: 9, displayName: "cruisecontrol", anonymizedName: "cruis***", score: 77, totalMiles: 289, totalTrips: 12, change: 0, changeType: "same", isCurrentUser: false },
-    { rank: 10, displayName: "smoothrider", anonymizedName: "smoot***", score: 76, totalMiles: 234, totalTrips: 10, change: 3, changeType: "up", isCurrentUser: false },
-    { rank: 11, displayName: "careful_kate", anonymizedName: "caref***", score: 75, totalMiles: 198, totalTrips: 8, change: -2, changeType: "down", isCurrentUser: false },
-    { rank: 12, displayName: "autopilot_ai", anonymizedName: "autop***", score: 74, totalMiles: 167, totalTrips: 7, change: 4, changeType: "up", isCurrentUser: false },
-    { rank: 13, displayName: "weekend_warrior", anonymizedName: "weeke***", score: 73, totalMiles: 145, totalTrips: 6, change: -1, changeType: "down", isCurrentUser: false },
-    { rank: 14, displayName: "driiva1", anonymizedName: "driiv***", score: 72, totalMiles: 123, totalTrips: 5, change: 5, changeType: "up", isCurrentUser: true },
-    { rank: 15, displayName: "slow_and_steady", anonymizedName: "slow_***", score: 72, totalMiles: 98, totalTrips: 4, change: 2, changeType: "up", isCurrentUser: false },
-  ];
+  const { friends, loading: friendsLoading } = useFriends(firebaseUserId);
 
-  const rankings = isDemoMode 
-    ? demoLeaderboard 
-    : (leaderboard?.rankings || []);
+  // Wave B: the demo leaderboard was fifteen invented drivers with invented
+  // scores, ranks and movement. Demo mode now reads the same real board as
+  // everyone else and shows the same honest empty state when there is nothing
+  // in it yet.
+  const allRankings = leaderboard?.rankings ?? [];
 
-  const userRank = isDemoMode 
-    ? 14 
-    : (leaderboard?.userRank || null);
+  const friendUids = useMemo(() => new Set(friends.map((f) => f.uid)), [friends]);
 
-  const activeParticipants = isDemoMode 
-    ? 1247 
-    : (pool?.activeParticipants || leaderboard?.totalParticipants || 0);
+  // The friends board is the global board filtered, so a friend's rank here is
+  // their real standing overall rather than a position within a small group.
+  const rankings = useMemo(() => {
+    if (scope === 'global') return allRankings;
+    return allRankings.filter((entry) => entry.isCurrentUser || friendUids.has(entry.userId));
+  }, [scope, allRankings, friendUids]);
 
-  const avgScore = isDemoMode 
-    ? 83.2 
-    : (leaderboard?.averageScore || 0);
+  useEffect(() => setPage(0), [scope, leaderboard?.periodType]);
 
-  // Wave 0 (0h): named poolRefunds but sourced from the pool TOTAL, and
-  // rendered as `GBP {Math.round(v / 1000)}k`, which floors every pool under
-  // GBP 500 to "GBP 0k". Real early-stage pools are exactly that size, so the
-  // stat read as "this product pays nothing". Now labelled for what it is and
-  // formatted so small amounts survive.
-  const poolTotalPounds = isDemoMode 
-    ? 127000 
-    : (pool?.totalPoolPounds || 0);
+  const pageCount = Math.max(1, Math.ceil(rankings.length / PAGE_SIZE));
+  const visible = rankings.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
-  const periodLabel = isDemoMode 
-    ? 'This Week' 
-    : (leaderboard?.periodType === 'weekly' ? 'This Week' : 
-       leaderboard?.periodType === 'monthly' ? 'This Month' : 'All Time');
+  const userEntry = leaderboard?.userEntry ?? null;
+  const userRank = leaderboard?.userRank ?? null;
+  // Pinned when the viewer is ranked but not on the page in front of them.
+  const showPinnedRank =
+    Boolean(userEntry) && !visible.some((e) => e.isCurrentUser) && scope === 'global';
 
-  const handlePeriodChange = (period: 'weekly' | 'monthly' | 'all_time') => {
-    setLeaderboardPeriodType(period);
-  };
+  const activeParticipants = pool?.activeParticipants || leaderboard?.totalParticipants || 0;
+  const avgScore = leaderboard?.averageScore || 0;
+  const poolTotalPounds = pool?.totalPoolPounds || 0;
+
+  const periodLabel =
+    leaderboard?.periodType === 'weekly'
+      ? 'This week'
+      : leaderboard?.periodType === 'monthly'
+        ? 'This month'
+        : 'All time';
+
+  const loadingBoard = leaderboardLoading || (scope === 'friends' && friendsLoading);
 
   return (
     <PageWrapper>
-      <div className="pb-24 text-white">
-        {/* Header */}
+      <div className="pb-24">
         <header className="mb-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center gap-3">
               <Link href="/dashboard">
-                <button className="w-10 h-10 backdrop-blur-xl bg-white/10 border border-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-all duration-200">
-                  <ArrowLeft className="w-5 h-5 text-white" />
+                <button
+                  aria-label="Back to dashboard"
+                  className="w-10 h-10 flex items-center justify-center"
+                  style={{
+                    borderRadius: 'var(--radius-md)',
+                    background: 'var(--app-surface-1)',
+                    border: '1px solid var(--app-border)',
+                  }}
+                >
+                  <ArrowLeft className="w-5 h-5" style={{ color: 'var(--app-text-pri)' }} />
                 </button>
               </Link>
               <div>
-                <h1 className="text-lg font-semibold text-white">Community Leaderboard</h1>
-                <p className="text-xs text-gray-300">
-                  All Driivas • {periodLabel}
-                  {leaderboard?.calculatedAt && !isDemoMode && (
-                    <span className="text-gray-500 ml-1">
-                      • Updated {new Date(leaderboard.calculatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                <h1 className="text-[18px]" style={{ color: 'var(--app-text-hero)' }}>
+                  Leaderboard
+                </h1>
+                <p className="text-[13px]" style={{ color: 'var(--app-text-sec)' }}>
+                  {periodLabel}
+                  {leaderboard?.calculatedAt && (
+                    <span style={{ color: 'var(--app-text-mut)' }}>
+                      {' · updated '}
+                      {new Date(leaderboard.calculatedAt).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
                     </span>
                   )}
                 </p>
               </div>
             </div>
-            <div className="flex items-center space-x-2">
-              {!isDemoMode && (
-                <button
-                  onClick={refresh}
-                  className="w-10 h-10 rounded-full bg-white/10 border border-white/10 flex items-center justify-center hover:bg-white/20 transition-all"
-                >
-                  <RefreshCw className={`w-4 h-4 text-white ${leaderboardLoading ? 'animate-spin' : ''}`} />
-                </button>
-              )}
-              <div className="w-10 h-10 rounded-full bg-[var(--app-primary)] flex items-center justify-center">
-                <Trophy className="w-5 h-5 text-white" />
-              </div>
-            </div>
+            <button
+              onClick={refresh}
+              aria-label="Refresh leaderboard"
+              className="w-10 h-10 flex items-center justify-center"
+              style={{
+                borderRadius: 'var(--radius-md)',
+                background: 'var(--app-surface-1)',
+                border: '1px solid var(--app-border)',
+              }}
+            >
+              <RefreshCw
+                className={`w-4 h-4 ${leaderboardLoading ? 'animate-spin' : ''}`}
+                style={{ color: 'var(--app-text-pri)' }}
+              />
+            </button>
           </div>
         </header>
 
-        {/* Period Tabs */}
-        {!isDemoMode && (
-          <PeriodTabs 
-            selected={leaderboard?.periodType || 'weekly'} 
-            onChange={handlePeriodChange} 
-          />
-        )}
+        <SegmentedTabs tabs={SCOPE_TABS} selected={scope} onChange={setScope} ariaLabel="Leaderboard scope" />
+        <SegmentedTabs
+          tabs={PERIOD_TABS}
+          selected={(leaderboard?.periodType as PeriodType) || 'weekly'}
+          onChange={(p) => setLeaderboardPeriodType(p)}
+          ariaLabel="Leaderboard period"
+        />
 
-        {/* Stats Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6"
-        >
-          <Card className="backdrop-blur-xl bg-white/[0.04] border border-white/[0.08]">
+        {/* Community stats */}
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
+          <Card
+            style={{
+              background: 'var(--app-surface-1)',
+              border: '1px solid var(--app-border)',
+              borderRadius: 'var(--radius-card)',
+            }}
+          >
             <CardHeader>
-              <CardTitle className="flex items-center space-x-2 text-white">
-                <Trophy className="w-5 h-5 text-yellow-400" />
-                <span>{isDemoMode ? 'Weekly Challenge' : `${periodLabel} Challenge`}</span>
+              <CardTitle className="flex items-center gap-2" style={{ color: 'var(--app-text-hero)' }}>
+                <Trophy className="w-5 h-5" style={{ color: 'var(--app-primary)' }} />
+                <span className="text-[16px]">{periodLabel}</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {poolLoading && !isDemoMode ? (
+              {poolLoading ? (
                 <StatsSkeleton />
               ) : (
                 <div className="grid grid-cols-3 gap-4">
                   <div className="text-center">
-                    <div className="text-lg font-bold text-white">
-                      {activeParticipants.toLocaleString()}
+                    <div className="text-[18px] tabular" style={{ color: 'var(--app-text-hero)', fontWeight: 600 }}>
+                      {activeParticipants.toLocaleString('en-GB')}
                     </div>
-                    <div className="text-xs text-gray-400">Active Drivers</div>
+                    <div className="stat-label mt-1">Drivers</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-lg font-bold text-green-400">
+                    <div className="text-[18px] tabular" style={{ color: 'var(--app-text-hero)', fontWeight: 600 }}>
                       {avgScore.toFixed(1)}
                     </div>
-                    <div className="text-xs text-gray-400">Avg Score</div>
+                    <div className="stat-label mt-1">Avg score</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-lg font-bold text-blue-400">
+                    <div className="text-[18px] tabular" style={{ color: 'var(--app-text-hero)', fontWeight: 600 }}>
                       {formatPoolTotal(poolTotalPounds)}
                     </div>
-                    <div className="text-xs text-gray-400">Community Pool</div>
+                    <div className="stat-label mt-1">Pool</div>
                   </div>
                 </div>
               )}
@@ -355,94 +406,168 @@ export default function LeaderboardPage() {
           </Card>
         </motion.div>
 
-        {/* User's Position Card (if not in top rankings) */}
-        {userRank && userRank > 10 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="mb-4"
+        {/* Rankings */}
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+          <Card
+            style={{
+              background: 'var(--app-surface-1)',
+              border: '1px solid var(--app-border)',
+              borderRadius: 'var(--radius-card)',
+            }}
           >
-            <Card className="backdrop-blur-xl bg-blue-500/10 border border-blue-500/30">
-              <CardContent className="pt-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 rounded-full bg-blue-500/30 flex items-center justify-center">
-                      <span className="text-blue-300 font-bold">#{userRank}</span>
-                    </div>
-                    <div>
-                      <div className="text-blue-300 font-medium">Your Position</div>
-                      <div className="text-xs text-blue-400/70">
-                        {leaderboard?.userEntry?.totalTrips || 0} trips • {Math.round(leaderboard?.userEntry?.totalMiles || 0)} mi
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-white">
-                      {leaderboard?.userEntry?.score || 0}
-                    </div>
-                    {leaderboard?.userEntry && (
-                      <ChangeIndicator 
-                        change={leaderboard.userEntry.change} 
-                        changeType={leaderboard.userEntry.changeType} 
-                      />
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-
-        {/* Rankings Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <Card className="backdrop-blur-xl bg-white/[0.04] border border-white/[0.08]">
             <CardHeader>
-              <CardTitle className="flex items-center justify-between text-white">
-                <span>Rankings</span>
-                <div className="text-xs text-gray-400">Score • Change</div>
+              <CardTitle className="flex items-center justify-between" style={{ color: 'var(--app-text-hero)' }}>
+                <span className="text-[16px]">{scope === 'friends' ? 'Friends' : 'Rankings'}</span>
+                {rankings.length > 0 && (
+                  <span className="text-[13px] tabular" style={{ color: 'var(--app-text-sec)' }}>
+                    {rankings.length}
+                  </span>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {leaderboardLoading && !isDemoMode ? (
+              {loadingBoard ? (
                 <LeaderboardSkeleton />
-              ) : leaderboardError && !isDemoMode ? (
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4">
-                    <Trophy className="w-8 h-8 text-red-400/50" />
-                  </div>
-                  <p className="text-gray-400">Failed to load leaderboard</p>
-                  <button
-                    onClick={refresh}
-                    className="mt-3 px-4 py-2 rounded-lg bg-white/10 text-white text-sm hover:bg-white/20 transition-all"
-                  >
-                    Try Again
-                  </button>
-                </div>
+              ) : leaderboardError ? (
+                <EmptyState
+                  icon={<Trophy size={24} strokeWidth={2} />}
+                  heading="The leaderboard did not load"
+                  subtext="Your score and trips are safe. This is a problem reading the board, not a problem with your data."
+                  action={
+                    <button
+                      onClick={refresh}
+                      className="px-5 py-2.5 text-[14px]"
+                      style={{
+                        borderRadius: 'var(--radius-button)',
+                        background: 'var(--app-primary)',
+                        color: 'var(--app-text-hero)',
+                      }}
+                    >
+                      Try again
+                    </button>
+                  }
+                />
+              ) : scope === 'friends' && friends.length === 0 ? (
+                <EmptyState
+                  icon={<UserPlus size={24} strokeWidth={2} />}
+                  heading="No friends yet"
+                  subtext="Invite someone you drive against. Their real scores appear here, on the same board as everyone else."
+                  action={
+                    <button
+                      onClick={() => setInviteOpen(true)}
+                      className="px-5 py-2.5 text-[14px]"
+                      style={{
+                        borderRadius: 'var(--radius-button)',
+                        background: 'var(--app-primary)',
+                        color: 'var(--app-text-hero)',
+                      }}
+                    >
+                      Invite a friend
+                    </button>
+                  }
+                />
               ) : rankings.length === 0 ? (
                 <EmptyState
                   icon={<Users size={24} strokeWidth={2} />}
-                  heading="No rankings yet this period"
-                  subtext="The board fills as drivers complete scored trips. Yours will appear here once your first trip of the period lands."
+                  heading={
+                    scope === 'friends'
+                      ? 'No friends on this board yet'
+                      : 'No rankings yet this period'
+                  }
+                  subtext={
+                    scope === 'friends'
+                      ? 'Your friends appear here once they complete a scored trip in this period.'
+                      : 'The board fills as drivers complete scored trips. Yours appears once your first trip of the period lands.'
+                  }
                 />
               ) : (
-                <div className="space-y-3">
-                  <AnimatePresence mode="wait">
-                    {rankings.map((entry, index) => (
-                      <LeaderboardRow key={entry.rank} entry={entry} index={index} />
+                <>
+                  <div className="space-y-3">
+                    {visible.map((entry, index) => (
+                      <LeaderboardRow key={`${entry.rank}-${entry.userId}`} entry={entry} index={index} />
                     ))}
-                  </AnimatePresence>
-                </div>
+                  </div>
+
+                  {pageCount > 1 && (
+                    <div className="flex items-center justify-between mt-4">
+                      <button
+                        onClick={() => setPage((p) => Math.max(0, p - 1))}
+                        disabled={page === 0}
+                        className="px-4 py-2 text-[14px] disabled:opacity-40"
+                        style={{
+                          borderRadius: 'var(--radius-button)',
+                          background: 'var(--app-surface-2)',
+                          color: 'var(--app-text-pri)',
+                        }}
+                      >
+                        Previous
+                      </button>
+                      <span className="text-[13px] tabular" style={{ color: 'var(--app-text-sec)' }}>
+                        Page {page + 1} of {pageCount}
+                      </span>
+                      <button
+                        onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
+                        disabled={page >= pageCount - 1}
+                        className="px-4 py-2 text-[14px] disabled:opacity-40"
+                        style={{
+                          borderRadius: 'var(--radius-button)',
+                          background: 'var(--app-surface-2)',
+                          color: 'var(--app-text-pri)',
+                        }}
+                      >
+                        Next
+                      </button>
+                    </div>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>
         </motion.div>
+
+        {/* The viewer's own standing, pinned when they are off-page. */}
+        {showPinnedRank && userEntry && (
+          <div className="sticky bottom-24 mt-4">
+            <div
+              className="flex items-center justify-between p-3"
+              style={{
+                borderRadius: 'var(--radius-card)',
+                background: 'var(--app-surface-2)',
+                border: '1px solid rgba(var(--app-primary-rgb), 0.30)',
+                boxShadow: 'var(--shadow-lg)',
+              }}
+            >
+              <div className="flex items-center gap-3">
+                <RankBadge rank={userEntry.rank} isCurrentUser />
+                <div>
+                  <div className="text-[15px]" style={{ color: 'var(--app-primary)' }}>
+                    Your position
+                  </div>
+                  <div className="text-[13px]" style={{ color: 'var(--app-text-sec)' }}>
+                    <span className="tabular">{userEntry.totalTrips}</span> trips ·{' '}
+                    <span className="tabular">{Math.round(userEntry.totalMiles)}</span> mi
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="text-[18px] tabular" style={{ color: 'var(--app-text-hero)', fontWeight: 600 }}>
+                  {userEntry.score}
+                </div>
+                <ChangeIndicator change={userEntry.change} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Ranked-but-absent is different from unranked, and says so. */}
+        {!loadingBoard && !leaderboardError && !userRank && allRankings.length > 0 && (
+          <p className="text-[13px] mt-4 text-center" style={{ color: 'var(--app-text-sec)' }}>
+            You are not on this board yet. Complete a scored trip in this period to appear.
+          </p>
+        )}
       </div>
 
+      <InviteSheet open={inviteOpen} onClose={() => setInviteOpen(false)} />
       <BottomNav />
     </PageWrapper>
   );

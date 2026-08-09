@@ -26,6 +26,7 @@ const Rewards = lazy(() => import('./pages/rewards'));
 const Support = lazy(() => import('./pages/support'));
 const TripRecording = lazy(() => import('./pages/trip-recording'));
 const LeaderboardPage = lazy(() => import('./pages/leaderboard'));
+const InvitePage = lazy(() => import('./pages/invite'));
 const PolicyPage = lazy(() => import('./pages/policy'));
 const Terms = lazy(() => import('./pages/terms'));
 const Privacy = lazy(() => import('./pages/privacy'));
@@ -151,6 +152,9 @@ function AppContent() {
           <Route path="/terms" component={Terms} />
           <Route path="/privacy" component={Privacy} />
           <Route path="/trust" component={TrustPage} />
+          {/* Invite deep link. Public: an invited person may not have an
+              account yet, and the page carries the code through sign-up. */}
+          <Route path="/invite/:code" component={InvitePage} />
 
           {/* Auth routes - redirect to dashboard if already logged in */}
           <Route path="/signin">
