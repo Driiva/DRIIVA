@@ -30,8 +30,11 @@ const db = admin.firestore();
 export const finalizePoolPeriod = functions
   .region(EUROPE_LONDON)
   .pubsub
-  .schedule('0 0 1 * *') // 1st of each month at midnight UTC
-  .timeZone('America/New_York')
+  // Wave 0 (0h): was .timeZone('America/New_York') under a comment claiming
+  // midnight UTC, so a UK product finalised its monthly pool at 04:00/05:00 UK
+  // time and trips driven in those hours landed in the wrong period.
+  .schedule('0 0 1 * *') // 1st of each month, midnight UK time
+  .timeZone('Europe/London')
   .onRun(wrapTrigger(async (_context) => {
     const previousPeriod = getPreviousPoolPeriod();
     
@@ -164,8 +167,8 @@ export const finalizePoolPeriod = functions
 export const recalculatePoolShares = functions
   .region(EUROPE_LONDON)
   .pubsub
-  .schedule('0 6 * * *') // Daily at 6 AM UTC
-  .timeZone('America/New_York')
+  .schedule('0 6 * * *') // Daily at 06:00 UK time
+  .timeZone('Europe/London')
   .onRun(wrapTrigger(async (_context) => {
     const currentPeriod = getCurrentPoolPeriod();
     

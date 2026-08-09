@@ -238,12 +238,12 @@ export const addPoolContribution = functions
     );
   }
   
-  // Maximum single contribution limit (e.g., $10,000)
+  // Maximum single contribution limit (GBP 10,000)
   const MAX_CONTRIBUTION_CENTS = 1000000;
   if (amountCents > MAX_CONTRIBUTION_CENTS) {
     throw new functions.https.HttpsError(
       'invalid-argument',
-      `Contribution cannot exceed ${MAX_CONTRIBUTION_CENTS / 100} dollars`
+      `Contribution cannot exceed ${MAX_CONTRIBUTION_CENTS / 100} pounds`
     );
   }
   

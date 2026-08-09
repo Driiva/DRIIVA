@@ -194,6 +194,16 @@ function PeriodTabs({ selected, onChange }: PeriodTabsProps) {
 // MAIN COMPONENT
 // ============================================================================
 
+/**
+ * Pool totals span three orders of magnitude between launch and scale, so the
+ * unit adapts rather than flooring small real values to "GBP 0k".
+ */
+function formatPoolTotal(pounds: number): string {
+  if (pounds >= 10000) return `£${Math.round(pounds / 1000)}k`;
+  if (pounds >= 1000) return `£${(pounds / 1000).toFixed(1)}k`;
+  return `£${Math.round(pounds)}`;
+}
+
 export default function LeaderboardPage() {
   const { user } = useAuth();
   const [isDemoMode, setIsDemoMode] = useState(false);
@@ -252,7 +262,12 @@ export default function LeaderboardPage() {
     ? 83.2 
     : (leaderboard?.averageScore || 0);
 
-  const poolRefunds = isDemoMode 
+  // Wave 0 (0h): named poolRefunds but sourced from the pool TOTAL, and
+  // rendered as `GBP {Math.round(v / 1000)}k`, which floors every pool under
+  // GBP 500 to "GBP 0k". Real early-stage pools are exactly that size, so the
+  // stat read as "this product pays nothing". Now labelled for what it is and
+  // formatted so small amounts survive.
+  const poolTotalPounds = isDemoMode 
     ? 127000 
     : (pool?.totalPoolPounds || 0);
 
@@ -345,9 +360,9 @@ export default function LeaderboardPage() {
                   </div>
                   <div className="text-center">
                     <div className="text-lg font-bold text-blue-400">
-                      £{Math.round(poolRefunds / 1000)}k
+                      {formatPoolTotal(poolTotalPounds)}
                     </div>
-                    <div className="text-xs text-gray-400">Pool Refunds</div>
+                    <div className="text-xs text-gray-400">Community Pool</div>
                   </div>
                 </div>
               )}
