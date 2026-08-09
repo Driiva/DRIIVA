@@ -7,11 +7,14 @@ interface Factor {
   blurb: string;
 }
 
+// These weights are a published claim about how the model scores drivers, so
+// they must track SCORE_WEIGHTS in packages/scoring/src/tripMetrics.ts exactly.
+// Speed and acceleration were previously swapped here.
 const FACTORS: readonly Factor[] = [
-  { name: 'Smooth acceleration', weight: 25, blurb: 'No jackrabbit starts; gradual builds.' },
+  { name: 'Speed discipline', weight: 25, blurb: 'Within the limit, especially residential.' },
   { name: 'Gentle braking', weight: 25, blurb: 'Anticipation over emergency stops.' },
+  { name: 'Smooth acceleration', weight: 20, blurb: 'No jackrabbit starts; gradual builds.' },
   { name: 'Calm cornering', weight: 20, blurb: 'Lateral g-force kept in comfort range.' },
-  { name: 'Speed discipline', weight: 20, blurb: 'Within the limit, especially residential.' },
   { name: 'Phone-free driving', weight: 10, blurb: 'No screen handling while in motion.' },
 ];
 
