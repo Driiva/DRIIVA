@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { Car, Check, Loader2, ChevronRight } from 'lucide-react';
 import type { OnboardingStepProps } from '../types';
+import { StartingScoreExplainer } from '@/components/StartingScoreExplainer';
 
 interface StepConfirmProps extends OnboardingStepProps {
   confirmed: boolean;
@@ -43,7 +44,7 @@ export function StepConfirm({
               <span className="text-[#818cf8] text-xs font-bold">1</span>
             </div>
             <p className="text-white/70 text-sm">
-              <strong className="text-white">Start a trip</strong> – We track speed, braking, and acceleration
+              <strong className="text-white">Start a trip</strong>. We track speed, braking, and acceleration
             </p>
           </li>
           <li className="flex items-start gap-3">
@@ -51,7 +52,7 @@ export function StepConfirm({
               <span className="text-[#818cf8] text-xs font-bold">2</span>
             </div>
             <p className="text-white/70 text-sm">
-              <strong className="text-white">Get scored</strong> – Each trip adds to your overall safety score
+              <strong className="text-white">Get scored</strong>. Your first trip sets your score, and every trip after it is averaged in
             </p>
           </li>
           <li className="flex items-start gap-3">
@@ -59,10 +60,15 @@ export function StepConfirm({
               <span className="text-[#818cf8] text-xs font-bold">3</span>
             </div>
             <p className="text-white/70 text-sm">
-              <strong className="text-white">Earn refunds</strong> – Higher scores mean bigger refunds at renewal
+              <strong className="text-white">Earn refunds</strong>. Higher scores mean bigger refunds at renewal
             </p>
           </li>
         </ul>
+
+        {/* Keith Q1, answered before the driver ever sees the number. */}
+        <div className="mt-4 pt-4 border-t border-white/10">
+          <StartingScoreExplainer variant="inline" />
+        </div>
       </div>
 
       {/* Confirmation checkbox */}

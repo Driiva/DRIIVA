@@ -71,3 +71,38 @@ BUDGET TABLE (brief P4) - measured:
 NOT VISUALLY VERIFIED (auth-gated, redirect without credentials): dashboard, trips, leaderboard, rewards on web;
 all new mobile screens (sandbox lacks UI-automation permission + AuthGate forces Expo Go to onboarding).
 Per feedback_shipped_means, these are NOT "shipped" until seen running with a real session.
+
+## Waves B and C launched (9 Aug, off premium-lift/main)
+- task/premium-b-community (wave-a-web agent, resumed with full Wave A context): B1 leaderboard real (global+friends, paginated, delete demoLeaderboard, reuse Wave 0's week-convention helper), B2 friends+invites (schema, rules, invite/accept proven in emulator) = THE missing MVP feature, B3 pool visuals under a hard no-invented-economy constraint (D6 open), plus the real mobile leaderboard screen.
+- task/premium-c-telematics (opus): C4 pagination (StrydeOS cursor helper -> web trips + admin + mobile FlashList), C1+C2 real expo-location capture replacing the setTimeout fake + "Start my journey" and post-trip correction (Keith Q2), C3 mobile trip detail 5-factor + polyline sourced from SCORE_WEIGHTS, C5 the refund moment.
+Both told: install deps in root + functions + mobile; Expo Go mock-Firebase trap; write points to the batches subcollection; never retype score weights.
+
+## Wave C merged into premium-lift/main (9 Aug)
+Clean merge, no conflicts. Verified on the merged branch: tsc CLEAN; vitest 564 passed | 2 todo | 0 failed (was 542, main baseline 518).
+Wave C's own gates: test:integration 15 passed (was 9), test:rules 99 (was 96), lint byte-identical to baseline, mobile tsc 5 -> 3 errors, expo export iOS bundle 5.16 MB with new copy confirmed present in the Hermes bytecode.
+
+## Wave E (iOS unblock) launched (9 Aug)
+task/premium-e-ios off premium-lift/main, assigned to the wave-c-telematics agent (it diagnosed the failure). Scope: (1) apply the proven use_modular_headers! Podfile fix + bump react-native-gesture-handler past the iPhoneSimulator26.5 incompatibility, authorised as a shared-dep change on this branch only; (2) capture EVERY mobile screen - no mobile screen in this entire lift has been seen running; (3) judge them against the design gate (Score -> Cashback -> Pool hierarchy, Instrument Glass vs generic dark mode) and name what falls short.
+This closes the biggest verification gap in the lift. Per feedback_shipped_means, nothing mobile is "shipped" until this lands.
+
+## ALL SIX WAVES INTEGRATED (9 Aug) - premium-lift/main
+Wave B merged clean (no conflicts). Final verified state on the integration branch:
+- npm run check (root tsc): CLEAN
+- npx vitest run: 584 passed | 2 todo | 0 FAILED (main baseline 518, so +66 tests)
+- design laws: ALL GREEN across 5 routes
+- Wave B's own gates: test:rules 117 passed (9 files), test:integration 19 passed (5 files)
+- Wave C's own gates: test:integration 15, test:rules 99, expo iOS export 5.16 MB
+Merge order: 0-truth -> a-mobile -> m-marketing -> a-web (1 conflict, trust.tsx, both fixes kept) -> c-telematics -> b-community.
+
+## Wave B notes worth keeping
+- B3 deviation: there was NO pool history to chart because communityPool/current was a single mutable doc that finalizePoolPeriod rolled forward IN PLACE, destroying each closed period. Now archives to communityPool/current/history/{period} before rolling. Invents nothing, adds no funding path (D6 untouched). Consequence: the chart is honestly empty until the first period closes; 8-period case proven in the emulator, not the UI. PoolPanel plots PARTICIPATION not money, because participation is real today and pool value is not.
+- Wave B found and closed a hole in its OWN work: /invite/:code redirected a signed-out visitor to /signup?invite=CODE and NOTHING consumed the parameter - account created, code dropped, friendship never formed, no error to either person. Caught only by driving the redirect in a real browser. usePendingInvite now stashes it in sessionStorage and redeems once a user exists. LESSON: a link that "works" is not a flow that works.
+- Wave B also fixed getPreviousPeriod in the leaderboard cron - it still used the calendar-year+ISO-week divergence Wave 0 fixed elsewhere. It feeds movement indicators, so it fails QUIETLY: around New Year every change reads 0 and the board looks frozen, not broken.
+- Deleted CommunityPool.tsx and OptimizedComponents.tsx: unreachable, and CommunityPool carried invented fallbacks (105,000 pool, 1,000 participants, 800 safe drivers, "4.2% of premium"). Dead code that fabricates is one import from shipping.
+- Design laws caught two things on the merged branch that eyes missed: SplashScreen painted retired-slate gradient stops (#0f172a/#1e293b) over EVERY route, and Wave 0's new FCA line on /trust rendered at 12px, under the body floor. Both fixed.
+- Known limit: redeemInvite is two writes not a transaction (invite and friendship sit under different rule blocks). Reports honestly if the second fails; atomicity belongs in a callable. Leaderboard pagination is in-memory by design (a board is ONE doc, max 100 rankings).
+
+## REMAINING
+- Wave E (iOS unblock + on-device capture): task/premium-e-ios created, agent hit the account session limit at 17:30, resets 19:30. NOT started.
+- axe accessibility: never run.
+- Wave D (rewards truth, notifications, feedback prompt, starting-score explainer): not started.
