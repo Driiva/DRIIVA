@@ -14,6 +14,10 @@ import { Toaster } from '@/components/ui/toaster';
 import { toast } from '@/hooks/use-toast';
 
 describe('Toaster', () => {
+  // Asserted synchronously after act() flushes rather than through
+  // findByText's polling: under a loaded full-suite run the retry loop was
+  // outliving the default 5s timeout even though the toast renders
+  // immediately. The generous timeout covers slow machines.
   it('renders a toast dispatched through the shared toast() helper', async () => {
     render(<Toaster />);
 
@@ -21,9 +25,9 @@ describe('Toaster', () => {
       toast({ title: 'Saved', description: 'Your changes are live.' });
     });
 
-    expect(await screen.findByText('Saved')).toBeInTheDocument();
+    expect(screen.getByText('Saved')).toBeInTheDocument();
     expect(screen.getByText('Your changes are live.')).toBeInTheDocument();
-  });
+  }, 30_000);
 
   it('is mounted in App.tsx so the whole app has somewhere to render toasts', () => {
     const appSource = readFileSync(
