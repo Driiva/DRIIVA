@@ -140,7 +140,7 @@ export default function InstallPrompt() {
               className="text-white text-sm font-semibold px-4 py-2 rounded-xl flex-shrink-0"
               style={{
                 background: 'var(--app-primary)',
-                boxShadow: '0 4px 16px rgba(59, 130, 246, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15)',
+                boxShadow: '0 4px 16px rgba(var(--app-primary-rgb), 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15)',
               }}
             >
               Install

@@ -155,7 +155,7 @@ export default function Welcome() {
         >
           <div 
             className="welcome-card-new max-w-md backdrop-blur-sm bg-black/20 border border-white/10 rounded-3xl" 
-            style={{ boxShadow: '0 0 60px rgba(139, 92, 246, 0.15), 0 0 120px rgba(236, 72, 153, 0.08)' }}
+            style={{ boxShadow: '0 0 60px rgba(var(--app-primary-rgb), 0.15), 0 0 120px rgba(var(--app-primary-rgb), 0.08)' }}
             aria-live="polite"
           >
             <AnimatePresence mode="wait">
@@ -284,10 +284,7 @@ export default function Welcome() {
           >
             Terms
           </button>
-          <span 
-            className="absolute right-3 bottom-1 text-white/35 text-[10px] italic"
-            style={{ fontFamily: 'Inter, sans-serif' }}
-          >
+          <span className="absolute right-3 bottom-1 text-white/35 text-[13px]">
             driiva © 2026
           </span>
         </div>

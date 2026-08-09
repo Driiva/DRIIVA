@@ -362,7 +362,7 @@ export default function QuickOnboarding() {
       {/* Background orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 -left-20 w-80 h-80 bg-[#d4850a]/12 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-[#6366f1]/16 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-[var(--app-primary)]/15 rounded-full blur-3xl" />
       </div>
 
       <div className="relative z-10 flex-1 flex flex-col p-6 max-w-lg mx-auto w-full">

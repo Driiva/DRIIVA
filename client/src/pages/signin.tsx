@@ -283,7 +283,7 @@ export default function SignIn() {
             ref={cardRef}
             className="w-full parallax-content"
             style={{
-              background: 'rgba(20, 20, 30, 0.7)',
+              background: 'var(--app-surface-1)',
               border: '1px solid rgba(255, 255, 255, 0.1)',
               backdropFilter: 'blur(20px)',
               borderRadius: '20px',
@@ -330,12 +330,12 @@ export default function SignIn() {
                 )}
 
                 {connectionStatus === 'unavailable' && (
-                  <div className="mt-3 px-3 py-1 rounded-full text-xs bg-red-500/20 text-red-300 border border-red-500/30">
+                  <div className="mt-3 px-3 py-1 text-[13px] status-chip status-chip-err">
                     Service Unavailable
                   </div>
                 )}
                 {connectionStatus === 'connected' && !isReturningUser && (
-                  <div className="mt-3 px-3 py-1 rounded-full text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  <div className="mt-3 px-3 py-1 text-[13px] status-chip status-chip-ok">
                     Connected
                   </div>
                 )}
@@ -401,7 +401,7 @@ export default function SignIn() {
                   <button
                     type="button"
                     onClick={() => setLocation("/forgot-password")}
-                    className="text-xs text-white/50 hover:text-cyan-400 transition-colors"
+                    className="text-[13px] text-white/50 hover:text-[var(--app-primary)] transition-colors"
                   >
                     Forgot password?
                   </button>
@@ -417,7 +417,7 @@ export default function SignIn() {
                       border: '1px solid rgba(220, 38, 38, 0.3)',
                     }}
                   >
-                    <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+                    <AlertCircle className="w-4 h-4 text-[var(--err)] flex-shrink-0 mt-0.5" />
                     <span className="text-red-300 text-sm">{loginError}</span>
                   </motion.div>
                 )}
@@ -449,7 +449,7 @@ export default function SignIn() {
                 {/* Divider */}
                 <div className="flex items-center gap-3 py-1">
                   <div className="flex-1 h-px bg-white/15" />
-                  <span className="text-white/40 text-xs uppercase tracking-wider">or</span>
+                  <span className="text-white/40 text-[13px] uppercase tracking-wider">or</span>
                   <div className="flex-1 h-px bg-white/15" />
                 </div>
 
@@ -487,7 +487,7 @@ export default function SignIn() {
                   <>
                     <div className="flex items-center gap-3 py-1">
                       <div className="flex-1 h-px bg-white/15" />
-                      <span className="text-white/40 text-xs uppercase tracking-wider">or</span>
+                      <span className="text-white/40 text-[13px] uppercase tracking-wider">or</span>
                       <div className="flex-1 h-px bg-white/15" />
                     </div>
                     <BiometricAuth
@@ -527,7 +527,7 @@ export default function SignIn() {
                     <button
                       type="button"
                       onClick={() => setLocation("/demo")}
-                      className="text-emerald-400 hover:text-emerald-300 font-medium"
+                      className="text-[var(--ok)] hover:text-emerald-300 font-medium"
                     >
                       Try demo mode
                     </button>
@@ -540,7 +540,7 @@ export default function SignIn() {
                         setEmailOrUsername('');
                         window.location.reload();
                       }}
-                      className="text-white/30 hover:text-white/50 text-xs transition-colors"
+                      className="text-white/30 hover:text-white/50 text-[13px] transition-colors"
                     >
                       Not {lastUser.name.split(' ')[0]}? Switch account
                     </button>

@@ -195,7 +195,7 @@ export default function VerifyEmail() {
             ref={cardRef}
             className="w-full parallax-content"
             style={{
-              background: "rgba(20, 20, 30, 0.7)",
+              background: "var(--app-surface-1)",
               border: "1px solid rgba(255, 255, 255, 0.1)",
               backdropFilter: "blur(20px)",
               borderRadius: "20px",

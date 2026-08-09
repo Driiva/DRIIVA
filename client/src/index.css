@@ -568,7 +568,7 @@ button:active:not(:disabled), .btn:active:not(:disabled) {
 input:focus, select:focus, textarea:focus {
   outline: 2px solid var(--primary-purple);
   outline-offset: 2px;
-  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1);
+  box-shadow: 0 0 0 4px rgba(var(--app-primary-rgb), 0.1);
 }
 
 /* Interactive Element Feedback */
@@ -656,8 +656,8 @@ h1, h2, h3, h4, h5, h6, .font-display {
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 10px rgba(139, 92, 246, 0.3); }
-  50% { box-shadow: 0 0 20px rgba(139, 92, 246, 0.5); }
+  0%, 100% { box-shadow: 0 0 10px rgba(var(--app-primary-rgb), 0.3); }
+  50% { box-shadow: 0 0 20px rgba(var(--app-primary-rgb), 0.5); }
 }
 
 .animate-fade-in {
@@ -768,7 +768,7 @@ h1, h2, h3, h4, h5, h6, .font-display {
 [role="slider"] {
   box-shadow: 
     0 2px 8px rgba(113, 63, 18, 0.6),
-    0 0 20px rgba(88, 28, 135, 0.4) !important;
+    0 0 20px rgba(var(--app-primary-rgb), 0.4) !important;
 }
 
 /* Focus States for Accessibility */
@@ -966,7 +966,7 @@ select:focus {
   background: 
     radial-gradient(ellipse 120% 80% at 15% 20%, #9d1b30 0%, transparent 50%),
     radial-gradient(ellipse 100% 100% at 85% 80%, #6b46c1 0%, transparent 50%),
-    radial-gradient(ellipse 80% 60% at 50% 50%, rgba(139, 92, 246, 0.4) 0%, transparent 60%),
+    radial-gradient(ellipse 80% 60% at 50% 50%, rgba(var(--app-primary-rgb), 0.4) 0%, transparent 60%),
     radial-gradient(ellipse 60% 40% at 30% 70%, rgba(255,107,53,0.15) 0%, transparent 50%),
     linear-gradient(160deg, #7a1528 0%, #5e1020 30%, #4c1d5c 60%, #4a2875 100%);
 }
@@ -1116,12 +1116,15 @@ select:focus {
 }
 
 .hero-cta-green {
-  background: linear-gradient(135deg, #065f46 0%, #059669 50%, #047857 100%);
-  box-shadow: 0 4px 16px rgba(5, 150, 105, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  /* The primary action wears the one accent. It used to be an emerald
+     gradient, which spends the colour this product reserves for a positive
+     driving signal on a button that means nothing of the sort. */
+  background: var(--app-primary);
+  box-shadow: 0 4px 16px rgba(var(--app-primary-rgb), 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 .hero-cta-green:hover {
-  background: linear-gradient(135deg, #047857 0%, #10b981 50%, #065f46 100%);
+  background: var(--app-surface-3);
 }
 
 .hero-cta-tertiary {
@@ -1137,14 +1140,14 @@ select:focus {
   border-radius: 1rem;
   border: none;
   outline: none;
-  background: rgba(127, 29, 29, 0.3);
+  background: var(--app-surface-2);
   cursor: pointer;
   transition: transform 0.15s ease, color 0.2s ease, background 0.2s ease;
 }
 
 .hero-cta-tertiary:hover {
   color: white;
-  background: rgba(127, 29, 29, 0.5);
+  background: var(--app-surface-3);
 }
 
 .hero-cta-tertiary:active {
@@ -1168,7 +1171,7 @@ select:focus {
 
 .signin-input:focus {
   outline: none;
-  border-color: rgba(59, 130, 246, 0.5);
+  border-color: rgba(var(--app-primary-rgb), 0.5);
   background: rgba(255, 255, 255, 0.1);
 }
 
@@ -1317,7 +1320,7 @@ body:has(.welcome-page-container) .animated-bg-container {
   background:
     radial-gradient(ellipse 120% 80% at 15% 20%, #9d1b30 0%, transparent 50%),
     radial-gradient(ellipse 100% 100% at 85% 80%, #6b46c1 0%, transparent 50%),
-    radial-gradient(ellipse 80% 60% at 50% 50%, rgba(139, 92, 246, 0.4) 0%, transparent 60%),
+    radial-gradient(ellipse 80% 60% at 50% 50%, rgba(var(--app-primary-rgb), 0.4) 0%, transparent 60%),
     linear-gradient(160deg, #7a1528 0%, #5e1020 30%, #4c1d5c 60%, #4a2875 100%);
 }
 
@@ -1340,7 +1343,7 @@ body:has(.welcome-page-container) .animated-bg-container {
 .animated-bg-orb-2 {
   width: 400px;
   height: 400px;
-  background: radial-gradient(circle, rgba(139, 92, 246, 0.4) 0%, transparent 30%);
+  background: radial-gradient(circle, rgba(var(--app-primary-rgb), 0.4) 0%, transparent 30%);
   top: 40%;
   right: -80px;
   animation: floatOrb 25s infinite ease-in-out reverse;
@@ -1392,7 +1395,7 @@ body:has(.welcome-page-container) .animated-bg-container {
 .dashboard-glass-card {
   backdrop-filter: blur(16px) saturate(180%);
   -webkit-backdrop-filter: blur(16px) saturate(180%);
-  background: rgba(30, 41, 59, 0.40);
+  background: var(--app-surface-1);
   border: 1px solid rgba(255, 255, 255, 0.10);
   border-radius: var(--radius-2xl);       /* 20px */
   padding: var(--card-padding-lg);         /* 20px */
@@ -1483,7 +1486,7 @@ body:has(.welcome-page-container) .animated-bg-container {
 .hero-orb-1 {
   width: 300px;
   height: 300px;
-  background: radial-gradient(circle at 50% 50%, rgba(255, 140, 60, 0.65) 0%, rgba(210, 100, 50, 0.35) 45%, transparent 70%);
+  background: radial-gradient(circle at 50% 50%, rgba(212, 133, 10, 0.55) 0%, rgba(160, 76, 42, 0.30) 45%, transparent 70%);
   top: 6%;
   left: -6%;
   animation: heroOrbWave1 26s cubic-bezier(0.45, 0, 0.55, 1) infinite;
@@ -1492,7 +1495,7 @@ body:has(.welcome-page-container) .animated-bg-container {
 .hero-orb-2 {
   width: 340px;
   height: 340px;
-  background: radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.55) 0%, rgba(88, 28, 135, 0.3) 45%, transparent 70%);
+  background: radial-gradient(circle at 50% 50%, rgba(var(--app-primary-rgb), 0.55) 0%, rgba(var(--app-primary-rgb), 0.3) 45%, transparent 70%);
   top: 42%;
   right: -12%;
   animation: heroOrbWave2 30s cubic-bezier(0.45, 0, 0.55, 1) infinite;
@@ -1501,7 +1504,7 @@ body:has(.welcome-page-container) .animated-bg-container {
 .hero-orb-3 {
   width: 220px;
   height: 220px;
-  background: radial-gradient(circle at 50% 50%, rgba(220, 90, 70, 0.5) 0%, rgba(139, 92, 246, 0.28) 45%, transparent 70%);
+  background: radial-gradient(circle at 50% 50%, rgba(160, 76, 42, 0.45) 0%, rgba(var(--app-primary-rgb), 0.28) 45%, transparent 70%);
   bottom: 12%;
   left: 8%;
   animation: heroOrbWave3 24s cubic-bezier(0.45, 0, 0.55, 1) infinite;
@@ -1546,13 +1549,13 @@ body:has(.welcome-page-container) .animated-bg-container {
   border-radius: 50%;
   background: radial-gradient(circle at 40% 35%,
     rgba(129, 140, 248, 0.9) 0%,
-    rgba(139, 92, 246, 0.7) 40%,
-    rgba(88, 28, 135, 0.5) 70%,
+    rgba(var(--app-primary-rgb), 0.7) 40%,
+    rgba(var(--app-primary-rgb), 0.5) 70%,
     transparent 100%
   );
   box-shadow:
     0 0 16px rgba(129, 140, 248, 0.4),
-    0 0 32px rgba(139, 92, 246, 0.2);
+    0 0 32px rgba(var(--app-primary-rgb), 0.2);
   animation: aiOrbPulse 3s ease-in-out infinite;
   flex-shrink: 0;
 }
@@ -1562,13 +1565,13 @@ body:has(.welcome-page-container) .animated-bg-container {
     transform: scale(1);
     box-shadow:
       0 0 16px rgba(129, 140, 248, 0.4),
-      0 0 32px rgba(139, 92, 246, 0.2);
+      0 0 32px rgba(var(--app-primary-rgb), 0.2);
   }
   50% {
     transform: scale(1.08);
     box-shadow:
       0 0 24px rgba(129, 140, 248, 0.6),
-      0 0 48px rgba(139, 92, 246, 0.35);
+      0 0 48px rgba(var(--app-primary-rgb), 0.35);
   }
 }
 
@@ -1611,8 +1614,8 @@ body:has(.welcome-page-container) .animated-bg-container {
 
 .reward-glow-claimed {
   box-shadow:
-    0 0 0 1px rgba(139, 92, 246, 0.5),
-    0 0 16px rgba(139, 92, 246, 0.12),
+    0 0 0 1px rgba(var(--app-primary-rgb), 0.5),
+    0 0 16px rgba(var(--app-primary-rgb), 0.12),
     0 8px 32px rgba(0, 0, 0, 0.3),
     inset 0 2px 8px rgba(255, 255, 255, 0.05);
 }
@@ -1663,4 +1666,29 @@ body:has(.welcome-page-container) .animated-bg-container {
 @keyframes readout-rise {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ────────────────────────────────────────────────────────────
+   STATUS CHIP - a chamfered tile, never a capsule.
+   Colour is paired with wording, so the state is legible to a
+   reader who cannot separate the hues.
+   ──────────────────────────────────────────────────────────── */
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+}
+
+.status-chip-ok {
+  color: var(--ok);
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.25);
+}
+
+.status-chip-err {
+  color: var(--err);
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.25);
 }
