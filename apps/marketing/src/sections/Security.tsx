@@ -77,7 +77,7 @@ const CARDS: readonly TrustCard[] = [
   {
     id: 'capital',
     title: 'Capital-backed, not crowd-funded',
-    body: 'Underwritten by a UK-regulated reinsurer. Your claims are paid, score refunds or not, the day you crash.',
+    body: 'Claims will be met from reinsurance capital, not from the refund pool, so a claim and a refund never compete. The capital comes from a PRA-regulated UK reinsurer once underwriting begins.',
     icon: Capital,
   },
 ] as const;

@@ -325,10 +325,11 @@ export default function TrustPage() {
         <GlassSection>
           <h2 className="text-lg font-semibold mb-2">Who Underwrites Your Policy</h2>
           <p className="text-[15px] text-white/70 leading-relaxed">
-            Driiva is a technology and distribution platform. Insurance policies are
-            underwritten by our capacity partner and are subject to their terms and
-            conditions. <strong className="text-white">Driiva is not the insurer.</strong> Full
-            underwriting details are provided in your policy documentation.
+            Driiva is a technology and distribution platform.{' '}
+            <strong className="text-white">Driiva is not the insurer.</strong> When we are
+            authorised to distribute policies, they will be underwritten by a regulated
+            capacity partner and subject to that partner's terms, and we will name them
+            here before you can buy anything. No capacity partner is in place today.
           </p>
         </GlassSection>
 
@@ -353,8 +354,9 @@ export default function TrustPage() {
             amounts shown anywhere in the Driiva app are illustrative projections based on
             driving score performance. Actual refunds depend on community pool performance,
             claims experience, and underwriting criteria. Past performance is not a guarantee
-            of future refunds. Driiva is a trading name of Driiva Ltd, authorised and
-            regulated by the Financial Conduct Authority.
+            of future refunds. Driiva is a trading name of Driiva Ltd, which is pending
+            FCA authorisation and does not currently hold permission to carry out
+            regulated insurance activities.
           </p>
         </GlassSection>
 
