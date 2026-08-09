@@ -60,7 +60,7 @@ export function StepWelcome({ nextStep }: StepWelcomeProps) {
           </div>
           <div>
             <h3 className="text-white font-medium">Community Pool</h3>
-            <p className="text-white/50 text-sm">Join thousands of drivers sharing rewards</p>
+            <p className="text-white/50 text-sm">Safe drivers share what the pool does not pay out in claims</p>
           </div>
         </div>
       </div>

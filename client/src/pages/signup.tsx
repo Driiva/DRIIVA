@@ -231,7 +231,7 @@ export default function Signup() {
         className="flex-1"
       >
         <h1 className="text-3xl font-bold text-white mb-2">Create Account</h1>
-        <p className="text-white/60 mb-8">Join thousands of safer drivers</p>
+        <p className="text-white/60 mb-8">Get scored on how you actually drive</p>
 
         {error && (
           <motion.div
