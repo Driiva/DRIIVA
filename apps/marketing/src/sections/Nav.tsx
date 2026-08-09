@@ -1,4 +1,4 @@
-import { type MouseEvent } from 'react';
+import { type MouseEvent, useEffect, useState } from 'react';
 import { useLocation } from 'wouter';
 
 interface NavLink {
@@ -11,6 +11,8 @@ const LINKS: readonly NavLink[] = [
   { href: '#about', label: 'About Us' },
   { href: '#security', label: 'Security' },
 ] as const;
+
+const SCRIM_AFTER_PX = 40;
 
 function smoothScrollTo(target: string) {
   if (!target || target === '#') {
@@ -27,6 +29,16 @@ function smoothScrollTo(target: string) {
 export function Nav() {
   const [location, setLocation] = useLocation();
   const onHome = location === '/';
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    function onScroll() {
+      setScrolled(window.scrollY > SCRIM_AFTER_PX);
+    }
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   function handleAnchor(e: MouseEvent<HTMLAnchorElement>, href: string) {
     e.preventDefault();
@@ -55,7 +67,8 @@ export function Nav() {
   }
 
   return (
-    <nav className="nav-pill" aria-label="Primary">
+    <nav className={`nav-pill${scrolled ? ' is-scrolled' : ''}`} aria-label="Primary">
+      <div className="nav-scrim" aria-hidden="true" />
       <a href="/" className="nav-pill-logo" aria-label="Driiva home" onClick={handleHome}>
         <img src="/brand/logo-ii-mark.png" alt="Driiva" />
       </a>

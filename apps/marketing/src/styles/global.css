@@ -172,6 +172,23 @@ main {
   background: rgba(255, 255, 255, 0.14);
   border-color: rgba(255, 255, 255, 0.32);
 }
+/* Keith 5 Aug: nav loses legibility over busy sections once scrolled -
+   scrim fades in behind the pill, never a solid bar. */
+.nav-scrim {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 140px;
+  background: linear-gradient(180deg, rgba(5, 5, 9, 0.72) 0%, rgba(5, 5, 9, 0.4) 55%, transparent 100%);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  opacity: 0;
+  transition: opacity 0.35s var(--ease);
+  z-index: -1;
+  pointer-events: none;
+}
+.nav-pill.is-scrolled .nav-scrim {
+  opacity: 1;
+}
 
 @media (max-width: 820px) {
   .nav-links {
