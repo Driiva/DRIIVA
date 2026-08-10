@@ -21,7 +21,8 @@
 - [x] P3 feature-plan.md written
 - [x] P4 implementation-brief.md written (contract, budgets, 16 systems, design gate)
 - [~] P5 build waves: A-web + A-mobile agents launched (worktrees)
-- [ ] P6 Verify (suites green, screenshots, checklist.design QA) + ship + report to Jamal
+- [~] P6 Verify: suites green (597 passed vs 518 baseline, rules 136, integration 29, tsc clean, design laws green). OUTSTANDING: on-device screenshots (blocked on the iOS native build), axe, checklist.design pass, and a clean logic-gap-harness re-run over the finished lift.
+- [ ] P7 GATED ON JAMAL (cannot proceed without him): FCA wording -> counsel; starting score 100 vs Keith's 70 and replaced-not-averaged; `firebase login --reauth` so an iOS app can be registered (no GoogleService-Info.plist exists); background-location plist decision; D6 pool money model.
 
 ## Decisions
 - Planning files live in docs/premium-lift/ (root files belong to the rebuild dossier).
