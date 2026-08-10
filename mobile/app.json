@@ -45,6 +45,20 @@
       "edgeToEdgeEnabled": true
     },
     "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static",
+            "forceStaticLinking": [
+              "RNFBApp",
+              "RNFBAuth",
+              "RNFBFirestore",
+              "RNFBMessaging"
+            ]
+          }
+        }
+      ],
       "expo-router",
       [
         "expo-location",
@@ -53,7 +67,7 @@
           "isAndroidBackgroundLocationEnabled": true
         }
       ],
-      "./plugins/with-modular-headers"
+      "@react-native-firebase/app"
     ],
     "experiments": {
       "typedRoutes": true
