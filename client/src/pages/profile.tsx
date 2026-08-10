@@ -126,7 +126,7 @@ function CoverageTypeSection({ currentScore, coverageType, premiumAmount, loadin
               {!coverageType ? (
                 <p className="text-sm text-white/50">
                   You have no cover in place. Driiva cannot issue policies until it is
-                  FCA-authorised, so there is nothing to summarise here yet. Your driving
+                  through the FCA regulatory sandbox, so there is nothing to summarise here yet. Your driving
                   score is still being recorded in the meantime.
                 </p>
               ) : (

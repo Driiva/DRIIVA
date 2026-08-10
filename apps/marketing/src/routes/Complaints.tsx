@@ -5,7 +5,7 @@ export function Complaints() {
     <LegalPage title="Complaints" updated="2026-05-19">
       <p className="legal-lede">
         We want to hear about it if something has gone wrong. This page sets out how to raise a
-        complaint and what to expect from us. When Driiva is FCA-authorised to sell motor
+        complaint and what to expect from us. When Driiva is through the FCA regulatory sandbox and able to sell motor
         insurance, the Financial Ombudsman Service route below will apply to any policy-related
         complaint.
       </p>
@@ -51,7 +51,7 @@ export function Complaints() {
 
       <h2>4. Pre-authorisation complaints</h2>
       <p>
-        Until we are FCA-authorised, the FOS route is not yet available. For any matter relating
+        Until we are through the FCA regulatory sandbox, the FOS route is not yet available. For any matter relating
         to the marketing site or the waitlist, the Information Commissioner's Office (data
         matters) and the Advertising Standards Authority (marketing claims) remain available
         alongside our internal process.

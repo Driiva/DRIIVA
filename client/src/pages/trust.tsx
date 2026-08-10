@@ -310,14 +310,15 @@ export default function TrustPage() {
             now stated as the pending position the rest of the product uses.
           */}
           <div className="flex flex-wrap gap-2">
-            <RegBadge label="Pending FCA authorisation" color="var(--app-primary-text)" />
+            <RegBadge label="Working towards FCA sandbox" color="var(--app-primary-text)" />
             <RegBadge label="UK GDPR Compliant" color="var(--ok)" />
             <RegBadge label="ICO Registered" color="var(--app-primary-text)" />
             <RegBadge label="No Data Sold" color="var(--ok)" />
           </div>
           <p className="text-[15px] text-white/60 mt-3 leading-relaxed">
-            Driiva Ltd's insurance product is pending FCA authorisation. We do not
-            currently hold permission to carry out regulated insurance activities.
+            Driiva is working towards the FCA regulatory sandbox. We are not authorised
+            by the FCA, we are not operating under an MGA, and we cannot sell
+            insurance yet.
           </p>
         </GlassSection>
 
@@ -354,9 +355,8 @@ export default function TrustPage() {
             amounts shown anywhere in the Driiva app are illustrative projections based on
             driving score performance. Actual refunds depend on community pool performance,
             claims experience, and underwriting criteria. Past performance is not a guarantee
-            of future refunds. Driiva is a trading name of Driiva Ltd, which is pending
-            FCA authorisation and does not currently hold permission to carry out
-            regulated insurance activities.
+            of future refunds. Driiva is working towards the FCA regulatory sandbox. It is not authorised by
+            the FCA and cannot sell insurance yet.
           </p>
         </GlassSection>
 

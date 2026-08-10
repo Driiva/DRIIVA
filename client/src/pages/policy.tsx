@@ -171,7 +171,7 @@ export default function PolicyPage() {
                 */}
                 <p className="text-sm text-gray-400">
                   Cover is set by the policy your insurer issues. Driiva cannot issue one
-                  until it is FCA-authorised, so there is nothing to list here yet.
+                  until it is through the FCA regulatory sandbox, so there is nothing to list here yet.
                 </p>
               </div>
             </div>
@@ -224,7 +224,7 @@ export default function PolicyPage() {
           {/* Refund timeline trust line */}
           <div className="backdrop-blur-xl bg-emerald-500/[0.06] border border-emerald-500/[0.15] rounded-xl p-4 mb-6">
             <p className="text-sm text-emerald-200/80 text-center">
-              Refunds are calculated at the end of each period. Nothing is paid until Driiva is FCA-authorised and the pool is funded.
+              Refunds are calculated at the end of each period. Nothing is paid until Driiva is through the FCA regulatory sandbox and the pool is funded.
             </p>
           </div>
 

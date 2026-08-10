@@ -20,7 +20,7 @@ const QS: readonly Q[] = [
   },
   {
     q: 'Is this legal? Are you FCA-regulated?',
-    a: 'Not yet. Our application to the FCA Regulatory Sandbox is in progress, and capital backing will come from a PRA-regulated UK reinsurer once underwriting begins. We cannot sell policies today, which is why this is a waitlist, not a checkout.',
+    a: 'Not yet. We are working towards the FCA regulatory sandbox, we are not authorised, and we are not operating under an MGA. We cannot sell policies today, which is why this is a waitlist and not a checkout.',
   },
   {
     q: 'Do I need to install a dashcam or OBD dongle?',

@@ -47,7 +47,7 @@ export function Pool() {
 
           <div className="pool-bar-head">
             <span className="label">Illustration, not a quote</span>
-            <span className="value">Nothing is paid until we are FCA-authorised</span>
+            <span className="value">Nothing is paid until we are through the FCA sandbox</span>
           </div>
 
           <div className="pool-split">

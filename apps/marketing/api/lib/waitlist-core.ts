@@ -206,7 +206,7 @@ function confirmationEmailHtml(position: number): string {
       You are #${position} on the Driiva waitlist. We will email you the moment the beta opens for sign-ups.
     </p>
     <p style="font-size:13.5px;line-height:1.55;color:rgba(255,255,255,0.55);margin:24px 0 0;">
-      Driiva Ltd's insurance product is pending FCA authorisation. The waitlist is not a policy offer.
+      Driiva is working towards the FCA regulatory sandbox and is not authorised. The waitlist is not a policy offer.
     </p>
   </div>
 </body></html>`;
@@ -217,7 +217,7 @@ function confirmationEmailText(position: number): string {
 
 We'll email you the moment the beta opens for sign-ups.
 
-Driiva Ltd's insurance product is pending FCA authorisation. The waitlist is not a policy offer.
+Driiva is working towards the FCA regulatory sandbox and is not authorised. The waitlist is not a policy offer.
 
 — Driiva`;
 }

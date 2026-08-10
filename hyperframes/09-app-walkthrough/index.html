@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8" />
+<title>Driiva - App Walkthrough</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+  rel="stylesheet"
+/>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #0a0a14;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  [data-composition-id="app-walkthrough"] {
+    position: relative;
+    width: 1080px;
+    height: 1920px;
+    overflow: hidden;
+    background: #0a0a14;
+    color: #f8fafc;
+  }
+
+  .scene {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  /* ============ SCENE 1 - LOGIN (from 04-login-hero) ============ */
+  #scene-login {
+    background: #0a0a14;
+    z-index: 4;
+  }
+  .s1-bg-gradient {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(120% 90% at 15% 95%, rgba(180, 80, 20, 0.9) 0%, rgba(180, 80, 20, 0) 55%),
+      radial-gradient(110% 85% at 85% 5%, rgba(40, 10, 80, 0.9) 0%, rgba(40, 10, 80, 0) 55%),
+      linear-gradient(135deg, #160a1e 0%, #0a0a14 60%, #0a0a14 100%);
+  }
+  .s1-bg-warmth {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(80% 60% at 25% 90%, rgba(210, 110, 35, 0.35) 0%, rgba(210, 110, 35, 0) 55%),
+      radial-gradient(70% 55% at 80% 10%, rgba(70, 25, 120, 0.35) 0%, rgba(70, 25, 120, 0) 55%);
+    mix-blend-mode: screen;
+    opacity: 0;
+  }
+  .s1-beta-label {
+    position: absolute;
+    top: 220px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 18px;
+    font-weight: 500;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: #f8fafc;
+    opacity: 0;
+    white-space: nowrap;
+  }
+  .s1-card-stage {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 778px;
+    height: 1640px;
+    perspective: 1200px;
+  }
+  .s1-app-screen {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: #12111f;
+    border-radius: 56px;
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    transform: rotateY(-4deg) rotateX(2deg);
+    display: flex;
+    flex-direction: column;
+    padding: 32px 56px 72px 56px;
+    opacity: 0;
+  }
+  .s1-status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #8b8b9e;
+    font-size: 22px;
+    font-weight: 500;
+    padding: 8px 8px 0 8px;
+  }
+  .s1-status-bar .bars { display: inline-flex; gap: 6px; align-items: center; }
+  .s1-status-bar .bar { display: inline-block; width: 6px; border-radius: 2px; background: #8b8b9e; }
+  .s1-status-bar .bar.b1 { height: 6px; }
+  .s1-status-bar .bar.b2 { height: 10px; }
+  .s1-status-bar .bar.b3 { height: 14px; }
+  .s1-status-bar .bar.b4 { height: 18px; }
+  .s1-status-bar .battery { width: 36px; height: 16px; border: 2px solid #8b8b9e; border-radius: 4px; position: relative; margin-left: 8px; }
+  .s1-status-bar .battery::after { content: ""; position: absolute; right: -5px; top: 3px; width: 3px; height: 6px; background: #8b8b9e; border-radius: 0 2px 2px 0; }
+  .s1-status-bar .battery::before { content: ""; position: absolute; top: 2px; left: 2px; bottom: 2px; width: 72%; background: #8b8b9e; border-radius: 2px; }
+  .s1-gap-80 { height: 80px; }
+  .s1-gap-60 { height: 60px; }
+  .s1-gap-40 { height: 40px; }
+  .s1-gap-24 { height: 24px; }
+  .s1-gap-16 { height: 16px; }
+  .s1-gap-12 { height: 12px; }
+  .s1-gap-8  { height: 8px; }
+  .s1-wordmark { display: flex; justify-content: center; align-items: center; height: 56px; }
+  .s1-wordmark .mark {
+    width: 260px; height: 56px;
+    background-image: url("assets/driiva-logo-white.png");
+    background-repeat: no-repeat; background-position: center; background-size: contain;
+  }
+  .s1-welcome { text-align: center; font-family: "Inter Tight", sans-serif; font-weight: 600; font-size: 44px; color: #f8fafc; letter-spacing: -0.01em; line-height: 1.1; }
+  .s1-subline { text-align: center; font-size: 22px; color: #8b8b9e; font-weight: 400; }
+  .s1-input { background: #241f40; border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 18px; padding: 22px 24px; color: #8b8b9e; font-size: 22px; font-weight: 400; }
+  .s1-btn-primary { background: #5b4dc9; color: #ffffff; border-radius: 18px; padding: 24px; text-align: center; font-size: 22px; font-weight: 500; letter-spacing: 0.01em; }
+  .s1-passkey { text-align: center; font-size: 20px; color: #8b8b9e; text-decoration: underline; text-underline-offset: 4px; }
+  .s1-spacer-flex { flex: 1 1 auto; }
+  .s1-connected-wrap { display: flex; justify-content: center; position: relative; }
+  .s1-connected { display: inline-flex; align-items: center; gap: 10px; border: 1px solid rgba(78, 205, 196, 0.3); border-radius: 100px; padding: 10px 18px; font-size: 18px; color: #4ecdc4; font-weight: 500; background: rgba(78, 205, 196, 0.05); }
+  .s1-connected .dot { width: 8px; height: 8px; border-radius: 50%; background: #4ecdc4; box-shadow: 0 0 8px rgba(78, 205, 196, 0.6); }
+
+  /* ============ SCENE 2 - WEEKLY SCORE (from 01-weekly-score) ============ */
+  #scene-score {
+    background: #1a0533;
+    z-index: 3;
+    opacity: 0;
+  }
+  .s2-bg-gradient {
+    position: absolute;
+    inset: -10%;
+    background: radial-gradient(ellipse 70% 60% at 50% 45%, #c45c13 0%, #7a2f1f 35%, #3a1a3a 65%, #1a0533 100%);
+  }
+  .s2-bg-vignette {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 80% 80% at 50% 50%, rgba(0, 0, 0, 0) 40%, rgba(0, 0, 0, 0.45) 100%);
+  }
+  .s2-scene-content {
+    position: relative;
+    width: 100%; height: 100%;
+    padding: 320px 80px 200px;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    z-index: 2;
+  }
+  .s2-score-card {
+    width: 100%; max-width: 820px;
+    padding: 80px 72px 88px;
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.07);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    display: flex; flex-direction: column; align-items: center; gap: 28px;
+    opacity: 0;
+  }
+  .s2-score-label { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 18px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: #ffffff; opacity: 1; margin: 0; }
+  .s2-score-number { font-family: "Inter Tight", "Inter", sans-serif; font-size: 220px; font-weight: 700; line-height: 1; color: #ffffff; font-variant-numeric: tabular-nums; letter-spacing: -0.04em; margin: 8px 0 4px; }
+  .s2-score-rule { width: 60%; height: 1px; background: rgba(255, 255, 255, 0.15); border: 0; margin: 4px 0 8px; }
+  .s2-score-primary { font-size: 34px; font-weight: 500; color: #ffffff; margin: 0; text-align: center; letter-spacing: -0.01em; }
+  .s2-score-subline { font-size: 26px; font-weight: 400; color: #ffffff; opacity: 0.72; margin: 0; text-align: center; letter-spacing: -0.005em; }
+  .s2-logo {
+    position: absolute; bottom: 64px; left: 50%; transform: translateX(-50%);
+    height: 32px; width: auto; opacity: 0; z-index: 3;
+  }
+
+  /* ============ SCENE 3 - REFUND POOL (from 03-refund-pool) ============ */
+  #scene-refund {
+    background: linear-gradient(180deg, #0b0b1e 0%, #2a0a4a 100%);
+    z-index: 2;
+    opacity: 0;
+  }
+  .s3-eyebrow { position: absolute; top: 220px; left: 0; width: 100%; text-align: center; font-family: "JetBrains Mono", monospace; font-size: 16px; font-weight: 500; letter-spacing: 0.3em; color: #ffffff; opacity: 0; text-transform: uppercase; }
+  .s3-avatar-row { position: absolute; top: 38%; left: 50%; transform: translate(-50%, -50%); display: flex; gap: 24px; align-items: center; justify-content: center; }
+  .s3-avatar { width: 48px; height: 48px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.3); opacity: 0; }
+  .s3-avatar.a1 { background: #d4850a; }
+  .s3-avatar.a2 { background: #6b3fa0; }
+  .s3-avatar.a3 { background: #6366f1; }
+  .s3-avatar.a4 { background: #a04c2a; }
+  .s3-avatar.a5 { background: #818cf8; }
+  .s3-ripple { position: absolute; top: 38%; left: 50%; width: 80px; height: 80px; margin-left: -40px; margin-top: -40px; border-radius: 50%; border: 2px solid rgba(80,200,150,0.6); opacity: 0; }
+  .s3-headline-slot { position: absolute; top: calc(38% + 90px); left: 0; width: 100%; text-align: center; font-family: "Inter Tight", "Inter", sans-serif; font-weight: 700; color: #ffffff; }
+  .s3-headline-1, .s3-headline-2 { position: absolute; top: 0; left: 0; width: 100%; font-size: 36px; line-height: 1.2; opacity: 0; }
+  .s3-card {
+    position: absolute; left: 50%; top: 62%; transform: translate(-50%, -50%);
+    width: 80%; padding: 40px; border-radius: 24px;
+    background: rgba(255,255,255,0.07);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.12);
+    opacity: 0; text-align: left;
+  }
+  .s3-card-label { font-family: "JetBrains Mono", monospace; font-size: 14px; font-weight: 500; letter-spacing: 0.2em; color: #ffffff; opacity: 0.6; text-transform: uppercase; margin-bottom: 16px; }
+  .s3-card-amount { font-family: "Inter Tight", "Inter", sans-serif; font-size: 64px; font-weight: 700; color: #ffffff; font-variant-numeric: tabular-nums; line-height: 1; margin-bottom: 20px; }
+  .s3-card-sub { font-size: 16px; font-weight: 400; color: #ffffff; opacity: 0.7; line-height: 1.4; }
+
+  /* ============ SCENE 4 - OUTRO (from 02-brand-statement, scene 3) ============ */
+  #scene-outro {
+    background: #0d0d14;
+    z-index: 1;
+    opacity: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 28px;
+    padding: 120px 80px;
+  }
+  .s4-logo { height: 64px; width: auto; opacity: 0; }
+  .s4-tagline {
+    font-size: 32px; font-weight: 400; line-height: 1.5; color: #fafafa;
+    max-width: 820px; text-align: center; margin: 0; opacity: 0;
+  }
+  .s4-url { font-size: 22px; font-weight: 400; color: #4ecdc4; opacity: 0; margin: 0; }
+  .s4-veil { position: absolute; inset: 0; background: #0d0d14; opacity: 0; pointer-events: none; }
+</style>
+</head>
+<body>
+
+<div
+  data-composition-id="app-walkthrough"
+  data-width="1080"
+  data-height="1920"
+  data-start="0"
+  data-duration="13.0"
+  data-track-index="0"
+>
+
+  <!-- SCENE 1: LOGIN -->
+  <div class="scene" id="scene-login">
+    <div class="s1-bg-gradient"></div>
+    <div class="s1-bg-warmth" id="s1-warmth"></div>
+    <div class="s1-beta-label" id="s1-beta">The instrument opens.</div>
+    <div class="s1-card-stage">
+      <div class="s1-app-screen" id="s1-screen">
+        <div class="s1-status-bar">
+          <span>09:41</span>
+          <span class="bars">
+            <span class="bar b1"></span><span class="bar b2"></span><span class="bar b3"></span><span class="bar b4"></span>
+            <span class="battery"></span>
+          </span>
+        </div>
+        <div class="s1-gap-80"></div>
+        <div class="s1-wordmark"><div class="mark" role="img" aria-label="Driiva"></div></div>
+        <div class="s1-gap-60"></div>
+        <div class="s1-welcome">Welcome back.</div>
+        <div class="s1-gap-8"></div>
+        <div class="s1-subline">Sign in to continue.</div>
+        <div class="s1-gap-40"></div>
+        <div class="s1-input">you@email.com</div>
+        <div class="s1-gap-12"></div>
+        <div class="s1-input">••••••••</div>
+        <div class="s1-gap-24"></div>
+        <div class="s1-btn-primary">Continue</div>
+        <div class="s1-gap-16"></div>
+        <div class="s1-passkey">Use passkey instead</div>
+        <div class="s1-spacer-flex"></div>
+        <div class="s1-connected-wrap">
+          <div class="s1-connected"><span class="dot"></span><span>Connected</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCENE 2: WEEKLY SCORE -->
+  <div class="scene" id="scene-score">
+    <div class="s2-bg-gradient" id="s2-bg"></div>
+    <div class="s2-bg-vignette"></div>
+    <div class="s2-scene-content">
+      <div class="s2-score-card" id="s2-card">
+        <p class="s2-score-label">Community safety score</p>
+        <div class="s2-score-number" id="s2-number">0</div>
+        <hr class="s2-score-rule" />
+        <p class="s2-score-primary">Earned, not given.</p>
+        <p class="s2-score-subline">Top 12% of all UK telematics drivers.</p>
+      </div>
+    </div>
+    <img class="s2-logo" id="s2-logo" src="assets/driiva-logo-white.png" alt="Driiva" />
+  </div>
+
+  <!-- SCENE 3: REFUND POOL -->
+  <div class="scene" id="scene-refund">
+    <div class="s3-eyebrow" id="s3-eyebrow">THE REFUND POOL</div>
+    <div class="s3-avatar-row" id="s3-avatars">
+      <div class="s3-avatar a1"></div>
+      <div class="s3-avatar a2"></div>
+      <div class="s3-avatar a3"></div>
+      <div class="s3-avatar a4"></div>
+      <div class="s3-avatar a5"></div>
+    </div>
+    <div class="s3-ripple" id="s3-ripple"></div>
+    <div class="s3-headline-slot">
+      <div class="s3-headline-1" id="s3-head1">You drive well.</div>
+      <div class="s3-headline-2" id="s3-head2">So do they.</div>
+    </div>
+    <div class="s3-card" id="s3-card">
+      <div class="s3-card-label">COMMUNITY REFUND POOL</div>
+      <div class="s3-card-amount">£4,200</div>
+      <div class="s3-card-sub">Distributed at year end. No claims, no catch.</div>
+    </div>
+  </div>
+
+  <!-- SCENE 4: OUTRO -->
+  <div class="scene" id="scene-outro">
+    <img class="s4-logo" id="s4-logo" src="assets/driiva-logo-white.png" alt="Driiva" />
+    <p class="s4-tagline" id="s4-tagline">Insurance that reads every mile, not just the one that went wrong.</p>
+    <p class="s4-url" id="s4-url">driiva.co.uk</p>
+    <div class="s4-veil" id="s4-veil"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    window.__timelines = window.__timelines || {};
+    const tl = gsap.timeline({ paused: true });
+
+    /* ===== SCENE 1: LOGIN [0 – 2.6s] ===== */
+    tl.fromTo("#s1-warmth", { opacity: 0 }, { opacity: 1, duration: 1.4, ease: "sine.inOut" }, 0);
+    tl.fromTo(
+      "#s1-screen",
+      { opacity: 0, scale: 0.95 },
+      { opacity: 1, scale: 1, duration: 0.45, ease: "power2.out" },
+      0.15
+    );
+    tl.to("#s1-screen", { rotateY: 0, rotateX: 0, duration: 0.9, ease: "power2.inOut" }, 0.75);
+    tl.fromTo(
+      "#s1-beta",
+      { opacity: 0, y: 10 },
+      { opacity: 1, y: 0, duration: 0.35, ease: "expo.out" },
+      1.0
+    );
+
+    /* Transition 1: crossfade + light blur, login -> score, T = 2.6 */
+    tl.to("#scene-login", { filter: "blur(8px)", scale: 1.02, opacity: 0, duration: 0.5, ease: "power2.inOut" }, 2.6);
+    tl.fromTo(
+      "#scene-score",
+      { filter: "blur(8px)", scale: 0.98, opacity: 0 },
+      { filter: "blur(0px)", scale: 1, opacity: 1, duration: 0.5, ease: "power2.inOut" },
+      2.7
+    );
+
+    /* ===== SCENE 2: WEEKLY SCORE [2.7 – 5.4s] ===== */
+    // Background pulse (finite, single cycle across the tightened scene span)
+    tl.fromTo(
+      "#s2-bg",
+      { scale: 1.0, filter: "brightness(0.72) saturate(1.0)" },
+      { scale: 1.08, filter: "brightness(0.82) saturate(1.05)", duration: 1.6, ease: "sine.inOut", yoyo: true, repeat: 1 },
+      2.9
+    );
+    tl.fromTo(
+      "#s2-card",
+      { opacity: 0, y: 30 },
+      { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" },
+      3.1
+    );
+    const s2counter = { val: 0 };
+    const s2numberEl = document.getElementById("s2-number");
+    tl.to(
+      s2counter,
+      {
+        val: 87,
+        duration: 0.8,
+        ease: "power2.out",
+        onUpdate: function () {
+          if (s2numberEl) s2numberEl.textContent = Math.round(s2counter.val);
+        },
+      },
+      3.6
+    );
+    tl.fromTo(
+      "#s2-logo",
+      { opacity: 0, y: 12 },
+      { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" },
+      4.3
+    );
+    tl.fromTo(
+      "#s2-number",
+      { filter: "drop-shadow(0 0 0px rgba(100,200,255,0.0)) drop-shadow(0 0 0px rgba(100,200,255,0.0))" },
+      { filter: "drop-shadow(0 0 24px rgba(100,200,255,0.65)) drop-shadow(0 0 60px rgba(100,200,255,0.35))", duration: 0.3, ease: "power2.out" },
+      4.5
+    );
+
+    /* Transition 2: crossfade + light blur, score -> refund, T = 5.4 */
+    tl.to("#scene-score", { filter: "blur(8px)", scale: 1.02, opacity: 0, duration: 0.5, ease: "power2.inOut" }, 5.4);
+    tl.fromTo(
+      "#scene-refund",
+      { filter: "blur(8px)", scale: 0.98, opacity: 0 },
+      { filter: "blur(0px)", scale: 1, opacity: 1, duration: 0.5, ease: "power2.inOut" },
+      5.5
+    );
+
+    /* ===== SCENE 3: REFUND POOL [5.5 – 9.5s] ===== */
+    tl.fromTo(
+      "#s3-eyebrow",
+      { opacity: 0, y: -10 },
+      { opacity: 0.5, y: 0, duration: 0.5, ease: "power2.inOut" },
+      5.7
+    );
+    tl.fromTo(
+      ".s3-avatar",
+      { scale: 0.6, opacity: 0 },
+      { scale: 1, opacity: 1, duration: 0.35, ease: "back.out(1.5)", stagger: 0.06, transformOrigin: "50% 50%" },
+      6.3
+    );
+    tl.to("#s3-head1", { opacity: 1, duration: 0.35, ease: "power3.out" }, 7.0);
+    tl.to("#s3-head1", { opacity: 0, duration: 0.25, ease: "power2.inOut" }, 7.9);
+    tl.to("#s3-head2", { opacity: 1, duration: 0.35, ease: "power3.out" }, 7.95);
+    tl.fromTo(
+      "#s3-ripple",
+      { scale: 1, opacity: 0.8 },
+      { scale: 7.5, opacity: 0, duration: 0.8, ease: "expo.out", transformOrigin: "50% 50%" },
+      8.4
+    );
+    tl.fromTo(
+      "#s3-card",
+      { opacity: 0, y: 60 },
+      { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" },
+      8.7
+    );
+
+    /* Transition 3: blur crossfade, refund -> outro, T = 9.5 (card holds fully visible first) */
+    tl.to("#scene-refund", { filter: "blur(10px)", scale: 1.03, opacity: 0, duration: 0.5, ease: "power2.inOut" }, 9.5);
+    tl.fromTo(
+      "#scene-outro",
+      { filter: "blur(10px)", scale: 0.97, opacity: 0 },
+      { filter: "blur(0px)", scale: 1, opacity: 1, duration: 0.5, ease: "power2.inOut" },
+      9.6
+    );
+
+    /* ===== SCENE 4: OUTRO - logo + slogan + url [9.6 – 13.0s] ===== */
+    tl.fromTo(
+      "#s4-logo",
+      { opacity: 0, y: 12 },
+      { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" },
+      10.2
+    );
+    tl.fromTo(
+      "#s4-tagline",
+      { opacity: 0, y: 14 },
+      { opacity: 1, y: 0, duration: 0.5, ease: "expo.out" },
+      10.7
+    );
+    tl.fromTo(
+      "#s4-url",
+      { opacity: 0, y: 10 },
+      { opacity: 0.7, y: 0, duration: 0.4, ease: "power2.out" },
+      11.3
+    );
+
+    /* Final scene fade-out - the ONLY scene allowed an exit tween */
+    tl.to("#s4-veil", { opacity: 1, duration: 0.7, ease: "power2.inOut" }, 12.2);
+
+    window.__timelines["app-walkthrough"] = tl;
+  </script>
+</div>
+
+</body>
+</html>

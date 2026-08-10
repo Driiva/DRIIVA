@@ -23,7 +23,7 @@ export function Terms() {
 
       <h2>3. The waitlist is not a policy</h2>
       <p>
-        Driiva is in the FCA Regulatory Sandbox application phase. We are not currently authorised
+        Driiva is working towards the FCA regulatory sandbox. We are not authorised
         to issue motor insurance. The waitlist exists to gauge interest, share product updates,
         and notify you when the beta opens. No premium is collected, no cover is in force.
       </p>

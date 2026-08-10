@@ -1,7 +1,7 @@
 /**
  * Policy - Driiva Mobile
  * Reads users/{uid}.activePolicy. Honest empty state when there is none yet
- * (pre-FCA authorisation, most users have no live policy).
+ * (pre-sandbox, most users have no live policy).
  */
 import { useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';

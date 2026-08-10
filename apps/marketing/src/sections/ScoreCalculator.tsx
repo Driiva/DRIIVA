@@ -3,7 +3,7 @@ import { useReveal } from '@/hooks/useReveal';
 import { prefersReducedMotion } from '@/lib/motion';
 
 // Marketing-only model. Real underwriting will replace this once Driiva is
-// FCA-authorised; the formula here exists to give safe drivers an intuitive
+// through the FCA sandbox; the formula here exists to give safe drivers an intuitive
 // sense of scale. See FAQ for caveats.
 function estimatePremium(age: number, mileage: number): number {
   const ageEffect = Math.max(0, 28 - age) * 22; // younger pays more, capped
@@ -71,7 +71,7 @@ export function ScoreCalculator() {
           <span className="eyebrow-mini">Check your projected refund</span>
           <h2>How much could you get back?</h2>
           <p>
-            A marketing-only estimate. Real pricing happens once we are FCA-authorised and we score
+            A marketing-only estimate. Real pricing happens once we are through the FCA regulatory sandbox and we score
             your actual driving.
           </p>
         </div>

@@ -71,7 +71,7 @@ export function Footer() {
       </div>
       <div className="container footer-fineprint">
         <p>
-          Driiva Technologies Ltd. is in the FCA Regulatory Sandbox application phase and is not
+          Driiva Technologies Ltd. is working towards the FCA regulatory sandbox and is not
           yet authorised to issue motor insurance policies. Joining the waitlist is not a policy
           offer. Capital backing provided by a PRA-regulated UK reinsurer once underwriting
           begins. Registered in England and Wales.

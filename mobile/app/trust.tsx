@@ -81,7 +81,7 @@ export default function Trust() {
             Driiva app are illustrative projections based on driving score
             performance. Actual refunds depend on community pool performance,
             claims experience, and underwriting criteria. Past performance is not a
-            guarantee of future refunds. Driiva Ltd is pending FCA authorisation.
+            guarantee of future refunds. Driiva is working towards the FCA regulatory sandbox and is not authorised.
           </Text>
         </SurfaceCard>
       </ScrollView>

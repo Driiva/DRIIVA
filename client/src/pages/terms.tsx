@@ -43,7 +43,7 @@ export default function Terms() {
           <section className="mb-5">
             <h2 className="text-lg font-semibold text-white mb-2">Our service</h2>
             <p className="text-white/80 text-[15px] leading-relaxed">
-              Driiva offers telematics-based car insurance and a community rewards programme. We use your driving data to calculate a personal score and your share of the community pool. The service is offered in the UK and subject to FCA and Consumer Duty.
+              Driiva offers telematics-based car insurance and a community rewards programme. We use your driving data to calculate a personal score and your share of the community pool. The service is not being sold yet: Driiva is working towards the FCA regulatory sandbox, is not authorised, and is not operating under an MGA.
             </p>
           </section>
 

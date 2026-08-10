@@ -55,7 +55,7 @@ export default function Comparison() {
 
         <View style={styles.callout}>
           <Text style={styles.calloutText}>
-            Our insurance product is pending FCA authorisation. Driiva is Shariah-compliant
+            Our insurance product is working towards the FCA regulatory sandbox and is not authorised. Driiva is Shariah-compliant
             and your community pool operates under a mutual benefit model, not a
             traditional insurance profit structure.
           </Text>
