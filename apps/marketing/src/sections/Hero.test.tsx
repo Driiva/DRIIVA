@@ -102,6 +102,32 @@ describe('Hero', () => {
     expect(screen.getByRole('status')).toHaveTextContent(/doesn't look right/i);
   });
 
+  it('leaves nothing hidden when reduced motion is on', () => {
+    // The entrance animates from opacity 0. Under reduced motion the timeline
+    // never runs, so anything that relied on it to arrive would stay invisible
+    // rather than merely still. Covers the JS half only: the matching
+    // .reveal-init rule lives in a CSS media query that jsdom does not apply,
+    // and that half needs a real browser.
+    window.matchMedia = ((q: string) => ({
+      matches: q.includes('prefers-reduced-motion'),
+      media: q,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })) as typeof window.matchMedia;
+
+    render(<Hero />);
+    const headline = screen.getByRole('heading', { level: 1 });
+    const wordmark = screen.getByTestId('hero-wordmark');
+    const form = screen.getByTestId('hero-form');
+    for (const el of [headline, wordmark, form]) {
+      expect(el).toHaveStyle({ opacity: '1' });
+    }
+  });
+
   it('marks the field invalid and describes it by the status region', () => {
     render(<Hero />);
     const input = screen.getByLabelText(/email address/i);

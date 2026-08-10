@@ -61,9 +61,15 @@ of those produced a false failure on the first pass here. The probe now uses a
 
 ## What does not
 
-Ordered by what it costs the person on the other end.
+Ordered by what it costs the person on the other end. Items 1 to 5 and 7 were
+fixed in `ad097c8`; each is kept here with what it was, because the finding is
+the record and a document that deletes its own findings cannot be audited. The
+status line under each says where it stands.
 
 ### 1. A corrected email is still told it is wrong
+
+**Fixed in ad097c8.** Editing the field now retracts the rejection, and a test
+covers it that was checked against the pre-fix code.
 
 The clearest defect on the surface. Submit `not-an-email`, get "That email
 doesn't look right. Give it another go.", then correct the field, and the error
@@ -78,6 +84,9 @@ it on change.
 
 ### 2. The field never tells assistive tech it is invalid
 
+**Fixed in ad097c8.** `aria-invalid` is set while the error stands and
+`aria-describedby` resolves to the status region carrying the message.
+
 `aria-invalid` is `null` on the input before and after a failed submit, and there
 is no `aria-describedby` tying the field to the message. The polite live region
 announces the message once when it appears. A reader who tabs back to the field
@@ -90,17 +99,28 @@ The fix is small and entirely in the two components: set `aria-invalid` while
 
 ### 3. Focus is not moved to the field that failed
 
+**Fixed in ad097c8.** Focus moves to the input on a failed submit, in both forms.
+
 After an invalid submit, `document.activeElement` is `BODY`. The Submitting a
 form checklist asks for focus to land on the first field with an error. A
 keyboard or screen-reader user has to find their own way back to it.
 
 ### 4. No skip link
 
+**Fixed in ad097c8.** Added as the first element in the tab order, held off-screen
+with a transform rather than `display:none`, which would have removed it from
+the tab order and defeated the point.
+
 `skipLink: false`. With a fixed nav and thirteen sections, a keyboard user has no
 way past the header, and the tab order runs through every FAQ control before it
 reaches anything else. This is the single cheapest accessibility win here.
 
 ### 5. Focus indication is mostly the browser's, not the site's
+
+**Fixed in ad097c8.** One ring, defined once in brand amber with a dark outer
+ring so it holds at both ends of the wash. This got more urgent, not less,
+after the background became the canonical wash: the browser default is a blue
+ring that sits around 3:1 on the indigo end and disappears into the amber.
 
 Four focus rules exist in roughly 2,100 lines of `global.css`:
 `.nav-link:focus-visible`, `.nav-link:focus-visible::after`,
@@ -119,6 +139,9 @@ the thing that shows focus.
 
 ### 6. Validation waits for submit, including on blur
 
+**Open, and deliberately.** See the reasoning below; it needs a decision
+recorded, not a change made.
+
 Typing an invalid address and blurring the field produced no message. Only submit
 does. This is a softer finding than the others and there is a real argument for
 submit-only, since blur-time errors interrupt people who are still mid-thought.
@@ -127,6 +150,10 @@ it again from scratch: it is a decision, not an oversight, and should be written
 down as one either way.
 
 ### 7. The 404 route keeps the homepage title
+
+**Open.** Not fixed: the title is set by `useRouteMeta`, which is a routing
+concern rather than a form one, and bundling it into an accessibility commit
+would have hidden it.
 
 Navigating to `/definitely-not-a-page` renders `h1` "Not found.", but
 `document.title` is still
@@ -138,37 +165,53 @@ tabs open, and every crawler, actually reads.
 
 ## Not verified
 
-Two checks did not complete. The browser on 9222 went down mid-run, twice, while
-another agent was restarting it, and relaunching a browser is not something this
-pass will do on its own.
+Still two, and they are the same two. Chrome on 9222 was down again for the whole
+of the follow-up attempt, with no process running at all, and this pass does not
+launch a browser to get around that.
 
-- **The rest of the 404.** Title and `h1` were captured. Link count and whether
-  the wordmark serves on that route were not.
-- **Reduced motion on the reveals.** The shader is confirmed static under
-  `prefers-reduced-motion: reduce`, measured separately over five composited
-  frames. What is not confirmed is that every `.reveal-init` element resolves to
-  visible rather than staying at `opacity: 0`. `global.css` carries the rule that
-  should do it, but a rule existing is a source fact, which is the kind of
-  evidence this document exists to avoid relying on. The probe's last block
-  measures it; it needs one clean run.
+- **The rest of the 404.** Title and `h1` were captured on the original run. Link
+  count and whether the wordmark serves on that route were not.
 
-Neither is scored. An unverified check recorded as a pass is worse than no check.
+- **Reduced motion on the reveals, in the browser.** Partly closed, and the split
+  matters. There are two independent mechanisms that make a `.reveal-init`
+  element visible under reduced motion, and only one of them is now covered:
+
+  - The **JS path**, where `useReveal` and the hero timeline assign the resting
+    style directly, is now under test (`Hero.test.tsx`, "leaves nothing hidden
+    when reduced motion is on"). That test is worth more than the probe run it
+    replaces, because it runs on every commit rather than once.
+  - The **CSS path**, the `.reveal-init` override inside
+    `@media (prefers-reduced-motion: reduce)`, is what catches any element the JS
+    never reaches, which is every element whose section has not intersected. It
+    is **not** covered. jsdom applies no stylesheet, so a jsdom test would report
+    those elements as `opacity: 0` and manufacture a bug that does not exist.
+    Reading the file says it resolves: the override sits at line 2235, after the
+    base rule at 2217, at equal specificity, so it wins. That is a source fact,
+    which is the kind of evidence this document exists to avoid relying on.
+
+  So: the half that can be proven without a browser is proven and locked down.
+  The half that cannot is still open, and one clean probe run closes it.
+
+Neither is scored. An unverified check recorded as a pass is worse than no check,
+and a jsdom test standing in for a browser one would be worse than either.
 
 ---
 
 ## Prioritised
 
-1. Clear the form error when the input changes (defect 1). A reader who has
-   already fixed the problem is being told they have not.
-2. `aria-invalid` plus `aria-describedby` on both forms, and move focus to the
-   failed field (defects 2 and 3). Three small changes, same two files.
-3. Add a skip link (defect 4).
-4. Decide the focus-ring question once and apply it globally (defect 5), rather
-   than leaving four controls styled and the rest on the browser default.
-5. Give the 404 its own title (defect 7).
-6. Write down the submit-only validation decision (defect 6), whichever way it
-   goes.
+Items 1 to 5 are done (`ad097c8`). What is left:
 
-Nothing here is a regression from the premium-lift work. Items 1, 2, 3, 6 and 7
-predate it; item 4 has always been absent; item 5 is unchanged except that the
-nav link ring is new and is one of the two that now exists.
+1. Close the CSS half of the reduced-motion reveal check with one browser run.
+   It is the only open item that could mean content is invisible to somebody.
+2. Give the 404 its own title (defect 7).
+3. Write down the submit-only validation decision (defect 6), whichever way it
+   goes, so it is not re-scored from scratch next time.
+4. Extract the shared waitlist form. `Hero.tsx` and `FinalCTA.tsx` are
+   near-identical, they have drifted before, and the accessibility fix had to be
+   written twice into two files that must stay in step. Not a checklist item,
+   but it is the reason a checklist item would get half-applied next time.
+
+Nothing in the original list was a regression from the premium-lift work. Items
+1, 2, 3, 6 and 7 predated it, item 4 had always been absent, and item 5 was
+unchanged by it except that the canonical wash made the browser default ring
+materially worse than it had been on the old, dimmer ground.
