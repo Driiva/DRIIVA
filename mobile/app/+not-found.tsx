@@ -7,6 +7,7 @@ import { Link, Stack } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { C, T, S } from '@/components/ui/theme';
+import { ROUTE_DASHBOARD } from '@/lib/routing';
 
 export default function NotFoundScreen() {
   return (
@@ -18,7 +19,13 @@ export default function NotFoundScreen() {
           The link you followed points somewhere Driiva does not have a screen for.
         </Text>
 
-        <Link href="/" style={styles.link}>
+        {/*
+          Points at the dashboard directly, not at "/". This screen used to
+          link to the root route, which had no file behind it and therefore
+          resolved straight back to this screen. The way out was a loop, which
+          reads as a dead tap rather than as a bug.
+        */}
+        <Link href={ROUTE_DASHBOARD} style={styles.link}>
           <Text style={styles.linkText}>Go to the dashboard</Text>
         </Link>
       </View>
