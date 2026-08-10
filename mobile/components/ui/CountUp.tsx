@@ -18,7 +18,7 @@
  * (the refund moment is a full-screen overlay); an off-screen count-up on
  * mobile should be driven by the caller mounting this late instead.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Text, type StyleProp, type TextStyle } from 'react-native';
 import { Easing, cancelAnimation, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useAnimatedReaction, runOnJS } from 'react-native-reanimated';
@@ -82,12 +82,24 @@ export function CountUp({
     };
   }, []);
 
+  // formatCountValue is a plain JS function, so it cannot be called from inside
+  // the reaction: that body is a worklet on the UI runtime, and calling a
+  // non-worklet there throws, which aborts the process rather than surfacing as
+  // a red screen. Only runOnJS crosses the boundary; the formatting happens on
+  // the JS thread, where the formatter already lives.
+  const setDisplayFromValue = useCallback(
+    (current: number) => {
+      setDisplay(formatCountValue(current, decimals, prefix, suffix, signed));
+    },
+    [decimals, prefix, suffix, signed],
+  );
+
   useAnimatedReaction(
     () => progress.value,
     (current) => {
-      runOnJS(setDisplay)(formatCountValue(current, decimals, prefix, suffix, signed));
+      runOnJS(setDisplayFromValue)(current);
     },
-    [decimals, prefix, suffix, signed],
+    [setDisplayFromValue],
   );
 
   useEffect(() => {
