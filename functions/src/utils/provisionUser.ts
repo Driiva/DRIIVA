@@ -78,15 +78,18 @@ export function buildProvisionedUserDoc(
       // STARTING_SCORE, not a literal: the onboarding explainer and the
       // dashboard first-run state both quote this number to the user, and a
       // retyped copy is one that eventually disagrees with what is written
-      // here. Note it is replaced outright by the first scored trip rather
-      // than averaged down; see the constant's own documentation.
+      // here. The first scored trip is averaged with it, so the score can move
+      // up as well as down; see the constant's own documentation.
       currentScore: STARTING_SCORE,
+      // The five factors start where the score starts. Leaving these at 100
+      // while the score sat at STARTING_SCORE showed a driver a breakdown of
+      // five perfect factors under a score that was not perfect.
       scoreBreakdown: {
-        speedScore: 100,
-        brakingScore: 100,
-        accelerationScore: 100,
-        corneringScore: 100,
-        phoneUsageScore: 100,
+        speedScore: STARTING_SCORE,
+        brakingScore: STARTING_SCORE,
+        accelerationScore: STARTING_SCORE,
+        corneringScore: STARTING_SCORE,
+        phoneUsageScore: STARTING_SCORE,
       },
       totalTrips: 0,
       totalMiles: 0,

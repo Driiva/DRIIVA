@@ -36,6 +36,7 @@ import { analyzeTrip } from '../ai/tripAnalysis';
 import { EUROPE_LONDON } from '../lib/region';
 import { wrapTrigger } from '../lib/sentry';
 import * as Sentry from '@sentry/node';
+import { scoreWeight } from '@driiva/contracts';
 
 const db = admin.firestore();
 
@@ -559,11 +560,15 @@ export async function updateDriverProfileAndPoolShare(
     const newTotalMiles = user.drivingProfile.totalMiles + distanceMiles;
     const newTotalMinutes = user.drivingProfile.totalDrivingMinutes + durationMinutes;
     
-    // Recalculate weighted average score
-    const oldWeight = user.drivingProfile.totalTrips;
-    const newScore = oldWeight === 0 
-      ? trip.score 
-      : (user.drivingProfile.currentScore * oldWeight + trip.score) / newTotalTrips;
+    // Recalculate weighted average score.
+    // The weight is scoreWeight(), not totalTrips: the starting score carries
+    // the weight of a notional trip, so a driver's first real trip is averaged
+    // WITH their starting position rather than replacing it. Using totalTrips
+    // here would silently discard the starting score on trip one, which is the
+    // behaviour that made a new profile only ever able to move downwards.
+    const oldWeight = scoreWeight(user.drivingProfile.totalTrips);
+    const newScore =
+      (user.drivingProfile.currentScore * oldWeight + trip.score) / (oldWeight + 1);
     
     // Update score breakdown (weighted average)
     const newScoreBreakdown: ScoreBreakdown = {

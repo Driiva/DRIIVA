@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { UserDocumentSchema } from '@driiva/contracts';
+import { UserDocumentSchema, STARTING_SCORE } from '@driiva/contracts';
 
 import { buildProvisionedUserDoc } from '../../utils/provisionUser';
 
@@ -88,13 +88,17 @@ describe('buildProvisionedUserDoc', () => {
     const doc = buildProvisionedUserDoc({ ...baseInput, displayName: 'Jamal Driver' });
 
     expect(doc.drivingProfile).toEqual({
-      currentScore: 100,
+      // Sourced from the constant, not retyped: this test previously pinned a
+      // literal 100 and would have had to be edited by hand every time the
+      // starting position changed, which is how a test stops guarding and
+      // starts obstructing.
+      currentScore: STARTING_SCORE,
       scoreBreakdown: {
-        speedScore: 100,
-        brakingScore: 100,
-        accelerationScore: 100,
-        corneringScore: 100,
-        phoneUsageScore: 100,
+        speedScore: STARTING_SCORE,
+        brakingScore: STARTING_SCORE,
+        accelerationScore: STARTING_SCORE,
+        corneringScore: STARTING_SCORE,
+        phoneUsageScore: STARTING_SCORE,
       },
       totalTrips: 0,
       totalMiles: 0,
