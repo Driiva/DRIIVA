@@ -216,7 +216,7 @@ function PaymentForm({
     style: {
       base: {
         color: '#fff',
-        fontFamily: 'system-ui, sans-serif',
+        fontFamily: 'var(--font-body)',
         fontSize: '16px',
         '::placeholder': { color: 'rgba(255,255,255,0.4)' },
         backgroundColor: 'transparent',

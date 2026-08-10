@@ -57,8 +57,9 @@ const styles = StyleSheet.create({
     color: C.text.sec,
   },
   weight: {
-    ...T.caption,
-    fontSize: 10,
+    ...T.eyebrow,
+    fontFamily: F.body,
+    textTransform: 'none',
     color: C.text.mut,
     marginTop: 1,
   },
@@ -75,11 +76,9 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   value: {
+    ...T.numberSm,
     width: 28,
     textAlign: 'right',
-    fontFamily: F.monoSemiBold,
-    fontSize: 13,
-    fontVariant: ['tabular-nums'],
   },
 });
 

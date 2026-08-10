@@ -68,6 +68,15 @@ html {
 body {
   margin: 0;
   font-family: var(--font-body);
+  /* Stated, not inherited. Anything that does not carry a text- utility used
+     to land on the browser's 16px/normal, which is a different rhythm from
+     every calibrated step in the ladder. */
+  font-size: 16px;
+  line-height: 1.5;
+  letter-spacing: -0.006em;
+  font-optical-sizing: auto;
+  font-feature-settings: 'ss01', 'cv11', 'kern';
+  text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background: var(--app-bg);
@@ -220,12 +229,15 @@ button, a, input, select, textarea, [role="button"] {
   --font-3xl: 28px;
   --font-4xl: 34px;
   
-  /* Font Weights - iOS uses 600 for headings */
-  --font-light: 300;
+  /* Three weights, and only three. The five declared here previously included
+     a 300 and a 500 that no font file on this site carries, so anything asking
+     for them got a synthesised face. The loaded ranges are 400 to 700. */
   --font-regular: 400;
-  --font-medium: 500;
   --font-semibold: 600;
-  --font-bold: 600;
+  --font-bold: 700;
+  /* Kept pointing at the nearest real weight so existing callers do not
+     silently request a face that has to be faked. */
+  --font-medium: var(--font-semibold);
   
   /* Spacing Scale - 4px Grid System */
   --space-0: 0px;
@@ -629,6 +641,29 @@ h1, h2, h3, h4, h5, h6, .font-display {
 .tabular, .stat-value, [data-readout] {
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum' 1;
+}
+
+/* A hero number is perceived rather than read, so it takes the tightest
+   leading and tracking on the ladder and never wraps. */
+.readout-hero {
+  font-family: var(--font-mono);
+  font-size: 48px;
+  line-height: 48px;
+  letter-spacing: -0.032em;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  color: var(--app-text-hero);
+  white-space: nowrap;
+}
+
+/* Prose stops at a readable measure. Past roughly 70 characters the eye loses
+   the start of the next line, and these cards are wide on a desktop viewport. */
+.measure {
+  max-width: 68ch;
+}
+
+.measure-tight {
+  max-width: 46ch;
 }
 
 /* Professional Animations & Micro-Interactions */

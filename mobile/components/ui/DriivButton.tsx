@@ -98,8 +98,8 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   text: {
+    ...T.h2,
     fontFamily: F.bodySemiBold,
-    fontSize: 16,
     color: C.text.hero,
   },
   textGhost: {

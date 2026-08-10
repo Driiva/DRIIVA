@@ -9,7 +9,7 @@ export default function DriivaLogo({ className = "", size = "default" }: {
   };
 
   return (
-    <div className={`font-semibold ${sizeClasses[size]} ${className}`} style={{ fontFamily: 'Inter, sans-serif' }}>
+    <div className={`font-semibold ${sizeClasses[size]} ${className}`} style={{ fontFamily: 'var(--font-body)' }}>
       <span className="text-white relative" style={{ fontStyle: 'italic' }}>
         <span style={{ textTransform: 'uppercase', letterSpacing: '-0.02em' }}>D</span>riiva
       </span>
