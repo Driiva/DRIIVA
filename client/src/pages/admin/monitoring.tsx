@@ -10,6 +10,7 @@ import { db } from '@/lib/firebase';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { container, item } from '@/lib/animations';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { ArcTracer } from '@/components/motion/Instrument';
 
 // ============================================================================
 // TYPES
@@ -333,7 +334,7 @@ export default function MonitoringDashboard() {
     return (
       <AdminLayout title="Live Monitoring" subtitle="System health & performance metrics">
         <div className="flex items-center justify-center py-24">
-          <div className="w-12 h-12 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+          <ArcTracer size={48} label="Loading monitoring data" />
         </div>
       </AdminLayout>
     );

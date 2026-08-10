@@ -4,6 +4,7 @@ import { collection, getDocs, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { container, item } from '@/lib/animations';
+import { ArcTracer } from '@/components/motion/Instrument';
 
 interface SyncLog {
   date: string;
@@ -102,7 +103,7 @@ export default function AdminSystem() {
 
           {loading ? (
             <div className="p-12 text-center">
-              <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin mx-auto" />
+              <ArcTracer size={32} label="Loading system status" className="mx-auto" />
             </div>
           ) : (
             <div className="overflow-x-auto">

@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { useAuth } from '@/contexts/AuthContext';
+import { ArcTracer } from '@/components/motion/Instrument';
 
 interface AuthHeaderProps {
   title?: string;
@@ -72,7 +73,7 @@ export const AuthHeader: React.FC<AuthHeaderProps> = ({
         title="Log out"
       >
         {isLoggingOut ? (
-          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          <ArcTracer size={20} label="Signing out" />
         ) : (
           <LogOut className="w-5 h-5 text-white/70 hover:text-white" />
         )}

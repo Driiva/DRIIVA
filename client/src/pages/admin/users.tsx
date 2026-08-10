@@ -8,6 +8,7 @@ import { db } from '@/lib/firebase';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { StatusBadge, deriveUserStatus } from '@/components/admin/StatusBadge';
 import { ScoreSparkline } from '@/components/admin/ScoreSparkline';
+import { ArcTracer } from '@/components/motion/Instrument';
 
 interface UserRow {
   uid: string;
@@ -177,7 +178,7 @@ export default function AdminUsers() {
       <div className="instrument-card overflow-hidden !p-0">
         {loading ? (
           <div className="p-12 text-center">
-            <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin mx-auto" />
+            <ArcTracer size={32} label="Loading users" className="mx-auto" />
           </div>
         ) : (
           <div className="overflow-x-auto">

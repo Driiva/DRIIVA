@@ -13,6 +13,7 @@ import { AdminLayout } from '@/components/admin/AdminLayout';
 import { KPICard } from '@/components/admin/KPICard';
 import { container } from '@/lib/animations';
 import { useCursorPagination } from '@/hooks/useCursorPagination';
+import { ArcTracer } from '@/components/motion/Instrument';
 
 /** Rows per page in the fleet table. */
 const ADMIN_TRIPS_PAGE_SIZE = 25;
@@ -187,7 +188,7 @@ export default function AdminTrips() {
           </div>
           {loading ? (
             <div className="p-12 text-center">
-              <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin mx-auto" />
+              <ArcTracer size={32} label="Loading trips" className="mx-auto" />
             </div>
           ) : (
             <div className="overflow-x-auto">

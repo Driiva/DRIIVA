@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, useMapEvents 
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Navigation } from 'lucide-react';
+import { ArcTracer } from '@/components/motion/Instrument';
 
 interface LocationData {
   lat: number;
@@ -176,7 +177,7 @@ const LeafletMap = ({ location, routePoints, onLocationChange, className }: Leaf
           </div>
         ) : (
           <div className="flex flex-col items-center gap-3">
-            <div className="w-10 h-10 border-4 border-white/20 border-t-emerald-400 rounded-full animate-spin" />
+            <ArcTracer size={40} decorative />
             <p className="text-white/60 text-sm">Finding your location…</p>
           </div>
         )}

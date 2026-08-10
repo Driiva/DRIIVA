@@ -9,6 +9,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { ArcTracer } from '@/components/motion/Instrument';
 
 interface BottomSheetProps {
   isOpen: boolean;
@@ -213,7 +214,7 @@ export default function BottomSheet({ isOpen, onClose }: BottomSheetProps) {
             >
               {reportIncidentMutation.isPending ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  <ArcTracer size={16} decorative className="mr-2" />
                   Submitting...
                 </>
               ) : (

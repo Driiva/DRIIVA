@@ -9,6 +9,7 @@ import { useParallax } from "@/hooks/useParallax";
 import { auth, isFirebaseConfigured } from "@/lib/firebase";
 import { sendEmailVerification, reload, applyActionCode } from "firebase/auth";
 import { useAuth } from "@/contexts/AuthContext";
+import { ArcTracer } from '@/components/motion/Instrument';
 
 /**
  * VERIFY EMAIL PAGE
@@ -161,7 +162,7 @@ export default function VerifyEmail() {
     return (
       <div className="min-h-screen text-white flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-3 border-white/20 border-t-white rounded-full animate-spin mx-auto mb-4" />
+          <ArcTracer size={48} decorative className="mx-auto mb-4" />
           <p className="text-white/80">Verifying your email…</p>
         </div>
       </div>
