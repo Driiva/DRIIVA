@@ -1,14 +1,7 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef } from 'react';
 import { animate, createTimeline, prefersReducedMotion } from '@/lib/motion';
-import { joinWaitlist } from '@/lib/api';
-import { trackEvent } from '@/lib/analytics';
+import { useWaitlistForm } from '@/hooks/useWaitlistForm';
 import { PhoneFrame } from './PhoneFrame';
-
-type Status = 'idle' | 'submitting' | 'success' | 'error';
-
-function isValidEmail(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
-}
 
 // The status region doubles as the field's description, so it needs a stable
 // id to point aria-describedby at. Unique per form: this page renders two.
@@ -21,13 +14,11 @@ export function Hero() {
   const headlineRef = useRef<HTMLHeadingElement | null>(null);
   const subRef = useRef<HTMLParagraphElement | null>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
-  const inputRef = useRef<HTMLInputElement | null>(null);
-  const buttonRef = useRef<HTMLButtonElement | null>(null);
   const guaranteeRef = useRef<HTMLDivElement | null>(null);
 
-  const [email, setEmail] = useState('');
-  const [status, setStatus] = useState<Status>('idle');
-  const [message, setMessage] = useState('');
+  const {
+    message, inputRef, buttonRef, handleSubmit, inputProps, buttonProps, buttonLabel, statusProps,
+  } = useWaitlistForm({ source: 'hero', statusId: STATUS_ID });
 
   // Hero entrance: live strip → eyebrow → wordmark → headline → form stack.
   // The phone frame self-reveals via its own IntersectionObserver, on a
@@ -88,55 +79,6 @@ export function Hero() {
     } as never);
   }, []);
 
-  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setMessage('');
-    if (!isValidEmail(email)) {
-      setStatus('error');
-      setMessage("That email doesn't look right. Give it another go.");
-      // Put the caret back where the problem is, rather than leaving focus on
-      // the body for the reader to hunt the field down again.
-      inputRef.current?.focus();
-      return;
-    }
-    setStatus('submitting');
-    const result = await joinWaitlist(email, 'hero');
-    if (!result.ok) {
-      trackEvent('waitlist_error', { source: 'hero', error: result.error ?? 'unknown' });
-      setStatus('error');
-      setMessage(
-        result.error === 'invalid_email'
-          ? "That email doesn't look right. Give it another go."
-          : 'Something broke on our end. Try again in a moment?',
-      );
-      inputRef.current?.focus();
-      return;
-    }
-    trackEvent('waitlist_success', {
-      source: 'hero',
-      already_on_list: result.alreadyOnList === true,
-    });
-    setStatus('success');
-    setMessage(
-      result.alreadyOnList
-        ? result.position
-          ? `Already on the list. You're #${result.position}.`
-          : 'Already on the list.'
-        : result.position
-        ? `You're #${result.position}. We'll email when the beta opens.`
-        : "You're on the list. We'll email when the beta opens.",
-    );
-    setEmail('');
-    const btn = buttonRef.current;
-    if (btn && !prefersReducedMotion()) {
-      animate(btn, {
-        scale: [1, 1.04, 1],
-        duration: 380,
-        ease: 'cubicBezier(0.22, 1, 0.36, 1)',
-      });
-    }
-  }
-
   return (
     <header className="hero" data-section="hero">
       <div className="container">
@@ -185,49 +127,12 @@ export function Hero() {
               style={{ opacity: 0 }}
               data-testid="hero-form"
             >
-              <input
-                ref={inputRef}
-                type="email"
-                inputMode="email"
-                autoComplete="email"
-                required
-                aria-label="Email address"
-                aria-invalid={status === 'error' || undefined}
-                aria-describedby={STATUS_ID}
-                placeholder="your@email.co.uk"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  // Editing after a rejection retracts the rejection. Holding it
-                  // until the next submit tells someone who has already fixed
-                  // their address that they have not.
-                  if (status === 'error') {
-                    setStatus('idle');
-                    setMessage('');
-                  }
-                }}
-                disabled={status === 'submitting' || status === 'success'}
-              />
-              <button
-                ref={buttonRef}
-                type="submit"
-                disabled={status === 'submitting' || status === 'success'}
-              >
-                {status === 'submitting'
-                  ? 'Adding you'
-                  : status === 'success'
-                  ? "You're in"
-                  : 'Get early access'}
+              <input ref={inputRef} {...inputProps} />
+              <button ref={buttonRef} {...buttonProps}>
+                {buttonLabel}
               </button>
             </form>
-            <div
-              id={STATUS_ID}
-              className={`form-status ${status === 'error' ? 'err' : status === 'success' ? 'ok' : ''}`}
-              role="status"
-              aria-live="polite"
-            >
-              {message}
-            </div>
+            <div {...statusProps}>{message}</div>
 
             <div ref={guaranteeRef} className="hero-guarantee" style={{ opacity: 0 }}>
               <svg
