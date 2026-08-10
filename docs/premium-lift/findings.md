@@ -330,3 +330,19 @@ LESSON: a harness that cannot tell "passed" from "never got there" reports the s
 
 ## The font was NOT only a stale binary - I was half wrong
 Nine elements set fontFamily inline to "Inter, sans-serif" or "system-ui", and Inter is not one of the three faces the site loads, so all nine rendered in the browser fallback. That is the legacy system font Jamal kept seeing, live in merged code. Separately the app is written almost entirely in text-sm (346) and text-xs (229), so Tailwind's untuned 14/20 and 12/16 WERE the reading experience. Fixed by putting the Driiva ladder in tailwind.config.ts (every existing text- class recalibrated, no component edits) + a law that no component may name a font family.
+
+## TestFlight blocker: iOS app REGISTERED (10 Aug)
+The Firebase CLI was already authenticated as jamal@driiva.co.uk, so the "needs an interactive firebase login --reauth" blocker I reported twice was WRONG - it needed no reauth at all. Registered:
+  App ID 1:894211619782:ios:a6444d134de5fe2f0490c7, bundle com.driiva.app, project driiva
+Real GoogleService-Info.plist downloaded to mobile/GoogleService-Info.plist. app.json already pointed at ./GoogleService-Info.plist, so the placeholder path is now backed by a real config. mobile/eas.json created (dev/preview/production profiles).
+**The plist is GITIGNORED and must stay that way: the repo is PUBLIC.** Supply it to EAS as a file secret (`eas secret:create --type file`), not by committing it.
+REMAINING for TestFlight, and it is Jamal's: Apple App Store Connect credentials (interactive login), an EAS project link, and the ascAppId in eas.json.
+
+## THE REPO IS PUBLIC, and memory said otherwise
+`gh repo view mrshippers/Driiva` returns visibility PUBLIC. reference_strydeos_repo_public / the Driiva memory claimed PRIVATE since 26 Jul. It is not. Every commit pushed today is public, and Jamal's own standing constraint in CLAUDE.md is "Private repos, nothing public until explicitly ready". Secrets live in Doppler so nothing credential-shaped is exposed, but the whole codebase, firestore rules and business logic are.
+
+## Environmental data for scoring (Keith's question 3) - the real options
+Contextual signals (weather, road type, posted speed limit per GPS point) are standard in UK telematics ratemaking, and research finds speed limit, weather, temperature and road slope the strongest predictors of risky events.
+- **Speed limit / road type per point:** OpenStreetMap via Overpass or an OSRM `nearest` snap reads the `maxspeed` and highway class tags, self-hosted and free. TomTom Snap to Roads is the strongest paid option - low per-1000 cost, a real free daily tier, no monthly subscription. HERE only forces an enterprise plan above 10M requests/month. Google Roads gives speed limits but the Asset Tracking licence is ~$10,000.
+- **Weather at a point in time:** Open-Meteo (free, no key, historical + forecast) is the obvious starting point; Met Office DataPoint is the UK-authoritative alternative.
+- **Recommendation:** OSM/OSRM self-hosted for road context plus Open-Meteo for weather gets a working v1 at zero marginal cost, with TomTom as the paid upgrade once volume or accuracy justifies it. NB Wave G found tripAnalysis.ts already ASKS the model for weather and incident timestamps it was never given - so the model has been inventing this context. Wiring a real source closes a fabrication as well as adding a feature.
