@@ -32,6 +32,12 @@ export default function App() {
   return (
     <>
       <DriivaShaderBackground />
+      {/* First thing in the tab order. Without it a keyboard user crosses the
+          fixed nav and, on the home route, five FAQ controls before reaching
+          anything they came for. */}
+      <a className="skip-link" href="#main-content">
+        Skip to content
+      </a>
       <Nav />
       <Switch>
         <Route path="/" component={Home} />

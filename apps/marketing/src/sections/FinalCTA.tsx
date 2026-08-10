@@ -11,9 +11,14 @@ function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 }
 
+// Distinct from the hero's: this page renders both forms, and two elements
+// cannot share an id that aria-describedby has to resolve.
+const STATUS_ID = 'cta-waitlist-status';
+
 export function FinalCTA() {
   const ref = useReveal<HTMLElement>();
   const waitlistCount = useWaitlistCount();
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<Status>('idle');
@@ -25,6 +30,9 @@ export function FinalCTA() {
     if (!isValidEmail(email)) {
       setStatus('error');
       setMessage("That email doesn't look right. Give it another go.");
+      // Put the caret back where the problem is, rather than leaving focus on
+      // the body for the reader to hunt the field down again.
+      inputRef.current?.focus();
       return;
     }
     setStatus('submitting');
@@ -37,6 +45,7 @@ export function FinalCTA() {
           ? "That email doesn't look right. Give it another go."
           : 'Something broke on our end. Try again in a moment?',
       );
+      inputRef.current?.focus();
       return;
     }
     trackEvent('waitlist_success', {
@@ -76,14 +85,24 @@ export function FinalCTA() {
           </p>
           <form onSubmit={handleSubmit} noValidate className="waitlist-form" data-testid="cta-form">
             <input
+              ref={inputRef}
               type="email"
               inputMode="email"
               autoComplete="email"
               required
               aria-label="Email address"
+              aria-invalid={status === 'error' || undefined}
+              aria-describedby={STATUS_ID}
               placeholder="your@email.co.uk"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                // Editing after a rejection retracts the rejection.
+                if (status === 'error') {
+                  setStatus('idle');
+                  setMessage('');
+                }
+              }}
               disabled={status === 'submitting' || status === 'success'}
             />
             <button
@@ -99,6 +118,7 @@ export function FinalCTA() {
             </button>
           </form>
           <div
+            id={STATUS_ID}
             className={`form-status ${status === 'error' ? 'err' : status === 'success' ? 'ok' : ''}`}
             role="status"
             aria-live="polite"

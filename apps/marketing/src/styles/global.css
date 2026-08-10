@@ -59,6 +59,48 @@ main {
 }
 
 /* ─────────────────────────────────────────────────────────
+   FOCUS
+   The wash runs from amber to indigo, so a focus ring has to stay legible
+   against both ends of it. The browser default is a blue that sits at roughly
+   3:1 on the indigo side and disappears into the amber, and it was showing on
+   every control except the four with their own rule. One ring, defined once,
+   in the brand amber with a dark outer ring so it survives on the light end
+   too.
+   ───────────────────────────────────────────────────────── */
+:where(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+  border-radius: 4px;
+  box-shadow: 0 0 0 4px rgb(5 5 9 / 0.75);
+}
+/* The pointer should not drag the ring around with it. */
+:where(a, button, summary):focus:not(:focus-visible) {
+  outline: none;
+}
+
+.skip-link {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 100;
+  padding: 10px 16px;
+  background: var(--ink-2);
+  color: var(--fg-1);
+  border: 1px solid rgb(var(--rgb-amber) / 0.5);
+  border-radius: var(--r-sm);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  /* Off-screen until focused, rather than display:none, which would take it
+     out of the tab order and defeat the point. */
+  transform: translateY(-160%);
+  transition: transform 0.3s var(--easeout);
+}
+.skip-link:focus-visible {
+  transform: translateY(0);
+}
+
+/* ─────────────────────────────────────────────────────────
    LAYOUT
    ───────────────────────────────────────────────────────── */
 .container {

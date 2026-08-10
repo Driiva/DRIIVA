@@ -102,6 +102,66 @@ describe('Hero', () => {
     expect(screen.getByRole('status')).toHaveTextContent(/doesn't look right/i);
   });
 
+  it('leaves nothing hidden when reduced motion is on', () => {
+    // The entrance animates from opacity 0. Under reduced motion the timeline
+    // never runs, so anything that relied on it to arrive would stay invisible
+    // rather than merely still. Covers the JS half only: the matching
+    // .reveal-init rule lives in a CSS media query that jsdom does not apply,
+    // and that half needs a real browser.
+    window.matchMedia = ((q: string) => ({
+      matches: q.includes('prefers-reduced-motion'),
+      media: q,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })) as typeof window.matchMedia;
+
+    render(<Hero />);
+    const headline = screen.getByRole('heading', { level: 1 });
+    const wordmark = screen.getByTestId('hero-wordmark');
+    const form = screen.getByTestId('hero-form');
+    for (const el of [headline, wordmark, form]) {
+      expect(el).toHaveStyle({ opacity: '1' });
+    }
+  });
+
+  it('marks the field invalid and describes it by the status region', () => {
+    render(<Hero />);
+    const input = screen.getByLabelText(/email address/i);
+    expect(input).not.toHaveAttribute('aria-invalid');
+    fireEvent.change(input, { target: { value: 'not-an-email' } });
+    fireEvent.submit(screen.getByTestId('hero-form'));
+    expect(input).toHaveAttribute('aria-invalid', 'true');
+    // The description has to resolve to the element carrying the message,
+    // otherwise a reader who tabs back to the field is told nothing.
+    expect(input).toHaveAttribute('aria-describedby', screen.getByRole('status').id);
+  });
+
+  it('moves focus to the field that failed', () => {
+    render(<Hero />);
+    const input = screen.getByLabelText(/email address/i);
+    fireEvent.change(input, { target: { value: 'not-an-email' } });
+    fireEvent.submit(screen.getByTestId('hero-form'));
+    expect(document.activeElement).toBe(input);
+  });
+
+  it('retracts the error as soon as the address is edited', () => {
+    render(<Hero />);
+    const input = screen.getByLabelText(/email address/i);
+    fireEvent.change(input, { target: { value: 'not-an-email' } });
+    fireEvent.submit(screen.getByTestId('hero-form'));
+    expect(screen.getByRole('status')).toHaveTextContent(/doesn't look right/i);
+
+    // Someone who has already fixed their address must not still be told
+    // it is wrong. This held until the next submit before.
+    fireEvent.change(input, { target: { value: 'driver@example.co.uk' } });
+    expect(screen.getByRole('status')).toHaveTextContent('');
+    expect(input).not.toHaveAttribute('aria-invalid');
+  });
+
   it('accepts a valid email and morphs the button to a success state', async () => {
     render(<Hero />);
     fireEvent.change(screen.getByLabelText(/email address/i), {
