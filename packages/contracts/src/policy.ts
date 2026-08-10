@@ -28,7 +28,8 @@ export type BillingCycle = z.infer<typeof BillingCycleSchema>;
  */
 export const ActivePolicySummarySchema = z.object({
   policyId: z.string(),
-  policyNumber: z.string(),
+  /** Null until the insurer issues one. Never invented. */
+  policyNumber: z.string().nullable(),
   status: PolicyStatusSchema,
   premiumCents: z.number().int(),
   coverageType: CoverageTypeSchema,
@@ -53,10 +54,12 @@ export const CoverageDetailsSchema = z.object({
 export const PolicyDocumentSchema = z.object({
   policyId: z.string(),
   userId: z.string(),
-  policyNumber: z.string(),
+  /** Null until the insurer issues one. Never invented. */
+  policyNumber: z.string().nullable(),
   status: PolicyStatusSchema,
   coverageType: CoverageTypeSchema,
-  coverageDetails: CoverageDetailsSchema,
+  // Null when nobody has underwritten the policy. See functions/src/types.ts.
+  coverageDetails: CoverageDetailsSchema.nullable(),
   basePremiumCents: z.number().int(),
   currentPremiumCents: z.number().int(),
   // Source comment says "0-30 typically" - a guideline, not an enforced

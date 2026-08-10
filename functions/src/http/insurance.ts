@@ -23,6 +23,7 @@ import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { COLLECTION_NAMES, UserDocument, PolicyDocument, CoverageType } from '../types';
 import { EUROPE_LONDON } from '../lib/region';
+import { mapRootPolicyStatus } from './insuranceInternal';
 import { wrapFunction } from '../lib/sentry';
 
 // ============================================================================
@@ -376,16 +377,15 @@ export const acceptInsuranceQuote = functions
   } = {
     policyId: rootPolicy.policy_id,
     userId,
-    policyNumber: rootPolicy.policy_number || `DRV-${Date.now()}`,
-    status: 'active',
+    // WAVE H: `policy_number || DRV-${Date.now()}` minted a reference that
+    // matched nothing in the insurer's system, and `status: 'active'` was
+    // written whatever Root reported. Both now follow Root.
+    policyNumber: rootPolicy.policy_number || null,
+    status: mapRootPolicyStatus(rootPolicy.status),
     coverageType: storedCoverage,
-    coverageDetails: {
-      liabilityLimitCents: 10_000_000,
-      collisionDeductibleCents: 50_000,
-      comprehensiveDeductibleCents: 25_000,
-      includesRoadside: false,
-      includesRental: false,
-    },
+    // The cover limits used to be hardcoded here too. Root's policy response
+    // does not carry them, so we do not know them, so we do not state them.
+    coverageDetails: null,
     basePremiumCents: rootPolicy.monthly_premium,
     currentPremiumCents: rootPolicy.monthly_premium,
     discountPercentage: 0,
@@ -409,8 +409,8 @@ export const acceptInsuranceQuote = functions
   await db.collection(COLLECTION_NAMES.USERS).doc(userId).update({
     activePolicy: {
       policyId: rootPolicy.policy_id,
-      policyNumber: rootPolicy.policy_number,
-      status: 'active',
+      policyNumber: rootPolicy.policy_number || null,
+      status: mapRootPolicyStatus(rootPolicy.status),
       startDate: rootPolicy.start_date,
     },
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -426,8 +426,8 @@ export const acceptInsuranceQuote = functions
 
   return {
     policyId: rootPolicy.policy_id,
-    policyNumber: rootPolicy.policy_number,
-    status: 'active',
+    policyNumber: rootPolicy.policy_number || null,
+    status: mapRootPolicyStatus(rootPolicy.status),
     monthlyPremiumCents: rootPolicy.monthly_premium,
     startDate: rootPolicy.start_date,
     endDate: rootPolicy.end_date,

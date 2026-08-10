@@ -7,7 +7,8 @@
  *   3. On submit: POST /api/payments/create-subscription with annualPremiumCents + billingPeriod.
  *   4. Server creates subscription using Stripe price_data (dynamic, per-user amount).
  *   5. Confirm payment with stripe.confirmCardPayment(clientSecret).
- *   6. On success: show confirmation screen.
+ *   6. On a cleared card: WAIT for the insurer, then show what actually
+ *      happened. A charge is not cover; see CoverOutcome.
  *
  * For demo mode: pricing engine runs on DEMO_PRICING_INPUTS; no Stripe call is made.
  * For real users: profile is read from Firestore to feed the pricing engine.
@@ -118,9 +119,117 @@ interface PaymentFormProps {
   drivingScore: number;
   discountPercentage: number;
   expiresAt: string;
-  onSuccess: () => void;
+  /** Demo runs bind nothing; a real charge starts the wait for the insurer. */
+  onPaid: (mode: 'demo' | 'charged') => void;
   isDemoMode: boolean;
   onBillingPeriodChange: (p: BillingPeriod) => void;
+}
+
+/**
+ * How long to wait for the insurer's answer before telling the driver we do
+ * not have one. Binding is a Stripe webhook plus a Cloud Function plus a Root
+ * round trip, so seconds are normal and a stall is not.
+ */
+const COVER_CONFIRMATION_TIMEOUT_MS = 45_000;
+
+type CoverState =
+  | { kind: 'idle' }
+  /** Card cleared. The insurer has not answered yet. */
+  | { kind: 'awaiting' }
+  | { kind: 'confirmed'; policyId: string | null }
+  /** The binding attempt finished and the insurer has not activated cover. */
+  | { kind: 'notYetCovered' }
+  /** Money taken, no cover. */
+  | { kind: 'failed' }
+  /** We could not find out in time. Unknown, stated as unknown. */
+  | { kind: 'unresolved' }
+  /** Demo mode: nothing was charged and nothing was bound. */
+  | { kind: 'demo' };
+
+/**
+ * The end of checkout, told truthfully.
+ *
+ * Every branch here except `confirmed` exists because the previous version of
+ * this screen had only one ending and used it for all of them.
+ */
+function CoverOutcome({
+  state,
+  onDashboard,
+}: {
+  state: Exclude<CoverState, { kind: 'idle' }>;
+  onDashboard: () => void;
+}) {
+  const content: Record<
+    Exclude<CoverState['kind'], 'idle'>,
+    { icon: JSX.Element; title: string; body: string; tone: string }
+  > = {
+    awaiting: {
+      icon: <Loader2 className="w-10 h-10 text-white/70 animate-spin" />,
+      tone: 'bg-white/10 border-white/20',
+      title: 'Payment received',
+      body: 'We are setting up your policy with the insurer. This usually takes a few seconds. You are not covered until it is confirmed.',
+    },
+    confirmed: {
+      icon: <CheckCircle className="w-10 h-10 text-emerald-400" />,
+      tone: 'bg-emerald-500/20 border-emerald-500/40',
+      title: 'Your cover is confirmed',
+      body: 'The insurer has your policy in place. Keep driving safely to build your score.',
+    },
+    notYetCovered: {
+      icon: <AlertCircle className="w-10 h-10 text-amber-400" />,
+      tone: 'bg-amber-500/20 border-amber-500/40',
+      title: 'Your policy is still being set up',
+      body: 'We have your payment and the insurer has not confirmed cover yet. You are not insured with Driiva until they do. We will tell you as soon as that changes.',
+    },
+    failed: {
+      icon: <AlertCircle className="w-10 h-10 text-red-400" />,
+      tone: 'bg-red-500/20 border-red-500/40',
+      title: 'We could not set up your policy',
+      body: 'Your payment went through and your cover did not. You are not insured with Driiva. Do not rely on this cover. Contact us at hello@driiva.co.uk with the time of this payment and we will sort it out, including a refund if we cannot put cover in place.',
+    },
+    unresolved: {
+      icon: <AlertCircle className="w-10 h-10 text-amber-400" />,
+      tone: 'bg-amber-500/20 border-amber-500/40',
+      title: 'We cannot confirm your cover yet',
+      body: 'Your payment went through. We have not had an answer from the insurer, so we cannot tell you whether you are covered. Do not assume you are. Check the app shortly, or contact hello@driiva.co.uk.',
+    },
+    demo: {
+      icon: <Sparkles className="w-10 h-10 text-white/70" />,
+      tone: 'bg-white/10 border-white/20',
+      title: 'Demo complete',
+      body: 'This is a demo. No payment was taken and no policy exists.',
+    },
+  };
+
+  const view = content[state.kind];
+
+  return (
+    <div className="min-h-screen flex items-center justify-center px-5">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="text-center space-y-4"
+        role="status"
+        aria-live="polite"
+      >
+        <div
+          className={`w-20 h-20 rounded-full border flex items-center justify-center mx-auto ${view.tone}`}
+        >
+          {view.icon}
+        </div>
+        <h1 className="text-2xl font-bold text-white">{view.title}</h1>
+        <p className="text-white/60 max-w-xs mx-auto">{view.body}</p>
+        {state.kind !== 'awaiting' && (
+          <button
+            onClick={onDashboard}
+            className="mt-4 px-8 py-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-white font-semibold transition-colors"
+          >
+            Go to dashboard
+          </button>
+        )}
+      </motion.div>
+    </div>
+  );
 }
 
 function PaymentForm({
@@ -131,7 +240,7 @@ function PaymentForm({
   drivingScore,
   discountPercentage,
   expiresAt,
-  onSuccess,
+  onPaid,
   isDemoMode,
   onBillingPeriodChange,
 }: PaymentFormProps) {
@@ -151,12 +260,12 @@ function PaymentForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Demo mode: simulate a successful payment
+    // Demo mode: nothing is charged and nothing is bound, so say that.
     if (isDemoMode) {
       setIsProcessing(true);
       await new Promise(r => setTimeout(r, 1800));
       setIsProcessing(false);
-      onSuccess();
+      onPaid('demo');
       return;
     }
 
@@ -186,7 +295,9 @@ function PaymentForm({
       const { clientSecret } = await res.json();
 
       if (!clientSecret) {
-        onSuccess();
+        // Nothing to confirm on the card. The subscription still has to bind a
+        // policy, so this waits on the insurer like every other paid path.
+        onPaid('charged');
         return;
       }
 
@@ -203,7 +314,8 @@ function PaymentForm({
       }
 
       if (paymentIntent?.status === 'succeeded') {
-        onSuccess();
+        // The CARD succeeded. Cover has not been established yet.
+        onPaid('charged');
       }
     } catch (err: any) {
       setCardError(err.message || 'Payment failed. Please try again.');
@@ -377,11 +489,87 @@ export default function Checkout() {
   const [quoteId, setQuoteId] = useState<string | undefined>(undefined);
   const [quoteError, setQuoteError] = useState<string | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(true);
-  const [success, setSuccess] = useState(false);
+  const [coverState, setCoverState] = useState<CoverState>({ kind: 'idle' });
   const [stripeReady, setStripeReady] = useState(false);
 
   const isDemoMode = typeof window !== 'undefined' &&
     sessionStorage.getItem('driiva-demo-mode') === 'true';
+
+  /*
+   * WAVE H: a cleared card used to set `success`, which rendered "Policy
+   * activated! Your Driiva insurance policy is now active."
+   *
+   * A cleared card is not cover. Binding happens afterwards and elsewhere: the
+   * Stripe webhook writes users/{uid}/pendingPayments/{subscriptionId}, and a
+   * Cloud Function calls Root. If that failed, the document was marked failed
+   * and the driver was told nothing, having already read that they were
+   * insured. That is the charged-but-uninsured case, and it was invisible.
+   *
+   * So the screen now follows the binding, not the charge. It waits, and then
+   * says the true thing: confirmed, still being set up, or taken your money
+   * and failed. If it cannot find out in time it says THAT, rather than
+   * picking the optimistic ending.
+   */
+  useEffect(() => {
+    if (coverState.kind !== 'awaiting') return;
+    const uid = auth?.currentUser?.uid;
+    if (!db || !uid) return;
+
+    let unsubscribe: (() => void) | undefined;
+    let cancelled = false;
+
+    // If the binding has not resolved within this window, say so plainly.
+    const timeoutId = window.setTimeout(() => {
+      if (!cancelled) setCoverState((s) => (s.kind === 'awaiting' ? { kind: 'unresolved' } : s));
+    }, COVER_CONFIRMATION_TIMEOUT_MS);
+
+    (async () => {
+      const { collection, query, orderBy, limit, onSnapshot } = await import('firebase/firestore');
+      if (cancelled) return;
+      const pending = query(
+        collection(db, 'users', uid, 'pendingPayments'),
+        orderBy('createdAt', 'desc'),
+        limit(1),
+      );
+      unsubscribe = onSnapshot(
+        pending,
+        (snap) => {
+          const docSnap = snap.docs[0];
+          if (!docSnap) return;
+          const data = docSnap.data() as {
+            status?: string;
+            policyStatus?: string;
+            policyId?: string;
+            error?: string;
+          };
+
+          if (data.policyStatus === 'active') {
+            setCoverState({ kind: 'confirmed', policyId: data.policyId ?? null });
+            return;
+          }
+          if (data.status === 'failed' || data.policyStatus === 'none') {
+            setCoverState({ kind: 'failed' });
+            return;
+          }
+          if (data.status === 'completed') {
+            // The attempt finished and the insurer has not activated the
+            // policy. Finished is not the same as covered.
+            setCoverState({ kind: 'notYetCovered' });
+          }
+        },
+        () => {
+          // We cannot read the outcome. That is unknown, not success.
+          if (!cancelled) setCoverState({ kind: 'unresolved' });
+        },
+      );
+    })();
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+      unsubscribe?.();
+    };
+  }, [coverState.kind]);
 
   useEffect(() => {
     stripePromise.then(s => setStripeReady(s !== null));
@@ -448,35 +636,8 @@ export default function Checkout() {
   const rawScore = pricingInputs?.drivingScore ?? (isDemoMode ? 82 : null);
   const discountPct = scoreDiscountPercent(rawScore);
 
-  if (success) {
-    return (
-      <div className="min-h-screen flex items-center justify-center px-5">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="text-center space-y-4"
-        >
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 20, delay: 0.2 }}
-            className="w-20 h-20 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center mx-auto"
-          >
-            <CheckCircle className="w-10 h-10 text-emerald-400" />
-          </motion.div>
-          <h1 className="text-2xl font-bold text-white">Policy activated!</h1>
-          <p className="text-white/60 max-w-xs mx-auto">
-            Your Driiva insurance policy is now active. Keep driving safely to earn refunds.
-          </p>
-          <button
-            onClick={() => setLocation('/dashboard')}
-            className="mt-4 px-8 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold transition-colors"
-          >
-            Go to dashboard
-          </button>
-        </motion.div>
-      </div>
-    );
+  if (coverState.kind !== 'idle') {
+    return <CoverOutcome state={coverState} onDashboard={() => setLocation('/dashboard')} />;
   }
 
   return (
@@ -565,7 +726,9 @@ export default function Checkout() {
                 drivingScore={rawScore ?? 75}
                 discountPercentage={discountPct}
                 expiresAt={new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()}
-                onSuccess={() => setSuccess(true)}
+                onPaid={(mode) =>
+                  setCoverState(mode === 'demo' ? { kind: 'demo' } : { kind: 'awaiting' })
+                }
                 isDemoMode={isDemoMode}
                 onBillingPeriodChange={setBillingPeriod}
               />

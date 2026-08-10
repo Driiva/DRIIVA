@@ -9,7 +9,9 @@
  *   1. Checks whether the user already has an active Root policy.
  *   2. If not, retrieves the pending quote for this user and calls acceptInsuranceQuote.
  *   3. Updates the policy's stripeSubscriptionId in Firestore.
- *   4. Sends an FCM push notification: "Your policy is now active."
+ *   4. Tells the driver what actually happened: cover confirmed, cover still
+ *      pending, or payment taken with no cover in place. Never a blanket
+ *      "your policy is active" on the strength of a card having cleared.
  *
  * Design note: The Express server cannot call Firebase callable functions
  * directly (they require a Firebase auth context). Instead:
@@ -25,7 +27,8 @@
 
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
-import { COLLECTION_NAMES, UserDocument } from '../types';
+import { COLLECTION_NAMES } from '../types';
+import { notifyPolicyConfirmed, notifyPolicyNotConfirmed } from '../utils/notifications';
 import { EUROPE_LONDON } from '../lib/region';
 import { wrapTrigger } from '../lib/sentry';
 
@@ -38,6 +41,13 @@ interface PendingPaymentDoc {
   createdAt: admin.firestore.FieldValue;
   processedAt?: admin.firestore.FieldValue;
   status: 'pending' | 'processing' | 'completed' | 'failed';
+  /**
+   * What the INSURER says about cover, which is a different question from
+   * whether this binding attempt finished. 'none' means we hold the money and
+   * hold no cover.
+   */
+  policyStatus?: 'active' | 'pending' | 'expired' | 'cancelled' | 'suspended' | 'none';
+  policyId?: string;
   error?: string;
 }
 
@@ -85,6 +95,8 @@ export const onPendingPaymentWrite = functions
         });
         await snap.ref.update({
           status: 'completed',
+          policyId: existingPolicy.id,
+          policyStatus: 'active',
           processedAt: admin.firestore.FieldValue.serverTimestamp(),
         });
         return;
@@ -114,47 +126,48 @@ export const onPendingPaymentWrite = functions
       const { acceptInsuranceQuoteInternal } = await import('../http/insuranceInternal');
       const result = await acceptInsuranceQuoteInternal(userId, quoteId, subscriptionId);
 
-      functions.logger.info(`[Payments] Policy bound`, { policyId: result.policyId, userId });
+      functions.logger.info(`[Payments] Root returned a policy`, {
+        policyId: result.policyId,
+        status: result.status,
+        userId,
+      });
 
-      // Send FCM push notification
-      const userDoc = await db.collection(COLLECTION_NAMES.USERS).doc(userId).get();
-      const user = userDoc.data() as UserDocument | undefined;
-      const fcmTokens: string[] = user?.fcmTokens || [];
-
-      if (fcmTokens.length > 0) {
-        const message: admin.messaging.MulticastMessage = {
-          tokens: fcmTokens,
-          notification: {
-            title: 'Your policy is active!',
-            body: `Policy ${result.policyNumber} is now active. Drive safely to earn refunds.`,
-          },
-          data: {
-            type: 'POLICY_ACTIVATED',
-            policyId: result.policyId,
-            policyNumber: result.policyNumber,
-          },
-          android: { priority: 'high' },
-          apns: { payload: { aps: { sound: 'default' } } },
-        };
-
-        const response = await admin.messaging().sendEachForMulticast(message);
-        functions.logger.info(`[Payments] FCM sent`, {
-          successCount: response.successCount,
-          failureCount: response.failureCount,
-        });
+      // What the driver is told follows what the insurer said, not the fact
+      // that a card cleared. This used to push "Your policy is active!" with
+      // an invented policy number on every path that reached this line,
+      // including the paths where Root had not activated anything.
+      if (result.status === 'active') {
+        await notifyPolicyConfirmed(userId, result.policyId, result.policyNumber);
+      } else {
+        await notifyPolicyNotConfirmed(userId, 'pending');
       }
 
       await snap.ref.update({
+        // 'completed' means this binding attempt finished, not that cover is
+        // in place. `policyStatus` is the part that says whether it is.
         status: 'completed',
+        policyId: result.policyId,
+        policyStatus: result.status,
         processedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
 
     } catch (err: any) {
+      // MONEY HAS BEEN TAKEN AND THERE IS NO COVER. Previously this wrote a
+      // status nobody surfaced and logged a line nobody read, while the
+      // checkout screen told the driver their policy was active. The failure
+      // is now recorded AND told to the person it happened to.
       functions.logger.error(`[Payments] Failed to bind policy for user ${userId}:`, err);
       await snap.ref.update({
         status: 'failed',
+        policyStatus: 'none',
         error: err.message || 'Unknown error',
         processedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
+
+      try {
+        await notifyPolicyNotConfirmed(userId, 'failed');
+      } catch (notifyErr) {
+        functions.logger.error('[Payments] could not notify the user of a bind failure:', notifyErr);
+      }
     }
   }));

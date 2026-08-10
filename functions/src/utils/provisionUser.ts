@@ -26,12 +26,7 @@ export interface BuildProvisionedUserDocInput {
   displayName?: string | null;
   /** True when `email` is in the ADMIN_EMAILS allowlist. */
   isAdmin?: boolean;
-  /** The default policy's id, e.g. `policy_{uid}` - resolved by the caller. */
-  policyId: string;
-  /** The default policy's sequential number, e.g. `DRV-001` - resolved by the caller. */
-  policyNumber: string;
   now: FirestoreTimestampLike;
-  renewalDate: FirestoreTimestampLike;
 }
 
 /**
@@ -64,7 +59,7 @@ function deriveDisplayName(displayName?: string | null): string | null {
 export function buildProvisionedUserDoc(
   input: BuildProvisionedUserDocInput,
 ): ProvisionedUserDocument {
-  const { uid, email, displayName, isAdmin, policyId, policyNumber, now, renewalDate } = input;
+  const { uid, email, displayName, isAdmin, now } = input;
 
   const doc: ProvisionedUserDocument = {
     uid,
@@ -95,14 +90,18 @@ export function buildProvisionedUserDoc(
       streakDays: 0,
       riskTier: 'low',
     },
-    activePolicy: {
-      policyId,
-      policyNumber,
-      status: 'pending',
-      premiumCents: 0, // Updated when a quote is generated.
-      coverageType: 'standard',
-      renewalDate,
-    },
+    // WAVE H: signing up used to create a policy. Every new user document
+    // carried an activePolicy with a sequential DRV-### number, a renewal date
+    // a year out, and a matching policies/{id} document declaring GBP 100,000
+    // of liability cover, GBP 500 and GBP 250 excesses and roadside
+    // assistance. None of it was underwritten by anybody, because Driiva has
+    // no underwriter and is not authorised to arrange cover. A driver who
+    // signed up held a policy number for a contract that did not exist.
+    //
+    // Signing up now gets you an account. A policy appears here when an
+    // insurer issues one, written by the binding path and mirrored by the
+    // policies trigger, and not before.
+    activePolicy: null,
     poolShare: {
       currentShareCents: 0,
       contributionCents: 0,

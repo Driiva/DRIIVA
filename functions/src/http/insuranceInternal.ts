@@ -6,9 +6,37 @@
  */
 
 import * as admin from 'firebase-admin';
-import { COLLECTION_NAMES, UserDocument, CoverageType } from '../types';
+import { COLLECTION_NAMES, UserDocument, CoverageType, PolicyStatus } from '../types';
 
 const db = admin.firestore();
+
+/**
+ * Root's policy status, mapped onto ours. Only Root saying "active" makes a
+ * policy active here.
+ *
+ * This used to be the literal `status: 'active'`, written regardless of what
+ * Root reported, so a policy Root was still holding in a pending state was
+ * recorded, rendered and pushed to the driver's phone as live cover. Anything
+ * we do not recognise is 'pending', because an unrecognised status is a status
+ * we have not verified, and the rule is that we never assert a state we have
+ * not verified.
+ */
+export function mapRootPolicyStatus(rootStatus: string | undefined | null): PolicyStatus {
+  switch ((rootStatus ?? '').toLowerCase()) {
+    case 'active':
+      return 'active';
+    case 'cancelled':
+    case 'canceled':
+      return 'cancelled';
+    case 'expired':
+    case 'lapsed':
+      return 'expired';
+    case 'suspended':
+      return 'suspended';
+    default:
+      return 'pending';
+  }
+}
 
 interface RootConfig {
   apiKey: string;
@@ -46,11 +74,19 @@ async function rootApiFetch<T>(path: string, method: 'GET' | 'POST', body?: Reco
   return response.json() as Promise<T>;
 }
 
+export interface BindResult {
+  policyId: string;
+  /** Null when the insurer did not give us one. Never invented. */
+  policyNumber: string | null;
+  /** What the INSURER says the policy is, not what we would like it to be. */
+  status: PolicyStatus;
+}
+
 export async function acceptInsuranceQuoteInternal(
   userId: string,
   quoteId: string,
   stripeSubscriptionId?: string,
-): Promise<{ policyId: string; policyNumber: string }> {
+): Promise<BindResult> {
   // Get stored quote coverageType
   const quoteDoc = await db.collection('quotes').doc(quoteId).get();
   const storedCoverage: CoverageType = quoteDoc.exists
@@ -92,12 +128,20 @@ export async function acceptInsuranceQuoteInternal(
     monthly_premium: number; start_date: string; end_date: string;
   }>(`/policies/${application.policy_id}`, 'GET');
 
+  // What Root actually told us, which is the only thing we are entitled to
+  // record. `policy_number` used to fall back to `DRV-${Date.now()}`: an
+  // invented reference, unique per millisecond, that would never match
+  // anything in the insurer's system and was pushed to the driver's phone as
+  // their policy number.
+  const policyNumber: string | null = rootPolicy.policy_number || null;
+  const status = mapRootPolicyStatus(rootPolicy.status);
+
   // Store in Firestore
   await db.collection(COLLECTION_NAMES.POLICIES).doc(rootPolicy.policy_id).set({
     policyId: rootPolicy.policy_id,
     userId,
-    policyNumber: rootPolicy.policy_number || `DRV-${Date.now()}`,
-    status: 'active',
+    policyNumber,
+    status,
     coverageType: storedCoverage,
     basePremiumCents: rootPolicy.monthly_premium,
     currentPremiumCents: rootPolicy.monthly_premium,
@@ -116,17 +160,19 @@ export async function acceptInsuranceQuoteInternal(
     updatedBy: 'cloud-function',
   });
 
-  // Update user activePolicy
+  // Update user activePolicy. The denormalised copy carries the same status
+  // the policy document does, so a reader cannot pick up "active" from here
+  // while the policy itself is pending.
   await db.collection(COLLECTION_NAMES.USERS).doc(userId).update({
     activePolicy: {
       policyId: rootPolicy.policy_id,
-      policyNumber: rootPolicy.policy_number,
-      status: 'active',
+      policyNumber,
+      status,
       startDate: rootPolicy.start_date,
     },
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     updatedBy: 'cloud-function',
   });
 
-  return { policyId: rootPolicy.policy_id, policyNumber: rootPolicy.policy_number };
+  return { policyId: rootPolicy.policy_id, policyNumber, status };
 }

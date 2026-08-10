@@ -6,6 +6,8 @@ exports[`PendingPaymentDocumentSchema > pins the current field set (drift guard:
   "stripeCustomerId",
   "quoteId",
   "status",
+  "policyStatus",
+  "policyId",
   "error",
   "createdAt",
   "processedAt",
