@@ -139,3 +139,71 @@ Sends were fire-and-forget so a notification existed only as a banner; nothing f
 - No mobile screen verified on-device anywhere in this lift. D2 push is code-complete, NOT shipped - cannot be proven without a build and a real APNs round trip.
 - No mobile feedback FORM (web FeedbackModal exists with 9 rules tests). Small addition if wanted.
 - axe accessibility: never run.
+
+## QA gate merged (10 Aug) - TEN waves now on premium-lift/main
+Merge took 4 conflicts, each resolved keeping BOTH sides' fixes rather than picking one:
+- package.json: both script sets (design:laws:mobile + fabrication:laws AND qa:seed/qa:emulators/axe).
+- StepWelcome.tsx: Wave G's honest copy + QA's contrast bump.
+- profile.tsx: Wave G's policy-gating (a fake "Third-Party Liability up to GBP 20M" benefits list was rendering for every signed-in user with no policy) + QA's contrast bump.
+- 8 files QA had modified but Wave G had DELETED: kept deleted. PolicyDownload.tsx (the invented-FCA-number document) must never come back.
+Verified after merge: tsc CLEAN, vitest 601 passed | 2 todo | 0 failed (56 files).
+
+## GATE 1 ACCESSIBILITY: PASSES. 80 serious/critical -> 0 across 14 routes (npm run axe)
+63 colour-contrast + 10 CRITICAL button-name (icon-only buttons whose only label was a title attribute, invisible on touch) + 6 link-in-text-block (legal links distinguished by colour with underline on HOVER only) + 1 invalid autocomplete + Delete Account at 3.8:1 (fixed by DARKENING the fill, not lightening the text - a destructive action should not get softer).
+**THE ACCENT ITSELF WAS THE FAILURE**: #5b4dc9 as small TEXT is ~3.3:1 on #12111f, so nav labels, the leaderboard your-row and the trust badges all failed. New --app-primary-text (same hue, lifted); fills keep --app-primary. Design law 2 immediately flagged the new colour as off-palette until registered - the law doing its job.
+NOT fixed, Jamal's call: meta-viewport carries user-scalable=no + maximum-scale=1, blocking pinch zoom. A real barrier, axe rates it moderate so not gating, and it is a deliberate PWA decision.
+
+## WHY THE AUTHENTICATED SURFACES WENT THREE WAVES UNSEEN
+client/src/lib/firebase.ts IMPORTED connectAuthEmulator and connectFirestoreEmulator AND NEVER CALLED THEM. There was no way to render dashboard/trips/leaderboard/rewards without live credentials. Now wired behind VITE_USE_FIREBASE_EMULATOR, double-guarded on DEV, plus scripts/seed-qa-emulator.mjs and a CDP sign-in helper. npm run qa:emulators, npm run qa:seed.
+It paid for itself immediately: rendering those pages exposed /rewards and /achievements reporting DIFFERENT achievement counts for the same user (3 of 8 vs "0 of -"; /rewards was still calling getAchievementDefinitions, the bug Wave D fixed on one page and missed on the other), plus 6 emoji, 3 em dashes and 2 exclamation marks in dashboard copy no machine check could reach.
+
+## GATE 2 DESIGN GATE: FAILS. The dashboard is the weak surface.
+Measured card order: notification prompt banner, header, greeting, DRIVING SCORE, AI tip, Beta Estimate, Live Location, Your Trips, COMMUNITY POOL, REFUND GOALS, Achievements, Profile.
+- Brief requires Score -> Cashback -> Pool. Actual is Score -> Pool -> Cashback, with **Cashback NINTH**, below a location toggle and the trip list. The money the product sells is nine cards down.
+- The FIRST element is a notification permission prompt, ABOVE the headline number.
+- Twelve cards of near-equal weight and NO single primary action (checklist.design's card content-hierarchy item).
+- "Colour is earned" is false here: green ring + amber trophy + purple-to-pink gradient bar + teal avatar + indigo badge. The PINK IS NOT IN THE PALETTE.
+Open law failures on the authenticated surfaces (never previously runnable): law 1 a rounded-full indigo badge (capsule, banned) + 2 gradient-filled bars; law 5 **12px body copy on dashboard, trips and rewards** (this IS Jamal's "body text needs an upgrade"); law 6 the 4xl hero score and trips distances are NOT tabular, so the hero number JITTERS as it changes.
+Agent's verdict, which matches Jamal's independently: "It is not ugly; it is undecided."
+HARNESS CAVEAT: the design-law runner settles BEFORE the dashboard's pool and refund cards load, so law 1 there passes about half the time by luck. The failing result is the true one. Fixing that settle is the first thing to do to the harness.
+
+## STILL EXPO PLACEHOLDERS (Jamal caught this, not the agents)
+mobile/assets/images/splash-icon.png and adaptive-icon.png are the Expo template's grey concentric circles on a grid. Real assets sit unused in design-system/assets/ (logo-ii-mark.png is the glowing ii mark on the brand gradient, 1024x1024). app.json splash backgroundColor #0a0e1a is not a brand token either (#0a0a14 is).
+## AMICRO AND CHECKLIST.DESIGN WERE NAMED AND NOT USED
+Jamal asked for both explicitly. Amicro: 2 components of 163 arguably used. checklist.design: fetched once, got the empty SPA shell, delegated, never delivered until the QA gate scored a few lists. Both now assigned properly to wave-i-brand.
+
+## CRASH FIXED AND VERIFIED ON DEVICE (10 Aug) - and it explained the dashboard zeros
+ROOT CAUSE: CountUp's useAnimatedReaction body is a worklet on the UI runtime and called formatCountValue, a plain JS function. Calling a non-worklet from a worklet throws, and an uncaught throw inside a worklet ABORTS THE PROCESS rather than surfacing a red screen - which is why six SIGABRT reports existed with no JS error anywhere to chase. Stack signature on all six: worklets::scheduleOnUI -> WorkletRuntime::runGuarded -> Hermes throwPending -> abort.
+FIX: format on the JS thread, only runOnJS crosses the boundary.
+ONE BUG, TWO SYMPTOMS: the reaction threw before it ever called setDisplay, so every CountUp figure stayed at its initial 0 AND the process aborted moments later. That is why the dashboard read zeros while trips and leaderboard (no CountUp) read the same user's data correctly in the same session. The zero was the more dangerous symptom - it looked like working software showing a new driver an empty account.
+VERIFIED: 6 crash reports before, 6 after, across cold launch + keychain reset + sign-in (the exact action that aborted before) + dashboard + trips + navigation. Sign-in now completes.
+NEARLY FIXED THE WRONG THING: there is no babel.config.js anywhere in repo history, which for Reanimated 4 looks like the obvious culprit. Tested it before acting - babel-preset-expo auto-adds react-native-worklets/plugin and worklets compile correctly. The hypothesis was wrong and the test cost 2 minutes.
+
+## DASHBOARD CAPTURED WITH REAL DATA - the design gate now passes on mobile
+06-dashboard.png: Score 78 on a 270-degree arc carrying the brand gradient (amber->indigo as the instrument surface, not a flat tint); Cashback GBP 74.83 in tabular mono, computed as projectedRefundCents(78, seeded premium) NOT a placeholder, with honest copy stating it is projected, moves with every trip, and settles at period end; Community pool "Opens at launch" with the reason; Trips 34 / Miles 302 / Rank 4 all matching the seed, Rank now wired rather than the "--" flagged from source.
+Hierarchy reads Score -> Cashback -> Pool as specified. Near-monochrome: the ONLY colour event is the gradient arc. This is the first Driiva surface that actually satisfies "colour is earned".
+Nit (not a blocker): the arc and all three tiles count up on first paint, so four numbers move at once. Let the hero count, let the tiles appear.
+
+## TWO BUGS WORTH TICKETS
+1. HIGHEST SEVERITY STILL OPEN: the app cold-launches into "This screen does not exist" from persisted router state pointing at a dead route. Reproduced independently by two of us; it is why sim-signin.sh could not find the fields. On a real device that is a driver opening the app and being told it is broken.
+2. idb ui text TRUNCATES: a sign-in typed "test@driiva." and dropped "co.uk", which the app correctly reported as a failed sign-in. Verify field contents after typing before trusting that tooling.
+
+## STATE: 601 tests passing (56 files), root tsc clean, MOBILE TSC 0 ERRORS (from 54 on main). Six screens captured.
+
+## State at the 10 Aug session limit (resets 15:50 Europe/London)
+INTEGRATED on premium-lift/main, 13 waves: 656 tests passed | 2 todo | 0 failed (60 files, main baseline 518); root tsc CLEAN; mobile tsc 0 errors (main 54); axe 0 serious/critical (was 80); four law harnesses in CI (web design, mobile source, fabrication, axe).
+CAPTURED on a real simulator with seeded data: sign-in, dashboard, trips, trip detail, leaderboard, rewards, cold-launch. docs/premium-lift/screenshots/.
+
+TWO WIP CHECKPOINTS, both unverified, both preserved by the coordinator after their agent dropped:
+- task/premium-h-policy-honesty @ 51a6028 - the insurance/payment honesty wave (checkout claiming a binding it did not get, signup writing a fake policy onto every user, "Driver Unknown" identities). Agent lost to a connection error.
+- task/premium-i-brand @ 653fbe7 - I5 web dashboard redesign incl. the ScoreRing 360->270 fix. Agent lost to the account limit.
+Neither is merged. Both need tsc + suites run before they are trusted.
+
+## STILL SHORT OF THE STRYDE BAR (the brand agent's own list, after its I1-I4 landed)
+1. EmptyState has NO error variant, so a failed read tells a driver they have no trips. Five callers. The most misleading state in the app.
+2. 116 off-ladder font sizes remain in mobile screens, 17 distinct sizes against a 9-step ladder. The new law is scoped to the primitives only.
+3. dashboard-glass-card and glass-morphism are still used on PRODUCT surfaces (score card, AI card, trip recording status) - CLAUDE.md reserves glass for marketing.
+4. client/src/components/ScoreRing.tsx is a 360-degree ring with four pasted hex values while the design system AND mobile both specify a 270-degree arc. The hero number of the product is off-spec on web. (Partially addressed in the I5 checkpoint.)
+5. Title Case survives on headings ("Recent Trips", "Driving Score") where the system asks for sentence case.
+6. Twenty hand-rolled spinners remain, each its own size and colour; three were replaced.
+7. Accessibility scored 4 of 8 on checklist.design (its axe claim is stale - the QA gate took axe to 0 - but no WCAG target is stated anywhere).
