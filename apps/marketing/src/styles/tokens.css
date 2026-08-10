@@ -7,10 +7,14 @@
   --plum-2: #241228;
 
   /* ── Text ladder ────────────────────────────────────────── */
+  /* Alphas set against the amber edge of the wash, which is the lowest-contrast
+     ground on the page. At 0.70 and 0.50 body copy measured 3.5:1 and 2.6:1
+     there, under the 4.5 and 3.0 the ladder needs. The background is the brand
+     asset and is not the thing to dim, so the text carries the fix. */
   --fg-1: #ffffff;
-  --fg-2: rgba(255, 255, 255, 0.7);
-  --fg-3: rgba(255, 255, 255, 0.5);
-  --fg-4: rgba(255, 255, 255, 0.35);
+  --fg-2: rgba(255, 255, 255, 0.82);
+  --fg-3: rgba(255, 255, 255, 0.64);
+  --fg-4: rgba(255, 255, 255, 0.46);
 
   /* ── Brand iris stack ───────────────────────────────────── */
   --iris: #6366f1;

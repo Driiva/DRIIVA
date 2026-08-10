@@ -28,17 +28,16 @@ uniform float uScroll;
 uniform float uPulse;
 uniform vec2  uPulsePos;
 
-/* Driiva palette (linear-ish; gentle gamma applied at the end) */
+/* Driiva palette (linear-ish; gentle gamma applied at the end). The four brand
+ * stops are canonical and must not be retuned here; C_PLUM is the ink the
+ * stops are darkened against and C_BLOOM is sampled straight out of the
+ * bottom-right corner of the reference wash. */
 const vec3 C_AMBER  = vec3(0.835, 0.521, 0.040); // #d4850a
-const vec3 C_AMBER2 = vec3(0.984, 0.749, 0.141); // #fbbf24
 const vec3 C_BURNT  = vec3(0.627, 0.298, 0.165); // #a04c2a
 const vec3 C_VIOLET = vec3(0.420, 0.247, 0.627); // #6b3fa0
 const vec3 C_INDIGO = vec3(0.231, 0.176, 0.545); // #3b2d8b
-const vec3 C_IRIS   = vec3(0.388, 0.400, 0.945); // #6366f1
-const vec3 C_PURPLE = vec3(0.545, 0.361, 0.965); // #8b5cf6
-const vec3 C_LILAC  = vec3(0.654, 0.545, 0.980); // #a78bfa
 const vec3 C_PLUM   = vec3(0.102, 0.059, 0.122); // #1a0f1f
-const vec3 C_INK    = vec3(0.020, 0.020, 0.035); // #050509
+const vec3 C_BLOOM  = vec3(0.357, 0.137, 0.176); // #5b232d, corner of the wash
 
 float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float vnoise(vec2 p){
@@ -53,131 +52,109 @@ float fbm(vec2 p){
   return v;
 }
 
-/* Smooth weighted blend of colour stops on an S-curve diagonal from top-left
- * (amber) -> bottom-right (deep indigo), plus floating orbs for depth. */
-vec3 meshBlend(vec2 uv){
-  vec2 ar = vec2(uRes.x/uRes.y, 1.0);
-  vec2 p  = uv * ar;
+/* The wash is the brand stops SATURATED and DEEPENED, not blended toward each
+ * other. Sampling the reference makes this unambiguous: its middle is
+ * #5d140b, whose blue channel is 11/255, while any burnt-to-violet blend puts
+ * blue near 100. Pushing a stop away from its own grey and then darkening it
+ * reproduces the wash while keeping the four canonical stops as the only
+ * source of hue. */
+vec3 deepen(vec3 c, float sat, float dark){
+  float l = dot(c, vec3(0.299, 0.587, 0.114));
+  return max(mix(vec3(l), c, sat), 0.0) * dark;
+}
 
-  /* The field drifts predominantly along X, at a rate that differs per stop,
-   * so the near colours slide past faster than the far ones. That parallax is
-   * what makes it read as light moving past a car rather than a lava lamp:
-   * amber sodium light behind, indigo night ahead. */
+/* The canonical Driiva wash, animated.
+ *
+ * design-system/assets/gradient-background.png is the source of truth. Sampled
+ * on a 9x9 grid it is a HORIZONTAL progression and barely varies vertically:
+ * amber #92490a hard against the left edge, rust #5d140b, deep maroon #470c1a
+ * through the middle, indigo #23124a on the right, plus one warm plum bloom
+ * #5b232d in the bottom-right corner. There are no orbs, no sparkles and no
+ * cursor-coloured blob in the reference, so there are none here.
+ *
+ * The composition is therefore driven by x, and the motion is the band
+ * boundaries breathing against each other rather than stops wandering the
+ * frame. A stop that travels far enough to leave its side of the picture
+ * stops being this wash, which is the thing that has to survive the animation. */
+vec3 meshBlend(vec2 uv){
   float t  = uTime * 0.16;
   float drift = uTime * 0.020;
   float mx = (uMouse.x - 0.5);
-  float my = (uMouse.y - 0.5);
   float s  = uScroll;
 
-  /* Lateral travel, one long-period sine per stop at rates that share no
-   * common multiple, so the field never resynchronises into a visible loop.
-   * A sine rather than a wrap because a wrapped stop pops when it crosses the
-   * seam: these weights are wide enough to still be on screen at the edge.
-   * The near stops (x3, x4) swing furthest, which is the parallax. */
-  float x0 = (0.08 + 0.10*sin(drift*0.61)) * ar.x;
-  float x1 = (0.30 + 0.14*sin(drift*0.43 + 1.7)) * ar.x;
-  float x2 = (0.66 + 0.19*sin(drift*0.29 + 3.1)) * ar.x;
-  float x3 = (0.38 + 0.24*sin(drift*0.37 + 4.6)) * ar.x;
-  float x4 = (0.94 + 0.28*sin(drift*0.23 + 5.8)) * ar.x;
+  /* Band centres along x, placed on the sampled positions. Each breathes on
+   * its own long-period sine at rates sharing no common multiple, so the
+   * boundaries never resynchronise into a visible loop, but the amplitudes are
+   * small enough that amber stays a left-edge colour and indigo a right-edge
+   * one at every point in the cycle. */
+  /* The outer two sit off-screen. With the amber peak at x=0 exactly, half its
+   * falloff is outside the viewport and the left edge only ever shows the
+   * shoulder of the band, which reads far weaker than the reference. */
+  float b0 = -0.08 + 0.030*sin(drift*0.61);
+  float b1 =  0.22 + 0.042*sin(drift*0.43 + 1.7);
+  float b2 =  0.48 + 0.048*sin(drift*0.29 + 3.1);
+  float b3 =  0.74 + 0.042*sin(drift*0.37 + 4.6);
+  float b4 =  1.08 + 0.030*sin(drift*0.23 + 5.8);
 
-  vec2 p0 = vec2(x0 + 0.05*sin(t*1.2),       0.94 + 0.03*cos(t*0.9));
-  vec2 p1 = vec2(x1 + 0.05*sin(t*0.7 + 0.5), 0.72 + 0.04*cos(t*1.3));
-  vec2 p2 = vec2(x2 + 0.07*sin(t*0.6),       0.50 + 0.05*cos(t*0.8));
-  vec2 p3 = vec2(x3 + 0.06*cos(t*1.0),       0.28 + 0.04*sin(t*1.2));
-  vec2 p4 = vec2(x4 + 0.05*sin(t*1.3),       0.06 + 0.03*cos(t*0.7));
-  vec2 p5 = vec2(uMouse.x*ar.x, uMouse.y);
+  /* Pointer and scroll lean the whole ladder rather than moving one stop, so
+   * the field answers the reader without the composition sliding off. */
+  float shift = mx*0.030 + s*0.045;
+  b0 += shift*0.3; b1 += shift*0.6; b2 += shift; b3 += shift*0.8; b4 += shift*0.4;
 
-  vec2 sN = vec2(s*0.08, -s*0.30);
-  p0 += sN*0.4; p1 += sN*0.6; p2 += sN; p3 += sN*1.2; p4 += sN*1.4;
+  /* A slight lean and a slow wave so the bands are not dead-straight columns. */
+  float x = uv.x + (uv.y - 0.5)*0.055 + 0.022*sin(t*0.5 + uv.y*2.3);
 
-  vec2 par = vec2(mx, my) * 0.06;
-  p0 -= par;        p1 -= par*0.6;
-  p3 += par*0.6;    p4 += par;
+  /* Each band is one canonical stop, saturated and deepened onto its sampled
+   * value in the reference. The ladder runs warm to cool exactly as the brand
+   * gradient does; only the depth changes across it. */
+  /* The amber edge is the only part of the wash bright enough to threaten text
+   * contrast, and it was rendering slightly brighter than the reference, so
+   * pulling it down serves the match and the legibility at the same time. */
+  vec3 cAmber  = deepen(C_AMBER,  1.80, 0.92);            // #92490a
+  vec3 cRust   = deepen(C_BURNT,  2.15, 0.92);            // #5d140b
+  vec3 cMaroon = deepen(mix(C_BURNT, C_VIOLET, 0.30), 2.00, 0.62); // #470c1a
+  vec3 cViolet = deepen(mix(C_VIOLET, C_INDIGO, 0.62), 1.52, 0.74); // #241046
+  vec3 cIndigo = deepen(C_INDIGO, 1.34, 0.84 - s*0.08);   // #2b1547
 
-  vec3 cAmber  = mix(C_AMBER,  C_BURNT,  0.18);
-  vec3 cBurnt  = mix(C_BURNT,  C_VIOLET, 0.20 + s*0.30);
-  vec3 cViolet = mix(C_VIOLET, C_PLUM,   0.22);
-  vec3 cIris   = mix(C_IRIS,   C_INDIGO, 0.45);
-  vec3 cIndigo = mix(C_INDIGO, C_PLUM,   0.45 + s*0.20);
-  vec3 cCursor = mix(C_PURPLE, C_LILAC,  0.30 + 0.30*uPulse);
+  /* Band softness. Wide relative to the 0.24 spacing, so neighbouring bands
+   * overlap heavily and no boundary can read as an edge. */
+  const float sd = 0.21;
+  float w0 = exp(-pow((x-b0)/sd, 2.0));
+  float w1 = exp(-pow((x-b1)/sd, 2.0));
+  float w2 = exp(-pow((x-b2)/sd, 2.0));
+  float w3 = exp(-pow((x-b3)/sd, 2.0));
+  float w4 = exp(-pow((x-b4)/sd, 2.0));
 
-  float r0 = 0.50 + 0.04*sin(t*1.6);
-  float r1 = 0.44 + 0.03*cos(t*1.2);
-  float r2 = 0.48 + 0.05*sin(t*0.9);
-  float r3 = 0.42 + 0.04*cos(t*1.3);
-  float r4 = 0.54 + 0.05*sin(t*0.7);
-  float r5 = 0.24 + 0.10*uPulse;
+  /* Warp the weights so the boundaries are not mathematically clean. */
+  float n = fbm(vec2(uv.x*2.2, uv.y*1.5) + uTime*0.03);
+  float warp = (n - 0.5) * 0.10;
+  w0 *= 1.0 + warp;        w1 *= 1.0 - warp;
+  w2 *= 1.0 + warp*0.6;    w3 *= 1.0 - warp;
+  w4 *= 1.0 + warp*0.4;
 
-  float clickD = distance(uv, uPulsePos*ar);
-  float ripple = uPulse * exp(-clickD*4.0) * sin(clickD*22.0 - uTime*8.0);
-  r5 += uPulse * 0.10;
+  float wsum = w0+w1+w2+w3+w4 + 1e-4;
+  vec3 col = (cAmber*w0 + cRust*w1 + cMaroon*w2 + cViolet*w3 + cIndigo*w4) / wsum;
 
-  float w0 = exp(-pow(distance(p,p0),2.0) / (r0*r0));
-  float w1 = exp(-pow(distance(p,p1),2.0) / (r1*r1));
-  float w2 = exp(-pow(distance(p,p2),2.0) / (r2*r2));
-  float w3 = exp(-pow(distance(p,p3),2.0) / (r3*r3));
-  float w4 = exp(-pow(distance(p,p4),2.0) / (r4*r4));
-  float w5 = exp(-pow(distance(p,p5),2.0) / (r5*r5)) * (1.0 + uPulse*2.0);
+  /* The plum bloom in the bottom-right corner, the one genuinely 2-D feature
+   * of the source wash. */
+  vec2 bloomC = vec2(1.04 + 0.020*sin(drift*0.31), 1.00 + 0.020*cos(drift*0.27));
+  float bloomD = distance(vec2(uv.x, (uv.y - 1.0)*0.85 + 1.0), bloomC);
+  float bloom = exp(-pow(bloomD/0.54, 2.0));
+  col = mix(col, C_BLOOM, bloom*0.42);
 
-  float n = fbm(p*1.8 + uTime*0.05);
-  float warp = (n - 0.5) * 0.06;
-  w0 *= 1.0 + warp;  w1 *= 1.0 - warp;
-  w2 *= 1.0 - warp;  w3 *= 1.0 + warp;
-  w4 *= 1.0 + warp*0.5;
-
-  float wsum = w0+w1+w2+w3+w4+w5 + 1e-4;
-  vec3 col = (cAmber*w0 + cBurnt*w1 + cViolet*w2 + cIris*w3 + cIndigo*w4 + cCursor*w5) / wsum;
-
-  float diag = (uv.x + (1.0-uv.y)) * 0.5;
-  col *= mix(1.02, 0.62, smoothstep(0.0, 1.0, diag));
-
-  float t2 = uTime;
-  vec3 orbAcc = vec3(0.0);
-  for (int i = 0; i < 10; i++) {
-    float fi = float(i);
-    float depth = 0.35 + fract(fi*0.317) * 1.40;
-
-    float ph = fi * 1.732;
-    float sp = 0.18 + fract(fi*0.611) * 0.34;
-    vec2 path = vec2(
-      0.26*sin(t2*sp        + ph)        + 0.09*sin(t2*sp*0.41 + ph*1.7),
-      0.20*cos(t2*sp*0.83   + ph*0.7)    + 0.07*sin(t2*sp*0.37 + ph*2.1)
-    );
-    vec2 base = vec2(
-      (0.15 + fi*0.197) * ar.x,
-       0.20 + fract(fi*0.241) * 0.66
-    ) + path;
-
-    vec2 c = base - vec2(mx, my) * 0.06 * depth;
-
-    float breath  = 0.78 + 0.34 * sin(t2*1.10 + fi*2.13);
-    float gate    = smoothstep(0.55, 0.95, fract(t2*0.42 + fi*0.317 + 0.18*sin(t2*0.7+fi)));
-    float spark   = 0.55 + 0.55 * sin(t2*7.20 + fi*5.31);
-    float twinkle = mix(0.55, 1.30, gate * spark);
-
-    float sz = (0.0090 + 0.0050*depth) * breath;
-    float d  = distance(p, c);
-    float core = exp(-d*d / (sz*sz*1.6));
-    float halo = exp(-d*d / (sz*sz*14.0)) * 0.36;
-    float crossSpark = exp(-d*d / (sz*sz*40.0)) * gate * 0.50;
-
-    float bright = (core + halo + crossSpark) * (0.22 + 0.18*depth) * twinkle;
-
-    float hueId = fract(fi*0.418 + 0.10*sin(t2*0.30 + fi));
-    vec3 warm   = vec3(1.00, 0.94, 0.84);
-    vec3 amber  = vec3(1.00, 0.83, 0.55);
-    vec3 lilac  = vec3(0.84, 0.80, 1.00);
-    vec3 hue    = mix(warm, mix(amber, lilac, hueId), 0.45);
-
-    orbAcc += hue * bright;
-  }
-  col += orbAcc * 0.60;
+  /* The reference lifts slightly at the top and bottom of the amber edge and
+   * carries no strong vignette, so this is a gentle shaping pass only. */
+  float edgeLift = (1.0 - smoothstep(0.0, 0.34, uv.x)) * pow(abs(uv.y - 0.5)*2.0, 2.0);
+  col *= 1.0 + edgeLift*0.10;
 
   vec2 q = uv - 0.5;
-  float vign = 1.0 - dot(q,q)*0.70;
-  col *= mix(0.74, 1.02, vign);
+  col *= mix(0.92, 1.02, 1.0 - dot(q,q)*0.70);
 
-  col += ripple * 0.06 * C_LILAC;
+  /* Click ripple, kept because it is an interaction rather than a colour, and
+   * tinted amber so it stays inside the wash. */
+  float clickD = distance(uv, uPulsePos);
+  float ripple = uPulse * exp(-clickD*4.0) * sin(clickD*22.0 - uTime*8.0);
+  col += ripple * 0.05 * C_AMBER;
 
   /* Previously 0.88 here and 0.84 again in main(), so the brand stops were
    * mixed at full strength and then cut to 74% before they ever reached a
@@ -193,11 +170,17 @@ void main(){
   vec3 col = meshBlend(uv);
 
   // One dimming pass, sized so body copy still clears contrast over the
-  // brightest part of the field (the amber corner).
-  col *= 0.80;
+  // brightest part of the field (the amber edge). A multiply rather than a
+  // gamma, so it scales every channel proportionally instead of lifting the
+  // near-zero ones the wash depends on.
+  col *= 0.88;
 
   // gentle gamma correction
-  col = pow(max(col, 0.0), vec3(0.92));
+  /* Near 1.0 on purpose. A lifting gamma raises the near-zero channels most,
+   * and the reference wash is built on channels that sit near zero (its middle
+   * is #470c1a, green 12/255). At 0.92 that lift alone put roughly ten points
+   * of green and blue into every dark band and turned the maroon olive. */
+  col = pow(max(col, 0.0), vec3(0.99));
 
   // light animated film grain (doubles as anti-banding)
   float grain = (fract(sin(dot(gl_FragCoord.xy + uTime*37.0, vec2(12.9898, 78.233)))*43758.5453) - 0.5) * 0.040;
