@@ -110,7 +110,9 @@ export function Hero() {
     setStatus('success');
     setMessage(
       result.alreadyOnList
-        ? `Already on the list — you're #${result.position ?? '—'}.`
+        ? result.position
+          ? `Already on the list. You're #${result.position}.`
+          : 'Already on the list.'
         : result.position
         ? `You're #${result.position}. We'll email when the beta opens.`
         : "You're on the list. We'll email when the beta opens.",

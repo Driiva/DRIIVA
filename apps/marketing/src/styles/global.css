@@ -141,7 +141,11 @@ main {
   display: inline-flex;
   align-items: center;
   text-decoration: none;
-  transition: opacity 0.2s var(--easeout);
+  /* The anchor wraps an image, so it was never given a colour and inherited
+     the user-agent link blue. Invisible on screen, but it is a real off-token
+     colour on the page and it would surface the moment the image fails. */
+  color: var(--fg-1);
+  transition: opacity 0.3s var(--ease);
 }
 .nav-pill-logo:hover {
   opacity: 0.82;
@@ -737,7 +741,9 @@ main {
   gap: 8px;
   margin-top: 18px;
   color: var(--fg-3);
-  font-size: 12.5px;
+  /* This line carries the refund promise, so it sat below the 13px secondary
+     floor while saying the most consequential thing in the hero. */
+  font-size: 13.5px;
 }
 .hero-guarantee svg {
   color: var(--ok);
@@ -960,8 +966,9 @@ section[data-section='beta-countdown'] .section-head .eyebrow-mini::after {
   color: var(--fg-1);
 }
 .step-body {
-  font-size: 14px;
-  line-height: 1.55;
+  /* Body prose, not a UI label, so it takes the 15px reading floor. */
+  font-size: 15px;
+  line-height: 1.6;
   color: var(--fg-2);
 }
 @media (max-width: 820px) {

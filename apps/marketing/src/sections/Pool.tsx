@@ -35,7 +35,7 @@ export function Pool() {
             </div>
             <div className="pool-arrow" aria-hidden="true">→</div>
             <div className="pool-node">
-              <div className="pool-node-label">Pool (60–70%)</div>
+              <div className="pool-node-label">Pool (60 to 70%)</div>
               <div className="pool-node-value">Covers claims</div>
             </div>
             <div className="pool-arrow" aria-hidden="true">→</div>
