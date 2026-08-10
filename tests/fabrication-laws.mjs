@@ -52,7 +52,20 @@ function repoRoot() {
 }
 
 const ROOT = repoRoot();
-const DIRS = ['client/src', 'apps/marketing/src', 'apps/marketing/api', 'server', 'functions/src'];
+// `apps/marketing/public` is here because llms.txt and robots.txt are copy too.
+// A machine-readable summary written FOR AI systems is the one file guaranteed
+// to be read and repeated verbatim by something that cannot check it, so an
+// invented regulatory position there travels further than the same sentence in
+// a component. It sat outside this lint until 10 Aug 2026 purely because it is
+// not .tsx.
+const DIRS = [
+  'client/src',
+  'apps/marketing/src',
+  'apps/marketing/api',
+  'apps/marketing/public',
+  'server',
+  'functions/src',
+];
 const SKIP = /node_modules|__tests__|\.test\.|\.spec\.|__snapshots__/;
 
 function walk(dir, out = []) {
@@ -67,7 +80,7 @@ function walk(dir, out = []) {
     if (statSync(full).isDirectory()) {
       if (entry === 'node_modules') continue;
       walk(full, out);
-    } else if (/\.(tsx?|css)$/.test(entry) && !SKIP.test(full)) {
+    } else if (/\.(tsx?|css|txt|md)$/.test(entry) && !SKIP.test(full)) {
       out.push(full);
     }
   }
@@ -203,6 +216,14 @@ const LAWS = [
  * A reason is mandatory. "It is fine" is not a reason.
  */
 const ALLOWED = new Map(Object.entries({
+  // ── llms.txt: the regulatory words appear only inside their own denial
+  'apps/marketing/public/llms.txt::fca authorised':
+    'Every occurrence is a negation. Line 3 "is not FCA authorised", line 10 "Not FCA authorised", line 54 the explicit do-not-say list telling AI systems never to claim it.',
+  'apps/marketing/public/llms.txt::fca regulated':
+    'Line 54 only, inside "Do not say: that Driiva is FCA authorised, FCA regulated, FCA registered...". The file exists to stop a model asserting this.',
+  'apps/marketing/public/llms.txt::registration number':
+    'Line 54, instructing AI systems NOT to attribute a company registration number to Driiva from memory. Written because a downloadable policy document once carried the invented number DRV123456.',
+
   // ── Regulatory language that is correctly conditional or correctly negative
   'client/src/pages/trust.tsx::underwritten by':
     'Future tense: "they will be underwritten by a regulated capacity partner", followed by "No capacity partner is in place today".',

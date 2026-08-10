@@ -1,4 +1,55 @@
+# Driiva - driiva.co.uk
+# Public pages are open to crawl and to cite. The serverless waitlist API is not.
+# Machine-readable summary for AI systems: https://driiva.co.uk/llms.txt
+
 User-agent: *
+Allow: /
+Disallow: /api/
+
+# AI answer engines are explicitly welcome to read, index and cite this site.
+# Each group repeats the /api/ rule because a named group replaces the wildcard
+# group for that agent rather than adding to it.
+User-agent: GPTBot
+Allow: /
+Disallow: /api/
+
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /api/
+
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /api/
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /api/
+
+User-agent: Claude-Web
+Allow: /
+Disallow: /api/
+
+User-agent: anthropic-ai
+Allow: /
+Disallow: /api/
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /api/
+
+User-agent: Perplexity-User
+Allow: /
+Disallow: /api/
+
+User-agent: Google-Extended
+Allow: /
+Disallow: /api/
+
+User-agent: Applebot-Extended
+Allow: /
+Disallow: /api/
+
+User-agent: Bingbot
 Allow: /
 Disallow: /api/
 
