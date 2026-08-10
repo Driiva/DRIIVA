@@ -108,9 +108,7 @@ const styles = StyleSheet.create({
     backgroundColor: C.surface2,
   },
   scoreText: {
-    fontFamily: F.monoSemiBold,
-    fontSize: 16,
-    fontVariant: ['tabular-nums'],
+    ...T.number,
   },
 });
 

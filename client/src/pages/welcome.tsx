@@ -136,10 +136,10 @@ export default function Welcome() {
             className="flex flex-col items-center justify-center -mt-1 text-center box-content tracking-normal leading-5 w-full"
             style={{ verticalAlign: 'middle' }}
           >
-            <p className="text-white text-base font-semibold mb-1" style={{ fontFamily: 'Inter, sans-serif' }}>
+            <p className="text-white text-base font-semibold mb-1" style={{ fontFamily: 'var(--font-body)' }}>
               AI-<span className="text-white/60">powered</span>. Community-driven.
             </p>
-            <p className="text-white text-sm font-medium leading-5" style={{ fontFamily: 'Inter, sans-serif' }}>Your driving, <em>rewarded.</em></p>
+            <p className="text-white text-sm font-medium leading-5" style={{ fontFamily: 'var(--font-body)' }}>Your driving, <em>rewarded.</em></p>
           </div>
         </motion.div>
 

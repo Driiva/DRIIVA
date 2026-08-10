@@ -129,7 +129,7 @@ export default function Support() {
         <div className="relative flex items-center justify-center py-2.5 px-4">
           <span
             className="absolute right-3 bottom-1 text-white/35 text-[10px] italic"
-            style={{ fontFamily: 'Inter, sans-serif' }}
+            style={{ fontFamily: 'var(--font-body)' }}
           >
             driiva © 2026
           </span>

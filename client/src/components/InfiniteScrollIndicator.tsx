@@ -38,7 +38,7 @@ export default function InfiniteScrollIndicator({ currentPage, totalPages, pageN
         
         {/* Page name indicator */}
         <div className="mt-2 text-xs text-white text-center font-medium" style={{
-          fontFamily: 'Inter, sans-serif',
+          fontFamily: 'var(--font-body)',
           textShadow: '1px 1px 2px rgba(0,0,0,0.6)',
         }}>
           {pageNames[currentPage]}

@@ -38,7 +38,7 @@ export default function SwipeHint() {
               </motion.div>
               
               <span className="text-xs text-white/90 font-medium" style={{
-                fontFamily: 'Inter, sans-serif',
+                fontFamily: 'var(--font-body)',
                 textShadow: '1px 1px 2px rgba(0,0,0,0.6)',
               }}>
                 Swipe to navigate pages
