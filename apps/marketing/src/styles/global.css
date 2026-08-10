@@ -1211,9 +1211,34 @@ section[data-section='beta-countdown'] .section-head .eyebrow-mini::after {
 /* ─────────────────────────────────────────────────────────
    FAQ
    ───────────────────────────────────────────────────────── */
+/* Head beside the questions rather than above them. A left-aligned head over
+   a 760px list left the right third of the section empty; setting the two
+   side by side uses the width and lets the head stay in view while the
+   questions are read. */
+section[data-section='faq'] .container {
+  display: grid;
+  grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
+  gap: clamp(32px, 5vw, 72px);
+  align-items: start;
+}
+section[data-section='faq'] .section-head {
+  margin-bottom: 0;
+  position: sticky;
+  top: 104px;
+}
+@media (max-width: 860px) {
+  section[data-section='faq'] .container {
+    grid-template-columns: 1fr;
+  }
+  section[data-section='faq'] .section-head {
+    position: static;
+    margin-bottom: 32px;
+  }
+}
+
 .faq-list {
   max-width: 760px;
-  margin: 0 auto;
+  margin: 0;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -1257,17 +1282,24 @@ section[data-section='beta-countdown'] .section-head .eyebrow-mini::after {
 /* ─────────────────────────────────────────────────────────
    FINAL CTA
    ───────────────────────────────────────────────────────── */
+/* Padding comes from the anchor tier on the data-section rule above; setting
+   it again here would be a second source of truth for the same number. */
 .cta-final {
   text-align: center;
-  padding: 120px 0 140px;
 }
 .cta-final h2 {
   font-family: var(--font-display);
-  font-size: clamp(40px, 5vw, 64px);
+  /* A full sentence, not a two-word heading. At 64px across the whole
+     container it outshouted the hero and broke mid-clause; it now sits a step
+     below the hero display and wraps on a measure that keeps the line count
+     deliberate. */
+  font-size: clamp(30px, 3.6vw, 48px);
   font-weight: 600;
-  letter-spacing: -0.03em;
-  line-height: 1.05;
-  margin-bottom: 20px;
+  letter-spacing: -0.028em;
+  line-height: 1.08;
+  margin: 0 auto 20px;
+  max-width: 26ch;
+  text-wrap: balance;
 }
 .cta-final h2 .accent {
   color: var(--amber-2);
@@ -2006,6 +2038,10 @@ footer {
   color: #fff;
   font-weight: 600;
   font-size: 13px;
+  /* A fixed-height button, so a wrapped label is clipped rather than
+     growing the bar. The bar is width-constrained on small screens. */
+  white-space: nowrap;
+  flex-shrink: 0;
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: var(--r);
   cursor: pointer;
@@ -2032,18 +2068,28 @@ footer {
   background: rgba(255, 255, 255, 0.16);
   color: var(--fg-1);
 }
+/* The compact count only exists on narrow screens; the full line covers the
+   rest. Both are driven by the live waitlist count. */
+.sticky-cta-text-compact {
+  display: none;
+  font-size: 12.5px;
+  color: var(--fg-2);
+  white-space: nowrap;
+}
+.sticky-cta-text-compact strong {
+  color: var(--fg-1);
+  font-weight: 600;
+}
 @media (max-width: 560px) {
   .sticky-cta-text {
     display: none;
   }
+  .sticky-cta-text-compact {
+    display: inline;
+  }
   .sticky-cta-inner {
     padding: 10px;
-  }
-  .sticky-cta-inner::before {
-    content: '117+ on the list';
-    font-size: 12.5px;
-    color: var(--fg-2);
-    white-space: nowrap;
+    gap: 8px;
   }
 }
 
