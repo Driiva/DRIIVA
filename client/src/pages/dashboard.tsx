@@ -95,7 +95,7 @@ function ScoreCardSkeleton() {
 // visual language as trips, the leaderboard and rewards.
 function TripsSkeleton() {
   return (
-    <div className="dashboard-glass-card mb-4">
+    <div className="instrument-card mb-4">
       <div className="flex items-center justify-between mb-4">
         <Skeleton className="h-6 w-24" />
         <Skeleton className="h-5 w-5" />
@@ -107,7 +107,7 @@ function TripsSkeleton() {
 
 function PoolSkeleton() {
   return (
-    <div className="dashboard-glass-card mb-4">
+    <div className="instrument-card mb-4">
       <div className="flex items-center justify-between mb-4">
         <Skeleton className="h-6 w-36" />
         <Skeleton className="h-5 w-5" />
@@ -585,9 +585,9 @@ export default function Dashboard() {
         <motion.div variants={container} initial="hidden" animate="show">
 
         {/* Driving Score Card */}
-        <motion.div variants={item} className="dashboard-glass-card mb-4">
+        <motion.div variants={item} className="instrument-card mb-4">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-white">Driving Score</h2>
+            <h2 className="text-lg font-semibold text-white">Driving score</h2>
             <TrendingUp className="w-5 h-5 text-emerald-400" />
           </div>
 
@@ -649,7 +649,7 @@ export default function Dashboard() {
             const tip = getAiDriivaTip(drivingScore);
 
             return (
-              <div className="dashboard-glass-card relative overflow-hidden">
+              <div className="instrument-card relative overflow-hidden">
                 {/* Premium gradient glow border */}
                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-indigo-500/20 via-purple-500/15 to-pink-500/20 blur-xl -z-10" />
                 <div className="absolute inset-0 rounded-2xl border border-indigo-400/30" />
@@ -703,14 +703,14 @@ export default function Dashboard() {
         )}
 
         {/* GPS Map Card — collapsible */}
-        <motion.div variants={item} className="dashboard-glass-card mb-4">
+        <motion.div variants={item} className="instrument-card mb-4">
           <button
             onClick={() => setMapExpanded((prev) => !prev)}
             className="w-full flex items-center justify-between"
           >
             <div className="flex items-center gap-3">
               <MapPin className="w-5 h-5 text-emerald-400" />
-              <h2 className="text-lg font-semibold text-white">Live Location</h2>
+              <h2 className="text-lg font-semibold text-white">Live location</h2>
             </div>
             {mapExpanded ? (
               <ChevronUp className="w-5 h-5 text-white/60" />
@@ -747,9 +747,9 @@ export default function Dashboard() {
         </motion.div>
 
         {/* Your Trips Card */}
-        <motion.div variants={item} className="dashboard-glass-card mb-4">
+        <motion.div variants={item} className="instrument-card mb-4">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-white">Your Trips</h2>
+            <h2 className="text-lg font-semibold text-white">Your trips</h2>
             <Car className="w-5 h-5 text-white/60" />
           </div>
           {trips.length > 0 ? (
@@ -804,10 +804,10 @@ export default function Dashboard() {
         </motion.div>
 
         {/* Community Pool Card */}
-        <motion.div variants={item} className="dashboard-glass-card mb-4">
+        <motion.div variants={item} className="instrument-card mb-4">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-lg font-semibold text-white">Community Pool</h2>
+              <h2 className="text-lg font-semibold text-white">Community pool</h2>
               {poolDaysRemaining > 0 && !isDemoMode && (
                 <p className="text-xs text-white/60">{poolDaysRemaining} days left in period</p>
               )}
@@ -901,9 +901,9 @@ export default function Dashboard() {
         </motion.div>
 
         {/* Refund Goals Card */}
-        <motion.div variants={item} className="dashboard-glass-card mb-4">
+        <motion.div variants={item} className="instrument-card mb-4">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-white">Refund Goals</h2>
+            <h2 className="text-lg font-semibold text-white">Refund goals</h2>
             <Target className="w-5 h-5 text-amber-400" />
           </div>
           <div className="space-y-3">
@@ -941,7 +941,7 @@ export default function Dashboard() {
         </motion.div>
 
         {/* Achievements Card */}
-        <motion.div variants={item} className="dashboard-glass-card mb-6">
+        <motion.div variants={item} className="instrument-card mb-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-white">Achievements</h2>
             <Trophy className="w-5 h-5 text-amber-400" />
@@ -990,7 +990,7 @@ export default function Dashboard() {
         <motion.div variants={item} className="grid grid-cols-2 gap-3">
           <button
             onClick={() => setLocation('/profile')}
-            className="dashboard-glass-card flex items-center justify-center gap-2 py-4 hover:bg-white/15 transition-colors"
+            className="instrument-card flex items-center justify-center gap-2 py-4 hover:bg-white/15 transition-colors"
           >
             <FileText className="w-5 h-5 text-white" />
             <span className="font-medium text-white">Profile</span>
@@ -998,7 +998,7 @@ export default function Dashboard() {
           
           <button
             onClick={() => setLocation('/settings')}
-            className="dashboard-glass-card flex items-center justify-center gap-2 py-4 hover:bg-white/15 transition-colors"
+            className="instrument-card flex items-center justify-center gap-2 py-4 hover:bg-white/15 transition-colors"
           >
             <AlertCircle className="w-5 h-5 text-white" />
             <span className="font-medium text-white">Settings</span>

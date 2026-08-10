@@ -122,7 +122,7 @@ export function InviteSheet({ open, onClose }: { open: boolean; onClose: () => v
                 <div className="flex items-start justify-between mb-5">
                   <div>
                     <h2 className="text-[18px]" style={{ color: 'var(--app-text-hero)' }}>
-                      Friends
+                      friends
                     </h2>
                     <p className="text-[13px] mt-0.5" style={{ color: 'var(--app-text-sec)' }}>
                       Share a code, or enter one you were given.

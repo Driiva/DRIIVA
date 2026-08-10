@@ -60,7 +60,7 @@ export default function Support() {
         </div>
 
         <div className="mb-8">
-          <h2 className="text-lg font-semibold mb-4">Get in Touch</h2>
+          <h2 className="text-lg font-semibold mb-4">Get in touch</h2>
           <div className="space-y-4">
             {supportOptions.map((option, index) => {
               const content = (
@@ -81,12 +81,12 @@ export default function Support() {
                 <a
                   key={index}
                   href={option.href}
-                  className="dashboard-glass-card p-4 flex items-center gap-3 block hover:bg-white/5 transition-colors cursor-pointer"
+                  className="instrument-card p-4 flex items-center gap-3 block hover:bg-white/5 transition-colors cursor-pointer"
                 >
                   {content}
                 </a>
               ) : (
-                <div key={index} className="dashboard-glass-card p-4 flex items-center gap-3">
+                <div key={index} className="instrument-card p-4 flex items-center gap-3">
                   {content}
                 </div>
               );
@@ -103,7 +103,7 @@ export default function Support() {
                 open={openFaq === item.id}
                 onOpenChange={(open) => setOpenFaq(open ? item.id : null)}
               >
-                <div className="dashboard-glass-card overflow-hidden">
+                <div className="instrument-card overflow-hidden">
                   <CollapsibleTrigger className="w-full flex items-center justify-between gap-3 p-4 text-left hover:bg-white/5 transition-colors">
                     <span className="font-medium text-white">{item.question}</span>
                     <ChevronDown

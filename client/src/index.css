@@ -117,17 +117,7 @@ button, a, input, select, textarea, [role="button"] {
   pointer-events: none;
 }
 
-.glass-card {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
 
-.glass-morphism {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
 
 /* ────────────────────────────────────────────────────────────
    DRIIVA TOKENS - the single palette source for the client app.
@@ -336,81 +326,18 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 600;
 }
 
-/* Professional Glass Morphism System */
-.glass-morphism {
-  background: var(--glass-overlay);
-  backdrop-filter: blur(var(--blur-glass));
-  -webkit-backdrop-filter: blur(var(--blur-glass));
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-professional);
-  transition: all 200ms ease-out;
-}
 
-.glass-morphism:hover {
-  background: rgba(255, 255, 255, 0.18);
-  border-color: rgba(255, 255, 255, 0.25);
-  opacity: 0.8;
-  transform: translateY(-1px);
-}
 
-.glass-border {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
 
 .driiva-gradient {
   background: linear-gradient(135deg, #0F172A 0%, #1E293B 40%, #334155 100%);
 }
 
-/* Optimized Glass Card System v2.0 - Compact & Professional */
-.glass-card {
-  background: var(--glass-white-8);
-  backdrop-filter: blur(var(--glass-blur-md));
-  -webkit-backdrop-filter: blur(var(--glass-blur-md));
-  border: 1px solid var(--glass-white-15);
-  border-radius: var(--radius-lg);
-  padding: var(--card-padding-sm);
-  margin-bottom: var(--space-2);
-  transition: all var(--duration-base) var(--ease-smooth);
-  min-height: auto;
-  position: relative;
-  overflow: hidden;
-}
 
-.glass-card-sm {
-  padding: var(--card-padding-xs);
-  border-radius: var(--radius-md);
-}
 
-.glass-card-lg {
-  padding: var(--card-padding-lg);
-  border-radius: var(--radius-xl);
-}
 
-.glass-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, 
-    var(--glass-white-5) 0%, 
-    transparent 100%);
-  opacity: 0;
-  transition: opacity var(--duration-fast) var(--ease-smooth);
-}
 
-.glass-card:hover {
-  background: var(--glass-white-10);
-  border-color: var(--glass-white-20);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
-}
 
-.glass-card:hover::before {
-  opacity: 1;
-}
 
 /* Compact Card Headers */
 .card-header-compact {
@@ -431,32 +358,8 @@ h1, h2, h3, h4, h5, h6 {
   gap: var(--space-2);
 }
 
-/* Glass Button System */
-.glass-button {
-  background: var(--glass-white-10);
-  backdrop-filter: blur(var(--glass-blur-sm));
-  border: 1px solid var(--glass-white-15);
-  color: white;
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-md);
-  font-size: var(--font-sm);
-  font-weight: var(--font-medium);
-  transition: all var(--duration-fast) var(--ease-smooth);
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-}
 
-.glass-button:hover {
-  background: var(--glass-white-15);
-  border-color: var(--glass-white-20);
-  transform: scale(1.02);
-}
 
-.glass-button:active {
-  transform: scale(0.98);
-  transition-duration: var(--duration-instant);
-}
 
 /* Component Specific Styles */
 .liquid-gauge {
@@ -489,11 +392,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Responsive Design */
 @media (max-width: 768px) {
-  .glass-morphism {
-    backdrop-filter: blur(30px);
-    -webkit-backdrop-filter: blur(30px);
   }
-}
 
 /* Performance Optimizations */
 .gpu-accelerated {
@@ -525,13 +424,6 @@ button:active:not(:disabled), .btn:active:not(:disabled) {
   transition: all 100ms ease-out;
 }
 
-/* Professional Card Hover States */
-.glass-card:hover {
-  background: rgba(255, 255, 255, 0.18);
-  opacity: 0.8;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-}
 
 /* Success/Warning Color Coding */
 .status-success {
@@ -740,53 +632,10 @@ h1, h2, h3, h4, h5, h6, .font-display {
 .stagger-children > *:nth-child(5) { animation-delay: 200ms; }
 .stagger-children > *:nth-child(6) { animation-delay: 250ms; }
 
-/* Radial Glassmorphism Enhancement */
-.glass-morphism {
-  background: radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.08)) !important;
-  backdrop-filter: blur(40px) saturate(150%) !important;
-  -webkit-backdrop-filter: blur(40px) saturate(150%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.25) !important;
-  box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.2),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.1),
-    inset 0 -20px 40px -20px rgba(255, 255, 255, 0.1) !important;
-}
 
-.glass-morphism-subtle {
-  background: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05)) !important;
-  backdrop-filter: blur(30px) saturate(140%) !important;
-  -webkit-backdrop-filter: blur(30px) saturate(140%) !important;
-}
 
-/* Enhanced Professional Glass Cards */
-.glass-card {
-  background: var(--glass-overlay-subtle) !important;
-  backdrop-filter: blur(var(--blur-glass)) !important;
-  -webkit-backdrop-filter: blur(var(--blur-glass)) !important;
-  border: 1px solid var(--glass-border) !important;
-  border-radius: var(--radius-card) !important;
-  box-shadow: var(--shadow-professional) !important;
-  position: relative;
-  overflow: hidden;
-  transition: all 200ms ease-out;
-}
 
-.glass-card::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 70%);
-  opacity: 0;
-  transition: opacity 200ms ease-out;
-  pointer-events: none;
-}
 
-.glass-card:hover::before {
-  opacity: 1;
-}
 
 /* Professional Enterprise Polish */
 .enterprise-polish {
@@ -804,11 +653,7 @@ h1, h2, h3, h4, h5, h6, .font-display {
 
 /* Responsive Adjustments */
 @media (max-width: 768px) {
-  .glass-morphism, .glass-morphism-subtle, .glass-card {
-    backdrop-filter: blur(25px) saturate(130%) !important;
-    -webkit-backdrop-filter: blur(25px) saturate(130%) !important;
-  }
-}
+  .glass-morphism, .glass-morphism-subtle, }
 
 /* Text Readability Enhancement */
 .text-white {
@@ -954,9 +799,9 @@ select:focus {
 
 /* Sign-in Card Styling */
 .signin-card {
-  background: rgba(25,28,45,0.88);
-  backdrop-filter: blur(24px);
-  border: 1px solid rgba(255,255,255,0.1);
+  /* Instrument mode: a solid surface, not a translucent pane. */
+  background: var(--app-surface-1);
+  border: 1px solid var(--hairline-hi);
   border-radius: 24px;
   padding: 40px 32px;
   max-width: 440px;
@@ -1096,10 +941,9 @@ select:focus {
   position: relative;
   overflow: hidden;
   border-radius: 1.5rem;
-  background: rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  /* Instrument mode: a solid surface, not a translucent pane. */
+  background: var(--app-surface-1);
+  border: 1px solid var(--hairline-hi);
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
 }
 
@@ -1339,9 +1183,9 @@ body:has(.welcome-page-container) .animated-bg-container {
 
 /* Reward Stat Card Styling */
 .reward-stat-card {
-  background: rgba(25,28,45,0.85);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255,255,255,0.08);
+  /* Instrument mode: a solid surface, not a translucent pane. */
+  background: var(--app-surface-1);
+  border: 1px solid var(--app-border);
   border-radius: 20px;
   padding: 24px;
   box-shadow: 0 4px 24px rgba(0,0,0,0.3);
@@ -1443,17 +1287,60 @@ body:has(.welcome-page-container) .animated-bg-container {
    Your Trips, etc.) MUST use this class.
    ============================================ */
 
-.dashboard-glass-card {
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
+/* The app's card. Formerly .instrument-card, which was the wrong name for
+   two reasons: the app runs in instrument mode where glass does not belong, and
+   the background was already opaque, so the backdrop-filter could not show
+   anything through it. It still cost a compositing layer and a blurred
+   backdrop raster on every card on the page. The inset white highlight went
+   with it: that was the glass tell doing the work the name implied. */
+/* ────────────────────────────────────────────────────────────
+   INSTRUMENT SURFACES
+
+   The app runs in instrument mode: solid dark surfaces, one accent, colour
+   earned. Glass belongs to the marketing site. Every .glass-* rule that used
+   to sit in this file has been deleted, not overridden, because an override
+   leaves the blur live underneath and one specificity change brings it back.
+
+   The .glass-* selectors below are the call sites that have not been renamed
+   yet. They are aliases onto the instrument surface, and they carry no glass.
+   ──────────────────────────────────────────────────────────── */
+.instrument-panel,
+.glass-morphism,
+.glass-morphism-subtle,
+.glass-card,
+.glass-card-sm,
+.glass-card-lg {
   background: var(--app-surface-1);
-  border: 1px solid rgba(255, 255, 255, 0.10);
+  border: 1px solid var(--hairline-hi);
+  border-radius: var(--radius-card);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.30);
+}
+.glass-card-sm { padding: var(--card-padding-sm, 12px); }
+.glass-card-lg { padding: var(--card-padding-lg, 20px); }
+
+/* A hairline and a button, not a pane of glass. */
+.glass-border {
+  background: var(--app-surface-2);
+  border: 1px solid var(--hairline);
+}
+.glass-button {
+  background: var(--app-surface-2);
+  border: 1px solid var(--hairline-hi);
+  border-radius: var(--radius-card);
+  transition: background var(--duration-fast, 150ms) ease-out,
+    border-color var(--duration-fast, 150ms) ease-out;
+}
+.glass-button:hover { background: var(--app-surface-3); }
+.glass-button:active { background: var(--app-surface-2); }
+
+.instrument-card {
+  background: var(--app-surface-1);
+  border: 1px solid var(--hairline-hi);
   border-radius: var(--radius-2xl);       /* 20px */
   padding: var(--card-padding-lg);         /* 20px */
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.30),
-    inset 0 2px 8px rgba(255, 255, 255, 0.05);
-  transition: all var(--duration-base) var(--ease-smooth);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.30);
+  transition: border-color var(--duration-base) var(--ease-smooth),
+    box-shadow var(--duration-base) var(--ease-smooth);
 }
 
 /* ============================================

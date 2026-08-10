@@ -198,7 +198,7 @@ function RewardNode({
   const isClaimed = status === 'claimed';
 
   const cardClass = [
-    'dashboard-glass-card relative',
+    'instrument-card relative',
     isLocked && 'opacity-40',
     isUnlocked && 'reward-glow-unlocked',
     isClaimed && 'reward-glow-claimed',

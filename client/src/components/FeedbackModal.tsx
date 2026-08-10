@@ -74,7 +74,7 @@ export default function FeedbackModal({ open, onClose }: FeedbackModalProps) {
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-8 sm:pb-12 sm:flex sm:items-end sm:justify-center"
           >
-            <div className="w-full max-w-md mx-auto dashboard-glass-card p-6 rounded-2xl">
+            <div className="w-full max-w-md mx-auto instrument-card p-6 rounded-2xl">
               {submitted ? (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.9 }}
@@ -89,7 +89,7 @@ export default function FeedbackModal({ open, onClose }: FeedbackModalProps) {
               ) : (
                 <>
                   <div className="flex items-center justify-between mb-5">
-                    <h3 className="text-lg font-semibold text-white">Share Feedback</h3>
+                    <h3 className="text-lg font-semibold text-white">Share feedback</h3>
                     <button
                       onClick={handleClose}
                       aria-label="Close feedback"

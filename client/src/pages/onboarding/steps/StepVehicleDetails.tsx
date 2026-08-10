@@ -34,7 +34,7 @@ export function StepVehicleDetails({
         <Car className="w-12 h-12 text-orange-400" />
       </div>
 
-      <h1 className="text-2xl font-bold text-white mb-3">Your Vehicle</h1>
+      <h1 className="text-2xl font-bold text-white mb-3">Your vehicle</h1>
       <p className="text-white/60 mb-8 max-w-sm mx-auto">
         Vehicle details help us give you a more accurate quote.
       </p>

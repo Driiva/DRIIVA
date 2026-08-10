@@ -52,7 +52,7 @@ export function StepDataConsent({
         <Shield className="w-12 h-12 text-[#818cf8]" />
       </div>
 
-      <h1 className="text-2xl font-bold text-white mb-3">Your Data, Your Control</h1>
+      <h1 className="text-2xl font-bold text-white mb-3">Your data, your control</h1>
       <p className="text-white/60 mb-6 max-w-sm mx-auto">
         Before we begin, here's exactly what Driiva collects and why.
       </p>

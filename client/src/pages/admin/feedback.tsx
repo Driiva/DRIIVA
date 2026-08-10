@@ -119,7 +119,7 @@ export default function AdminFeedback() {
         </div>
 
         {/* Table */}
-        <div className="dashboard-glass-card overflow-hidden !p-0">
+        <div className="instrument-card overflow-hidden !p-0">
           {loading ? (
             <div className="p-12 text-center">
               <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin mx-auto" />

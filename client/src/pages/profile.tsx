@@ -135,7 +135,7 @@ function CoverageTypeSection({ currentScore, coverageType, premiumAmount, loadin
 
               <div className="space-y-3">
                 <h4 className="text-xs font-semibold text-white/80 uppercase tracking-wide">
-                  What's Included
+                  What's included
                 </h4>
 
                 <PolicyFeature icon="✅" title="Collision Coverage" description="Damage to your vehicle from accidents" />

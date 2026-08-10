@@ -156,8 +156,8 @@ export default function AdminTrips() {
         </div>
 
         {/* Score distribution */}
-        <div className="dashboard-glass-card">
-          <h3 className="text-sm font-medium text-white/60 mb-4">Fleet Risk Profile — Score Distribution</h3>
+        <div className="instrument-card">
+          <h3 className="text-sm font-medium text-white/60 mb-4">Fleet risk profile, score distribution</h3>
           <div className="h-52">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={scoreDist}>
@@ -176,7 +176,7 @@ export default function AdminTrips() {
         </div>
 
         {/* Recent trips table */}
-        <div className="dashboard-glass-card overflow-hidden !p-0">
+        <div className="instrument-card overflow-hidden !p-0">
           <div className="px-4 py-3 border-b border-white/[0.06]">
             <h3 className="text-sm font-medium text-white/60">
               Recent Trips

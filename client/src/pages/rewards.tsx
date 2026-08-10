@@ -484,7 +484,7 @@ export default function Rewards() {
                 {drivingScore > 0 && (
                   <motion.div variants={item}>
                     <GlassCard className="p-6">
-                      <h3 className="font-semibold text-white text-sm mb-3">Refund Progress</h3>
+                      <h3 className="font-semibold text-white text-sm mb-3">Refund progress</h3>
                       <div className="flex items-center justify-between mb-2 text-sm">
                         <span className="text-white/60">Current score</span>
                         <span className="text-white font-semibold">{drivingScore}</span>

@@ -230,7 +230,7 @@ export default function Signup() {
         transition={{ duration: timing.pageTransition / 1000, ease: easing.smoothDecel }}
         className="flex-1"
       >
-        <h1 className="text-3xl font-bold text-white mb-2">Create Account</h1>
+        <h1 className="text-3xl font-bold text-white mb-2">Create account</h1>
         <p className="text-white/60 mb-8">Get scored on how you actually drive</p>
 
         {error && (

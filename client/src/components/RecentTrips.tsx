@@ -23,7 +23,7 @@ export default function RecentTrips({ trips }: RecentTripsProps) {
   return (
     <section className="mb-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold">Recent Trips</h3>
+        <h3 className="text-lg font-semibold">Recent trips</h3>
         <button className="text-[#8B4513] text-sm font-medium haptic-button">
           View All
         </button>

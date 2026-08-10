@@ -275,8 +275,8 @@ export default function AdminOverview() {
         {/* Charts row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Signups over time */}
-          <div className="dashboard-glass-card">
-            <h3 className="text-sm font-medium text-white/60 mb-4">User Signups by Week</h3>
+          <div className="instrument-card">
+            <h3 className="text-sm font-medium text-white/60 mb-4">User signups by week</h3>
             <div className="h-56">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={signups}>
@@ -291,8 +291,8 @@ export default function AdminOverview() {
           </div>
 
           {/* DAU bar chart */}
-          <div className="dashboard-glass-card">
-            <h3 className="text-sm font-medium text-white/60 mb-4">Daily Active Users (30d)</h3>
+          <div className="instrument-card">
+            <h3 className="text-sm font-medium text-white/60 mb-4">Daily active users (30d)</h3>
             <div className="h-56">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={dau}>
@@ -309,8 +309,8 @@ export default function AdminOverview() {
 
         {/* Platform donut */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="dashboard-glass-card lg:col-span-1">
-            <h3 className="text-sm font-medium text-white/60 mb-4">Platform Distribution</h3>
+          <div className="instrument-card lg:col-span-1">
+            <h3 className="text-sm font-medium text-white/60 mb-4">Platform distribution</h3>
             {platform.length === 0 ? (
               <div className="h-48 flex items-center justify-center text-white/20 text-sm">No data</div>
             ) : (

@@ -27,9 +27,9 @@ export function BetaEstimateCard({
 }: BetaEstimateCardProps) {
   if (loading) {
     return (
-      <div className="dashboard-glass-card mb-4">
+      <div className="instrument-card mb-4">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-semibold text-white">Beta Estimate</h3>
+          <h3 className="text-base font-semibold text-white">Beta estimate</h3>
           <Loader2 className="w-5 h-5 text-white/60 animate-spin" />
         </div>
         <div className="space-y-3 animate-pulse">
@@ -43,9 +43,9 @@ export function BetaEstimateCard({
 
   if (error) {
     return (
-      <div className="dashboard-glass-card mb-4 border border-amber-500/30">
+      <div className="instrument-card mb-4 border border-amber-500/30">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-base font-semibold text-white">Beta Estimate</h3>
+          <h3 className="text-base font-semibold text-white">Beta estimate</h3>
           {onRefresh && (
             <button
               type="button"
@@ -68,9 +68,9 @@ export function BetaEstimateCard({
 
   if (!estimate) {
     return (
-      <div className="dashboard-glass-card mb-4">
+      <div className="instrument-card mb-4">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-base font-semibold text-white">Beta Estimate</h3>
+          <h3 className="text-base font-semibold text-white">Beta estimate</h3>
           {onRefresh && (
             <button
               type="button"
@@ -94,9 +94,9 @@ export function BetaEstimateCard({
   const { estimatedPremium, minPremium, maxPremium } = estimate;
 
   return (
-    <div className="dashboard-glass-card mb-4">
+    <div className="instrument-card mb-4">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-base font-semibold text-white">Beta Estimate</h3>
+        <h3 className="text-base font-semibold text-white">Beta estimate</h3>
         {onRefresh && (
           <button
             type="button"
@@ -124,7 +124,7 @@ export function BetaEstimateCard({
         {/*
           WAVE H: this card also showed "Estimated refund £X/year" in green and
           "Estimated net cost after refund". Both are computed from a refund
-          rate that takes the community pool's safety factor as an input, and
+          rate that takes the Community pool's safety factor as an input, and
           the pool has no funding path at all: addPoolContribution has never had
           a caller, and when the pool document is missing the safety factor
           silently defaults to 0.5. So the green number was a share of money
@@ -137,7 +137,7 @@ export function BetaEstimateCard({
           an estimate of something that will exist.
         */}
         <p className="text-xs text-white/60 leading-relaxed">
-          Refunds depend on the community pool, which is not funded yet, so
+          Refunds depend on the Community pool, which is not funded yet, so
           there is no refund figure to show.
         </p>
       </div>

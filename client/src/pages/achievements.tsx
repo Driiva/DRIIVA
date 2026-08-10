@@ -183,7 +183,7 @@ export default function Achievements() {
           </div>
           <div className="space-y-4">
             {[1, 2, 3, 4].map(i => (
-              <div key={i} className="dashboard-glass-card p-5">
+              <div key={i} className="instrument-card p-5">
                 <div className="flex items-start gap-4">
                   <div className="w-12 h-12 bg-white/10 rounded-xl" />
                   <div className="flex-1">
@@ -229,11 +229,11 @@ export default function Achievements() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="dashboard-glass-card mb-6"
+          className="instrument-card mb-6"
         >
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-lg font-semibold text-white">Your Progress</h2>
+              <h2 className="text-lg font-semibold text-white">Your progress</h2>
               <p className="text-white/60 text-sm">{unlockedCount} of {totalCount} achievements unlocked</p>
             </div>
             <div className="w-14 h-14 rounded-full bg-gradient-to-br from-amber-500/20 to-amber-600/20 border border-amber-500/30 flex items-center justify-center">
@@ -290,7 +290,7 @@ export default function Achievements() {
               <StaggerItem
                 key={achievement.id}
                 yOffset={12}
-                className={`dashboard-glass-card relative overflow-hidden ${
+                className={`instrument-card relative overflow-hidden ${
                   !achievement.unlocked ? 'opacity-75' : ''
                 }`}
               >

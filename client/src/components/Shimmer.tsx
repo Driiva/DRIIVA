@@ -58,7 +58,7 @@ export function Shimmer({ className = '', rounded = 'md', count }: ShimmerProps)
 /** Pre-built skeleton patterns for common card layouts */
 export function ScoreCardShimmer() {
   return (
-    <div className="dashboard-glass-card mb-4 space-y-4">
+    <div className="instrument-card mb-4 space-y-4">
       <div className="flex items-center justify-between">
         <Shimmer className="h-6 w-32" />
         <Shimmer className="h-5 w-5" rounded="full" />
@@ -73,7 +73,7 @@ export function ScoreCardShimmer() {
 
 export function TripCardShimmer() {
   return (
-    <div className="dashboard-glass-card p-5 space-y-3">
+    <div className="instrument-card p-5 space-y-3">
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
           <Shimmer className="w-10 h-10" rounded="lg" />

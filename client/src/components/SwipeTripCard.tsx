@@ -120,7 +120,7 @@ export function SwipeTripCard({
         transition={{ type: 'spring', stiffness: 400, damping: 30 }}
         style={{ x }}
         onClick={handleTap}
-        className="relative dashboard-glass-card p-5 cursor-pointer active:scale-[0.98] transition-transform"
+        className="relative instrument-card p-5 cursor-pointer active:scale-[0.98] transition-transform"
       >
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3 min-w-0">

@@ -95,9 +95,9 @@ export default function AdminSystem() {
   return (
     <AdminLayout title="System Health" subtitle="Damoov sync diagnostics">
       <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
-        <div className="dashboard-glass-card overflow-hidden !p-0">
+        <div className="instrument-card overflow-hidden !p-0">
           <div className="px-4 py-3 border-b border-white/[0.06]">
-            <h3 className="text-sm font-medium text-white/60">Damoov Sync — Last 7 Days</h3>
+            <h3 className="text-sm font-medium text-white/60">Damoov sync — last 7 days</h3>
           </div>
 
           {loading ? (

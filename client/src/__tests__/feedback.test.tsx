@@ -61,12 +61,12 @@ describe('FeedbackModal', () => {
 
   it('renders when open', () => {
     render(<FeedbackModal open={true} onClose={vi.fn()} />);
-    expect(screen.getByText('Share Feedback')).toBeTruthy();
+    expect(screen.getByText('Share feedback')).toBeTruthy();
   });
 
   it('does not render when closed', () => {
     render(<FeedbackModal open={false} onClose={vi.fn()} />);
-    expect(screen.queryByText('Share Feedback')).toBeNull();
+    expect(screen.queryByText('Share feedback')).toBeNull();
   });
 
   it('renders 5 star buttons', () => {

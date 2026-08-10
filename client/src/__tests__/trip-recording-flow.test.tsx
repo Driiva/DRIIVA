@@ -291,7 +291,7 @@ describe('Trip Recording Page', () => {
 
     it('shows the page title', () => {
       renderPage();
-      expect(screen.getByText('Trip Recording')).toBeInTheDocument();
+      expect(screen.getByText('Trip recording')).toBeInTheDocument();
     });
 
     it('shows "Ready to Record" status text', () => {
@@ -742,7 +742,7 @@ describe('Trip Recording Page', () => {
 
   describe('Error states', () => {
     it('shows error message when tracker has an error', () => {
-      mockTrackerState.errorMessage = 'Location permission denied. Please enable location access in your browser settings.';
+      mockTrackerState.errorMessage = 'Location permission denied. Please Enable location access in your browser settings.';
       mockTrackerState.isPermissionDenied = true;
 
       renderPage();
