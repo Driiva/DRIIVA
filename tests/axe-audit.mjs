@@ -23,14 +23,19 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 
 import {
   signedInIsolatedTab, goto, evaluate, incognitoTab, settle, APP,
 } from './qa-session.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// Resolved rather than path-joined. A literal ../node_modules path dies with
+// ENOENT inside a git worktree, whose node_modules is partial, so the audit
+// could not start there at all. Node's own resolution walks up to the parent
+// checkout, which is where the dependency actually lives.
 const AXE_SOURCE = readFileSync(
-  path.resolve(__dirname, '../node_modules/axe-core/axe.min.js'),
+  createRequire(import.meta.url).resolve('axe-core/axe.min.js'),
   'utf8',
 );
 
