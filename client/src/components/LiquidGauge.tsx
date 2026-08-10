@@ -101,7 +101,7 @@ export default function LiquidGauge({ score, projectedRefund, premiumAmount }: L
             >
               <AnimatedCounter value={score} className="text-5xl font-semibold text-white" />
             </motion.div>
-            <div className="text-xs text-white/50 mt-1">
+            <div className="text-xs text-white/60 mt-1">
               out of 100
             </div>
           </motion.button>
@@ -119,7 +119,7 @@ export default function LiquidGauge({ score, projectedRefund, premiumAmount }: L
           <div className="text-lg font-semibold text-white" data-testid="personal-score">
             {personalScore}%
           </div>
-          <div className="text-xs text-white/50 mt-1">
+          <div className="text-xs text-white/60 mt-1">
             Personal Score
           </div>
         </motion.div>
@@ -132,7 +132,7 @@ export default function LiquidGauge({ score, projectedRefund, premiumAmount }: L
           <div className="text-lg font-semibold text-white" data-testid="pool-score">
             {poolScore}%
           </div>
-          <div className="text-xs text-white/50 mt-1">
+          <div className="text-xs text-white/60 mt-1">
             Pool Score
           </div>
         </motion.div>
@@ -159,7 +159,7 @@ export default function LiquidGauge({ score, projectedRefund, premiumAmount }: L
           >
             £{projectedRefund.toFixed(2)}
           </motion.div>
-          <p className="text-xs text-white/50">
+          <p className="text-xs text-white/60">
             {((projectedRefund / Number(premiumAmount)) * 100).toFixed(1)}% of £{premiumAmount.toLocaleString()} premium
           </p>
         </div>

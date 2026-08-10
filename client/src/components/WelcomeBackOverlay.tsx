@@ -75,7 +75,7 @@ export default function WelcomeBackOverlay({ name, score, lastTrip, onDismiss }:
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.35, duration: 0.4 }}
             >
-              <p className="text-white/50 text-sm mb-1">Welcome back</p>
+              <p className="text-white/60 text-sm mb-1">Welcome back</p>
               <h2 className="text-white text-2xl font-bold">{name}</h2>
             </motion.div>
 
@@ -88,14 +88,14 @@ export default function WelcomeBackOverlay({ name, score, lastTrip, onDismiss }:
                 className="flex flex-col items-center gap-1"
               >
                 <div className="flex items-baseline gap-1.5">
-                  <span className="text-white/50 text-sm">Your score</span>
+                  <span className="text-white/60 text-sm">Your score</span>
                   <span className="text-emerald-400 text-2xl font-bold">
                     <AnimatedScore value={score} />
                   </span>
-                  <span className="text-white/40 text-sm">/100</span>
+                  <span className="text-white/60 text-sm">/100</span>
                 </div>
                 {lastTrip && (
-                  <p className="text-white/40 text-xs mt-1">Last trip: {lastTrip}</p>
+                  <p className="text-white/60 text-xs mt-1">Last trip: {lastTrip}</p>
                 )}
               </motion.div>
             )}
@@ -104,7 +104,7 @@ export default function WelcomeBackOverlay({ name, score, lastTrip, onDismiss }:
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.9 }}
-              className="text-white/30 text-xs"
+              className="text-white/55 text-xs"
             >
               Tap anywhere to continue
             </motion.p>

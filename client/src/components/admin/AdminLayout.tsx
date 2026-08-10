@@ -23,7 +23,7 @@ export function AdminLayout({ children, title, subtitle }: AdminLayoutProps) {
           <div className="mb-8">
             <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
             {subtitle && (
-              <p className="text-white/40 text-sm mt-1">{subtitle}</p>
+              <p className="text-white/60 text-sm mt-1">{subtitle}</p>
             )}
           </div>
           {children}

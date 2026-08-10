@@ -54,7 +54,7 @@ export default function RefundSimulator({
               title: "Refund Calculator",
               description: "Adjust the score slider to see how improvements could increase your refund. Scores 70+ qualify for refunds up to 15%.",
             })}
-            className="min-h-[44px] px-3 text-xs text-white/50 hover:text-white/70 hover:bg-white/5 rounded-xl transition-all duration-200 ease-out flex items-center gap-1"
+            className="min-h-[44px] px-3 text-xs text-white/60 hover:text-white/70 hover:bg-white/5 rounded-xl transition-all duration-200 ease-out flex items-center gap-1"
           >
             <Info className="w-3.5 h-3.5" />
             £{premiumAmount.toLocaleString('en-GB')}
@@ -66,19 +66,19 @@ export default function RefundSimulator({
           <div className="p-4 bg-white/5 rounded-xl">
             <div className="flex justify-between items-center">
               <div>
-                <div className="text-xs text-white/50 mb-1">Current Score</div>
+                <div className="text-xs text-white/60 mb-1">Current Score</div>
                 <div className={`text-xl font-semibold ${currentScore >= 70 ? 'text-emerald-400' : 'text-white'}`}>
                   {currentScore}
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-xs text-white/50 mb-1">Current Refund</div>
+                <div className="text-xs text-white/60 mb-1">Current Refund</div>
                 <div className="text-xl font-semibold text-emerald-400">
                   £{currentRefund}
                 </div>
               </div>
             </div>
-            <div className="mt-2 text-xs text-white/40">
+            <div className="mt-2 text-xs text-white/60">
               {getEligibilityMessage(currentScore)}
             </div>
           </div>
@@ -101,7 +101,7 @@ export default function RefundSimulator({
                 className="w-full [&_[role=slider]]:w-5 [&_[role=slider]]:h-5 [&_[role=slider]]:bg-emerald-400 [&_[role=slider]]:border-2 [&_[role=slider]]:border-white [&_[role=slider]]:shadow-lg [&_[role=slider]]:cursor-grab [&_[role=slider]]:active:cursor-grabbing [&_[role=slider]]:transition-transform [&_[role=slider]]:duration-200 [&_[role=slider]]:hover:scale-110 [&_[data-orientation=horizontal]]:h-2 [&_[data-orientation=horizontal]]:bg-white/10 [&_[data-orientation=horizontal]]:rounded-full"
               />
             </div>
-            <div className="flex justify-between text-xs text-white/40 mt-2">
+            <div className="flex justify-between text-xs text-white/60 mt-2">
               <span>50</span>
               <span className="text-emerald-400/70">70 (Min)</span>
               <span>100</span>
@@ -112,22 +112,22 @@ export default function RefundSimulator({
           <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
             <div className="flex justify-between items-center">
               <div>
-                <div className="text-xs text-white/50 mb-1">Potential Refund</div>
+                <div className="text-xs text-white/60 mb-1">Potential Refund</div>
                 <div className="text-2xl font-semibold text-emerald-400">
                   £{simulatedRefund}
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-xs text-white/50 mb-1">Improvement</div>
+                <div className="text-xs text-white/60 mb-1">Improvement</div>
                 <div className={`text-lg font-semibold ${
-                  improvement > 0 ? 'text-emerald-400' : 'text-white/40'
+                  improvement > 0 ? 'text-emerald-400' : 'text-white/60'
                 }`}>
                   {improvement > 0 ? `+£${improvement.toFixed(2)}` : '£0.00'}
                 </div>
               </div>
             </div>
 
-            <div className="mt-3 text-xs text-white/40">
+            <div className="mt-3 text-xs text-white/60">
               {simulatedScore < 70 ? 
                 "Score must be 70+ to qualify for refunds" :
                 `Refund rate: ${(((simulatedScore - 70) / 30) * 10 + 5).toFixed(1)}% of premium`
@@ -141,7 +141,7 @@ export default function RefundSimulator({
               <div className="text-xs text-emerald-400 font-medium mb-2">
                 Tips to achieve this score:
               </div>
-              <div className="text-xs text-white/50 space-y-1.5">
+              <div className="text-xs text-white/60 space-y-1.5">
                 {simulatedScore > currentScore + 10 && (
                   <div>• Reduce hard braking events by 50%</div>
                 )}

@@ -17,7 +17,7 @@ export function KPICard({ label, value, icon, delta, loading }: KPICardProps) {
       className="dashboard-glass-card flex flex-col gap-2 min-w-[160px] flex-1"
     >
       <div className="flex items-center justify-between">
-        <span className="text-white/50 text-xs font-medium uppercase tracking-wider">
+        <span className="text-white/60 text-xs font-medium uppercase tracking-wider">
           {label}
         </span>
         {icon && <span className="text-cyan-400/70">{icon}</span>}

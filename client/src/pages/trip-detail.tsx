@@ -45,8 +45,8 @@ function StatBlock({ label, value, sub }: { label: string; value: string; sub?: 
   return (
     <div className="text-center p-3 bg-white/[0.03] border border-white/[0.05] rounded-xl">
       <div className="text-lg font-bold text-white">{value}</div>
-      <div className="text-xs text-white/50">{label}</div>
-      {sub && <div className="text-xs text-white/30 mt-0.5">{sub}</div>}
+      <div className="text-xs text-white/60">{label}</div>
+      {sub && <div className="text-xs text-white/55 mt-0.5">{sub}</div>}
     </div>
   );
 }
@@ -201,7 +201,7 @@ export default function TripDetail() {
             <div>
               <h1 className="text-xl font-bold">{startLabel} → {endLabel}</h1>
               {tripDate && (
-                <p className="text-sm text-white/50 mt-1">
+                <p className="text-sm text-white/60 mt-1">
                   {tripDate.toLocaleDateString('en-GB', {
                     weekday: 'long',
                     day: 'numeric',
@@ -237,7 +237,7 @@ export default function TripDetail() {
             </h2>
             <Suspense fallback={
               <div className="h-[350px] flex items-center justify-center bg-[#1a1a2e]/50 rounded-xl">
-                <Loader2 className="w-6 h-6 text-white/30 animate-spin" />
+                <Loader2 className="w-6 h-6 text-white/55 animate-spin" />
               </div>
             }>
               <TripRouteMap points={points} className="border border-white/10" />
@@ -354,15 +354,15 @@ export default function TripDetail() {
             <div className="grid grid-cols-3 gap-3 text-center">
               <div className="p-2">
                 <div className="text-sm font-medium text-white">{trip.context.isNightDriving ? 'Yes' : 'No'}</div>
-                <div className="text-xs text-white/50">Night Drive</div>
+                <div className="text-xs text-white/60">Night Drive</div>
               </div>
               <div className="p-2">
                 <div className="text-sm font-medium text-white">{trip.context.isRushHour ? 'Yes' : 'No'}</div>
-                <div className="text-xs text-white/50">Rush Hour</div>
+                <div className="text-xs text-white/60">Rush Hour</div>
               </div>
               <div className="p-2">
                 <div className="text-sm font-medium text-white">{trip.context.weatherCondition ?? '—'}</div>
-                <div className="text-xs text-white/50">Weather</div>
+                <div className="text-xs text-white/60">Weather</div>
               </div>
             </div>
           </motion.div>

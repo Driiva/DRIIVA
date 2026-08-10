@@ -185,7 +185,7 @@ export default function PolicyDownload({ userId, userData, policyNumber }: Polic
             onClick={handleDownload}
             disabled={isGenerating}
             variant="outline"
-            className="w-full glass-morphism border-[var(--app-primary)] text-[var(--app-primary)] hover:bg-[var(--app-primary)] hover:text-white"
+            className="w-full glass-morphism border-[var(--app-primary)] text-[var(--app-primary-text)] hover:bg-[var(--app-primary)] hover:text-white"
         >
             <FileText className="w-4 h-4 mr-2" />
             {isGenerating ? 'Generating Policy...' : 'Download My Policy'}

@@ -382,7 +382,7 @@ export default function QuickOnboarding() {
                 />
               ))}
             </div>
-            <span className="text-sm text-white/50 flex-shrink-0 ml-3">Step {currentStep} of {PROGRESS_STEPS}</span>
+            <span className="text-sm text-white/60 flex-shrink-0 ml-3">Step {currentStep} of {PROGRESS_STEPS}</span>
           </div>
         )}
 

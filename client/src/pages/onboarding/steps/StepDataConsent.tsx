@@ -70,7 +70,7 @@ export function StepDataConsent({
               <div className="w-1.5 h-1.5 rounded-full bg-[#818cf8] mt-1.5 flex-shrink-0" />
               <div>
                 <span className="text-white text-sm">{item.label}</span>
-                <span className="text-white/40 text-sm"> — {item.detail}</span>
+                <span className="text-white/60 text-sm"> — {item.detail}</span>
               </div>
             </li>
           ))}
@@ -131,7 +131,7 @@ export function StepDataConsent({
           className={`flex-1 font-semibold py-4 rounded-xl transition-colors flex items-center justify-center gap-2 ${
             dataConsentGiven && !saving
               ? 'bg-[#5b4dc9] hover:bg-[#4d40b3] text-white'
-              : 'bg-white/10 text-white/40 cursor-not-allowed'
+              : 'bg-white/10 text-white/60 cursor-not-allowed'
           }`}
         >
           {saving ? 'Saving...' : 'Continue'}

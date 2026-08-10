@@ -77,7 +77,7 @@ export default function DeleteAccount({ userId }: DeleteAccountProps) {
       <AlertDialogTrigger asChild>
         <Button
           variant="destructive"
-          className="w-full bg-[#EF4444] hover:bg-[#DC2626]"
+          className="w-full bg-[#C0272D] hover:bg-[#A81F25]"
           disabled={!isFirebaseConfigured || !userId}
         >
           <Trash2 className="w-4 h-4 mr-2" />
@@ -104,7 +104,7 @@ export default function DeleteAccount({ userId }: DeleteAccountProps) {
           <AlertDialogAction
             onClick={handleDelete}
             disabled={isDeleting}
-            className="bg-[#EF4444] hover:bg-[#DC2626]"
+            className="bg-[#C0272D] hover:bg-[#A81F25]"
           >
             {isDeleting ? "Deleting…" : "Delete Account"}
           </AlertDialogAction>

@@ -257,14 +257,14 @@ export default function DrivingAIFeedbackWidget({
                       style={{ width: '60%' }}
                     />
                   </div>
-                  <span className="text-xs text-white/40">AI analysing your trip...</span>
+                  <span className="text-xs text-white/60">AI analysing your trip...</span>
                 </div>
               )}
 
               {/* Error */}
               {error && !isLoading && (
                 <div className="text-center py-4 space-y-2">
-                  <p className="text-xs text-white/50">AI Driiva is taking a break. Try again shortly.</p>
+                  <p className="text-xs text-white/60">AI Driiva is taking a break. Try again shortly.</p>
                   <button
                     onClick={() => refetch()}
                     className="inline-flex items-center gap-1.5 text-xs text-indigo-400 hover:text-indigo-300 font-medium"

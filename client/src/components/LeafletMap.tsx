@@ -164,7 +164,7 @@ const LeafletMap = ({ location, routePoints, onLocationChange, className }: Leaf
           <div className="flex flex-col items-center gap-3 px-6 text-center">
             <span className="text-3xl">📍</span>
             <p className="text-white/70 text-sm font-medium">Location access denied</p>
-            <p className="text-white/40 text-xs">
+            <p className="text-white/60 text-xs">
               Enable location in your browser settings so the map can show your position.
             </p>
           </div>
@@ -172,7 +172,7 @@ const LeafletMap = ({ location, routePoints, onLocationChange, className }: Leaf
           <div className="flex flex-col items-center gap-3 px-6 text-center">
             <span className="text-3xl">🗺️</span>
             <p className="text-white/70 text-sm font-medium">GPS unavailable</p>
-            <p className="text-white/40 text-xs">Your device doesn't support location services.</p>
+            <p className="text-white/60 text-xs">Your device doesn't support location services.</p>
           </div>
         ) : (
           <div className="flex flex-col items-center gap-3">
@@ -197,7 +197,7 @@ const LeafletMap = ({ location, routePoints, onLocationChange, className }: Leaf
             className={`flex-1 py-2 text-xs font-medium transition-colors min-h-[36px] ${
               mode === 'live'
                 ? 'text-emerald-400 bg-emerald-500/10 border-b-2 border-emerald-400'
-                : 'text-white/50 hover:text-white/70'
+                : 'text-white/60 hover:text-white/70'
             }`}
           >
             Live
@@ -207,7 +207,7 @@ const LeafletMap = ({ location, routePoints, onLocationChange, className }: Leaf
             className={`flex-1 py-2 text-xs font-medium transition-colors min-h-[36px] ${
               mode === 'lastTrip'
                 ? 'text-emerald-400 bg-emerald-500/10 border-b-2 border-emerald-400'
-                : 'text-white/50 hover:text-white/70'
+                : 'text-white/60 hover:text-white/70'
             }`}
           >
             Last Trip

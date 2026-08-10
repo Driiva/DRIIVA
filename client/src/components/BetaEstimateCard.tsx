@@ -30,7 +30,7 @@ export function BetaEstimateCard({
       <div className="dashboard-glass-card mb-4">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base font-semibold text-white">Beta Estimate</h3>
-          <Loader2 className="w-5 h-5 text-white/50 animate-spin" />
+          <Loader2 className="w-5 h-5 text-white/60 animate-spin" />
         </div>
         <div className="space-y-3 animate-pulse">
           <div className="h-5 w-3/4 bg-white/10 rounded" />
@@ -51,6 +51,7 @@ export function BetaEstimateCard({
               type="button"
               onClick={() => onRefresh()}
               className="p-1.5 rounded-full hover:bg-white/10 transition-colors text-white/70"
+              aria-label="Refresh estimate"
               title="Refresh estimate"
             >
               <RefreshCw className="w-4 h-4" />
@@ -58,7 +59,7 @@ export function BetaEstimateCard({
           )}
         </div>
         <p className="text-sm text-amber-200/90">{error.message}</p>
-        <p className="text-xs text-white/50 mt-2">
+        <p className="text-xs text-white/60 mt-2">
           Add your age and postcode in Profile to see an estimate.
         </p>
       </div>
@@ -75,6 +76,7 @@ export function BetaEstimateCard({
               type="button"
               onClick={() => onRefresh()}
               className="p-1.5 rounded-full hover:bg-white/10 transition-colors text-white/70"
+              aria-label="More information"
               title="Generate estimate"
             >
               <RefreshCw className="w-4 h-4" />
@@ -82,7 +84,7 @@ export function BetaEstimateCard({
           )}
         </div>
         <p className="text-sm text-white/70">No estimate yet.</p>
-        <p className="text-xs text-white/50 mt-1">
+        <p className="text-xs text-white/60 mt-1">
           Add age and postcode in Profile, then refresh.
         </p>
       </div>
@@ -109,6 +111,7 @@ export function BetaEstimateCard({
             type="button"
             onClick={() => onRefresh()}
             className="p-1.5 rounded-full hover:bg-white/10 transition-colors text-white/70"
+              aria-label="More information"
             title="Refresh estimate"
           >
             <RefreshCw className="w-4 h-4" />
@@ -118,7 +121,7 @@ export function BetaEstimateCard({
 
       <div className="space-y-3">
         <div>
-          <p className="text-xs text-white/50 mb-0.5">Estimated premium</p>
+          <p className="text-xs text-white/60 mb-0.5">Estimated premium</p>
           <p className="text-xl font-semibold text-white">
             {formatPounds(estimatedPremium)}
             <span className="text-sm font-normal text-white/70 ml-1">
@@ -128,7 +131,7 @@ export function BetaEstimateCard({
         </div>
 
         <div>
-          <p className="text-xs text-white/50 mb-0.5">Estimated refund</p>
+          <p className="text-xs text-white/60 mb-0.5">Estimated refund</p>
           <p className="text-lg font-semibold text-emerald-400">
             {formatPounds(estimatedRefund)}/year
             {Number(refundPercent) > 0 && (
@@ -140,7 +143,7 @@ export function BetaEstimateCard({
         </div>
 
         <div>
-          <p className="text-xs text-white/50 mb-0.5">Estimated net cost after refund</p>
+          <p className="text-xs text-white/60 mb-0.5">Estimated net cost after refund</p>
           <p className="text-lg font-semibold text-white">
             {formatPounds(estimatedNetCost)}/year
           </p>
@@ -148,8 +151,8 @@ export function BetaEstimateCard({
       </div>
 
       <div className="mt-4 pt-3 border-t border-white/10 flex items-start gap-2">
-        <Info className="w-4 h-4 text-white/40 shrink-0 mt-0.5" />
-        <p className="text-xs text-white/50 leading-relaxed">
+        <Info className="w-4 h-4 text-white/60 shrink-0 mt-0.5" />
+        <p className="text-xs text-white/60 leading-relaxed">
           Beta estimate only. Not a final insurance quote. Final pricing will be
           provided by our authorised partners.
         </p>

@@ -125,7 +125,7 @@ export default function Terms() {
             <h2 className="text-lg font-semibold text-white mb-2">9. Contact</h2>
             <p className="text-white/80 text-[15px] leading-relaxed">
               Questions? Contact us at{" "}
-              <a href="mailto:info@driiva.co.uk" className="text-teal-400 hover:underline">
+              <a href="mailto:info@driiva.co.uk" className="text-[var(--app-primary-text)] underline">
                 info@driiva.co.uk
               </a>
               . For full policy terms, see your policy document.

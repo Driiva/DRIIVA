@@ -171,13 +171,13 @@ export default function Rewards() {
             </div>
             <div style={{ marginTop: '2px' }}>
               <h1 className="text-xl font-bold text-white">Driiva</h1>
-              <p className="text-sm text-white/50">{getGreeting()}, {firstName}</p>
+              <p className="text-sm text-white/60">{getGreeting()}, {firstName}</p>
             </div>
           </div>
 
           <div className="flex items-center gap-3 relative">
-            <button className="p-2 rounded-full hover:bg-white/5 transition-colors">
-              <Bell className="w-5 h-5 text-white/60" />
+            <button className="p-2 rounded-full hover:bg-white/5 transition-colors" aria-label="Notifications">
+              <Bell className="w-5 h-5 text-white/60" aria-hidden="true" />
             </button>
 
             <button
@@ -189,7 +189,7 @@ export default function Rewards() {
                   {(user?.name?.[0] ?? user?.email?.[0] ?? 'd').toUpperCase()}
                 </span>
               </div>
-              <ChevronDown className={`w-4 h-4 text-white/50 transition-transform ${showDropdown ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-4 h-4 text-white/60 transition-transform ${showDropdown ? 'rotate-180' : ''}`} />
             </button>
 
             <AnimatePresence>
@@ -210,7 +210,7 @@ export default function Rewards() {
                     className="absolute top-12 right-0 w-56 z-50 backdrop-blur-2xl bg-[#1a1a2e]/95 border border-white/10 rounded-xl shadow-2xl overflow-hidden"
                   >
                     <div className="p-4">
-                      <p className="text-xs text-white/50 mb-1">Policy No:</p>
+                      <p className="text-xs text-white/60 mb-1">Policy No:</p>
                       <p className="text-sm font-medium text-white">{policyNumber}</p>
                     </div>
                     <div className="border-t border-white/10">
@@ -272,7 +272,7 @@ export default function Rewards() {
                     <div className={`text-2xl font-semibold ${stat.accent ? 'text-emerald-400' : 'text-white'}`}>
                       {stat.value}
                     </div>
-                    <div className="text-xs text-white/50 mt-1">{stat.label}</div>
+                    <div className="text-xs text-white/60 mt-1">{stat.label}</div>
                   </motion.div>
                 ))}
               </div>
@@ -365,10 +365,10 @@ export default function Rewards() {
                               )}
                             </div>
 
-                            <p className="text-xs text-white/50 mb-1">{achievement.description}</p>
+                            <p className="text-xs text-white/60 mb-1">{achievement.description}</p>
 
                             {achievement.unlocked && achievement.unlockedAt && (
-                              <div className="text-xs text-white/40">
+                              <div className="text-xs text-white/60">
                                 Unlocked: {achievement.unlockedAt}
                               </div>
                             )}
@@ -430,7 +430,7 @@ export default function Rewards() {
                             <div className={`text-2xl font-semibold ${stat.accent ? 'text-emerald-400' : 'text-white'}`}>
                               {stat.value}
                             </div>
-                            <div className="text-xs text-white/50 mt-1">{stat.label}</div>
+                            <div className="text-xs text-white/60 mt-1">{stat.label}</div>
                           </motion.div>
                         ))}
                       </div>
@@ -457,7 +457,7 @@ export default function Rewards() {
                           }`}
                         />
                       </div>
-                      <div className="flex justify-between text-xs text-white/40">
+                      <div className="flex justify-between text-xs text-white/60">
                         <span>0</span>
                         <span className="text-amber-400/60">70 (qualify)</span>
                         <span>100</span>

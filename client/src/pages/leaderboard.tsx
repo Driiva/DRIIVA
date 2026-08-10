@@ -82,7 +82,7 @@ function RankBadge({ rank, isCurrentUser }: { rank: number; isCurrentUser: boole
         color: isCurrentUser
           ? 'var(--app-text-hero)'
           : podium
-            ? 'var(--app-primary)'
+            ? 'var(--app-primary-text)'
             : 'var(--app-text-sec)',
         fontWeight: podium || isCurrentUser ? 600 : 500,
       }}
@@ -136,7 +136,7 @@ function LeaderboardRow({ entry, index }: { entry: LeaderboardEntry; index: numb
         <div className="min-w-0">
           <div
             className="text-[15px] truncate"
-            style={{ color: entry.isCurrentUser ? 'var(--app-primary)' : 'var(--app-text-pri)' }}
+            style={{ color: entry.isCurrentUser ? 'var(--app-primary-text)' : 'var(--app-text-pri)' }}
           >
             {entry.anonymizedName}
             {entry.isCurrentUser && (
@@ -375,7 +375,7 @@ export default function LeaderboardPage() {
           >
             <CardHeader>
               <CardTitle className="flex items-center gap-2" style={{ color: 'var(--app-text-hero)' }}>
-                <Trophy className="w-5 h-5" style={{ color: 'var(--app-primary)' }} />
+                <Trophy className="w-5 h-5" style={{ color: 'var(--app-primary-text)' }} />
                 <span className="text-[16px]">{periodLabel}</span>
               </CardTitle>
             </CardHeader>
@@ -551,7 +551,7 @@ export default function LeaderboardPage() {
               <div className="flex items-center gap-3">
                 <RankBadge rank={userEntry.rank} isCurrentUser />
                 <div>
-                  <div className="text-[15px]" style={{ color: 'var(--app-primary)' }}>
+                  <div className="text-[15px]" style={{ color: 'var(--app-primary-text)' }}>
                     Your position
                   </div>
                   <div className="text-[13px]" style={{ color: 'var(--app-text-sec)' }}>

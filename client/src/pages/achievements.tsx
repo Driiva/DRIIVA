@@ -303,7 +303,7 @@ export default function Achievements() {
                     {achievement.unlocked ? (
                       <Icon className={`w-7 h-7 ${achievement.color}`} />
                     ) : (
-                      <Lock className="w-6 h-6 text-white/40" />
+                      <Lock className="w-6 h-6 text-white/60" />
                     )}
                   </div>
 
@@ -325,7 +325,7 @@ export default function Achievements() {
                     {/* Progress Bar (for locked achievements with progress) */}
                     {!achievement.unlocked && achievement.progress !== undefined && achievement.maxProgress && (
                       <div className="mt-3">
-                        <div className="flex justify-between text-xs text-white/50 mb-1">
+                        <div className="flex justify-between text-xs text-white/60 mb-1">
                           <span>Progress</span>
                           <span>{achievement.progress}/{achievement.maxProgress}</span>
                         </div>
@@ -340,7 +340,7 @@ export default function Achievements() {
 
                     {/* Unlocked Date */}
                     {achievement.unlocked && achievement.unlockedDate && (
-                      <p className="text-xs text-white/40 mt-2">
+                      <p className="text-xs text-white/60 mt-2">
                         Unlocked {new Date(achievement.unlockedDate).toLocaleDateString('en-GB', { 
                           day: 'numeric', 
                           month: 'short', 
@@ -366,12 +366,12 @@ export default function Achievements() {
             {loadError ? (
               <>
                 <p className="text-white/60">We could not load your achievements.</p>
-                <p className="text-white/40 text-sm mt-1">Check your connection and try again.</p>
+                <p className="text-white/60 text-sm mt-1">Check your connection and try again.</p>
               </>
             ) : totalCount === 0 ? (
               <>
                 <p className="text-white/60">No achievements yet.</p>
-                <p className="text-white/40 text-sm mt-1">
+                <p className="text-white/60 text-sm mt-1">
                   They unlock as you record trips.
                 </p>
               </>

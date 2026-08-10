@@ -177,7 +177,7 @@ export default function Welcome() {
           <div className="flex items-center justify-center gap-1 mt-4">
             <button
               onClick={handlePrev}
-              className="text-white/30 hover:text-white/60 transition-colors"
+              className="text-white/55 hover:text-white/60 transition-colors"
               aria-label="Previous slide"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
@@ -198,7 +198,7 @@ export default function Welcome() {
             
             <button
               onClick={handleNext}
-              className="text-white/30 hover:text-white/60 transition-colors"
+              className="text-white/55 hover:text-white/60 transition-colors"
               aria-label="Next slide"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
@@ -284,7 +284,7 @@ export default function Welcome() {
           >
             Terms
           </button>
-          <span className="absolute right-3 bottom-1 text-white/35 text-[13px]">
+          <span className="absolute right-3 bottom-1 text-white/55 text-[13px]">
             driiva © 2026
           </span>
         </div>

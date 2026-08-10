@@ -66,7 +66,7 @@ export default function PolicyStatusWidget({
             </div>
             <div>
               <div className="text-sm font-medium text-white">{policyData.policyType}</div>
-              <div className="text-xs text-white/50">Policy No: {policyData.policyNumber}</div>
+              <div className="text-xs text-white/60">Policy No: {policyData.policyNumber}</div>
             </div>
           </div>
 
@@ -77,7 +77,7 @@ export default function PolicyStatusWidget({
                 <Calendar className="w-5 h-5 text-white/60" />
               </div>
               <div>
-                <div className="text-xs text-white/50">Start Date</div>
+                <div className="text-xs text-white/60">Start Date</div>
                 <div className="text-sm font-medium text-white">{policyData.startDate}</div>
               </div>
             </div>
@@ -87,7 +87,7 @@ export default function PolicyStatusWidget({
                 <Calendar className="w-5 h-5 text-white/60" />
               </div>
               <div>
-                <div className="text-xs text-white/50">Renewal Date</div>
+                <div className="text-xs text-white/60">Renewal Date</div>
                 <div className="text-sm font-medium text-white">{policyData.renewalDate}</div>
               </div>
             </div>
@@ -101,7 +101,7 @@ export default function PolicyStatusWidget({
               </div>
               <div>
                 <div className="text-sm font-medium text-white">Annual Premium</div>
-                <div className="text-xs text-white/50">£{Number(policyData.premiumAmount).toLocaleString('en-GB')}</div>
+                <div className="text-xs text-white/60">£{Number(policyData.premiumAmount).toLocaleString('en-GB')}</div>
               </div>
             </div>
             <motion.button

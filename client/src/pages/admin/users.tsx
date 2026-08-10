@@ -155,13 +155,13 @@ export default function AdminUsers() {
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/55" />
           <input
             type="text"
             placeholder="Search by email..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-cyan-500/40"
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-white placeholder:text-white/55 focus:outline-none focus:border-cyan-500/40"
           />
         </div>
         <button
@@ -196,7 +196,7 @@ export default function AdminUsers() {
                     <th
                       key={field}
                       onClick={() => ['email', 'signupDate', 'totalTrips', 'avgScore', 'lastActive'].includes(field) ? toggleSort(field as SortField) : undefined}
-                      className={`text-left px-4 py-3 text-white/50 font-medium text-xs uppercase tracking-wider ${
+                      className={`text-left px-4 py-3 text-white/60 font-medium text-xs uppercase tracking-wider ${
                         ['email', 'signupDate', 'totalTrips', 'avgScore', 'lastActive'].includes(field)
                           ? 'cursor-pointer hover:text-white/70'
                           : ''
@@ -221,7 +221,7 @@ export default function AdminUsers() {
                 ))}
                 {filteredSorted.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-4 py-12 text-center text-white/30">
+                    <td colSpan={7} className="px-4 py-12 text-center text-white/55">
                       No users match your search
                     </td>
                   </tr>
@@ -251,11 +251,11 @@ function UserRowGroup({
         className="border-b border-white/[0.04] hover:bg-white/[0.03] cursor-pointer transition-colors"
       >
         <td className="px-4 py-3 text-white/80 font-mono text-xs">{u.email}</td>
-        <td className="px-4 py-3 text-white/50 whitespace-nowrap">{formatDate(u.signupDate)}</td>
-        <td className="px-4 py-3 text-white/50 capitalize">{u.platform}</td>
+        <td className="px-4 py-3 text-white/60 whitespace-nowrap">{formatDate(u.signupDate)}</td>
+        <td className="px-4 py-3 text-white/60 capitalize">{u.platform}</td>
         <td className="px-4 py-3 text-white/70 tabular-nums">{u.totalTrips}</td>
         <td className="px-4 py-3 text-white/70 tabular-nums">{u.avgScore || '--'}</td>
-        <td className="px-4 py-3 text-white/50 whitespace-nowrap">{formatShortDate(u.lastActive)}</td>
+        <td className="px-4 py-3 text-white/60 whitespace-nowrap">{formatShortDate(u.lastActive)}</td>
         <td className="px-4 py-3"><StatusBadge status={u.status} /></td>
       </tr>
       <AnimatePresence>
@@ -272,29 +272,29 @@ function UserRowGroup({
                 <div className="px-6 py-4 bg-white/[0.02] border-b border-white/[0.06]">
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                     <div>
-                      <span className="text-[10px] uppercase tracking-wider text-white/40">Braking</span>
+                      <span className="text-[10px] uppercase tracking-wider text-white/60">Braking</span>
                       <p className="text-lg font-semibold text-white/90">{u.scoreBreakdown?.braking ?? '--'}</p>
                     </div>
                     <div>
-                      <span className="text-[10px] uppercase tracking-wider text-white/40">Acceleration</span>
+                      <span className="text-[10px] uppercase tracking-wider text-white/60">Acceleration</span>
                       <p className="text-lg font-semibold text-white/90">{u.scoreBreakdown?.acceleration ?? '--'}</p>
                     </div>
                     <div>
-                      <span className="text-[10px] uppercase tracking-wider text-white/40">Speeding</span>
+                      <span className="text-[10px] uppercase tracking-wider text-white/60">Speeding</span>
                       <p className="text-lg font-semibold text-white/90">{u.scoreBreakdown?.speeding ?? '--'}</p>
                     </div>
                     <div>
-                      <span className="text-[10px] uppercase tracking-wider text-white/40">Phone Usage</span>
+                      <span className="text-[10px] uppercase tracking-wider text-white/60">Phone Usage</span>
                       <p className="text-lg font-semibold text-white/90">{u.scoreBreakdown?.phone ?? '--'}</p>
                     </div>
                   </div>
                   <div className="mt-4 grid grid-cols-2 gap-4">
                     <div>
-                      <span className="text-[10px] uppercase tracking-wider text-white/40">Total Distance</span>
+                      <span className="text-[10px] uppercase tracking-wider text-white/60">Total Distance</span>
                       <p className="text-sm text-white/70">{u.totalDistance.toLocaleString()} km</p>
                     </div>
                     <div>
-                      <span className="text-[10px] uppercase tracking-wider text-white/40 block mb-1">Score Trend (7d)</span>
+                      <span className="text-[10px] uppercase tracking-wider text-white/60 block mb-1">Score Trend (7d)</span>
                       <div className="w-32">
                         <ScoreSparkline data={u.weeklyScoreTrend} />
                       </div>

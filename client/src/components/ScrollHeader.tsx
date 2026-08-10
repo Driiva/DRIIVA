@@ -77,7 +77,7 @@ export function ScrollHeader({
       >
         <h1 className="text-[28px] font-bold text-white tracking-tight">{title}</h1>
         {subtitle && (
-          <p className="text-sm text-white/50 mt-0.5">{subtitle}</p>
+          <p className="text-sm text-white/60 mt-0.5">{subtitle}</p>
         )}
       </motion.div>
     </div>

@@ -73,7 +73,7 @@ export default function DashboardHeader({ user, policyNumber, memberSince }: Das
             </motion.button>
             <div>
               <h1 className="text-xl font-semibold text-white">Driiva</h1>
-              <p className="text-sm text-white/50">{getGreeting()}, {user?.firstName || user?.username || 'Driver'}</p>
+              <p className="text-sm text-white/60">{getGreeting()}, {user?.firstName || user?.username || 'Driver'}</p>
             </div>
           </div>
 
@@ -86,9 +86,11 @@ export default function DashboardHeader({ user, policyNumber, memberSince }: Das
                 setMenuOpen(false);
               }}
               whileTap={microInteractions.tap}
+              aria-label="Notifications"
+              aria-expanded={notificationsOpen}
               className="p-2 text-white/60 hover:text-white transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
             >
-              <Bell className="w-5 h-5" />
+              <Bell className="w-5 h-5" aria-hidden="true" />
             </motion.button>
 
             {/* Profile - radial blur, no hover */}
@@ -113,7 +115,7 @@ export default function DashboardHeader({ user, policyNumber, memberSince }: Das
                 animate={{ rotate: menuOpen ? 180 : 0 }}
                 transition={{ duration: timing.interaction / 1000 }}
               >
-                <ChevronDown className="w-4 h-4 text-white/50" />
+                <ChevronDown className="w-4 h-4 text-white/60" />
               </motion.div>
             </motion.button>
           </div>
@@ -148,10 +150,10 @@ export default function DashboardHeader({ user, policyNumber, memberSince }: Das
               <div className="p-4">
                 <div className="flex flex-col items-center justify-center py-6 text-center">
                   <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mb-3">
-                    <Bell className="w-5 h-5 text-white/40" />
+                    <Bell className="w-5 h-5 text-white/60" />
                   </div>
                   <p className="text-sm text-white/70 mb-1">No new notifications</p>
-                  <p className="text-xs text-white/40">We'll notify you when something happens</p>
+                  <p className="text-xs text-white/60">We'll notify you when something happens</p>
                 </div>
               </div>
             </motion.div>
@@ -193,7 +195,7 @@ export default function DashboardHeader({ user, policyNumber, memberSince }: Das
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-white truncate">{profileData.name}</p>
-                    <p className="text-xs text-white/50 truncate">{profileData.email}</p>
+                    <p className="text-xs text-white/60 truncate">{profileData.email}</p>
                   </div>
                 </div>
 
@@ -201,11 +203,11 @@ export default function DashboardHeader({ user, policyNumber, memberSince }: Das
                   <>
                     <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
                       <div>
-                        <p className="text-white/50">Vehicle</p>
+                        <p className="text-white/60">Vehicle</p>
                         <p className="text-white">{profileData.vehicle}</p>
                       </div>
                       <div>
-                        <p className="text-white/50">Policy</p>
+                        <p className="text-white/60">Policy</p>
                         <p className="text-white">{profileData.policyNumber}</p>
                       </div>
                     </div>

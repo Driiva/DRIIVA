@@ -87,7 +87,7 @@ export default function MetricsGrid({ profile }: MetricsGridProps) {
                   <div className="font-semibold text-white text-sm">
                     {metric.label}
                   </div>
-                  <div className="text-white/50 text-xs">
+                  <div className="text-white/60 text-xs">
                     {metric.weight}
                   </div>
                 </div>

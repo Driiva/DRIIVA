@@ -74,7 +74,7 @@ export default function Gamification({ achievements, leaderboard, currentUser, p
               <Target className="w-4 h-4 mr-2 text-white/60" />
               Refund Goals
             </h4>
-            <div className="text-xs text-white/50">Current: {profile.currentScore}/100</div>
+            <div className="text-xs text-white/60">Current: {profile.currentScore}/100</div>
           </div>
           
           <div className="grid grid-cols-3 gap-2">
@@ -95,7 +95,7 @@ export default function Gamification({ achievements, leaderboard, currentUser, p
                   <div className={`text-xs font-medium ${isAchieved ? 'text-emerald-400' : 'text-white/70'}`}>
                     {data.label}
                   </div>
-                  <div className="text-xs text-white/50">{data.score}+ score</div>
+                  <div className="text-xs text-white/60">{data.score}+ score</div>
                   <div className="text-sm font-semibold text-white mt-1">£{data.refund.toFixed(0)}</div>
                   {isAchieved && (
                     <div className="flex items-center justify-center gap-1 mt-1">
@@ -117,17 +117,17 @@ export default function Gamification({ achievements, leaderboard, currentUser, p
               <achievement.icon className="w-5 h-5 text-emerald-400" />
             </div>
             <div className="text-xs font-medium text-white">{achievement.name}</div>
-            <div className="text-xs text-white/50">{achievement.description}</div>
+            <div className="text-xs text-white/60">{achievement.description}</div>
           </GlassCard>
         ))}
 
         {lockedAchievements.map((achievement, index) => (
           <GlassCard key={index} className="p-4 text-center opacity-40">
             <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mx-auto mb-2">
-              <achievement.icon className="w-5 h-5 text-white/50" />
+              <achievement.icon className="w-5 h-5 text-white/60" />
             </div>
-            <div className="text-xs font-medium text-white/50">{achievement.name}</div>
-            <div className="text-xs text-white/40">{achievement.description}</div>
+            <div className="text-xs font-medium text-white/60">{achievement.name}</div>
+            <div className="text-xs text-white/60">{achievement.description}</div>
           </GlassCard>
         ))}
       </div>
@@ -163,7 +163,7 @@ export default function Gamification({ achievements, leaderboard, currentUser, p
                 </div>
                 <div className="flex flex-col items-start">
                   <span className="text-sm font-medium text-white">{entry.name}</span>
-                  <span className="text-xs text-white/40">{entry.weeklyChange} this week</span>
+                  <span className="text-xs text-white/60">{entry.weeklyChange} this week</span>
                 </div>
               </div>
               <span className="text-sm font-semibold text-white/80">{entry.score}</span>

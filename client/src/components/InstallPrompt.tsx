@@ -78,7 +78,7 @@ export default function InstallPrompt() {
             style={{ background: 'rgba(15,23,42,0.96)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(24px)' }}>
             <button
               onClick={dismiss}
-              className="absolute top-3 right-3 p-1 rounded-full text-white/40 hover:text-white/80"
+              className="absolute top-3 right-3 p-1 rounded-full text-white/60 hover:text-white/80"
             >
               <X size={18} />
             </button>
@@ -87,7 +87,7 @@ export default function InstallPrompt() {
               <img src="/apple-touch-icon.png" alt="Driiva" className="w-14 h-14 rounded-2xl shadow-lg flex-shrink-0" />
               <div>
                 <p className="font-semibold text-white text-base leading-tight">Add Driiva to your Home Screen</p>
-                <p className="text-white/50 text-sm mt-0.5">Works like a native app — no App Store needed</p>
+                <p className="text-white/60 text-sm mt-0.5">Works like a native app — no App Store needed</p>
               </div>
             </div>
 
@@ -130,9 +130,9 @@ export default function InstallPrompt() {
             <img src="/apple-touch-icon.png" alt="Driiva" className="w-12 h-12 rounded-xl flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-white text-sm">Add Driiva to Home Screen</p>
-              <p className="text-white/50 text-xs">Works offline · No App Store needed</p>
+              <p className="text-white/60 text-xs">Works offline · No App Store needed</p>
             </div>
-            <button onClick={dismiss} className="text-white/30 p-1 mr-1">
+            <button onClick={dismiss} className="text-white/55 p-1 mr-1">
               <X size={16} />
             </button>
             <button

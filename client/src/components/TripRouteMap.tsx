@@ -69,7 +69,7 @@ export default function TripRouteMap({
         className={`flex items-center justify-center bg-[#1a1a2e]/50 rounded-xl ${className}`}
         style={{ height }}
       >
-        <p className="text-white/50 text-sm">Not enough GPS points to draw a route</p>
+        <p className="text-white/60 text-sm">Not enough GPS points to draw a route</p>
       </div>
     );
   }

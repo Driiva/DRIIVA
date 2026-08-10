@@ -138,6 +138,13 @@ button, a, input, select, textarea, [role="button"] {
   --app-surface-3: #241f40;
   --app-primary:   #5b4dc9;
   --app-primary-rgb: 91, 77, 201;
+  /*
+   * The accent as TEXT on a dark surface. #5b4dc9 is built to be a fill: as
+   * small text on #12111f it measures about 3.3:1 and fails WCAG AA, which is
+   * what the axe audit caught on the nav labels and the leaderboard's
+   * your-row. Same hue, lifted until it is legible. Fills keep --app-primary.
+   */
+  --app-primary-text: #9b8ff0;
   --app-text-hero: #f8fafc;
   --app-text-pri:  #e8eaf0;
   --app-text-sec:  #8b8b9e;

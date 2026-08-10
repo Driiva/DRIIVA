@@ -102,7 +102,7 @@ export default function AdminFeedback() {
 
         {/* Filter */}
         <div className="flex items-center gap-2">
-          <span className="text-xs text-white/40">Filter:</span>
+          <span className="text-xs text-white/60">Filter:</span>
           {[null, 1, 2, 3, 4, 5].map((r) => (
             <button
               key={r ?? 'all'}
@@ -110,7 +110,7 @@ export default function AdminFeedback() {
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                 ratingFilter === r
                   ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
-                  : 'bg-white/[0.04] text-white/50 border border-white/[0.06] hover:text-white/70'
+                  : 'bg-white/[0.04] text-white/60 border border-white/[0.06] hover:text-white/70'
               }`}
             >
               {r === null ? 'All' : `${r}\u2605`}
@@ -125,7 +125,7 @@ export default function AdminFeedback() {
               <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin mx-auto" />
             </div>
           ) : filtered.length === 0 ? (
-            <div className="p-12 text-center text-white/40">
+            <div className="p-12 text-center text-white/60">
               {feedback.length === 0
                 ? 'No feedback yet — share the app with beta users'
                 : 'No feedback matches this filter'}
@@ -135,11 +135,11 @@ export default function AdminFeedback() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-white/[0.08]">
-                    <th className="text-left px-4 py-3 text-white/50 font-medium text-xs uppercase tracking-wider">Rating</th>
-                    <th className="text-left px-4 py-3 text-white/50 font-medium text-xs uppercase tracking-wider">Message</th>
-                    <th className="text-left px-4 py-3 text-white/50 font-medium text-xs uppercase tracking-wider">Platform</th>
-                    <th className="text-left px-4 py-3 text-white/50 font-medium text-xs uppercase tracking-wider">Version</th>
-                    <th className="text-left px-4 py-3 text-white/50 font-medium text-xs uppercase tracking-wider">Date</th>
+                    <th className="text-left px-4 py-3 text-white/60 font-medium text-xs uppercase tracking-wider">Rating</th>
+                    <th className="text-left px-4 py-3 text-white/60 font-medium text-xs uppercase tracking-wider">Message</th>
+                    <th className="text-left px-4 py-3 text-white/60 font-medium text-xs uppercase tracking-wider">Platform</th>
+                    <th className="text-left px-4 py-3 text-white/60 font-medium text-xs uppercase tracking-wider">Version</th>
+                    <th className="text-left px-4 py-3 text-white/60 font-medium text-xs uppercase tracking-wider">Date</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -164,10 +164,10 @@ export default function AdminFeedback() {
                           {item.platform}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-white/50 font-mono text-xs">
+                      <td className="px-4 py-3 text-white/60 font-mono text-xs">
                         {item.appVersion}
                       </td>
-                      <td className="px-4 py-3 text-white/50 whitespace-nowrap">
+                      <td className="px-4 py-3 text-white/60 whitespace-nowrap">
                         {formatDate(item.timestamp)}
                       </td>
                     </tr>
@@ -178,7 +178,7 @@ export default function AdminFeedback() {
           )}
         </div>
 
-        <p className="text-white/30 text-xs text-center">
+        <p className="text-white/55 text-xs text-center">
           Showing {filtered.length} of {feedback.length} entries
         </p>
       </motion.div>

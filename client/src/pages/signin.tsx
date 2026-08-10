@@ -312,7 +312,7 @@ export default function SignIn() {
                     <h2 className="text-white text-lg font-bold mb-0.5">
                       Welcome back, {lastUser.name.split(' ')[0]}
                     </h2>
-                    <p className="text-center text-white/50 text-sm">
+                    <p className="text-center text-white/60 text-sm">
                       Sign in to continue
                     </p>
                   </>
@@ -353,7 +353,7 @@ export default function SignIn() {
                     Email or username
                   </label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-white/50" />
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-white/60" />
                     <Input
                       type="text"
                       value={emailOrUsername}
@@ -364,7 +364,7 @@ export default function SignIn() {
                       className="signin-input pl-10"
                       placeholder="e.g. you@example.com or driiva1"
                       required
-                      autoComplete="username email"
+                      autoComplete="username"
                     />
                   </div>
                 </div>
@@ -374,7 +374,7 @@ export default function SignIn() {
                     Password
                   </label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-white/50" />
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-white/60" />
                     <Input
                       type={showPassword ? "text" : "password"}
                       value={password}
@@ -390,7 +390,8 @@ export default function SignIn() {
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/50 hover:text-white/70 transition-colors"
+                      aria-label="Show or hide password"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/60 hover:text-white/70 transition-colors"
                     >
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -401,7 +402,7 @@ export default function SignIn() {
                   <button
                     type="button"
                     onClick={() => setLocation("/forgot-password")}
-                    className="text-[13px] text-white/50 hover:text-[var(--app-primary)] transition-colors"
+                    className="text-[13px] text-white/60 hover:text-[var(--app-primary-text)] transition-colors"
                   >
                     Forgot password?
                   </button>
@@ -449,7 +450,7 @@ export default function SignIn() {
                 {/* Divider */}
                 <div className="flex items-center gap-3 py-1">
                   <div className="flex-1 h-px bg-white/15" />
-                  <span className="text-white/40 text-[13px] uppercase tracking-wider">or</span>
+                  <span className="text-white/60 text-[13px] uppercase tracking-wider">or</span>
                   <div className="flex-1 h-px bg-white/15" />
                 </div>
 
@@ -487,7 +488,7 @@ export default function SignIn() {
                   <>
                     <div className="flex items-center gap-3 py-1">
                       <div className="flex-1 h-px bg-white/15" />
-                      <span className="text-white/40 text-[13px] uppercase tracking-wider">or</span>
+                      <span className="text-white/60 text-[13px] uppercase tracking-wider">or</span>
                       <div className="flex-1 h-px bg-white/15" />
                     </div>
                     <BiometricAuth
@@ -512,7 +513,7 @@ export default function SignIn() {
 
                 {/* Links */}
                 <div className="text-center space-y-2 pt-2">
-                  <p className="text-white/50 text-sm">
+                  <p className="text-white/60 text-sm">
                     Don't have an account?{" "}
                     <button
                       type="button"
@@ -522,7 +523,7 @@ export default function SignIn() {
                       Sign up
                     </button>
                   </p>
-                  <p className="text-white/50 text-sm">
+                  <p className="text-white/60 text-sm">
                     Just exploring?{" "}
                     <button
                       type="button"
@@ -540,7 +541,7 @@ export default function SignIn() {
                         setEmailOrUsername('');
                         window.location.reload();
                       }}
-                      className="text-white/30 hover:text-white/50 text-[13px] transition-colors"
+                      className="text-white/55 hover:text-white/60 text-[13px] transition-colors"
                     >
                       Not {lastUser.name.split(' ')[0]}? Switch account
                     </button>

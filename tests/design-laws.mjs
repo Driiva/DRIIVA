@@ -186,6 +186,10 @@ const CHECKS = `(() => {
   // and the law would then pass a page painted entirely in the old colour.
   const TOKENS = [
     "--app-bg","--app-surface-1","--app-surface-2","--app-surface-3","--app-primary",
+    // The accent as text on dark. Added when the axe audit showed --app-primary
+    // at 3.3:1 as small text; law 2 correctly flagged the new colour until it
+    // was registered here, which is the law working rather than an exception.
+    "--app-primary-text",
     "--app-text-hero","--app-text-pri","--app-text-sec","--app-text-mut",
     "--ink","--ink-1","--ink-2","--ink-3","--ink-4","--ink-5",
     "--brand-amber","--brand-burnt","--brand-violet","--brand-indigo",

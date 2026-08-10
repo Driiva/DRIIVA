@@ -53,7 +53,7 @@ function StatCard({ value, label, loading, numericValue }: { value: string | num
           ) : (
             <p className="text-2xl font-bold text-white mb-1">{value}</p>
           )}
-          <p className="text-xs text-white/50">{label}</p>
+          <p className="text-xs text-white/60">{label}</p>
         </>
       )}
     </motion.div>
@@ -66,7 +66,7 @@ function PolicyFeature({ icon, title, description }: { icon: string; title: stri
       <span className="text-base mt-0.5">{icon}</span>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-white">{title}</p>
-        <p className="text-xs text-white/50">{description}</p>
+        <p className="text-xs text-white/60">{description}</p>
       </div>
     </div>
   );
@@ -116,7 +116,7 @@ function CoverageTypeSection({ currentScore, coverageType, premiumAmount, loadin
             className="overflow-hidden"
           >
             <div className="px-4 pb-4 pt-2 border-t border-white/[0.08]">
-              <p className="text-sm text-white/50 mb-4">Full coverage with extras</p>
+              <p className="text-sm text-white/60 mb-4">Full coverage with extras</p>
 
               <div className="space-y-3">
                 <h4 className="text-xs font-semibold text-white/80 uppercase tracking-wide">
@@ -135,15 +135,15 @@ function CoverageTypeSection({ currentScore, coverageType, premiumAmount, loadin
               <div className="mt-4 p-3 bg-white/[0.03] rounded-xl border border-white/[0.05]">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs text-white/60">Voluntary Excess</span>
-                  <span className="text-sm font-medium text-white/40">—</span>
+                  <span className="text-sm font-medium text-white/60">—</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-white/60">Compulsory Excess</span>
-                  <span className="text-sm font-medium text-white/40">—</span>
+                  <span className="text-sm font-medium text-white/60">—</span>
                 </div>
                 <div className="mt-2 pt-2 border-t border-white/[0.05] flex items-center justify-between">
                   <span className="text-xs font-semibold text-white/80">Total Excess</span>
-                  <span className="text-base font-semibold text-white/40">—</span>
+                  <span className="text-base font-semibold text-white/60">—</span>
                 </div>
               </div>
 
@@ -320,12 +320,12 @@ export default function Profile() {
             </div>
             <div style={{ marginTop: '2px' }}>
               <h1 className="text-xl font-bold text-white">Driiva</h1>
-              <p className="text-sm text-white/50">{getGreeting()}, {greetingName}</p>
+              <p className="text-sm text-white/60">{getGreeting()}, {greetingName}</p>
             </div>
           </div>
 
           <div className="flex items-center gap-3 relative">
-            <button className="p-2 rounded-full hover:bg-white/5 transition-colors">
+            <button className="p-2 rounded-full hover:bg-white/5 transition-colors" aria-label="Notifications">
               <Bell className="w-5 h-5 text-white/60" />
             </button>
 
@@ -336,7 +336,7 @@ export default function Profile() {
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center">
                 <span className="text-white font-bold text-lg">{avatarInitial}</span>
               </div>
-              <ChevronDown className={`w-4 h-4 text-white/50 transition-transform ${showDropdown ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-4 h-4 text-white/60 transition-transform ${showDropdown ? 'rotate-180' : ''}`} />
             </button>
 
             <AnimatePresence>
@@ -357,7 +357,7 @@ export default function Profile() {
                     className="absolute top-12 right-0 w-56 z-50 backdrop-blur-2xl bg-[#1a1a2e]/95 border border-white/10 rounded-xl shadow-2xl overflow-hidden"
                   >
                     <div className="p-4">
-                      <p className="text-xs text-white/50 mb-1">Member ID</p>
+                      <p className="text-xs text-white/60 mb-1">Member ID</p>
                       <p className="text-sm font-medium text-white">{displayPolicyNumber}</p>
                     </div>
                     <div className="border-t border-white/10">
@@ -390,7 +390,7 @@ export default function Profile() {
               <button
                 onClick={cancelEditing}
                 disabled={saving}
-                className="flex items-center gap-1 px-3 py-1.5 text-sm text-white/50 hover:text-white rounded-lg transition-colors min-h-[44px]"
+                className="flex items-center gap-1 px-3 py-1.5 text-sm text-white/60 hover:text-white rounded-lg transition-colors min-h-[44px]"
               >
                 <X className="w-3.5 h-3.5" />
                 Cancel
@@ -446,21 +446,21 @@ export default function Profile() {
                   className="text-xl font-semibold text-white mb-1 bg-white/[0.06] border border-white/10 rounded-lg px-3 py-1.5 text-center w-48 focus:outline-none focus:border-emerald-500/50"
                   placeholder="Your name"
                 />
-                <p className="text-sm text-white/50">{user?.email || '—'}</p>
+                <p className="text-sm text-white/60">{user?.email || '—'}</p>
               </>
             ) : (
               <>
                 <h2 className="text-xl font-semibold text-white mb-1">
                   {dashboardData?.displayName || user?.name || user?.email?.split('@')[0] || 'Driver'}
                 </h2>
-                <p className="text-sm text-white/50">{user?.email || '—'}</p>
+                <p className="text-sm text-white/60">{user?.email || '—'}</p>
               </>
             )}
           </div>
 
           <div className="flex gap-2 mt-2">
             <div className="flex-1 flex items-center justify-between px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06]">
-              <span className="text-xs text-white/50">Score</span>
+              <span className="text-xs text-white/60">Score</span>
               {loading ? (
                 <Skeleton className="h-4 w-8" />
               ) : (
@@ -468,7 +468,7 @@ export default function Profile() {
               )}
             </div>
             <div className="flex-1 flex items-center justify-between px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06]">
-              <span className="text-xs text-white/50">Trips</span>
+              <span className="text-xs text-white/60">Trips</span>
               {loading ? (
                 <Skeleton className="h-4 w-8" />
               ) : (
@@ -574,7 +574,7 @@ export default function Profile() {
               <DetailRow label="Year" value={dashboardData.vehicle.year ? String(dashboardData.vehicle.year) : '--'} />
             </div>
           ) : (
-            <p className="text-sm text-white/50">
+            <p className="text-sm text-white/60">
               No vehicle added yet. Tap Edit to add your car details.
             </p>
           )}
@@ -611,10 +611,13 @@ export default function Profile() {
             <div className="flex justify-between items-center py-2">
               <div>
                 <div className="text-sm font-medium text-white">Location Tracking</div>
-                <div className="text-xs text-white/50">Required for trip recording</div>
+                <div className="text-xs text-white/60">Required for trip recording</div>
               </div>
               <motion.button
                 onClick={() => setLocationTracking(!locationTracking)}
+                role="switch"
+                aria-checked={locationTracking}
+                aria-label="Location tracking"
                 className={`w-12 h-7 rounded-full transition-colors duration-200 relative ${locationTracking ? 'bg-emerald-500' : 'bg-white/20'
                   }`}
                 whileTap={{ scale: 0.95 }}
@@ -629,10 +632,13 @@ export default function Profile() {
             <div className="flex justify-between items-center py-2">
               <div>
                 <div className="text-sm font-medium text-white">Push Notifications</div>
-                <div className="text-xs text-white/50">Trip summaries and alerts</div>
+                <div className="text-xs text-white/60">Trip summaries and alerts</div>
               </div>
               <motion.button
                 onClick={() => setPushNotifications(!pushNotifications)}
+                role="switch"
+                aria-checked={pushNotifications}
+                aria-label="Push notifications"
                 className={`w-12 h-7 rounded-full transition-colors duration-200 relative ${pushNotifications ? 'bg-emerald-500' : 'bg-white/20'
                   }`}
                 whileTap={{ scale: 0.95 }}
@@ -653,7 +659,7 @@ export default function Profile() {
             Privacy & Data
           </h3>
 
-          <p className="text-xs text-white/40 mb-3">
+          <p className="text-xs text-white/60 mb-3">
             Your data is used only for your score and refund. We don't sell it. Trip data is encrypted in transit and at rest.
           </p>
 
@@ -665,7 +671,7 @@ export default function Profile() {
               <Shield className="w-4 h-4 text-indigo-400" />
               <div className="text-left">
                 <p className="text-sm font-medium text-white">Trust Centre</p>
-                <p className="text-xs text-white/50">FCA · GDPR · Your Rights</p>
+                <p className="text-xs text-white/60">FCA · GDPR · Your Rights</p>
               </div>
             </div>
             <ChevronDown className="w-4 h-4 text-indigo-300 -rotate-90" />

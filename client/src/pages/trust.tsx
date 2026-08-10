@@ -102,7 +102,7 @@ function AccordionItem({ title, children, isOpen, onToggle }: AccordionItemProps
           animate={{ rotate: isOpen ? 180 : 0 }}
           transition={{ duration: 0.2 }}
         >
-          <ChevronDown className="w-4 h-4 text-white/40" />
+          <ChevronDown className="w-4 h-4 text-white/60" />
         </motion.div>
       </button>
       <AnimatePresence initial={false}>
@@ -163,7 +163,7 @@ const GDPR_RIGHTS: { title: string; content: React.ReactNode }[] = [
     content: (
       <div className="space-y-2">
         <p>You can request a full copy of your personal data at any time. We'll provide it in a machine-readable JSON format within 30 days.</p>
-        <div className="flex items-center gap-2 text-[var(--app-primary)] text-[13px] font-medium">
+        <div className="flex items-center gap-2 text-[var(--app-primary-text)] text-[13px] font-medium">
           <Download className="w-3.5 h-3.5" />
           <span>Use "Export My Data" in Settings to download instantly</span>
         </div>
@@ -195,7 +195,7 @@ const GDPR_RIGHTS: { title: string; content: React.ReactNode }[] = [
         <p>You have the right to object to processing based on legitimate interests. If you object, we'll stop processing unless we have compelling grounds that override your rights.</p>
         <div className="flex items-center gap-2 text-[var(--ok)] text-[13px] font-medium">
           <Mail className="w-3.5 h-3.5" />
-          <a href="mailto:info@driiva.co.uk" className="hover:underline">info@driiva.co.uk</a>
+          <a href="mailto:info@driiva.co.uk" className="text-[var(--app-primary-text)] underline">info@driiva.co.uk</a>
         </div>
       </div>
     ),
@@ -222,13 +222,13 @@ export default function TrustPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Trust Centre</h1>
-            <p className="text-white/50 text-[13px] mt-1">
+            <p className="text-white/60 text-[13px] mt-1">
               How Driiva protects you and your data
             </p>
           </div>
           <button
             onClick={() => window.history.back()}
-            className="flex items-center gap-1.5 text-[var(--app-primary)] hover:text-[var(--app-primary)] transition-colors text-[15px] min-h-[44px]"
+            className="flex items-center gap-1.5 text-[var(--app-primary-text)] hover:text-[var(--app-primary-text)] transition-colors text-[15px] min-h-[44px]"
           >
             <ArrowLeft className="w-4 h-4" />
             Back
@@ -239,7 +239,7 @@ export default function TrustPage() {
         <GlassSection>
           <AnimatedLockIcon />
           <h2 className="text-lg font-semibold text-center mb-1">Data &amp; Privacy Shield</h2>
-          <p className="text-white/50 text-[13px] text-center mb-5">
+          <p className="text-white/60 text-[13px] text-center mb-5">
             What we collect, why, and for how long
           </p>
 
@@ -249,27 +249,27 @@ export default function TrustPage() {
                 <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-2 flex-shrink-0" />
                 <div>
                   <span className="text-[15px] font-medium text-white">{d.item}</span>
-                  <p className="text-[13px] text-white/50">{d.detail}</p>
+                  <p className="text-[13px] text-white/60">{d.detail}</p>
                 </div>
               </div>
             ))}
           </div>
 
           <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-4 space-y-2 mb-4">
-            <h3 className="text-[13px] font-semibold text-[var(--app-primary)] uppercase tracking-wider">Retention</h3>
+            <h3 className="text-[13px] font-semibold text-[var(--app-primary-text)] uppercase tracking-wider">Retention</h3>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <div className="text-[15px] font-medium text-white">90 days</div>
-                <div className="text-[13px] text-white/50">Raw GPS points (rolling window)</div>
+                <div className="text-[13px] text-white/60">Raw GPS points (rolling window)</div>
               </div>
               <div>
                 <div className="text-[15px] font-medium text-white">Policy lifetime</div>
-                <div className="text-[13px] text-white/50">Aggregated scores &amp; trip summaries</div>
+                <div className="text-[13px] text-white/60">Aggregated scores &amp; trip summaries</div>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 text-[13px] text-white/40">
+          <div className="flex items-center gap-2 text-[13px] text-white/60">
             <ExternalLink className="w-3 h-3" />
             <button
               onClick={() => setLocation('/privacy')}
@@ -283,7 +283,7 @@ export default function TrustPage() {
         {/* ── 2. Your Rights (GDPR Accordion) ── */}
         <GlassSection>
           <h2 className="text-lg font-semibold mb-1">Your Rights</h2>
-          <p className="text-white/50 text-[13px] mb-4">
+          <p className="text-white/60 text-[13px] mb-4">
             Under UK GDPR, you have full control over your data
           </p>
           {GDPR_RIGHTS.map((right, idx) => (
@@ -296,8 +296,8 @@ export default function TrustPage() {
               {right.content}
             </AccordionItem>
           ))}
-          <p className="text-white/40 text-[13px] mt-3">
-            To exercise any right, email <a href="mailto:info@driiva.co.uk" className="text-[var(--app-primary)] hover:underline">info@driiva.co.uk</a>. We respond within 30 days.
+          <p className="text-white/60 text-[13px] mt-3">
+            To exercise any right, email <a href="mailto:info@driiva.co.uk" className="text-[var(--app-primary-text)] underline">info@driiva.co.uk</a>. We respond within 30 days.
           </p>
         </GlassSection>
 
@@ -310,9 +310,9 @@ export default function TrustPage() {
             now stated as the pending position the rest of the product uses.
           */}
           <div className="flex flex-wrap gap-2">
-            <RegBadge label="Pending FCA authorisation" color="var(--app-primary)" />
+            <RegBadge label="Pending FCA authorisation" color="var(--app-primary-text)" />
             <RegBadge label="UK GDPR Compliant" color="var(--ok)" />
-            <RegBadge label="ICO Registered" color="var(--app-primary)" />
+            <RegBadge label="ICO Registered" color="var(--app-primary-text)" />
             <RegBadge label="No Data Sold" color="var(--ok)" />
           </div>
           <p className="text-[15px] text-white/60 mt-3 leading-relaxed">
@@ -335,7 +335,7 @@ export default function TrustPage() {
         {/* ── 5. Consumer Duty Statement ── */}
         <GlassSection>
           <h2 className="text-lg font-semibold mb-2">Our Commitment to You</h2>
-          <p className="text-[13px] text-[var(--app-primary)] font-medium mb-3">FCA Consumer Duty</p>
+          <p className="text-[13px] text-[var(--app-primary-text)] font-medium mb-3">FCA Consumer Duty</p>
           <p className="text-[15px] text-white/70 leading-relaxed">
             Driiva is built around the FCA's four Consumer Duty outcomes.
             We design <strong className="text-white">products that genuinely serve your needs</strong>,
@@ -349,7 +349,7 @@ export default function TrustPage() {
         {/* ── 6. Financial Promotion Disclaimer ── */}
         <GlassSection className="bg-white/[0.02]">
           <p className="text-white/55 text-[15px] leading-relaxed">
-            <strong className="text-white/50">Financial promotion disclaimer:</strong> Refund
+            <strong className="text-white/60">Financial promotion disclaimer:</strong> Refund
             amounts shown anywhere in the Driiva app are illustrative projections based on
             driving score performance. Actual refunds depend on community pool performance,
             claims experience, and underwriting criteria. Past performance is not a guarantee
@@ -359,14 +359,14 @@ export default function TrustPage() {
         </GlassSection>
 
         {/* Footer links */}
-        <div className="flex justify-center gap-6 text-[13px] text-white/30 pt-2">
-          <button onClick={() => setLocation('/terms')} className="hover:text-white/50 transition-colors">
+        <div className="flex justify-center gap-6 text-[13px] text-white/55 pt-2">
+          <button onClick={() => setLocation('/terms')} className="hover:text-white/60 transition-colors">
             Terms of Service
           </button>
-          <button onClick={() => setLocation('/privacy')} className="hover:text-white/50 transition-colors">
+          <button onClick={() => setLocation('/privacy')} className="hover:text-white/60 transition-colors">
             Privacy Policy
           </button>
-          <a href="mailto:info@driiva.co.uk" className="hover:text-white/50 transition-colors">
+          <a href="mailto:info@driiva.co.uk" className="hover:text-white/60 transition-colors">
             Contact
           </a>
         </div>

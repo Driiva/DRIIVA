@@ -205,7 +205,7 @@ export default function Demo() {
 
                 {/* Links */}
                 <div className="text-center space-y-2 pt-2">
-                  <p className="text-white/50 text-sm">
+                  <p className="text-white/60 text-sm">
                     Ready to join?{" "}
                     <button
                       type="button"

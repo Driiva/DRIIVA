@@ -54,10 +54,10 @@ export default function NotificationDropdown() {
               <div className="p-4">
                 <div className="flex flex-col items-center justify-center py-6 text-center">
                   <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mb-3">
-                    <Bell className="w-5 h-5 text-white/40" />
+                    <Bell className="w-5 h-5 text-white/60" />
                   </div>
                   <p className="text-sm text-white/70 mb-1">No new notifications</p>
-                  <p className="text-xs text-white/40">We'll notify you when something happens</p>
+                  <p className="text-xs text-white/60">We'll notify you when something happens</p>
                 </div>
               </div>
             </motion.div>
