@@ -390,10 +390,6 @@ h1, h2, h3, h4, h5, h6 {
   background: linear-gradient(135deg, var(--warning-yellow), #F97316);
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-  }
-
 /* Performance Optimizations */
 .gpu-accelerated {
   transform: translateZ(0);
@@ -651,9 +647,6 @@ h1, h2, h3, h4, h5, h6, .font-display {
   font-weight: 500;
 }
 
-/* Responsive Adjustments */
-@media (max-width: 768px) {
-  .glass-morphism, .glass-morphism-subtle, }
 
 /* Text Readability Enhancement */
 .text-white {
