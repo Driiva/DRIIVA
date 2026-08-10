@@ -12,6 +12,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { C } from '@/components/ui/theme';
 import { isExpoGo } from '@/lib/firebase';
+import { resolveStartRoute } from '@/lib/routing';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -29,26 +30,18 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    if (loading) return;
+    // The whole decision lives in lib/routing.ts so it can be tested without a
+    // navigator. It returns null whenever the session is already somewhere
+    // valid, which keeps this effect from fighting the driver's own
+    // navigation on every segment change.
+    const destination = resolveStartRoute({
+      isExpoGo,
+      loading,
+      user,
+      segments: segments as unknown as string[],
+    });
 
-    const inAuthGroup = segments[0] === '(auth)';
-    const inOnboarding = segments[0] === 'onboarding';
-
-    // Expo Go preview: skip auth, drop the mock user straight into onboarding.
-    if (isExpoGo) {
-      if (!inOnboarding) router.replace('/onboarding');
-      return;
-    }
-
-    if (!user && !inAuthGroup) {
-      router.replace('/(auth)/signin');
-    } else if (user && inAuthGroup) {
-      if (user.onboardingComplete) {
-        router.replace('/(tabs)/dashboard');
-      } else {
-        router.replace('/onboarding');
-      }
-    }
+    if (destination) router.replace(destination as never);
   }, [user, loading, segments]);
 
   return <>{children}</>;
