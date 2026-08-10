@@ -25,7 +25,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
-  signedInTab, goto, evaluate, closeTab, incognitoTab, settle, APP,
+  signedInIsolatedTab, goto, evaluate, incognitoTab, settle, APP,
 } from './qa-session.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -111,6 +111,16 @@ try {
 let failures = 0;
 const counts = {};
 
+/*
+ * A route this audit never reached is not a route that passed.
+ *
+ * Skips used to `continue` without being counted, and the summary then read
+ * "AXE: 0 serious or critical across 9 routes" while private routes had
+ * silently bounced to /signin. Anyone scanning the log saw a clean gate. The
+ * three states are counted separately now and the summary names the gap.
+ */
+const notReached = [];
+
 // ── Public routes: a plain tab is enough, and using one proves these do not
 // silently depend on a session.
 for (const route of (requested.length ? requested.filter((r) => PUBLIC_ROUTES.includes(r)) : PUBLIC_ROUTES)) {
@@ -141,30 +151,42 @@ const privateTargets = requested.length
   : PRIVATE_ROUTES;
 
 if (privateTargets.length) {
-  const { tab, client, signedIn } = await signedInTab();
-  if (signedIn !== 'ok' && signedIn !== 'no-form') {
-    console.log(`\nERROR could not sign in: ${signedIn}`);
-    failures += 1;
+  /*
+   * An ISOLATED context, so the run does not depend on whatever session the
+   * shared Chrome profile happens to hold. This used to accept 'no-form' as a
+   * success, which is exactly what an ALREADY signed-in profile produces: the
+   * form is missing because /signin bounced. That passed while auditing
+   * whoever the profile belonged to, and skipped everything when it belonged
+   * to nobody.
+   */
+  const session = await signedInIsolatedTab();
+  const { client, signedIn, reachedDashboard } = session;
+  if (signedIn !== 'ok' || !reachedDashboard) {
+    const why = signedIn !== 'ok'
+      ? `could not sign in: ${signedIn}`
+      : 'signed in but ProtectedRoute did not admit us to /dashboard';
+    console.log(`\nNOT REACHED  every private route, ${why}`);
+    notReached.push(...privateTargets);
   } else {
     for (const route of privateTargets) {
       try {
         await goto(client, route);
         const landed = await evaluate(client, 'location.pathname');
         if (landed !== route) {
-          console.log(`\nSKIP  ${route} redirected to ${landed}`);
+          console.log(`\nNOT REACHED  ${route}, redirected to ${landed}`);
+          notReached.push(route);
           continue;
         }
         const violations = await runAxe(client);
         counts[route] = violations;
         failures += report(route, violations);
       } catch (err) {
-        console.log(`\nERROR ${route}: ${err.message}`);
-        failures += 1;
+        console.log(`\nNOT REACHED  ${route}: ${err.message}`);
+        notReached.push(route);
       }
     }
   }
-  client.close();
-  await closeTab(tab.id);
+  await session.dispose();
 }
 
 const totalGating = Object.values(counts)
@@ -172,9 +194,28 @@ const totalGating = Object.values(counts)
   .filter((v) => GATING.has(v.impact))
   .reduce((sum, v) => sum + v.nodes, 0);
 
+const measured = Object.keys(counts).length;
+const total = measured + notReached.length;
+
+console.log('\n' + '-'.repeat(70));
 console.log(
-  failures === 0
-    ? `\nAXE: 0 serious or critical across ${Object.keys(counts).length} routes`
-    : `\nAXE: FAILED, ${totalGating} serious/critical node(s) across ${failures} route(s)`,
+  `COVERAGE  ${measured} of ${total} routes audited` +
+    (notReached.length ? `, ${notReached.length} NOT REACHED` : ''),
 );
-process.exit(failures === 0 ? 0 : 1);
+if (notReached.length) console.log(`  not reached  ${notReached.join(' ')}`);
+
+if (failures > 0) {
+  console.log(`\nAXE: FAILED, ${totalGating} serious/critical node(s) across ${failures} route(s)`);
+  process.exit(1);
+}
+if (notReached.length && !process.argv.includes('--allow-unreached')) {
+  console.log(
+    `\nAXE: INCOMPLETE. Nothing serious or critical on the ${measured} route(s) audited, but ` +
+      `${notReached.length} were never reached, so this is not a pass.\n` +
+      'Start the QA emulator and seed it (npm run qa:emulators, npm run qa:seed) and run the dev\n' +
+      'server with VITE_USE_FIREBASE_EMULATOR=true, or pass --allow-unreached to accept the gap.',
+  );
+  process.exit(1);
+}
+console.log(`\nAXE: 0 serious or critical across ${measured} route(s) audited`);
+process.exit(0);

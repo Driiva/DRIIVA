@@ -7,13 +7,33 @@
  * CLAUDE.md (never launch a browser, never close one), opens its own tab,
  * measures, and closes only that tab.
  *
+ * HOW IT REACHES THE AUTHENTICATED SURFACES, and why that changed.
+ * Four of the five routes it walks are behind ProtectedRoute. This harness
+ * used to reach them by writing sessionStorage['driiva-demo-mode'] = 'true',
+ * which ProtectedRoute honours by rendering children unconditionally. That had
+ * two consequences, both bad. When the write landed it was auditing DEMO MODE:
+ * the fabricated pool, the invented participants, three trips that never
+ * happened. When it did not land in time, the route bounced to /signin and the
+ * run errored. So the harness alternated between measuring a fixture and
+ * measuring nothing, and neither was the product.
+ *
+ * It now signs in as the seeded emulator driver through the app's own form,
+ * the same way the accessibility audit does, via tests/qa-session.mjs. The
+ * surfaces it measures are the real ones, rendering real seeded data through
+ * their real auth paths.
+ *
  * Usage:
  *   node tests/design-laws.mjs                     # the default routes
- *   node tests/design-laws.mjs http://host/page    # explicit routes
+ *   node tests/design-laws.mjs /trips /rewards     # named routes
+ *   node tests/design-laws.mjs http://host/page    # explicit URLs
  *   PLANT_VIOLATION=1 node tests/design-laws.mjs   # prove the laws can fail
+ *   --allow-unreached                              # do not fail on skips
  *
- * Env: CDP_URL (default http://localhost:9222), DEV_URL (default
- * http://localhost:5173).
+ * Env: CDP_URL (default http://localhost:9222), DEV_URL / APP_URL (default
+ * http://localhost:5173). Needs the QA emulator and seed:
+ *   npm run qa:emulators   (one terminal)
+ *   npm run qa:seed        (once)
+ *   then the dev server with VITE_USE_FIREBASE_EMULATOR=true
  *
  * THE LAWS
  *   1. No capsules. No painted OBLONG element carries a radius reaching half
@@ -37,68 +57,23 @@
  */
 
 const CDP = process.env.CDP_URL ?? 'http://localhost:9222';
-const DEV = process.env.DEV_URL ?? 'http://localhost:5173';
+const DEV = process.env.DEV_URL ?? process.env.APP_URL ?? 'http://localhost:5173';
 const PLANT = process.env.PLANT_VIOLATION === '1';
 
-const TARGETS = process.argv.slice(2).length
-  ? process.argv.slice(2)
-  : [`${DEV}/`, `${DEV}/dashboard`, `${DEV}/trips`, `${DEV}/leaderboard`, `${DEV}/rewards`];
-
-// ─────────────────────────────────────────────────────────────────────────────
-// A minimal CDP client: open a tab, evaluate, close the tab.
-// ─────────────────────────────────────────────────────────────────────────────
-
-async function openTab(url) {
-  const res = await fetch(`${CDP}/json/new?${encodeURIComponent(url)}`, { method: 'PUT' });
-  if (!res.ok) throw new Error(`could not open a tab: ${res.status} ${await res.text()}`);
-  return res.json();
-}
-
-async function closeTab(id) {
-  await fetch(`${CDP}/json/close/${id}`).catch(() => {});
-}
-
-function connect(wsUrl) {
-  const socket = new WebSocket(wsUrl);
-  let nextId = 1;
-  const pending = new Map();
-
-  socket.addEventListener('message', (event) => {
-    const message = JSON.parse(event.data);
-    const waiter = pending.get(message.id);
-    if (!waiter) return;
-    pending.delete(message.id);
-    if (message.error) waiter.reject(new Error(message.error.message));
-    else waiter.resolve(message.result);
-  });
-
-  const ready = new Promise((resolve, reject) => {
-    socket.addEventListener('open', resolve, { once: true });
-    socket.addEventListener('error', () => reject(new Error('CDP socket failed')), { once: true });
-  });
-
-  return {
-    ready,
-    send(method, params = {}) {
-      const id = nextId++;
-      return new Promise((resolve, reject) => {
-        pending.set(id, { resolve, reject });
-        socket.send(JSON.stringify({ id, method, params }));
-      });
-    },
-    close: () => socket.close(),
-  };
-}
-
-async function evaluate(client, expression) {
-  const { result, exceptionDetails } = await client.send('Runtime.evaluate', {
-    expression,
-    awaitPromise: true,
-    returnByValue: true,
-  });
-  if (exceptionDetails) throw new Error(exceptionDetails.exception?.description ?? 'page threw');
-  return result.value;
-}
+/*
+ * The CDP plumbing and the sign-in flow live in tests/qa-session.mjs, shared
+ * with the accessibility audit. This file used to carry its own copy of
+ * openTab/connect/evaluate, which is two implementations of one thing waiting
+ * to disagree.
+ *
+ * The import is dynamic because qa-session reads APP_URL when the module is
+ * evaluated, and this harness has always been driven by DEV_URL. Setting it
+ * first keeps one base URL for both rather than a second env var to remember.
+ */
+process.env.APP_URL ??= DEV;
+const {
+  evaluate, settle, signedInIsolatedTab, goto, incognitoTab,
+} = await import('./qa-session.mjs');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // The planted violation. Proves the laws can fail: without this, a harness
@@ -117,9 +92,31 @@ const PLANT_SCRIPT = `(() => {
     "color:#3B82F6",
     "font-size:9px",
   ].join(";");
-  document.body.appendChild(el);
+  /*
+   * Inside #root, because that is where the laws look.
+   *
+   * This appended to document.body, and when the laws were scoped to #root to
+   * stop a Recharts scratch node failing law 6, the plant silently fell
+   * outside the element set FOUR of the six laws examine. The plant check
+   * still printed "the gate works", because law 4 reads body text and fired on
+   * its own. A plant that only proves one law is alive is a plant that lets
+   * the other five rot.
+   */
+  (document.getElementById("root") || document.body).appendChild(el);
   return true;
 })()`;
+
+/**
+ * The laws the plant is BUILT to trip: a capsule radius on an oblong (1), the
+ * retired purple as a background and the retired blue as a colour (2 and 3),
+ * an em dash in its text (4), and 9px type (5).
+ *
+ * Checking these by name rather than counting any failure is the difference
+ * between a plant that proves the gate works and one that proves something
+ * somewhere failed. Law 6 is excluded: the plant carries no figure, so it
+ * cannot speak to that law and pretending otherwise would be its own lie.
+ */
+const PLANT_TARGET_LAWS = ['1', '2', '3', '4', '5'];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // The checks, run inside the page.
@@ -127,7 +124,24 @@ const PLANT_SCRIPT = `(() => {
 
 const CHECKS = `(() => {
   const out = [];
-  const els = [...document.querySelectorAll("body *")];
+  /*
+   * OUR markup only.
+   *
+   * The laws describe Driiva's rendered UI, and things that are not Driiva's
+   * rendered UI get appended to <body> all the time: browser extensions (this
+   * Chrome profile carries Adobe Acrobat, which the accessibility audit
+   * already excludes by selector), and library scratch nodes. Recharts appends
+   * a hidden #recharts_measurement_span to <body> to measure text, and the
+   * moment this harness could actually reach the charted routes, law 6 began
+   * failing /leaderboard and /rewards on that span: a figure nobody can see,
+   * in markup we do not own and cannot change.
+   *
+   * A gate that reports a library's internals as a brand violation gets
+   * switched off within a week, which is the same way a gate dies as one that
+   * never arrives. The app mounts at #root, so that is the boundary.
+   */
+  const root = document.getElementById("root");
+  const els = root ? [...root.querySelectorAll("*")] : [];
   const own = (el) =>
     [...el.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent.trim()).join(" ").trim();
   const seen = (el) => {
@@ -359,113 +373,66 @@ const CHECKS = `(() => {
  * keys client/src/pages/demo.tsx writes; AuthContext reads them and serves a
  * demo profile with no Firebase call.
  */
-const DEMO_BOOTSTRAP = `(() => {
-  sessionStorage.setItem('driiva-demo-mode', 'true');
-  return sessionStorage.getItem('driiva-demo-mode');
-})()`;
+/**
+ * Runs the laws against whatever the client is currently showing.
+ *
+ * Throws when the route under test is not the route on screen. A gate that
+ * reports on a page it never reached is worse than no gate, because it is
+ * believed: this harness once walked four authenticated routes, watched every
+ * one bounce to /signin, and printed ALL GREEN having measured the sign-in
+ * page four times.
+ */
+async function measure(client, route, { plant = false } = {}) {
+  await settle(client);
 
-async function check(url) {
-  const asked = new URL(url).pathname;
-  // Public routes are opened directly. Anything behind auth is opened on the
-  // demo route first so the session flag can be written on the right origin,
-  // then navigated once to the route under test.
-  const needsSession = asked !== '/' && !asked.startsWith('/signin');
-  const tab = await openTab(needsSession ? `${DEV}/demo` : url);
-  const client = connect(tab.webSocketDebuggerUrl);
-  try {
-    await client.ready;
-    await client.send('Page.enable');
-    await client.send('Runtime.enable');
+  const rendered = await evaluate(
+    client,
+    '(document.getElementById("root")?.children.length ?? 0) > 0',
+  );
+  if (!rendered) throw new Error('nothing rendered');
 
-    if (needsSession) {
-      // Give the demo route a moment to exist before writing to its storage,
-      // then make the single deliberate navigation to the route under test.
-      await new Promise((r) => setTimeout(r, 1200));
-      await evaluate(client, DEMO_BOOTSTRAP);
-      await client.send('Page.navigate', { url });
-    }
-    // No second Page.navigate beyond that one. Navigating to the same url a
-    // second time tears down the execution context underneath the very
-    // evaluate that is waiting on it, which is what made /signin fail at
-    // random with "Inspected target navigated or closed".
-    // Wait for the page to SETTLE, not merely to load. This is a React app
-    // that resolves auth, swaps a loader for content, may redirect, and then
-    // runs a route entrance animation. Measuring at the load event caught it
-    // mid-flight and produced a different number of passing laws on each run,
-    // which is worse than a failing gate because nobody trusts it.
-    //
-    // The poll lives HERE rather than as one long promise inside the page: any
-    // navigation destroys the page's execution context, so a 12-second in-page
-    // wait was itself the thing throwing "Execution context was destroyed".
-    // Short probes just lose one sample and carry on.
-    // The skeleton count is part of the sample on purpose. Without it the
-    // page settles on its own loading state, and the laws then assert against
-    // a screen of placeholders: the dashboard reported a capsule violation
-    // from its skeleton bars and "NO PROSE FOUND", having never seen the
-    // dashboard at all.
-    const SAMPLE = `(() => {
-      const root = document.getElementById("root");
-      const skeletons = document.querySelectorAll(
-        ".skeleton-shimmer, .loading-shimmer, [data-skeleton]"
-      ).length;
-      return (root ? root.children.length : 0) + ":" +
-             document.querySelectorAll("body *").length + ":" +
-             document.body.innerText.length + ":" +
-             (document.fonts.status === "loaded" ? 1 : 0) + ":" +
-             "sk" + skeletons;
-    })()`;
-
-    let last = '';
-    let stable = 0;
-    const deadline = Date.now() + 15000;
-    while (Date.now() < deadline) {
-      let now = '';
-      try {
-        now = await evaluate(client, SAMPLE);
-      } catch {
-        // Context died under a navigation. Reset and keep sampling.
-        last = '';
-        stable = 0;
-        await new Promise((r) => setTimeout(r, 300));
-        continue;
-      }
-      // Still loading counts as not settled, whether that is an empty root,
-      // no text, unloaded fonts, or a screen of skeletons.
-      const empty = now.startsWith('0:') || now.includes(':0:') || !now.endsWith(':sk0');
-      stable = !empty && now === last ? stable + 1 : 0;
-      last = now;
-      if (stable >= 3) break;
-      await new Promise((r) => setTimeout(r, 250));
-    }
-
-    const rendered = await evaluate(
-      client,
-      '(document.getElementById("root")?.children.length ?? 0) > 0',
-    );
-    if (!rendered) throw new Error(`nothing rendered at ${url}`);
-
-    /* The route that answered has to be the route that was asked for.
-       Without this the harness walked /dashboard, /trips, /leaderboard and
-       /rewards, every one of them bounced to /signin because Firebase was
-       unconfigured, and it printed ALL GREEN having measured the sign-in page
-       four times. A gate that reports on a page it never reached is worse
-       than no gate, because it is believed. */
-    const landed = await evaluate(client, 'location.pathname');
-    if (landed !== asked) {
-      throw new Error(
-        `redirected ${asked} -> ${landed}, so these laws were never applied to ${asked}. ` +
-          'Sign in, or point DEV_URL at an environment where the route renders.',
-      );
-    }
-    if (PLANT) await evaluate(client, PLANT_SCRIPT);
-    return await evaluate(client, CHECKS);
-  } finally {
-    client.close();
-    await closeTab(tab.id);
+  const landed = await evaluate(client, 'location.pathname');
+  if (landed !== route) {
+    throw new Error(`redirected to ${landed}`);
   }
+
+  if (plant) await evaluate(client, PLANT_SCRIPT);
+  return evaluate(client, CHECKS);
 }
 
-let failed = false;
+// ─────────────────────────────────────────────────────────────────────────────
+// THE RUNNER
+//
+// Three outcomes, reported as three different things, because they mean three
+// different things and a reader scanning a log has to be able to tell them
+// apart:
+//
+//   CLEAN        the laws ran on this route and found nothing
+//   FAILING      the laws ran on this route and found something
+//   NOT REACHED  the laws never ran here at all
+//
+// The third used to be indistinguishable from the first at a glance. That is
+// the exact shape of every bug this codebase has spent a fortnight finding: a
+// confident green from a check that never arrived. NOT REACHED fails the run
+// unless --allow-unreached is passed, and either way it is named in the
+// summary rather than left for someone to spot in the scrollback.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const ALLOW_UNREACHED = process.argv.includes('--allow-unreached');
+const args = process.argv.slice(2).filter((a) => !a.startsWith('--'));
+
+/** Routes that render without a session. */
+const PUBLIC_ROUTES = ['/'];
+/** Routes behind ProtectedRoute, reached with the seeded sign-in. */
+const PRIVATE_ROUTES = ['/dashboard', '/trips', '/leaderboard', '/rewards'];
+
+const requested = args.map((a) => (a.startsWith('http') ? new URL(a).pathname : a));
+const publicTargets = requested.length
+  ? requested.filter((r) => PUBLIC_ROUTES.includes(r))
+  : PUBLIC_ROUTES;
+const privateTargets = requested.length
+  ? requested.filter((r) => !PUBLIC_ROUTES.includes(r))
+  : PRIVATE_ROUTES;
 
 // Fail loudly rather than silently when Chrome is not listening: a harness
 // that cannot reach the browser must never report green.
@@ -477,42 +444,150 @@ try {
   process.exit(2);
 }
 
+// Same refusal for the app itself. When the dev server went down mid-session
+// every route quietly became chrome-error://chromewebdata and the audit
+// scored an error page.
+try {
+  const probe = await fetch(DEV, { redirect: 'manual' });
+  if (!probe.ok && probe.status !== 304) throw new Error(`status ${probe.status}`);
+} catch (err) {
+  console.log(`ERROR cannot reach the app at ${DEV}: ${err.message}`);
+  process.exit(2);
+}
+
 if (PLANT) console.log('PLANT_VIOLATION=1: a capsule in the retired purple is being injected.\n');
 
-// A route that redirects on load (signin bouncing an authenticated session)
-// can close the tab mid-evaluate. One retry, because a gate that fails at
-// random gets switched off within a week.
-async function checkWithRetry(url) {
-  try {
-    return await check(url);
-  } catch (error) {
-    if (!/navigated or closed/i.test(error.message)) throw error;
-    return check(url);
+const outcomes = [];
+let planted = false;
+
+function record(route, state, laws, reason) {
+  outcomes.push({ route, state, laws: laws ?? [], reason });
+  if (state === 'notReached') {
+    console.log(`\nNOT REACHED  ${route}\n        ${reason}`);
+    return;
+  }
+  console.log(`\n${state === 'clean' ? 'CLEAN' : 'FAILING'}  ${route}`);
+  for (const r of laws) {
+    console.log(`  ${r.pass ? 'pass' : 'FAIL'}  law ${r.law}\n        ${r.detail}`);
   }
 }
 
-for (const url of TARGETS) {
-  console.log(`\n-- ${url}`);
+/** Runs the laws on one route and classifies the result. */
+function classify(route, laws) {
+  const broken = laws.filter((r) => !r.pass);
+  record(route, broken.length ? 'failing' : 'clean', laws);
+}
+
+// ── Public routes: an isolated context, which also proves they do not
+// silently depend on a session. A stale one turns "/" into the dashboard.
+for (const route of publicTargets) {
+  const session = await incognitoTab(`${DEV}${route}`);
   try {
-    const results = await checkWithRetry(url);
-    for (const r of results) {
-      console.log(`${r.pass ? 'PASS' : 'FAIL'}  law ${r.law}\n        ${r.detail}`);
-      if (!r.pass) failed = true;
-    }
+    const laws = await measure(session.client, route, { plant: PLANT && !planted });
+    if (PLANT) planted = true;
+    classify(route, laws);
   } catch (error) {
-    console.log(`ERROR ${error.message}`);
-    failed = true;
+    record(route, 'notReached', [], error.message);
+  } finally {
+    await session.dispose();
   }
 }
+
+// ── Private routes: one signed-in tab, navigated through the SPA router.
+if (privateTargets.length) {
+  let session = null;
+  try {
+    session = await signedInIsolatedTab();
+  } catch (error) {
+    for (const route of privateTargets) {
+      record(route, 'notReached', [], `could not sign in: ${error.message}`);
+    }
+  }
+
+  if (session) {
+    const { client, signedIn, reachedDashboard } = session;
+    // Two conditions, not one. `signedIn === 'ok'` says the form was submitted
+    // and the route left /signin; `reachedDashboard` says ProtectedRoute
+    // actually let us in once auth had finished enriching. Trusting the first
+    // alone is how a run gets as far as /quick-onboarding and then reports on
+    // whatever that renders.
+    if (signedIn !== 'ok' || !reachedDashboard) {
+      const why = signedIn !== 'ok'
+        ? `sign-in did not complete: ${signedIn}`
+        : 'signed in but ProtectedRoute did not admit us to /dashboard';
+      for (const route of privateTargets) record(route, 'notReached', [], why);
+    } else {
+      for (const route of privateTargets) {
+        try {
+          await goto(client, route);
+          const laws = await measure(client, route, { plant: PLANT && !planted });
+          if (PLANT) planted = true;
+          classify(route, laws);
+        } catch (error) {
+          record(route, 'notReached', [], error.message);
+        }
+      }
+    }
+    await session.dispose();
+  }
+}
+
+// ─── SUMMARY ────────────────────────────────────────────────────────────────
+
+const clean = outcomes.filter((o) => o.state === 'clean');
+const failing = outcomes.filter((o) => o.state === 'failing');
+const notReached = outcomes.filter((o) => o.state === 'notReached');
+
+console.log('\n' + '-'.repeat(70));
+console.log(
+  `COVERAGE  ${clean.length + failing.length} of ${outcomes.length} routes measured` +
+    (notReached.length ? `, ${notReached.length} NOT REACHED` : ''),
+);
+console.log(`  clean       ${clean.length}${clean.length ? '  ' + clean.map((o) => o.route).join(' ') : ''}`);
+console.log(`  failing     ${failing.length}${failing.length ? '  ' + failing.map((o) => o.route).join(' ') : ''}`);
+console.log(`  not reached ${notReached.length}${notReached.length ? '  ' + notReached.map((o) => o.route).join(' ') : ''}`);
 
 if (PLANT) {
-  console.log(
-    failed
-      ? '\nPLANT CHECK: the laws caught the planted violation. The gate works.'
-      : '\nPLANT CHECK FAILED: the planted violation went undetected. The gate is a no-op.',
+  const measured = outcomes.filter((o) => o.state !== 'notReached');
+  const tripped = new Set(
+    measured.flatMap((o) => o.laws.filter((r) => !r.pass).map((r) => String(r.law).split(' ')[0])),
   );
-  process.exit(failed ? 0 : 1);
+  const missed = PLANT_TARGET_LAWS.filter((law) => !tripped.has(law));
+
+  if (!measured.length) {
+    console.log('\nPLANT CHECK FAILED: no route was reached, so nothing was proven.');
+    process.exit(1);
+  }
+  if (missed.length) {
+    console.log(
+      `\nPLANT CHECK FAILED: the plant went undetected by law(s) ${missed.join(', ')}. ` +
+        'Those laws are not looking where the plant landed, so they are no-ops.',
+    );
+    process.exit(1);
+  }
+  console.log(
+    `\nPLANT CHECK: laws ${PLANT_TARGET_LAWS.join(', ')} all caught the planted violation. The gate works.`,
+  );
+  process.exit(0);
 }
 
-console.log(failed ? '\nDESIGN LAWS: FAILED' : '\nDESIGN LAWS: ALL GREEN');
-process.exit(failed ? 1 : 0);
+if (failing.length) {
+  console.log('\nDESIGN LAWS: FAILED, laws broken on ' + failing.length + ' route(s)');
+  process.exit(1);
+}
+if (notReached.length && !ALLOW_UNREACHED) {
+  console.log(
+    '\nDESIGN LAWS: INCOMPLETE. No law was broken, but ' + notReached.length +
+      ' route(s) were never measured, so this is not a pass.\n' +
+      'Start the QA emulator and seed it (npm run qa:emulators, npm run qa:seed) and run the\n' +
+      'dev server with VITE_USE_FIREBASE_EMULATOR=true, or pass --allow-unreached to accept the gap.',
+  );
+  process.exit(1);
+}
+
+console.log(
+  notReached.length
+    ? `\nDESIGN LAWS: ALL GREEN on ${clean.length} route(s), ${notReached.length} skipped by request`
+    : `\nDESIGN LAWS: ALL GREEN on all ${clean.length} route(s)`,
+);
+process.exit(0);
