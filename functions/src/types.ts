@@ -438,8 +438,12 @@ export interface AIPattern {
  * Specific driving incident flagged by AI
  */
 export interface AIIncident {
-  /** ISO 8601 timestamp or offset description */
-  timestamp: string;
+  /**
+   * WAVE H: this carried a timestamp the model invented. The analysis prompt
+   * is built from aggregate counts and percentiles, never a per-event
+   * timeline, so nothing on this path knows when an incident occurred. The
+   * field is gone rather than filled with "Unknown".
+   */
   type: IncidentType;
   severity: AIRiskLevel;
   description: string;

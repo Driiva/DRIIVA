@@ -14,11 +14,52 @@ import bcrypt from 'bcrypt';
 const SALT_ROUNDS = 10;
 
 /**
- * Seed the database with initial test data
+ * WAVE H: this file has no callers, and that is the only reason its contents
+ * never reached anybody. It creates a placeholder driver account at
+ * test@driiva.co.uk with the password `driiva1`, a GBP 1,840 premium, a
+ * GBP 100.80 projected refund, three drives that never happened between real
+ * Manchester landmarks, two pre-awarded achievements, and rank 14 on a
+ * leaderboard, alongside a community pool holding GBP 105,000 shared between
+ * 1,000 participants.
+ *
+ * Every one of those figures is invented, and once written they are
+ * indistinguishable from real rows: nothing in the schema marks a row as
+ * seeded. A single `npx tsx server/seed.ts` against the wrong DATABASE_URL
+ * would put a fabricated pool balance and a weak-password account into a real
+ * database, and the dashboard would render both without hesitation.
+ *
+ * So it refuses to run unless it is told, explicitly and in the same breath,
+ * that this is a development database. Seeded development data is fine. Being
+ * one mistyped environment variable away from a fabricated production pool is
+ * not.
+ */
+function assertSafeToSeed(): void {
+  const nodeEnv = process.env.NODE_ENV ?? 'development';
+  const optIn = process.env.ALLOW_DB_SEED === 'true';
+  const url = process.env.DATABASE_URL ?? '';
+
+  if (nodeEnv === 'production') {
+    throw new Error('Refusing to seed: NODE_ENV is production. This data is fabricated.');
+  }
+  if (!optIn) {
+    throw new Error(
+      'Refusing to seed: set ALLOW_DB_SEED=true to confirm this is a development database. ' +
+        'The seed writes an invented community pool and a weak-password test account.',
+    );
+  }
+  if (/\bprod\b|production/i.test(url)) {
+    throw new Error(`Refusing to seed: DATABASE_URL looks like a production host.`);
+  }
+}
+
+/**
+ * Seed a DEVELOPMENT database with test data. See assertSafeToSeed above for
+ * why this is gated rather than merely documented.
  */
 export async function seedDatabase() {
+  assertSafeToSeed();
   try {
-    console.log('🌱 Starting database seeding...');
+    console.log('Seeding DEVELOPMENT database with fabricated test data...');
 
     // Hash password for test user
     const hashedPassword = await bcrypt.hash('driiva1', SALT_ROUNDS);
@@ -63,7 +104,10 @@ export async function seedDatabase() {
         consistencyScore: 75,
         totalTrips: 26,
         totalMiles: '1107.70',
-        projectedRefund: '100.80'
+        // Zeroed for the same reason as the pool balance: Driiva has never
+        // paid a refund, so a seeded pounds-and-pence figure is the one number
+        // here that could be mistaken for evidence that it has.
+        projectedRefund: '0.00'
       })
       .onConflictDoUpdate({
         target: drivingProfiles.userId,
@@ -77,7 +121,7 @@ export async function seedDatabase() {
           consistencyScore: 75,
           totalTrips: 26,
           totalMiles: '1107.70',
-          projectedRefund: '100.80'
+          projectedRefund: '0.00'
         }
       });
 
@@ -87,10 +131,14 @@ export async function seedDatabase() {
     console.log('Creating community pool...');
     await db.insert(communityPool)
       .values({
-        poolAmount: '105000.00',
-        safetyFactor: '0.85',
-        participantCount: 1000,
-        safeDriverCount: 850
+        // Zeroed: a dev seed does not need an invented balance to be useful,
+        // and if this ever lands somewhere real it should land as the truth.
+        // The pool has no funding path (addPoolContribution has no callers).
+        poolAmount: '0.00',
+        // No pool, so no measured safety factor. 1.0 would read as perfect.
+        safetyFactor: '0.00',
+        participantCount: 1,
+        safeDriverCount: 1
       })
       .onConflictDoNothing();
 

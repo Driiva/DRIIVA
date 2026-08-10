@@ -25,8 +25,10 @@ import { usePoolHistory, type PoolHistoryPoint } from '@/hooks/usePoolHistory';
 interface PoolPanelProps {
   /** Live pool figures, already read by the caller. */
   activeParticipants: number;
-  averagePoolScore: number;
-  safetyFactor: number;
+  /** Null when no pool document exists. Same reason as safetyFactor. */
+  averagePoolScore: number | null;
+  /** Null when no pool document exists. Rendering 0% would be a measurement. */
+  safetyFactor: number | null;
   /** The viewer's share of the pool as a percentage, 0-100. */
   userSharePercentage: number;
   /** The viewer's weighted score, the thing that actually sets their share. */
@@ -153,7 +155,7 @@ export function PoolPanel({
           Average score
         </span>
         <span className="text-[14px] tabular" style={{ color: 'var(--app-text-pri)' }}>
-          {averagePoolScore.toFixed(1)}
+          {averagePoolScore != null ? averagePoolScore.toFixed(1) : 'No data'}
         </span>
       </div>
       <div className="flex items-center justify-between mb-4">
@@ -161,7 +163,7 @@ export function PoolPanel({
           Safety factor
         </span>
         <span className="text-[14px] tabular" style={{ color: 'var(--app-text-pri)' }}>
-          {Math.round(safetyFactor * 100)}%
+          {safetyFactor != null ? `${Math.round(safetyFactor * 100)}%` : 'No data'}
         </span>
       </div>
 

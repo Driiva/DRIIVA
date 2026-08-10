@@ -271,9 +271,11 @@ export default function Dashboard() {
     ? (demoUser?.poolShare || 0) 
     : (userShare?.projectedRefundPounds || dashboardData?.poolShare || 0);
   
-  const safetyFactor = isDemoMode 
-    ? (demoUser?.safetyFactor || 0.85) 
-    : (communityPool?.safetyFactor || dashboardData?.safetyFactor || 1.0);
+  // No pool document means no safety factor. The `|| 1.0` on the end of this
+  // chain used to turn that absence into a rendered "Safety Factor 100%".
+  const safetyFactor = isDemoMode
+    ? (demoUser?.safetyFactor ?? 0.85)
+    : (communityPool?.safetyFactor ?? dashboardData?.safetyFactor ?? null);
   
   const activeParticipants = isDemoMode 
     ? 1247 
@@ -817,10 +819,12 @@ export default function Dashboard() {
                   <span className="text-white font-semibold">{userSharePercentage.toFixed(2)}%</span>
                 </div>
               )}
-              <div className="flex items-center justify-between">
-                <span className="text-white/60 text-sm">Safety Factor</span>
-                <span className="text-white font-semibold">{Math.round(safetyFactor * 100)}%</span>
-              </div>
+              {safetyFactor != null && (
+                <div className="flex items-center justify-between">
+                  <span className="text-white/60 text-sm">Safety Factor</span>
+                  <span className="text-white font-semibold">{Math.round(safetyFactor * 100)}%</span>
+                </div>
+              )}
               {activeParticipants > 0 && (
                 <div className="flex items-center justify-between">
                   <span className="text-white/60 text-sm">Participants</span>
@@ -828,7 +832,8 @@ export default function Dashboard() {
                 </div>
               )}
               
-              {/* Safety Factor Progress Bar */}
+              {/* Safety Factor Progress Bar. Drawn only when there is a factor. */}
+              {safetyFactor != null && (
               <div className="pt-2">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs text-white/40">Safety Factor</span>
@@ -843,7 +848,8 @@ export default function Dashboard() {
                   />
                 </div>
               </div>
-              
+              )}
+
               {/* Leaderboard Link */}
               <button
                 onClick={() => setLocation('/leaderboard')}

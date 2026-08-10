@@ -95,6 +95,24 @@ const LAWS = [
       /Test Driver|John Doe|Jane Doe|lorem ipsum|example\.com|test@[a-z]|\b0800 ?\d{3} ?\d{4}\b|DRV\d{6}/gi,
   },
   {
+    /*
+     * WAVE H taught this one. Three separate places asserted a state nobody
+     * had checked, all with the same shape: a value we did not have, replaced
+     * by a plausible one. `status: 'active'` written whatever the insurer
+     * said. `policy_number || DRV-${Date.now()}`. A safety factor defaulting
+     * to 1.0 and rendering as "100%". A name falling back to "Driver Unknown"
+     * on an insurance record.
+     *
+     * The tell is a fallback operator supplying a CONFIDENT value for
+     * something only an external system can answer. A null or an empty state
+     * is fine; a confident stand-in is the bug.
+     */
+    id: 'invented-fallback',
+    title: 'A confident stand-in for something only an insurer or a person can tell us',
+    pattern:
+      /(\|\||\?\?)\s*['"`](active|confirmed|approved|bound|Unknown|Test Driver)['"`]|(\|\||\?\?)\s*`?DRV-|(\|\||\?\?)\s*1\.0\s*[,;)]/g,
+  },
+  {
     id: 'money-literal',
     title: 'A pounds figure written into a rendered surface',
     // .tsx only: a literal in a .ts helper is usually maths, a literal in a
@@ -170,6 +188,12 @@ const ALLOWED = new Map(Object.entries({
     'Input placeholder.',
   'apps/marketing/src/routes/Complaints.tsx::0800 023 4567':
     'The real Financial Ombudsman Service number, alongside their real address at Exchange Tower, London E14 9SR. Verified against financial-ombudsman.org.uk being cited in the same list.',
+  // ── Fallbacks that stand in for something genuinely unknown, which is the
+  // opposite of a confident stand-in
+  "client/src/hooks/useDashboardData.ts::|| 'unknown'":
+    'A trip whose routeSummary will not split has no known start or end place. "Unknown" is the fact.',
+  "client/src/pages/admin/monitoring.tsx::|| 'unknown'":
+    'Admin health panel: a check that reported nothing is of unknown status. Admin-only, and accurate.',
   'server/seed.ts::test@d':
     'Local seed script, never imported by the server. The seed data itself is a reported HIGH finding (fabricated pool and refund), tracked separately; this entry only acknowledges the address.',
 
@@ -198,6 +222,7 @@ export const badge = 'Driiva Ltd. Authorised and regulated by the Financial Cond
 export const scale = 'Join thousands of drivers already saving.';
 export const money = 'Refunds tracked: £18.4k, paid out within 14 days.';
 export const who = 'Test Driver, 0800 123 4567, test@driiva.co.uk';
+export const bound = { status: rootPolicy.status || 'active', safety: pool.factor ?? 1.0 };
 `;
 
 export function runFabricationLaws({ planted = false } = {}) {

@@ -419,9 +419,10 @@ export const acceptInsuranceQuote = functions
   } = {
     policyId: rootPolicy.policy_id,
     userId,
-    // WAVE H: `policy_number || DRV-${Date.now()}` minted a reference that
-    // matched nothing in the insurer's system, and `status: 'active'` was
-    // written whatever Root reported. Both now follow Root.
+    // WAVE H: this used to mint a timestamp-derived reference when the
+    // insurer returned none, which matched nothing in their system, and to
+    // record the policy as live whatever the insurer reported. Both follow
+    // the insurer now.
     policyNumber: rootPolicy.policy_number || null,
     status: mapRootPolicyStatus(rootPolicy.status),
     coverageType: storedCoverage,

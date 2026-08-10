@@ -289,7 +289,9 @@ export default function LeaderboardPage() {
     Boolean(userEntry) && !visible.some((e) => e.isCurrentUser) && scope === 'global';
 
   const activeParticipants = pool?.activeParticipants || leaderboard?.totalParticipants || 0;
-  const avgScore = leaderboard?.averageScore || 0;
+  // Null when no board exists. It used to fall back to 0, which rendered
+  // "Avg score 0.0" as though somebody had measured the community at zero.
+  const avgScore = typeof leaderboard?.averageScore === 'number' ? leaderboard.averageScore : null;
   const poolTotalPounds = pool?.totalPoolPounds || 0;
 
   const periodLabel =
@@ -392,7 +394,7 @@ export default function LeaderboardPage() {
                   </div>
                   <div className="text-center">
                     <div className="text-[18px] tabular" style={{ color: 'var(--app-text-hero)', fontWeight: 600 }}>
-                      {avgScore.toFixed(1)}
+                      {avgScore != null ? avgScore.toFixed(1) : 'No data'}
                     </div>
                     <div className="stat-label mt-1">Avg score</div>
                   </div>
@@ -410,8 +412,8 @@ export default function LeaderboardPage() {
 
         <PoolPanel
           activeParticipants={activeParticipants}
-          averagePoolScore={pool?.averagePoolScore ?? 0}
-          safetyFactor={pool?.safetyFactor ?? 0}
+          averagePoolScore={typeof pool?.averagePoolScore === 'number' ? pool.averagePoolScore : null}
+          safetyFactor={typeof pool?.safetyFactor === 'number' ? pool.safetyFactor : null}
           userSharePercentage={userShare?.sharePercentage ?? 0}
           userWeightedScore={Math.round(userShare?.weightedScore ?? 0)}
           loading={poolLoading}

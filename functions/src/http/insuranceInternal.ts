@@ -145,10 +145,10 @@ export async function acceptInsuranceQuoteInternal(
   }>(`/policies/${application.policy_id}`, 'GET');
 
   // What Root actually told us, which is the only thing we are entitled to
-  // record. `policy_number` used to fall back to `DRV-${Date.now()}`: an
-  // invented reference, unique per millisecond, that would never match
-  // anything in the insurer's system and was pushed to the driver's phone as
-  // their policy number.
+  // record. The policy number used to fall back to a timestamp-derived
+  // string: an invented reference, unique per millisecond, that would never
+  // match anything in the insurer's system and was pushed to the driver's
+  // phone as their policy number.
   const policyNumber: string | null = rootPolicy.policy_number || null;
   const status = mapRootPolicyStatus(rootPolicy.status);
 

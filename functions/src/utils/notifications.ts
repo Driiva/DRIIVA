@@ -123,8 +123,9 @@ export async function notifyAchievementsUnlocked(
  * Cover is confirmed. Only send this when the insurer actually said so.
  *
  * The policy number is included only if the insurer returned one. It used to
- * be filled with `DRV-${Date.now()}` when they did not, which put an invented
- * reference on a lock screen for a policy whose real reference we did not have.
+ * be filled with a timestamp-derived string when they did not, which put an
+ * invented reference on a lock screen for a policy whose real reference we did
+ * not have.
  */
 export async function notifyPolicyConfirmed(
   userId: string,
