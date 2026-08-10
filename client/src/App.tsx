@@ -4,6 +4,7 @@ import { queryClient } from './lib/queryClient';
 import { Router, Route, Switch, Redirect, useLocation } from 'wouter';
 import gradientBackground from './assets/gradient-background.png';
 import { ArcTracer } from '@/components/motion/Instrument';
+import NotFound from '@/pages/not-found';
 import { ProtectedRoute, PublicOnlyRoute } from './components/ProtectedRoute';
 import { HomeRedirect } from './components/HomeRedirect';
 import { Toaster } from './components/ui/toaster';
@@ -279,7 +280,10 @@ function AppContent() {
             </Route>
           )}
 
-          <Route>{() => <Redirect to="/" />}</Route>
+          {/* An unknown URL used to redirect silently to the landing page, so a
+              dead or mistyped link looked like being signed out. It now says
+              what happened and offers the two ways onward. */}
+          <Route>{() => <NotFound />}</Route>
         </Switch>
         </ErrorBoundary>
         </PageTransition>
