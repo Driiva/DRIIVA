@@ -15,6 +15,19 @@
  * false, they have to be ACKNOWLEDGED. That is the difference between a lint
  * that finds yesterday's problem and one that catches tomorrow's.
  *
+ * STYLESHEETS COUNT AS SOURCE. This originally read .ts and .tsx only, and the
+ * same invented waitlist figure got onto the screen three times by three routes,
+ * each found by a different method and never by the previous sweep: hardcoded in
+ * a component, padded at source in an env default, and finally printed straight
+ * out of a stylesheet as
+ *     .sticky-cta-inner::before { content: '117+ on the list'; }
+ * shown to every reader under 560px while the true count was zero. A lint that
+ * reads components and not the CSS beside them does not cover the surface, it
+ * covers the half of it people think to look at. CSS can put words on a page
+ * three ways and all three are linted here: a `content` string, `content:
+ * attr()` pulling an attribute onto the screen, and text baked into an inline
+ * SVG data URI.
+ *
  * Usage:
  *   node tests/fabrication-laws.mjs                    # lint
  *   PLANT_VIOLATION=1 node tests/fabrication-laws.mjs  # prove it can fail
@@ -54,7 +67,7 @@ function walk(dir, out = []) {
     if (statSync(full).isDirectory()) {
       if (entry === 'node_modules') continue;
       walk(full, out);
-    } else if (/\.tsx?$/.test(entry) && !SKIP.test(full)) {
+    } else if (/\.(tsx?|css)$/.test(entry) && !SKIP.test(full)) {
       out.push(full);
     }
   }
@@ -63,6 +76,50 @@ function walk(dir, out = []) {
 
 function lineOf(source, index) {
   return source.slice(0, index).split('\n').length;
+}
+
+/**
+ * Resolve CSS escapes so a decorative glyph is not mistaken for copy.
+ * `\2014` is an em dash, not the number 2014, and there are a lot more
+ * pseudo-element bullets in a stylesheet than there are sentences.
+ */
+function decodeCssString(raw) {
+  return raw
+    .replace(/\\([0-9a-fA-F]{1,6})\s?/g, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+    .replace(/\\(.)/g, '$1');
+}
+
+/**
+ * Pull every `content` declaration out of a stylesheet.
+ *
+ * Anchored on a property boundary on purpose: `justify-content` and
+ * `align-content` are the two commonest declarations in this codebase and a
+ * bare /content:/ matches the tail of both, which would bury the real hits
+ * under 28 false ones and get the law switched off within a week.
+ */
+function extractContentDeclarations(source) {
+  const out = [];
+  const decl = /(^|[;{}\s])content\s*:\s*([^;}]+)/g;
+  for (const m of source.matchAll(decl)) {
+    const value = m[2];
+    const valueAt = m.index + m[0].length - value.length;
+
+    // attr() renders whatever an attribute holds, which is copy arriving on
+    // screen by a route none of the source laws are reading.
+    for (const a of value.matchAll(/attr\(\s*([^)]+?)\s*\)/g)) {
+      out.push({ index: valueAt + a.index, text: `attr(${a[1]})` });
+    }
+
+    for (const s of value.matchAll(/(['"])((?:\\.|(?!\1).)*)\1/g)) {
+      const decoded = decodeCssString(s[2]);
+      // Two or more consecutive letters, or two or more consecutive digits.
+      // A lone glyph, a separator, an empty string or a single counter suffix
+      // is furniture; words and figures are the page talking to someone.
+      if (!/\p{L}{2,}|\d{2,}/u.test(decoded)) continue;
+      out.push({ index: valueAt + s.index, text: decoded });
+    }
+  }
+  return out;
 }
 
 /**
@@ -115,10 +172,29 @@ const LAWS = [
   {
     id: 'money-literal',
     title: 'A pounds figure written into a rendered surface',
-    // .tsx only: a literal in a .ts helper is usually maths, a literal in a
-    // component is usually a number somebody reads.
+    // Components and stylesheets only: a literal in a .ts helper is usually
+    // maths, a literal in a component or a content string is a number
+    // somebody reads.
     pattern: /£\s?\d[\d,]*(\.\d+)?\s?[kKmM]?/g,
-    filesOnly: /\.tsx$/,
+    filesOnly: /\.(tsx|css)$/,
+  },
+  {
+    id: 'stylesheet-copy',
+    title: 'A stylesheet printing words or figures onto the page',
+    // Any readable string in a `content` declaration. Not every hit is a lie:
+    // a responsive column label is legitimate. But a stylesheet is the one
+    // place copy can be written with no component, no prop and no data source
+    // behind it, so it does not get to state anything unacknowledged.
+    filesOnly: /\.css$/,
+    extract: extractContentDeclarations,
+  },
+  {
+    id: 'stylesheet-image-copy',
+    title: 'Text baked into an inline SVG background image',
+    // A data URI is a rendering surface that reads as a URL. Words inside one
+    // are invisible to every text search anybody thinks to run.
+    filesOnly: /\.css$/,
+    pattern: /url\(\s*["']?data:image\/svg\+xml[^)]*?(?:<text|%3Ctext)[^)]*\)/gi,
   },
 ];
 
@@ -214,15 +290,43 @@ const ALLOWED = new Map(Object.entries({
     'Inside the Wave G comment recording why the benefit list is now gated.',
   'client/src/pages/profile.tsx::£100,000':
     'Inside the same Wave G comment.',
+
+  // ── Copy printed from a stylesheet
+  'apps/marketing/src/styles/global.css::typical':
+    'The comparison table drops its header row under 760px, so each cell labels its own column. "Typical" is the mobile-width form of the desktop header "Traditional UK insurer". It names a column, it does not claim anything about a competitor. Its sibling label is the drawn wordmark as a background image, not type.',
 }));
 
 const PLANTED = `
-// A planted file. Every law must fire on it.
+// A planted file. Every law that reads components must fire on it.
 export const badge = 'Driiva Ltd. Authorised and regulated by the Financial Conduct Authority.';
 export const scale = 'Join thousands of drivers already saving.';
 export const money = 'Refunds tracked: £18.4k, paid out within 14 days.';
 export const who = 'Test Driver, 0800 123 4567, test@driiva.co.uk';
 export const bound = { status: rootPolicy.status || 'active', safety: pool.factor ?? 1.0 };
+`;
+
+/**
+ * The stylesheet half of the planted run. The laws that only read CSS cannot
+ * fire on planted.tsx, so proving they work needs their own specimen.
+ *
+ * The decorative declarations at the bottom are as load-bearing as the
+ * violations above them: if the law starts matching those, it is matching
+ * every pseudo-element in the codebase and is about to be turned off.
+ */
+const PLANTED_CSS = `
+/* Violations. Each must be caught. */
+.a::before { content: '117+ on the list'; }
+.b::after  { content: "Authorised and regulated by the Financial Conduct Authority"; }
+.c::before { content: attr(data-claim); }
+.d { background-image: url("data:image/svg+xml,%3Csvg%3E%3Ctext%3ETrusted by thousands%3C/text%3E%3C/svg%3E"); }
+
+/* Furniture. None of these may fire, or the law is unusable. */
+.e::before { content: ''; }
+.f::after  { content: " "; }
+.g::before { content: '\\2014'; }
+.h::after  { content: '•'; }
+.i::before { content: '→'; }
+.j { justify-content: space-between; align-content: center; }
 `;
 
 export function runFabricationLaws({ planted = false } = {}) {
@@ -231,18 +335,26 @@ export function runFabricationLaws({ planted = false } = {}) {
   );
 
   const targets = files.map((f) => [f, readFileSync(join(ROOT, f), 'utf8')]);
-  if (planted) targets.push(['planted.tsx', PLANTED]);
+  if (planted) {
+    targets.push(['planted.tsx', PLANTED]);
+    targets.push(['planted.css', PLANTED_CSS]);
+  }
 
   const results = LAWS.map((law) => ({ id: law.id, title: law.title, violations: [] }));
 
   for (const [file, source] of targets) {
     LAWS.forEach((law, i) => {
       if (law.filesOnly && !law.filesOnly.test(file)) return;
-      for (const match of source.matchAll(law.pattern)) {
-        const text = match[0].trim();
+      // A law either greps for a shape or, where a regex would drown in false
+      // positives, walks the syntax itself. Both yield {index, text}.
+      const hits = law.extract
+        ? law.extract(source)
+        : [...source.matchAll(law.pattern)].map((m) => ({ index: m.index, text: m[0] }));
+      for (const hit of hits) {
+        const text = hit.text.trim();
         const key = `${file}::${text.toLowerCase()}`;
         if (ALLOWED.has(key)) continue;
-        results[i].violations.push({ file, line: lineOf(source, match.index), detail: text });
+        results[i].violations.push({ file, line: lineOf(source, hit.index), detail: text });
       }
     });
   }

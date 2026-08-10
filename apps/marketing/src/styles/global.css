@@ -1763,8 +1763,14 @@ footer {
     width: 64px;
     flex-shrink: 0;
   }
+  /* The desktop column header carries the drawn wordmark; this is the same
+     header at mobile width, so it carries the same asset rather than setting
+     the brand name as mono uppercase type. */
   .compare-cell-driiva::before {
-    content: 'Driiva';
+    content: '';
+    height: 11px;
+    background: url('/brand/logo-wordmark-white-v3.png') left center / contain no-repeat;
+    opacity: 0.72;
   }
   .compare-cell-trad::before {
     content: 'Typical';
