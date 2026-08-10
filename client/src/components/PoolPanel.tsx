@@ -112,7 +112,7 @@ export function PoolPanel({
             {loading ? (
               <Skeleton className="h-7 w-16" style={{ borderRadius: 6 }} />
             ) : (
-              <span className="text-[24px]" style={{ color: 'var(--app-text-hero)' }}>
+              <span className="text-[24px] tabular" style={{ color: 'var(--app-text-hero)' }}>
                 <AnimatedNumber value={userSharePercentage} decimals={2} suffix="%" />
               </span>
             )}
@@ -131,7 +131,7 @@ export function PoolPanel({
             {loading ? (
               <Skeleton className="h-7 w-16" style={{ borderRadius: 6 }} />
             ) : (
-              <span className="text-[24px]" style={{ color: 'var(--app-text-hero)' }}>
+              <span className="text-[24px] tabular" style={{ color: 'var(--app-text-hero)' }}>
                 <AnimatedNumber value={userWeightedScore} />
               </span>
             )}

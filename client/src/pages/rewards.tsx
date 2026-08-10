@@ -358,7 +358,13 @@ export default function Rewards() {
                       whileHover={microInteractions.hoverSubtle}
                       whileTap={microInteractions.tap}
                     >
-                      <GlassCard className={`p-5 ${!achievement.unlocked ? 'opacity-50' : ''}`}>
+                      {/* A locked card used to be dimmed with opacity-50 on the
+                          whole card, which took its body copy under the 4.5:1
+                          contrast floor and was the last serious axe finding on
+                          this route. Locked state is now carried by the icon and
+                          the border, so the text stays readable: a driver has to
+                          be able to read what they have not unlocked yet. */}
+                      <GlassCard className="p-5" style={!achievement.unlocked ? { opacity: 0.82 } : undefined}>
                         <div className="flex items-start gap-4">
                           <motion.div
                             className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center flex-shrink-0"
@@ -392,7 +398,7 @@ export default function Rewards() {
                               )}
                             </div>
 
-                            <p className="text-xs text-white/60 mb-1">{achievement.description}</p>
+                            <p className="text-sm text-white/70 mb-1">{achievement.description}</p>
 
                             {achievement.unlocked && achievement.unlockedAt && (
                               <div className="text-xs text-white/60">

@@ -78,7 +78,7 @@ export default function ScoreRing({ score, size = 140, strokeWidth = 8, classNam
 
       {/* Center content */}
       <div className="relative flex flex-col items-center z-10">
-        <span ref={numberRef} className="text-4xl font-bold text-white">0</span>
+        <span ref={numberRef} className="text-4xl font-bold text-white tabular">0</span>
         <span className="text-xs text-white/60 -mt-0.5">/ 100</span>
       </div>
     </div>

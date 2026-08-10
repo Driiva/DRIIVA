@@ -36,6 +36,8 @@
  * one card does not move.
  */
 
+import { signedInTab, goto as sessionGoto, closeTab as sessionCloseTab } from './qa-session.mjs';
+
 const CDP = process.env.CDP_URL ?? 'http://localhost:9222';
 const DEV = process.env.DEV_URL ?? 'http://localhost:5173';
 const PLANT = process.env.PLANT_VIOLATION === '1';
@@ -52,6 +54,30 @@ async function openTab(url) {
   const res = await fetch(`${CDP}/json/new?${encodeURIComponent(url)}`, { method: 'PUT' });
   if (!res.ok) throw new Error(`could not open a tab: ${res.status} ${await res.text()}`);
   return res.json();
+}
+
+/**
+ * A tab in its own browser context, so no cookie, no IndexedDB and no Firebase
+ * session carries over.
+ *
+ * The signed-out routes need this. Firebase persists a session per origin, not
+ * per tab, so once anything in this Chrome had signed in as the QA driver, "/"
+ * legitimately redirected to /dashboard and the run's result depended on
+ * whatever the browser had done earlier in the day.
+ */
+async function isolatedTab(url) {
+  const browserWs = (await (await fetch(`${CDP}/json/version`)).json()).webSocketDebuggerUrl;
+  const browser = connect(browserWs);
+  await browser.ready;
+  const { browserContextId } = await browser.send('Target.createBrowserContext', {
+    disposeOnDetach: false,
+  });
+  const { targetId } = await browser.send('Target.createTarget', { url, browserContextId });
+  const targets = await (await fetch(`${CDP}/json/list`)).json();
+  const tab = targets.find((t) => t.id === targetId);
+  browser.close();
+  if (!tab) throw new Error('could not find the isolated tab');
+  return tab;
 }
 
 async function closeTab(id) {
@@ -117,7 +143,7 @@ const PLANT_SCRIPT = `(() => {
     "color:#3B82F6",
     "font-size:9px",
   ].join(";");
-  document.body.appendChild(el);
+  (document.getElementById('root') ?? document.body).appendChild(el);
   return true;
 })()`;
 
@@ -127,7 +153,14 @@ const PLANT_SCRIPT = `(() => {
 
 const CHECKS = `(() => {
   const out = [];
-  const els = [...document.querySelectorAll("body *")];
+  /* Scoped to the app root, not the document.
+
+     The laws run in the developer's real Chrome, which carries extensions, and
+     an extension injecting a bare <span>21</span> straight into <body> was
+     reported as an untabular readout on the leaderboard. A gate that fails on
+     what a browser extension drew is a gate that gets switched off. */
+  const APP = document.getElementById("root") ?? document.body;
+  const els = [...APP.querySelectorAll("*")];
   const own = (el) =>
     [...el.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent.trim()).join(" ").trim();
   const seen = (el) => {
@@ -291,7 +324,7 @@ const CHECKS = `(() => {
 
   // ── Law 4: no em dashes in rendered copy, and no double hyphen either.
   const offenders = [];
-  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  const walker = document.createTreeWalker(APP, NodeFilter.SHOW_TEXT);
   for (let n = walker.nextNode(); n; n = walker.nextNode()) {
     const t = n.textContent || "";
     if (/\\u2014|\\u2013|--/.test(t)) {
@@ -351,38 +384,44 @@ const CHECKS = `(() => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+
 /**
- * The product's own demo mode, entered the way the product enters it.
+ * One signed-in session, shared by every authenticated route.
  *
- * Every routed surface worth linting sits behind auth, so without this the
- * harness could only ever measure /signin. These are the exact two session
- * keys client/src/pages/demo.tsx writes; AuthContext reads them and serves a
- * demo profile with no Firebase call.
+ * This used to enter the product's demo mode instead, which rendered enough of
+ * the dashboard to look convincing but never rendered the leaderboard's pool
+ * chart at all, so the laws passed on a leaderboard that was missing the
+ * component most likely to break them. The emulator path makes the real
+ * session available, and it is the same one the axe run uses, so all three
+ * harnesses now measure the same pixels.
  */
-const DEMO_BOOTSTRAP = `(() => {
-  sessionStorage.setItem('driiva-demo-mode', 'true');
-  return sessionStorage.getItem('driiva-demo-mode');
-})()`;
+let session = null;
+async function authedSession() {
+  if (!session) session = await signedInTab();
+  return session;
+}
+
+export async function closeSession() {
+  if (!session) return;
+  session.client.close();
+  await sessionCloseTab(session.tab.id);
+  session = null;
+}
 
 async function check(url) {
   const asked = new URL(url).pathname;
-  // Public routes are opened directly. Anything behind auth is opened on the
-  // demo route first so the session flag can be written on the right origin,
-  // then navigated once to the route under test.
-  const needsSession = asked !== '/' && !asked.startsWith('/signin');
-  const tab = await openTab(needsSession ? `${DEV}/demo` : url);
-  const client = connect(tab.webSocketDebuggerUrl);
+  // Signed-out routes get their own browser context; everything else runs on
+  // the shared authenticated session.
+  const isPublic = asked === '/' || asked.startsWith('/signin');
+  const tab = isPublic ? await isolatedTab(url) : null;
+  const client = isPublic ? connect(tab.webSocketDebuggerUrl) : (await authedSession()).client;
   try {
-    await client.ready;
-    await client.send('Page.enable');
-    await client.send('Runtime.enable');
-
-    if (needsSession) {
-      // Give the demo route a moment to exist before writing to its storage,
-      // then make the single deliberate navigation to the route under test.
-      await new Promise((r) => setTimeout(r, 1200));
-      await evaluate(client, DEMO_BOOTSTRAP);
-      await client.send('Page.navigate', { url });
+    if (isPublic) {
+      await client.ready;
+      await client.send('Page.enable');
+      await client.send('Runtime.enable');
+    } else {
+      await sessionGoto(client, asked);
     }
     // No second Page.navigate beyond that one. Navigating to the same url a
     // second time tears down the execution context underneath the very
@@ -444,6 +483,40 @@ async function check(url) {
     );
     if (!rendered) throw new Error(`nothing rendered at ${url}`);
 
+    /* The late cards have to be on screen before anything is measured.
+
+       The pool and cashback cards resolve their figures after the first paint,
+       so the settle poll could go quiet on a dashboard that had rendered its
+       header and nothing else. A PASS taken at that moment is luck, not
+       evidence, and it is luck that reads exactly like a green gate. Each
+       data-heavy route therefore names the content it is not allowed to be
+       measured without. */
+    const REQUIRED = {
+      '/dashboard': ['Driving score', 'Cashback', 'Community pool'],
+      '/leaderboard': ['Pool over time'],
+      '/trips': ['Recent Trips'],
+    };
+    const required = REQUIRED[new URL(url).pathname] ?? [];
+    if (required.length) {
+      const deadline2 = Date.now() + 15000;
+      let missing = required;
+      while (Date.now() < deadline2) {
+        // Case-insensitive: innerText returns what CSS renders, and the stat
+        // labels are uppercased by text-transform, so "Pool over time" comes
+        // back as "POOL OVER TIME".
+        const text = (await evaluate(client, 'document.body.innerText')).toLowerCase();
+        missing = required.filter((phrase) => !text.includes(phrase.toLowerCase()));
+        if (missing.length === 0) break;
+        await new Promise((r) => setTimeout(r, 400));
+      }
+      if (missing.length) {
+        throw new Error(
+          `never rendered: ${missing.join(', ')}. The laws were not applied to a complete ` +
+            `${new URL(url).pathname}, so this run proves nothing about it.`,
+        );
+      }
+    }
+
     /* The route that answered has to be the route that was asked for.
        Without this the harness walked /dashboard, /trips, /leaderboard and
        /rewards, every one of them bounced to /signin because Firebase was
@@ -460,8 +533,10 @@ async function check(url) {
     if (PLANT) await evaluate(client, PLANT_SCRIPT);
     return await evaluate(client, CHECKS);
   } finally {
-    client.close();
-    await closeTab(tab.id);
+    if (isPublic) {
+      client.close();
+      await closeTab(tab.id);
+    }
   }
 }
 
@@ -513,6 +588,8 @@ if (PLANT) {
   );
   process.exit(failed ? 0 : 1);
 }
+
+await closeSession();
 
 console.log(failed ? '\nDESIGN LAWS: FAILED' : '\nDESIGN LAWS: ALL GREEN');
 process.exit(failed ? 1 : 0);
