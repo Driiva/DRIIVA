@@ -75,11 +75,30 @@ export async function evaluate(client, expression, { awaitPromise = true } = {})
  * and a long wait inside the page is itself what throws when that happens.
  */
 export async function settle(client, { timeoutMs = 20000 } = {}) {
+  /*
+   * Skeletons and web fonts are part of the sample on purpose.
+   *
+   * Without the skeleton count a page settles on its own LOADING state, and
+   * the gate then measures placeholders: the design laws once reported a
+   * capsule violation from the dashboard's skeleton bars and "NO PROSE
+   * FOUND", having never seen the dashboard. The accessibility audit had the
+   * same weakness from the other end, reporting nine colour-contrast
+   * violations on a leaderboard that was still drawing its chart, then
+   * reporting none on the next run.
+   *
+   * One definition of "settled" for both gates, so they cannot disagree about
+   * when a page is ready to be judged.
+   */
   const SAMPLE = `(() => {
     const root = document.getElementById('root');
+    const skeletons = document.querySelectorAll(
+      '.skeleton-shimmer, .loading-shimmer, [data-skeleton]'
+    ).length;
     return (root ? root.children.length : 0) + ':' +
            document.querySelectorAll('body *').length + ':' +
-           document.body.innerText.length;
+           document.body.innerText.length + ':' +
+           (document.fonts.status === 'loaded' ? 1 : 0) + ':' +
+           'sk' + skeletons;
   })()`;
 
   let last = '';
@@ -96,13 +115,47 @@ export async function settle(client, { timeoutMs = 20000 } = {}) {
       await new Promise((r) => setTimeout(r, 300));
       continue;
     }
-    const empty = now.startsWith('0:') || now.endsWith(':0');
+    // Still loading counts as not settled, whether that is an empty root, no
+    // text, unloaded fonts, or a screen of skeletons.
+    const empty = now.startsWith('0:') || now.includes(':0:') || !now.endsWith(':sk0');
     stable = !empty && now === last ? stable + 1 : 0;
     last = now;
     if (stable >= 3) return;
     await new Promise((r) => setTimeout(r, 250));
   }
 }
+
+/**
+ * Fills and submits the sign-in form. Shared by both sign-in helpers so there
+ * is one description of how this app is signed into, not two that drift.
+ */
+const SIGN_IN_SCRIPT = `(async () => {
+  const email = document.querySelector('input[type="email"], input[placeholder*="you@" i]');
+  const password = document.querySelector('input[type="password"]');
+  if (!email || !password) return 'no-form';
+
+  const setValue = (el, value) => {
+    const setter = Object.getOwnPropertyDescriptor(
+      window.HTMLInputElement.prototype, 'value',
+    ).set;
+    setter.call(el, value);
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  };
+
+  setValue(email, ${JSON.stringify(QA_EMAIL)});
+  setValue(password, ${JSON.stringify(QA_PASSWORD)});
+
+  const button = [...document.querySelectorAll('button')].find((b) =>
+    /sign in/i.test(b.textContent || ''));
+  if (!button) return 'no-button';
+  button.click();
+
+  for (let i = 0; i < 60; i++) {
+    await new Promise((r) => setTimeout(r, 250));
+    if (!location.pathname.startsWith('/signin')) return 'ok';
+  }
+  return 'stuck:' + document.body.innerText.slice(0, 200);
+})()`;
 
 /**
  * Opens a tab, signs in through the real form, and returns { tab, client }.
@@ -116,38 +169,7 @@ export async function signedInTab() {
   await client.send('Runtime.enable');
   await settle(client);
 
-  const signedIn = await evaluate(
-    client,
-    `(async () => {
-      const email = document.querySelector('input[type="email"], input[placeholder*="you@" i]');
-      const password = document.querySelector('input[type="password"]');
-      if (!email || !password) return 'no-form';
-
-      const setValue = (el, value) => {
-        const setter = Object.getOwnPropertyDescriptor(
-          window.HTMLInputElement.prototype, 'value',
-        ).set;
-        setter.call(el, value);
-        el.dispatchEvent(new Event('input', { bubbles: true }));
-      };
-
-      setValue(email, ${JSON.stringify(QA_EMAIL)});
-      setValue(password, ${JSON.stringify(QA_PASSWORD)});
-
-      const button = [...document.querySelectorAll('button')].find((b) =>
-        /sign in/i.test(b.textContent || ''));
-      if (!button) return 'no-button';
-      button.click();
-
-      // Wait for the route to leave /signin.
-      for (let i = 0; i < 60; i++) {
-        await new Promise((r) => setTimeout(r, 250));
-        if (!location.pathname.startsWith('/signin')) return 'ok';
-      }
-      return 'stuck:' + document.body.innerText.slice(0, 200);
-    })()`,
-  );
-
+  const signedIn = await evaluate(client, SIGN_IN_SCRIPT);
   await settle(client);
 
   /*
@@ -230,4 +252,53 @@ export async function incognitoTab(url) {
       browser.close();
     },
   };
+}
+
+/**
+ * A signed-in tab in an ISOLATED browser context.
+ *
+ * signedInTab() opens a tab in the shared Chrome profile, so whatever session
+ * that profile is already holding decides what happens. If it holds a valid
+ * session, /signin bounces to the dashboard, the sign-in form is not there,
+ * and the helper returns 'no-form' having signed nobody in. If it holds a
+ * STALE session, or a different user's, the harness measures that user's
+ * surfaces under the seeded user's name. Either way the run depends on the
+ * ambient state of a browser nobody controls, and a harness whose reach varies
+ * invisibly between runs is the thing every gate here exists to prevent.
+ *
+ * This starts from a context with no cookies and no IndexedDB, so the sign-in
+ * form is always present and the session is always the seeded driver's. It
+ * costs one extra context per run and removes the entire class.
+ */
+export async function signedInIsolatedTab() {
+  const session = await incognitoTab(`${APP}/signin`);
+  const { client } = session;
+  await client.send('Page.enable').catch(() => {});
+  await settle(client);
+
+  const signedIn = await evaluate(client, SIGN_IN_SCRIPT);
+  await settle(client);
+
+  // Wait for auth to finish ENRICHING, not merely to resolve: AuthContext
+  // returns a user quickly and fills onboardingComplete from Firestore a
+  // moment later, and navigating in that window sends ProtectedRoute to
+  // /quick-onboarding.
+  const deadline = Date.now() + 20000;
+  let reachedDashboard = false;
+  while (Date.now() < deadline) {
+    await evaluate(
+      client,
+      `(() => { history.pushState({}, '', '/dashboard');
+                dispatchEvent(new PopStateEvent('popstate')); return true; })()`,
+      { awaitPromise: false },
+    );
+    await settle(client);
+    if ((await evaluate(client, 'location.pathname')) === '/dashboard') {
+      reachedDashboard = true;
+      break;
+    }
+    await new Promise((r) => setTimeout(r, 500));
+  }
+
+  return { ...session, signedIn, reachedDashboard };
 }
