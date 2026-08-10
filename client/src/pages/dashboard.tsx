@@ -20,15 +20,17 @@ import { getTripPoints } from '@/lib/firestore';
 import {
   Car, FileText, AlertCircle, TrendingUp, ChevronRight,
   Bell, ChevronDown, ChevronUp, MapPin, Users, Trophy, Target,
-  Play, Navigation, RefreshCw, Shield, ExternalLink
+  Play, Navigation, RefreshCw, Shield, ExternalLink,
+  Eye, Footprints, Gauge, CornerUpLeft, PhoneOff, Moon,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { PageWrapper } from '../components/PageWrapper';
 import { BottomNav } from '../components/BottomNav';
 import { useAuth } from "@/contexts/AuthContext";
 import MapLoader from '../components/MapLoader';
 import { useDashboardData, DashboardData } from '@/hooks/useDashboardData';
 import { useCommunityData } from '@/hooks/useCommunityData';
-import { projectedRefundCents } from '@driiva/scoring';
+import { projectedRefundCents, SCORE_WEIGHTS } from '@driiva/scoring';
 import { useBetaEstimate } from '@/hooks/useBetaEstimate';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useToast } from '@/hooks/use-toast';
@@ -131,18 +133,41 @@ function getGreeting(): string {
 }
 
 function getScoreMessage(score: number): string {
-  if (score >= 80) return "Great driving! Keep it up to maximise your refund.";
-  if (score >= 70) return "Good progress! A few more safe trips will boost your score.";
+  // No exclamation marks. The brand voice is plain-English confident, and a
+  // telematics score is information, not a cheer.
+  if (score >= 80) return "Strong driving. Keep this up to maximise your refund.";
+  if (score >= 70) return "Good progress. A few more safe trips will lift your score.";
   return "Keep practising safe driving to unlock rewards.";
 }
 
+/** Lucide icons for the coaching tips, resolved by name. Never emoji. */
+const TIP_ICONS: Record<string, LucideIcon> = {
+  Eye, Footprints, Gauge, CornerUpLeft, PhoneOff, Moon,
+};
+
+function TipIcon({ name }: { name: string }) {
+  const Icon = TIP_ICONS[name] ?? Eye;
+  return <Icon className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden="true" />;
+}
+
+/*
+ * Coaching tips.
+ *
+ * The icons were EMOJI, which this brand bans outright, and the copy carried
+ * three em dashes and an equals sign standing in for a word. Icons are Lucide
+ * names resolved at render.
+ *
+ * The cornering figure is quoted from SCORE_WEIGHTS in @driiva/scoring rather
+ * than retyped: cornering is 0.2, and the marketing site has already shipped
+ * transposed weights once because somebody typed them by hand.
+ */
 const AI_DRIIVA_TIPS = [
-  { headline: "Anticipate the road ahead", tip: "Look 10–15 seconds forward. Spotting hazards early means smoother, gentler braking — which directly improves your score.", icon: "👁" },
-  { headline: "Lift off gently", tip: "Releasing the accelerator gradually before a junction saves fuel and avoids the hard-braking penalty that chips away at your score.", icon: "🦶" },
-  { headline: "Speed limits are scoring limits", tip: "Even brief periods above the limit add speeding seconds to your score. Staying within limits is the single biggest score multiplier.", icon: "🏎" },
-  { headline: "Smooth cornering = big gains", tip: "Enter bends at a steady speed rather than braking mid-corner. Your cornering component is worth 20% of your total score.", icon: "↩️" },
-  { headline: "Keep phone face-down", tip: "Phone pickups are logged and count against your score. Use Do Not Disturb before you start the engine — every pickup costs points.", icon: "📵" },
-  { headline: "Night driving costs more", tip: "Fatigue and reduced visibility increase risk at night. Keeping night trips short and smooth helps your overall risk profile.", icon: "🌙" },
+  { headline: "Anticipate the road ahead", tip: "Look 10 to 15 seconds forward. Spotting hazards early means smoother, gentler braking, which directly improves your score.", icon: "Eye" },
+  { headline: "Lift off gently", tip: "Releasing the accelerator gradually before a junction saves fuel and avoids the hard-braking penalty that chips away at your score.", icon: "Footprints" },
+  { headline: "Speed limits are scoring limits", tip: "Even brief periods above the limit add speeding seconds to your score. Staying within limits is the single biggest score multiplier.", icon: "Gauge" },
+  { headline: "Smooth cornering pays", tip: `Enter bends at a steady speed rather than braking mid-corner. Cornering is worth ${Math.round(SCORE_WEIGHTS.cornering * 100)}% of your total score.`, icon: "CornerUpLeft" },
+  { headline: "Keep your phone face down", tip: "Phone pickups are logged and count against your score. Use Do Not Disturb before you start the engine, since every pickup costs points.", icon: "PhoneOff" },
+  { headline: "Night driving costs more", tip: "Fatigue and reduced visibility increase risk at night. Keeping night trips short and smooth helps your overall risk profile.", icon: "Moon" },
 ];
 
 function getAiDriivaTip(score: number): typeof AI_DRIIVA_TIPS[0] {
@@ -638,7 +663,10 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <div className="bg-white/5 rounded-xl p-3 mb-3">
-                  <p className="text-xs font-semibold text-indigo-300 mb-1">{tip.icon} {tip.headline}</p>
+                  <p className="text-[13px] font-semibold mb-1 flex items-center gap-1.5" style={{ color: 'var(--app-primary-text)' }}>
+                    <TipIcon name={tip.icon} />
+                    {tip.headline}
+                  </p>
                   <p className="text-xs text-white/70 leading-relaxed">{tip.tip}</p>
                 </div>
                 
