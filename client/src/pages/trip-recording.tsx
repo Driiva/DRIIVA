@@ -18,6 +18,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTripLocationTracker, TrackedPoint } from '@/hooks/useTripLocationTracker';
 import { useTelematics } from '@/hooks/useTelematics';
 import { useToast } from '@/hooks/use-toast';
+import { ArcTracer, LiveGlow } from '@/components/motion/Instrument';
 import {
   TripPointStreamer,
   startTrip,
@@ -496,6 +497,18 @@ export default function TripRecording() {
     isOnline;
   const isRecording = recordingState === 'recording' || recordingState === 'paused';
 
+  /* One tone per state, taken from tokens. Red is capture, amber is held, the
+     accent is work in progress, and idle stays muted because nothing has
+     happened yet and nothing has been earned. */
+  const statusTone =
+    recordingState === 'recording'
+      ? 'var(--err)'
+      : recordingState === 'paused'
+        ? 'var(--warn)'
+        : recordingState === 'starting' || recordingState === 'stopping'
+          ? 'var(--app-primary)'
+          : 'var(--app-text-mut)';
+
   return (
     <div className="min-h-screen text-white safe-area pt-20">
       <div className="px-4 pb-20">
@@ -515,24 +528,33 @@ export default function TripRecording() {
         <div className="glass-morphism rounded-3xl p-6 mb-6">
           <div className="text-center">
             {/* Status Indicator */}
+            {/* The one place on the app where a state really is live, so this
+                is where the breathing glow belongs. Blue and grey were not
+                Driiva colours and are gone: the tone now comes from the state
+                the driver is actually in. */}
             <div
-              className={`w-24 h-24 mx-auto mb-4 rounded-full flex items-center justify-center ${recordingState === 'recording'
-                  ? 'bg-red-500/20 border-2 border-red-500'
-                  : recordingState === 'paused'
-                    ? 'bg-yellow-500/20 border-2 border-yellow-500'
-                    : recordingState === 'starting' || recordingState === 'stopping'
-                      ? 'bg-blue-500/20 border-2 border-blue-500'
-                      : 'bg-gray-500/20 border-2 border-gray-500'
-                }`}
+              className="w-24 h-24 mx-auto mb-4 rounded-full flex items-center justify-center border-2"
+              style={{
+                borderColor: statusTone,
+                background: 'var(--app-surface-2)',
+              }}
             >
               {recordingState === 'starting' || recordingState === 'stopping' ? (
-                <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                <ArcTracer
+                  size={40}
+                  label={recordingState === 'starting' ? 'Starting trip' : 'Saving trip'}
+                />
               ) : recordingState === 'recording' ? (
-                <div className="w-4 h-4 bg-red-500 rounded-full animate-pulse" />
+                <LiveGlow
+                  live
+                  size={14}
+                  colour="var(--err)"
+                  label="Recording"
+                />
               ) : recordingState === 'paused' ? (
-                <Pause className="w-8 h-8 text-yellow-500" />
+                <Pause className="w-8 h-8" style={{ color: statusTone }} />
               ) : (
-                <Play className="w-8 h-8 text-gray-400" />
+                <Play className="w-8 h-8" style={{ color: statusTone }} />
               )}
             </div>
 

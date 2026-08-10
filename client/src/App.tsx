@@ -3,6 +3,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/queryClient';
 import { Router, Route, Switch, Redirect, useLocation } from 'wouter';
 import gradientBackground from './assets/gradient-background.png';
+import { ArcTracer } from '@/components/motion/Instrument';
 import { ProtectedRoute, PublicOnlyRoute } from './components/ProtectedRoute';
 import { HomeRedirect } from './components/HomeRedirect';
 import { Toaster } from './components/ui/toaster';
@@ -76,8 +77,8 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   if (loading || (!user?.isAdmin && !timedOut)) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-3">
-        <div className="w-10 h-10 border-3 border-white/20 border-t-white rounded-full animate-spin" />
-        <p className="text-white/40 text-xs">Verifying admin access…</p>
+        <ArcTracer size={40} label="Verifying admin access" />
+        <p className="text-white/40 text-xs">Verifying admin access</p>
       </div>
     );
   }

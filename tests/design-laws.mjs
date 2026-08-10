@@ -347,15 +347,41 @@ const CHECKS = `(() => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * The product's own demo mode, entered the way the product enters it.
+ *
+ * Every routed surface worth linting sits behind auth, so without this the
+ * harness could only ever measure /signin. These are the exact two session
+ * keys client/src/pages/demo.tsx writes; AuthContext reads them and serves a
+ * demo profile with no Firebase call.
+ */
+const DEMO_BOOTSTRAP = `(() => {
+  sessionStorage.setItem('driiva-demo-mode', 'true');
+  return sessionStorage.getItem('driiva-demo-mode');
+})()`;
+
 async function check(url) {
-  const tab = await openTab(url);
+  const asked = new URL(url).pathname;
+  // Public routes are opened directly. Anything behind auth is opened on the
+  // demo route first so the session flag can be written on the right origin,
+  // then navigated once to the route under test.
+  const needsSession = asked !== '/' && !asked.startsWith('/signin');
+  const tab = await openTab(needsSession ? `${DEV}/demo` : url);
   const client = connect(tab.webSocketDebuggerUrl);
   try {
     await client.ready;
     await client.send('Page.enable');
     await client.send('Runtime.enable');
-    // No Page.navigate here. The tab was opened AT this url, and navigating to
-    // it a second time tears down the execution context underneath the very
+
+    if (needsSession) {
+      // Give the demo route a moment to exist before writing to its storage,
+      // then make the single deliberate navigation to the route under test.
+      await new Promise((r) => setTimeout(r, 1200));
+      await evaluate(client, DEMO_BOOTSTRAP);
+      await client.send('Page.navigate', { url });
+    }
+    // No second Page.navigate beyond that one. Navigating to the same url a
+    // second time tears down the execution context underneath the very
     // evaluate that is waiting on it, which is what made /signin fail at
     // random with "Inspected target navigated or closed".
     // Wait for the page to SETTLE, not merely to load. This is a React app
@@ -368,12 +394,21 @@ async function check(url) {
     // navigation destroys the page's execution context, so a 12-second in-page
     // wait was itself the thing throwing "Execution context was destroyed".
     // Short probes just lose one sample and carry on.
+    // The skeleton count is part of the sample on purpose. Without it the
+    // page settles on its own loading state, and the laws then assert against
+    // a screen of placeholders: the dashboard reported a capsule violation
+    // from its skeleton bars and "NO PROSE FOUND", having never seen the
+    // dashboard at all.
     const SAMPLE = `(() => {
       const root = document.getElementById("root");
+      const skeletons = document.querySelectorAll(
+        ".skeleton-shimmer, .loading-shimmer, [data-skeleton]"
+      ).length;
       return (root ? root.children.length : 0) + ":" +
              document.querySelectorAll("body *").length + ":" +
              document.body.innerText.length + ":" +
-             (document.fonts.status === "loaded" ? 1 : 0);
+             (document.fonts.status === "loaded" ? 1 : 0) + ":" +
+             "sk" + skeletons;
     })()`;
 
     let last = '';
@@ -390,7 +425,9 @@ async function check(url) {
         await new Promise((r) => setTimeout(r, 300));
         continue;
       }
-      const empty = now.startsWith('0:') || now.endsWith(':0');
+      // Still loading counts as not settled, whether that is an empty root,
+      // no text, unloaded fonts, or a screen of skeletons.
+      const empty = now.startsWith('0:') || now.includes(':0:') || !now.endsWith(':sk0');
       stable = !empty && now === last ? stable + 1 : 0;
       last = now;
       if (stable >= 3) break;
@@ -402,6 +439,20 @@ async function check(url) {
       '(document.getElementById("root")?.children.length ?? 0) > 0',
     );
     if (!rendered) throw new Error(`nothing rendered at ${url}`);
+
+    /* The route that answered has to be the route that was asked for.
+       Without this the harness walked /dashboard, /trips, /leaderboard and
+       /rewards, every one of them bounced to /signin because Firebase was
+       unconfigured, and it printed ALL GREEN having measured the sign-in page
+       four times. A gate that reports on a page it never reached is worse
+       than no gate, because it is believed. */
+    const landed = await evaluate(client, 'location.pathname');
+    if (landed !== asked) {
+      throw new Error(
+        `redirected ${asked} -> ${landed}, so these laws were never applied to ${asked}. ` +
+          'Sign in, or point DEV_URL at an environment where the route renders.',
+      );
+    }
     if (PLANT) await evaluate(client, PLANT_SCRIPT);
     return await evaluate(client, CHECKS);
   } finally {

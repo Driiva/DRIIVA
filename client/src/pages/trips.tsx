@@ -5,6 +5,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
+import { DemoBadge } from "@/components/DemoBadge";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
 import { collection, query, where, orderBy, limit } from 'firebase/firestore';
@@ -257,9 +258,7 @@ export default function Trips() {
                 <h1 className="text-xl font-bold text-white">Driiva</h1>
                 <p className="text-sm text-white/50">Your trip history</p>
                 {isDemoMode && (
-                  <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-emerald-500/20 text-emerald-400 rounded-full border border-emerald-500/30">
-                    Demo Mode
-                  </span>
+                  <DemoBadge />
                 )}
               </div>
             </div>

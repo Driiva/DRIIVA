@@ -12,7 +12,11 @@
  */
 
 import { useState, lazy, Suspense, useEffect, useCallback } from 'react';
+import { DemoBadge } from "@/components/DemoBadge";
 import { motion, AnimatePresence } from 'framer-motion';
+
+import { Stagger, StaggerItem } from '@/components/motion/Stagger';
+import { SettlePulse } from '@/components/motion/Instrument';
 import { useLocation } from 'wouter';
 import { collection, doc, getDoc } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '@/lib/firebase';
@@ -423,9 +427,7 @@ export default function Dashboard() {
               <h1 className="text-xl font-bold text-white">Driiva</h1>
               <p className="text-sm text-white/50">Beta Programme</p>
               {isDemoMode && (
-                <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-emerald-500/20 text-emerald-400 rounded-full border border-emerald-500/30">
-                  Demo Mode
-                </span>
+                <DemoBadge />
               )}
             </div>
           </div>
@@ -574,7 +576,12 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className="flex flex-col items-center">
-              <ScoreRing score={drivingScore} size={140} strokeWidth={8} />
+              {/* The ring already counts the figure up. The pulse is what makes
+                  a change felt: it fires once, only when the score is actually
+                  a different number from the one that was on screen. */}
+              <SettlePulse pulseKey={drivingScore}>
+                <ScoreRing score={drivingScore} size={140} strokeWidth={8} />
+              </SettlePulse>
               <p className="text-sm text-white/60 mt-3 text-center">
                 {getScoreMessage(drivingScore)}
               </p>
@@ -582,28 +589,27 @@ export default function Dashboard() {
           )}
           
           {!isDemoMode && !isNewUser && dashboardData?.scoreBreakdown && (
-            <div className="mt-4 pt-4 border-t border-white/10 grid grid-cols-5 gap-2 text-center">
-              <div>
-                <div className="text-xs text-white/40">Speed</div>
-                <div className="text-sm font-semibold text-white">{dashboardData.scoreBreakdown.speed}</div>
-              </div>
-              <div>
-                <div className="text-xs text-white/40">Braking</div>
-                <div className="text-sm font-semibold text-white">{dashboardData.scoreBreakdown.braking}</div>
-              </div>
-              <div>
-                <div className="text-xs text-white/40">Accel</div>
-                <div className="text-sm font-semibold text-white">{dashboardData.scoreBreakdown.acceleration}</div>
-              </div>
-              <div>
-                <div className="text-xs text-white/40">Corners</div>
-                <div className="text-sm font-semibold text-white">{dashboardData.scoreBreakdown.cornering}</div>
-              </div>
-              <div>
-                <div className="text-xs text-white/40">Phone</div>
-                <div className="text-sm font-semibold text-white">{dashboardData.scoreBreakdown.phoneUsage}</div>
-              </div>
-            </div>
+            <Stagger
+              className="mt-4 pt-4 border-t border-white/10 grid grid-cols-5 gap-2 text-center"
+              delay={0.35}
+            >
+              {/* The five factors the score is made of, arriving after the ring
+                  has settled so the reader sees the total before the breakdown.
+                  Tabular figures, because these five sit in a row and a digit
+                  changing width would shift its neighbours. */}
+              {[
+                { label: 'Speed', value: dashboardData.scoreBreakdown.speed },
+                { label: 'Braking', value: dashboardData.scoreBreakdown.braking },
+                { label: 'Accel', value: dashboardData.scoreBreakdown.acceleration },
+                { label: 'Corners', value: dashboardData.scoreBreakdown.cornering },
+                { label: 'Phone', value: dashboardData.scoreBreakdown.phoneUsage },
+              ].map((factor) => (
+                <StaggerItem key={factor.label} yOffset={6}>
+                  <div className="text-xs text-white/40">{factor.label}</div>
+                  <div className="text-sm font-semibold text-white tabular">{factor.value}</div>
+                </StaggerItem>
+              ))}
+            </Stagger>
           )}
         </motion.div>
 

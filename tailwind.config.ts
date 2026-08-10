@@ -28,7 +28,7 @@ export default {
        * which is what keeps a large number from reading as loose.
        */
       fontSize: {
-        xs: ["12px", { lineHeight: "17px", letterSpacing: "0.005em" }],
+        xs: ["13px", { lineHeight: "18px", letterSpacing: "0.005em" }],
         sm: ["15px", { lineHeight: "22px", letterSpacing: "-0.005em" }],
         base: ["16px", { lineHeight: "24px", letterSpacing: "-0.006em" }],
         lg: ["18px", { lineHeight: "25px", letterSpacing: "-0.014em" }],
