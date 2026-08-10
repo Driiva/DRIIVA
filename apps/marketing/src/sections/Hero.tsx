@@ -10,6 +10,10 @@ function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 }
 
+// The status region doubles as the field's description, so it needs a stable
+// id to point aria-describedby at. Unique per form: this page renders two.
+const STATUS_ID = 'hero-waitlist-status';
+
 export function Hero() {
   const eyebrowRef = useRef<HTMLParagraphElement | null>(null);
   const wordmarkRef = useRef<HTMLDivElement | null>(null);
@@ -17,6 +21,7 @@ export function Hero() {
   const headlineRef = useRef<HTMLHeadingElement | null>(null);
   const subRef = useRef<HTMLParagraphElement | null>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const guaranteeRef = useRef<HTMLDivElement | null>(null);
 
@@ -89,6 +94,9 @@ export function Hero() {
     if (!isValidEmail(email)) {
       setStatus('error');
       setMessage("That email doesn't look right. Give it another go.");
+      // Put the caret back where the problem is, rather than leaving focus on
+      // the body for the reader to hunt the field down again.
+      inputRef.current?.focus();
       return;
     }
     setStatus('submitting');
@@ -101,6 +109,7 @@ export function Hero() {
           ? "That email doesn't look right. Give it another go."
           : 'Something broke on our end. Try again in a moment?',
       );
+      inputRef.current?.focus();
       return;
     }
     trackEvent('waitlist_success', {
@@ -177,14 +186,26 @@ export function Hero() {
               data-testid="hero-form"
             >
               <input
+                ref={inputRef}
                 type="email"
                 inputMode="email"
                 autoComplete="email"
                 required
                 aria-label="Email address"
+                aria-invalid={status === 'error' || undefined}
+                aria-describedby={STATUS_ID}
                 placeholder="your@email.co.uk"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  // Editing after a rejection retracts the rejection. Holding it
+                  // until the next submit tells someone who has already fixed
+                  // their address that they have not.
+                  if (status === 'error') {
+                    setStatus('idle');
+                    setMessage('');
+                  }
+                }}
                 disabled={status === 'submitting' || status === 'success'}
               />
               <button
@@ -200,6 +221,7 @@ export function Hero() {
               </button>
             </form>
             <div
+              id={STATUS_ID}
               className={`form-status ${status === 'error' ? 'err' : status === 'success' ? 'ok' : ''}`}
               role="status"
               aria-live="polite"

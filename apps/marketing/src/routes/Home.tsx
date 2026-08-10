@@ -14,7 +14,7 @@ import { FinalCTA } from '@/sections/FinalCTA';
 
 export function Home() {
   return (
-    <main>
+    <main id="main-content">
       <Hero />
       <TrustRibbon />
       <HowItWorks />

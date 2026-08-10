@@ -102,6 +102,40 @@ describe('Hero', () => {
     expect(screen.getByRole('status')).toHaveTextContent(/doesn't look right/i);
   });
 
+  it('marks the field invalid and describes it by the status region', () => {
+    render(<Hero />);
+    const input = screen.getByLabelText(/email address/i);
+    expect(input).not.toHaveAttribute('aria-invalid');
+    fireEvent.change(input, { target: { value: 'not-an-email' } });
+    fireEvent.submit(screen.getByTestId('hero-form'));
+    expect(input).toHaveAttribute('aria-invalid', 'true');
+    // The description has to resolve to the element carrying the message,
+    // otherwise a reader who tabs back to the field is told nothing.
+    expect(input).toHaveAttribute('aria-describedby', screen.getByRole('status').id);
+  });
+
+  it('moves focus to the field that failed', () => {
+    render(<Hero />);
+    const input = screen.getByLabelText(/email address/i);
+    fireEvent.change(input, { target: { value: 'not-an-email' } });
+    fireEvent.submit(screen.getByTestId('hero-form'));
+    expect(document.activeElement).toBe(input);
+  });
+
+  it('retracts the error as soon as the address is edited', () => {
+    render(<Hero />);
+    const input = screen.getByLabelText(/email address/i);
+    fireEvent.change(input, { target: { value: 'not-an-email' } });
+    fireEvent.submit(screen.getByTestId('hero-form'));
+    expect(screen.getByRole('status')).toHaveTextContent(/doesn't look right/i);
+
+    // Someone who has already fixed their address must not still be told
+    // it is wrong. This held until the next submit before.
+    fireEvent.change(input, { target: { value: 'driver@example.co.uk' } });
+    expect(screen.getByRole('status')).toHaveTextContent('');
+    expect(input).not.toHaveAttribute('aria-invalid');
+  });
+
   it('accepts a valid email and morphs the button to a success state', async () => {
     render(<Hero />);
     fireEvent.change(screen.getByLabelText(/email address/i), {

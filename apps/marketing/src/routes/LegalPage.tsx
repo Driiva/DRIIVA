@@ -16,7 +16,7 @@ export function LegalPage({ title, updated, children }: LegalPageProps) {
   }, [title]);
 
   return (
-    <main className="legal-page">
+    <main id="main-content" className="legal-page">
       <div className="container legal-shell">
         <Link href="/" className="legal-back">
           ← Back to Driiva
