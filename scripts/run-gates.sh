@@ -40,11 +40,10 @@
 #      extension block explains the ERR_BLOCKED_BY_CLIENT that was observed but
 #      is not proven to be the only cause. That run's failure text was not
 #      captured, so treat the clean profile as untested rather than as a fix.
-#   2. axe cannot start in a git worktree. tests/axe-audit.mjs resolves
-#      axe-core through a literal ../node_modules path, and a worktree's
-#      node_modules is partial, so it dies on ENOENT before auditing anything.
-#      Node's own resolution walks up to the parent checkout; that literal path
-#      does not.
+#   2. FIXED (299b131). axe used to resolve axe-core through a literal
+#      ../node_modules path, which does not exist in a git worktree, so the
+#      audit died on ENOENT before checking anything and accessibility could
+#      not be run from any branch. It resolves the module properly now.
 #
 # Usage:  ./scripts/run-gates.sh [--keep]      (--keep leaves the stack up)
 set -uo pipefail
