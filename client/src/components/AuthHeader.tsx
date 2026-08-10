@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useLocation } from 'wouter';
+import { DemoBadge } from "@/components/DemoBadge";
 import { LogOut } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { auth } from '@/lib/firebase';
@@ -58,9 +59,7 @@ export const AuthHeader: React.FC<AuthHeaderProps> = ({
         {subtitle && <p className="text-white/60 text-sm">{subtitle}</p>}
         {title && <h1 className="text-2xl font-bold text-white">{title}</h1>}
         {showDemoMode && (
-          <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-emerald-500/20 text-emerald-400 rounded-full border border-emerald-500/30">
-            Demo Mode
-          </span>
+          <DemoBadge />
         )}
       </div>
 

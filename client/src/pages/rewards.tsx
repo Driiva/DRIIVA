@@ -13,6 +13,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { container, item, timing, easing, microInteractions } from "@/lib/animations";
 import { SmoothTabs } from "@/components/SmoothTabs";
+import { Stagger, StaggerItem } from "@/components/motion/Stagger";
 import { Shimmer } from "@/components/Shimmer";
 import { AnimatedNumber } from "@/components/AnimatedNumber";
 import { useHaptics } from "@/hooks/useHaptics";
@@ -55,13 +56,13 @@ export default function Rewards() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [activeTab, setActiveTab] = useState<"achievements" | "rewards" | "progress">("achievements");
   const profile = userDoc?.drivingProfile || DEFAULT_DRIVING_PROFILE;
-  const policyNumber = userDoc?.activePolicy?.policyNumber ?? '—';
+  const policyNumber = userDoc?.activePolicy?.policyNumber ?? 'Not issued yet';
 
   const [achievements, setAchievements] = useState<DisplayAchievement[]>([]);
   const [achievementsLoading, setAchievementsLoading] = useState(true);
   const { toast } = useToast();
 
-  // Reward milestone states — derive from streakDays + drivingScore
+  // Reward milestone states, derived from streakDays + drivingScore
   const rewardStates: RewardState[] = (() => {
     const score = Math.round(profile.currentScore);
     const days = profile.streakDays;
@@ -171,7 +172,7 @@ export default function Rewards() {
   const totalAchievements = achievements.length;
   const drivingScore = Math.round(profile.currentScore);
   const streakDays = profile.streakDays;
-  const projectedRefund = 0; // Requires policy data; shown as '—' when 0
+  const projectedRefund = 0; // Requires policy data, so it reads as zero until a policy exists
   const poolShare = userDoc?.poolShare?.currentShareCents ? userDoc.poolShare.currentShareCents / 100 : 0;
   const totalTrips = profile.totalTrips;
 
@@ -275,34 +276,29 @@ export default function Rewards() {
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-4">
+              <Stagger className="grid grid-cols-2 gap-4">
                 {[
-                  { value: `${unlockedCount}/${totalAchievements || '—'}`, label: "Achievements" },
-                  { value: streakDays > 0 ? streakDays : '—', label: "Day Streak" },
-                  { value: projectedRefund > 0 ? `£${projectedRefund}` : '—', label: "Projected Refund", accent: true },
+                  { value: totalAchievements ? `${unlockedCount}/${totalAchievements}` : String(unlockedCount), label: "Achievements" },
+                  { value: streakDays, label: "Day Streak" },
+                  { value: `£${projectedRefund}`, label: "Projected Refund", accent: projectedRefund > 0 },
                   { value: totalTrips, label: "Safe Trips" },
-                ].map((stat, index) => (
-                  <motion.div
-                    key={index}
+                ].map((stat) => (
+                  <StaggerItem
+                    key={stat.label}
                     className="text-center p-3 bg-white/5 rounded-xl"
-                    whileHover={microInteractions.hover}
-                    transition={{ duration: timing.quick }}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    style={{ transitionDelay: `${index * 0.05}s` }}
                   >
-                    <div className={`text-2xl font-semibold ${stat.accent ? 'text-emerald-400' : 'text-white'}`}>
+                    <div className={`text-2xl font-semibold tabular ${stat.accent ? 'text-emerald-400' : 'text-white'}`}>
                       {stat.value}
                     </div>
                     <div className="text-xs text-white/60 mt-1">{stat.label}</div>
-                  </motion.div>
+                  </StaggerItem>
                 ))}
-              </div>
+              </Stagger>
             )}
           </GlassCard>
         </motion.div>
 
-        {/* Tab switcher — smooth sliding indicator */}
+        {/* Tab switcher, with a sliding indicator */}
         <motion.div
           className="mb-6"
           initial={{ opacity: 0, y: 10 }}
@@ -412,7 +408,7 @@ export default function Rewards() {
               </motion.div>
             )}
 
-            {/* Rewards Tab — 5-Tier Milestone Timeline */}
+            {/* Rewards tab: the five-tier milestone timeline */}
             {activeTab === "rewards" && (
               <RewardsTimeline
                 daysActive={streakDays}
@@ -447,8 +443,8 @@ export default function Rewards() {
                     ) : (
                       <div className="grid grid-cols-2 gap-4">
                         {[
-                          { value: drivingScore > 0 ? String(drivingScore) : '—', label: "Current Score", accent: true },
-                          { value: streakDays > 0 ? String(streakDays) : '—', label: "Streak Days" },
+                          { value: String(drivingScore), label: "Current Score", accent: drivingScore > 0 },
+                          { value: String(streakDays), label: "Streak Days" },
                           { value: profile.totalMiles > 0 ? String(Math.round(profile.totalMiles)) : '—', label: "Miles Driven" },
                           { value: projectedRefund > 0 ? `£${projectedRefund}` : '—', label: "Refund Earned", accent: true },
                         ].map((stat, index) => (

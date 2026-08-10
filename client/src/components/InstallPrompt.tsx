@@ -75,7 +75,7 @@ export default function InstallPrompt() {
           className="fixed bottom-0 left-0 right-0 z-50 p-4 pb-8"
         >
           <div className="relative rounded-2xl overflow-hidden"
-            style={{ background: 'rgba(15,23,42,0.96)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(24px)' }}>
+            style={{ background: 'var(--app-surface-1)', border: '1px solid var(--app-border)' }}>
             <button
               onClick={dismiss}
               className="absolute top-3 right-3 p-1 rounded-full text-white/60 hover:text-white/80"
@@ -126,7 +126,7 @@ export default function InstallPrompt() {
           className="fixed bottom-0 left-0 right-0 z-50 p-4 pb-8"
         >
           <div className="relative rounded-2xl overflow-hidden flex items-center gap-4 p-4"
-            style={{ background: 'rgba(15,23,42,0.96)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(24px)' }}>
+            style={{ background: 'var(--app-surface-1)', border: '1px solid var(--app-border)' }}>
             <img src="/apple-touch-icon.png" alt="Driiva" className="w-12 h-12 rounded-xl flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-white text-sm">Add Driiva to Home Screen</p>

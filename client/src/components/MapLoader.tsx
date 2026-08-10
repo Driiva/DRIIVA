@@ -1,7 +1,22 @@
+/**
+ * The wait while GPS data loads.
+ *
+ * The spinner here was emerald, which is the colour this product uses to mean
+ * a good score. Spending it on "still loading" is exactly the thing the palette
+ * rules forbid: colour is earned, and nothing has been earned yet at this point.
+ * It now uses the house ArcTracer in the single accent.
+ */
+import { ArcTracer } from '@/components/motion/Instrument';
+
 const MapLoader = () => (
-  <div className="flex flex-col items-center justify-center py-12 bg-[#1a1a2e]/50 rounded-xl">
-    <div className="w-12 h-12 border-4 border-white/20 border-t-emerald-400 rounded-full animate-spin mb-4" />
-    <p className="text-white/60 text-sm">Loading GPS data...</p>
+  <div
+    className="flex flex-col items-center justify-center py-12 rounded-xl"
+    style={{ background: 'var(--app-surface-1)' }}
+  >
+    <ArcTracer size={48} label="Loading GPS data" className="mb-4" />
+    <p className="text-sm" style={{ color: 'var(--app-text-sec)' }}>
+      Loading GPS data
+    </p>
   </div>
 );
 

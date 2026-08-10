@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { DemoBadge } from "@/components/DemoBadge";
+
+import { Stagger, StaggerItem } from "@/components/motion/Stagger";
 import { useLocation } from "wouter";
 import { 
   ArrowLeft, 
@@ -216,9 +219,7 @@ export default function Achievements() {
           <div className="flex-1">
             <h1 className="text-2xl font-bold">Achievements</h1>
             {isDemoMode && (
-              <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-emerald-500/20 text-emerald-400 rounded-full border border-emerald-500/30">
-                Demo Mode
-              </span>
+              <DemoBadge />
             )}
           </div>
         </motion.div>
@@ -282,15 +283,13 @@ export default function Achievements() {
         </motion.div>
 
         {/* Achievements Grid */}
-        <div className="space-y-4">
-          {filteredAchievements.map((achievement, index) => {
+        <Stagger className="space-y-4" delay={0.1}>
+          {filteredAchievements.map((achievement) => {
             const Icon = achievement.icon;
             return (
-              <motion.div
+              <StaggerItem
                 key={achievement.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 + index * 0.05 }}
+                yOffset={12}
                 className={`dashboard-glass-card relative overflow-hidden ${
                   !achievement.unlocked ? 'opacity-75' : ''
                 }`}
@@ -350,10 +349,10 @@ export default function Achievements() {
                     )}
                   </div>
                 </div>
-              </motion.div>
+              </StaggerItem>
             );
           })}
-        </div>
+        </Stagger>
 
         {/* Empty State */}
         {filteredAchievements.length === 0 && (

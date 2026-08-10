@@ -554,7 +554,10 @@ button:active:not(:disabled), .btn:active:not(:disabled) {
     rgba(255, 255, 255, 0.04) 100%);
   background-size: 200% 100%;
   animation: shimmer 1.6s var(--ease-fast) infinite;
-  border-radius: var(--radius-md);
+  /* 2px, not --radius-md. Placeholders run as short as 8px tall, and any
+     radius reaching half the short side is a capsule, which is the one shape
+     this product does not use. */
+  border-radius: 2px;
 }
 
 .loading-shimmer {
