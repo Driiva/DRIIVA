@@ -90,13 +90,34 @@ main {
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
   pointer-events: none;
 }
+/* Lift alone is the default card hover everywhere. Pairing a smaller lift with
+   a leading rule that wipes in from the top gives the card somewhere to point,
+   and the brand gradient does the pointing. */
 .glass-hover {
-  transition: transform 0.3s var(--ease), border-color 0.3s var(--ease), box-shadow 0.3s var(--ease);
+  position: relative;
+  transition: transform 0.4s var(--easeout), border-color 0.3s var(--ease),
+    box-shadow 0.4s var(--easeout);
+}
+.glass-hover::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 14px;
+  bottom: 14px;
+  width: 1px;
+  background: linear-gradient(180deg, var(--amber-2), rgb(var(--rgb-violet) / 0));
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform 0.55s var(--ease);
+  pointer-events: none;
 }
 .glass-hover:hover {
-  transform: translateY(-4px);
-  border-color: rgba(255, 255, 255, 0.28);
+  transform: translateY(-3px);
+  border-color: rgb(var(--rgb-amber) / 0.32);
   box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+.glass-hover:hover::before {
+  transform: scaleY(1);
 }
 
 /* ─────────────────────────────────────────────────────────
@@ -120,33 +141,60 @@ main {
   display: inline-flex;
   align-items: center;
   text-decoration: none;
-  transition: opacity 0.2s var(--ease);
+  /* The anchor wraps an image, so it was never given a colour and inherited
+     the user-agent link blue. Invisible on screen, but it is a real off-token
+     colour on the page and it would surface the moment the image fails. */
+  color: var(--fg-1);
+  transition: opacity 0.3s var(--ease);
 }
 .nav-pill-logo:hover {
   opacity: 0.82;
 }
+/* The drawn wordmark, not the iconmark. At nav scale the ii mark reads as a
+   stray glyph rather than a logo, and the wordmark carries its own spacing so
+   it is never set as type. */
 .nav-pill-logo img {
-  height: 40px;
+  height: 22px;
   width: auto;
+  display: block;
 }
 .nav-links {
   display: flex;
   gap: 2px;
 }
+/* A filled rounded rectangle appearing under the cursor is the heaviest way to
+   say "hoverable". The link instead grows a rule from its leading edge, which
+   is quieter and reads as craft rather than as a default button state. */
 .nav-link {
+  position: relative;
   padding: 8px 14px;
   color: var(--fg-2);
   text-decoration: none;
   font-size: 13px;
   font-weight: 500;
   letter-spacing: -0.005em;
-  border-radius: 10px;
-  transition: background 0.2s, color 0.2s;
+  transition: color 0.3s var(--ease);
   white-space: nowrap;
 }
-.nav-link:hover {
-  background: rgba(255, 255, 255, 0.08);
+.nav-link::after {
+  content: '';
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 2px;
+  height: 1px;
+  background: linear-gradient(90deg, var(--amber-2), transparent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.5s var(--easeout);
+}
+.nav-link:hover,
+.nav-link:focus-visible {
   color: var(--fg-1);
+}
+.nav-link:hover::after,
+.nav-link:focus-visible::after {
+  transform: scaleX(1);
 }
 .nav-pill-cta {
   height: 40px;
@@ -164,7 +212,7 @@ main {
   align-items: center;
   border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
-  transition: transform 0.2s var(--ease), border-color 0.2s var(--ease), background 0.2s var(--ease);
+  transition: transform 0.2s var(--easeout), border-color 0.2s var(--easeout), background 0.2s var(--easeout);
   cursor: pointer;
 }
 .nav-pill-cta:hover {
@@ -182,7 +230,7 @@ main {
   backdrop-filter: blur(16px) saturate(140%);
   -webkit-backdrop-filter: blur(16px) saturate(140%);
   opacity: 0;
-  transition: opacity 0.35s var(--ease);
+  transition: opacity 0.35s var(--easeout);
   z-index: -1;
   pointer-events: none;
 }
@@ -362,7 +410,7 @@ main {
   opacity: 0;
   filter: drop-shadow(0 30px 60px rgba(0, 0, 0, 0.45))
     drop-shadow(0 0 80px rgba(99, 102, 241, 0.22));
-  transition: opacity 0.9s var(--ease), transform 1.2s var(--ease);
+  transition: opacity 0.9s var(--easeout), transform 1.2s var(--easeout);
 }
 .phone-frame.is-played {
   opacity: 1;
@@ -593,10 +641,13 @@ main {
 }
 .hero-headline {
   font-family: var(--font-display);
-  font-size: clamp(26px, 3.2vw, 44px);
+  /* The page's one display step. It previously topped out at 44px while every
+     section heading reached 56px, so the h1 was the smallest heading on the
+     page and the hierarchy read inverted. */
+  font-size: clamp(38px, 5.4vw, 74px);
   font-weight: 600;
-  line-height: 1.04;
-  letter-spacing: -0.03em;
+  line-height: 0.98;
+  letter-spacing: -0.038em;
   color: var(--fg-1);
   margin-top: 28px;
   margin-bottom: 28px;
@@ -605,10 +656,11 @@ main {
 .hero-headline .italic {
   font-style: italic;
   font-weight: 500;
-  background: var(--grad-brand);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  /* Solid, not gradient-clipped. f5b9b0a removed this treatment site-wide for
+     legibility after Keith flagged it, and this one instance survived on the
+     hero, where the redesign has since made it the largest text on the page.
+     Same replacement colour the rest of the site moved to. */
+  color: var(--amber-2);
 }
 
 .hero-wordmark {
@@ -690,7 +742,9 @@ main {
   gap: 8px;
   margin-top: 18px;
   color: var(--fg-3);
-  font-size: 12.5px;
+  /* This line carries the refund promise, so it sat below the 13px secondary
+     floor while saying the most consequential thing in the hero. */
+  font-size: 13.5px;
 }
 .hero-guarantee svg {
   color: var(--ok);
@@ -746,8 +800,8 @@ main {
   cursor: pointer;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 10px 30px rgba(0, 0, 0, 0.45);
   white-space: nowrap;
-  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease), border-color 0.2s var(--ease),
-    background 0.2s var(--ease);
+  transition: transform 0.2s var(--easeout), box-shadow 0.2s var(--easeout), border-color 0.2s var(--easeout),
+    background 0.2s var(--easeout);
 }
 .waitlist-form button:hover {
   transform: translateY(-1px);
@@ -800,31 +854,80 @@ section {
   padding: var(--section-pad-y) 0;
   position: relative;
 }
-.section-head {
-  text-align: center;
-  max-width: 700px;
-  margin: 0 auto 64px;
+
+/* Rhythm tiers. Assigned by what the section does, not by its order.
+   Anchors carry the argument's turning points, connectives are joins. */
+section[data-section='brand-statement'],
+section[data-section='cta-final'] {
+  padding: var(--pad-anchor) 0;
 }
+section[data-section='trust-ribbon'],
+section[data-section='beta-countdown'] {
+  padding: var(--pad-connective) 0;
+}
+
+/* A hairline that only appears where one argument hands over to the next, so
+   the page reads as joined sections rather than stacked identical blocks. */
+section[data-section='pool'],
+section[data-section='compare'],
+section[data-section='about'] {
+  border-top: 1px solid rgb(var(--rgb-violet) / 0.16);
+}
+
+.section-head {
+  max-width: 700px;
+  margin: 0 0 clamp(40px, 4.5vw, 64px);
+}
+/* Anchors and connectives stay centred; the body of the argument reads left,
+   which is what stops nine consecutive centred blocks feeling like a template. */
+section[data-section='brand-statement'] .section-head,
+section[data-section='cta-final'] .section-head,
+section[data-section='beta-countdown'] .section-head {
+  text-align: center;
+  margin-left: auto;
+  margin-right: auto;
+}
+/* A filled, bordered badge is the loudest templated tell on a section head.
+   The label is carried instead by a mono caption led by a short rule that
+   fades out, which is the same marginalia treatment used across the other
+   operator surfaces. */
 .section-head .eyebrow-mini {
-  display: inline-block;
-  padding: 6px 14px;
-  background: rgba(167, 139, 250, 0.12);
-  border: 1px solid rgba(167, 139, 250, 0.25);
-  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
   font-family: var(--font-mono);
   font-size: 11px;
-  font-weight: 600;
-  color: var(--iris-3);
-  letter-spacing: 0.08em;
+  font-weight: 500;
+  color: var(--amber-2);
+  letter-spacing: 0.2em;
   text-transform: uppercase;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
+}
+.section-head .eyebrow-mini::before {
+  content: '';
+  width: 34px;
+  height: 1px;
+  background: linear-gradient(90deg, var(--amber-2), transparent);
+  flex: none;
+}
+/* Centred heads need the rule on both sides or the label sits off-axis. */
+section[data-section='brand-statement'] .section-head .eyebrow-mini::after,
+section[data-section='cta-final'] .section-head .eyebrow-mini::after,
+section[data-section='beta-countdown'] .section-head .eyebrow-mini::after {
+  content: '';
+  width: 34px;
+  height: 1px;
+  background: linear-gradient(270deg, var(--amber-2), transparent);
+  flex: none;
 }
 .section-head h2 {
   font-family: var(--font-display);
-  font-size: clamp(36px, 4.5vw, 56px);
+  /* One clear step below the hero display, so section heads group as peers
+     rather than competing with the page headline. */
+  font-size: clamp(30px, 3.5vw, 46px);
   font-weight: 600;
-  line-height: 1.08;
-  letter-spacing: -0.022em;
+  line-height: 1.06;
+  letter-spacing: -0.026em;
   margin-bottom: 16px;
 }
 .section-head p {
@@ -864,8 +967,9 @@ section {
   color: var(--fg-1);
 }
 .step-body {
-  font-size: 14px;
-  line-height: 1.55;
+  /* Body prose, not a UI label, so it takes the 15px reading floor. */
+  font-size: 15px;
+  line-height: 1.6;
   color: var(--fg-2);
 }
 @media (max-width: 820px) {
@@ -1108,9 +1212,34 @@ section {
 /* ─────────────────────────────────────────────────────────
    FAQ
    ───────────────────────────────────────────────────────── */
+/* Head beside the questions rather than above them. A left-aligned head over
+   a 760px list left the right third of the section empty; setting the two
+   side by side uses the width and lets the head stay in view while the
+   questions are read. */
+section[data-section='faq'] .container {
+  display: grid;
+  grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
+  gap: clamp(32px, 5vw, 72px);
+  align-items: start;
+}
+section[data-section='faq'] .section-head {
+  margin-bottom: 0;
+  position: sticky;
+  top: 104px;
+}
+@media (max-width: 860px) {
+  section[data-section='faq'] .container {
+    grid-template-columns: 1fr;
+  }
+  section[data-section='faq'] .section-head {
+    position: static;
+    margin-bottom: 32px;
+  }
+}
+
 .faq-list {
   max-width: 760px;
-  margin: 0 auto;
+  margin: 0;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -1138,7 +1267,7 @@ section {
 }
 .faq .chev {
   flex-shrink: 0;
-  transition: transform 0.3s var(--ease);
+  transition: transform 0.3s var(--easeout);
   color: var(--iris-3);
 }
 .faq[open] .chev {
@@ -1154,17 +1283,24 @@ section {
 /* ─────────────────────────────────────────────────────────
    FINAL CTA
    ───────────────────────────────────────────────────────── */
+/* Padding comes from the anchor tier on the data-section rule above; setting
+   it again here would be a second source of truth for the same number. */
 .cta-final {
   text-align: center;
-  padding: 120px 0 140px;
 }
 .cta-final h2 {
   font-family: var(--font-display);
-  font-size: clamp(40px, 5vw, 64px);
+  /* A full sentence, not a two-word heading. At 64px across the whole
+     container it outshouted the hero and broke mid-clause; it now sits a step
+     below the hero display and wraps on a measure that keeps the line count
+     deliberate. */
+  font-size: clamp(30px, 3.6vw, 48px);
   font-weight: 600;
-  letter-spacing: -0.03em;
-  line-height: 1.05;
-  margin-bottom: 20px;
+  letter-spacing: -0.028em;
+  line-height: 1.08;
+  margin: 0 auto 20px;
+  max-width: 26ch;
+  text-wrap: balance;
 }
 .cta-final h2 .accent {
   color: var(--amber-2);
@@ -1231,7 +1367,7 @@ footer {
 .footer-social {
   color: var(--fg-3);
   opacity: 0.55;
-  transition: opacity 0.2s var(--ease), transform 0.2s var(--ease), color 0.2s var(--ease);
+  transition: opacity 0.2s var(--easeout), transform 0.2s var(--easeout), color 0.2s var(--easeout);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1280,7 +1416,7 @@ footer {
   text-decoration: none;
   font-size: 13px;
   margin-bottom: 36px;
-  transition: color 0.2s var(--ease), transform 0.2s var(--ease);
+  transition: color 0.2s var(--easeout), transform 0.2s var(--easeout);
 }
 .legal-back:hover {
   color: var(--fg-1);
@@ -1574,6 +1710,13 @@ footer {
   gap: 10px;
   flex-wrap: wrap;
 }
+/* The brand sits opposite a competitor label here, so it is set as the drawn
+   mark with its own spacing rather than as a word in the table's own face. */
+.compare-wordmark {
+  height: 20px;
+  width: auto;
+  display: block;
+}
 .compare-mark {
   width: 32px;
   height: 32px;
@@ -1766,7 +1909,7 @@ footer {
   border-radius: var(--r);
   text-decoration: none;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 8px 22px rgba(0, 0, 0, 0.4);
-  transition: transform 0.2s var(--ease), border-color 0.2s var(--ease);
+  transition: transform 0.2s var(--easeout), border-color 0.2s var(--easeout);
 }
 .calc-output-cta:hover {
   transform: translateY(-1px);
@@ -1849,7 +1992,7 @@ footer {
   transform: translate(-50%, 130%);
   z-index: 60;
   pointer-events: none;
-  transition: transform 0.45s var(--ease), opacity 0.3s var(--ease);
+  transition: transform 0.45s var(--easeout), opacity 0.3s var(--easeout);
   opacity: 0;
   max-width: calc(100vw - 32px);
 }
@@ -1896,10 +2039,14 @@ footer {
   color: #fff;
   font-weight: 600;
   font-size: 13px;
+  /* A fixed-height button, so a wrapped label is clipped rather than
+     growing the bar. The bar is width-constrained on small screens. */
+  white-space: nowrap;
+  flex-shrink: 0;
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: var(--r);
   cursor: pointer;
-  transition: transform 0.2s var(--ease), border-color 0.2s var(--ease);
+  transition: transform 0.2s var(--easeout), border-color 0.2s var(--easeout);
 }
 .sticky-cta-button:hover {
   transform: translateY(-1px);
@@ -1916,24 +2063,34 @@ footer {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s var(--ease), color 0.2s var(--ease);
+  transition: background 0.2s var(--easeout), color 0.2s var(--easeout);
 }
 .sticky-cta-close:hover {
   background: rgba(255, 255, 255, 0.16);
   color: var(--fg-1);
 }
+/* The compact count only exists on narrow screens; the full line covers the
+   rest. Both are driven by the live waitlist count. */
+.sticky-cta-text-compact {
+  display: none;
+  font-size: 12.5px;
+  color: var(--fg-2);
+  white-space: nowrap;
+}
+.sticky-cta-text-compact strong {
+  color: var(--fg-1);
+  font-weight: 600;
+}
 @media (max-width: 560px) {
   .sticky-cta-text {
     display: none;
   }
+  .sticky-cta-text-compact {
+    display: inline;
+  }
   .sticky-cta-inner {
     padding: 10px;
-  }
-  .sticky-cta-inner::before {
-    content: '117+ on the list';
-    font-size: 12.5px;
-    color: var(--fg-2);
-    white-space: nowrap;
+    gap: 8px;
   }
 }
 

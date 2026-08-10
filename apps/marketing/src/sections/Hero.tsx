@@ -110,7 +110,9 @@ export function Hero() {
     setStatus('success');
     setMessage(
       result.alreadyOnList
-        ? `Already on the list — you're #${result.position ?? '—'}.`
+        ? result.position
+          ? `Already on the list. You're #${result.position}.`
+          : 'Already on the list.'
         : result.position
         ? `You're #${result.position}. We'll email when the beta opens.`
         : "You're on the list. We'll email when the beta opens.",
@@ -155,7 +157,7 @@ export function Hero() {
         </div>
 
         <h1 ref={headlineRef} className="hero-headline" style={{ opacity: 0 }}>
-          AI-Powered. <span className="italic">Community-driven.</span>
+          AI-powered. <span className="italic">Community-driven.</span>
         </h1>
 
         <div className="hero-grid">
@@ -194,7 +196,7 @@ export function Hero() {
                   ? 'Adding you'
                   : status === 'success'
                   ? "You're in"
-                  : 'Get Early Access'}
+                  : 'Get early access'}
               </button>
             </form>
             <div
@@ -220,7 +222,7 @@ export function Hero() {
                 <path d="M9 12l2 2 4-4" />
                 <path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9c2.3 0 4.4.86 6 2.28" />
               </svg>
-              Early Refund Guarantee. If our models don't deliver, we refund early.
+              Early refund guarantee. If our models don't deliver, we refund early.
             </div>
           </div>
 

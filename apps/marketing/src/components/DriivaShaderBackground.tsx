@@ -59,16 +59,32 @@ vec3 meshBlend(vec2 uv){
   vec2 ar = vec2(uRes.x/uRes.y, 1.0);
   vec2 p  = uv * ar;
 
-  float t  = uTime * 0.08;
+  /* The field drifts predominantly along X, at a rate that differs per stop,
+   * so the near colours slide past faster than the far ones. That parallax is
+   * what makes it read as light moving past a car rather than a lava lamp:
+   * amber sodium light behind, indigo night ahead. */
+  float t  = uTime * 0.16;
+  float drift = uTime * 0.020;
   float mx = (uMouse.x - 0.5);
   float my = (uMouse.y - 0.5);
   float s  = uScroll;
 
-  vec2 p0 = vec2(0.08*ar.x + 0.05*sin(t*1.2),       0.94 + 0.03*cos(t*0.9));
-  vec2 p1 = vec2(0.30*ar.x + 0.05*sin(t*0.7 + 0.5), 0.72 + 0.04*cos(t*1.3));
-  vec2 p2 = vec2(0.66*ar.x + 0.07*sin(t*0.6),       0.50 + 0.05*cos(t*0.8));
-  vec2 p3 = vec2(0.38*ar.x + 0.06*cos(t*1.0),       0.28 + 0.04*sin(t*1.2));
-  vec2 p4 = vec2(0.94*ar.x + 0.05*sin(t*1.3),       0.06 + 0.03*cos(t*0.7));
+  /* Lateral travel, one long-period sine per stop at rates that share no
+   * common multiple, so the field never resynchronises into a visible loop.
+   * A sine rather than a wrap because a wrapped stop pops when it crosses the
+   * seam: these weights are wide enough to still be on screen at the edge.
+   * The near stops (x3, x4) swing furthest, which is the parallax. */
+  float x0 = (0.08 + 0.10*sin(drift*0.61)) * ar.x;
+  float x1 = (0.30 + 0.14*sin(drift*0.43 + 1.7)) * ar.x;
+  float x2 = (0.66 + 0.19*sin(drift*0.29 + 3.1)) * ar.x;
+  float x3 = (0.38 + 0.24*sin(drift*0.37 + 4.6)) * ar.x;
+  float x4 = (0.94 + 0.28*sin(drift*0.23 + 5.8)) * ar.x;
+
+  vec2 p0 = vec2(x0 + 0.05*sin(t*1.2),       0.94 + 0.03*cos(t*0.9));
+  vec2 p1 = vec2(x1 + 0.05*sin(t*0.7 + 0.5), 0.72 + 0.04*cos(t*1.3));
+  vec2 p2 = vec2(x2 + 0.07*sin(t*0.6),       0.50 + 0.05*cos(t*0.8));
+  vec2 p3 = vec2(x3 + 0.06*cos(t*1.0),       0.28 + 0.04*sin(t*1.2));
+  vec2 p4 = vec2(x4 + 0.05*sin(t*1.3),       0.06 + 0.03*cos(t*0.7));
   vec2 p5 = vec2(uMouse.x*ar.x, uMouse.y);
 
   vec2 sN = vec2(s*0.08, -s*0.30);
@@ -163,7 +179,10 @@ vec3 meshBlend(vec2 uv){
 
   col += ripple * 0.06 * C_LILAC;
 
-  col *= 0.88;
+  /* Previously 0.88 here and 0.84 again in main(), so the brand stops were
+   * mixed at full strength and then cut to 74% before they ever reached a
+   * pixel. That is what made a moving field read as a flat wash. The dimming
+   * now happens once, in main(), against the text-contrast floor. */
   col  = pow(max(col, 0.0), vec3(1.06));
 
   return col;
@@ -173,8 +192,9 @@ void main(){
   vec2 uv = gl_FragCoord.xy / uRes.xy;
   vec3 col = meshBlend(uv);
 
-  // slightly darker overall for deeper mood + text contrast
-  col *= 0.84;
+  // One dimming pass, sized so body copy still clears contrast over the
+  // brightest part of the field (the amber corner).
+  col *= 0.80;
 
   // gentle gamma correction
   col = pow(max(col, 0.0), vec3(0.92));
@@ -278,6 +298,20 @@ export function DriivaShaderBackground({
     // canvas is CSS-stretched to 100%/100% (see global.css), so displayed
     // size and layout are unaffected.
     const RENDER_SCALE_CAP = 1;
+
+    // The single composed frame used whenever motion is not allowed. Drawn at
+    // a time offset where the five stops are well spread rather than at t=0,
+    // where they still sit on their starting diagonal.
+    const redrawStatic = () => {
+      gl.uniform2f(U.uRes, canvas.width, canvas.height);
+      gl.uniform1f(U.uTime, 4000);
+      gl.uniform2f(U.uMouse, 0.5, 0.5);
+      gl.uniform1f(U.uScroll, 0);
+      gl.uniform1f(U.uPulse, 0);
+      gl.uniform2f(U.uPulsePos, 0.5, 0.5);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+    };
+
     const resize = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, RENDER_SCALE_CAP);
       const w = Math.floor(canvas.clientWidth * dpr);
@@ -286,6 +320,9 @@ export function DriivaShaderBackground({
         canvas.width = w;
         canvas.height = h;
         gl.viewport(0, 0, w, h);
+        // Resizing clears the backing store. With no loop running under
+        // reduced motion, nothing would repaint it, so redraw the one frame.
+        if (reduced) redrawStatic();
       }
     };
 
@@ -320,19 +357,33 @@ export function DriivaShaderBackground({
       state.scrollTarget = Math.max(0, Math.min(1.2, window.scrollY / max));
     };
 
-    window.addEventListener('mousemove', onMove, { passive: true });
-    window.addEventListener('touchmove', onMove, { passive: true });
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('pointerdown', onPointerDown, { passive: true });
+    // Under reduced motion nothing reads these, and a scroll listener that
+    // exists only to feed a uniform nobody samples is pure cost on the one
+    // interaction this page most needs to stay smooth.
+    if (!reduced) {
+      window.addEventListener('mousemove', onMove, { passive: true });
+      window.addEventListener('touchmove', onMove, { passive: true });
+      window.addEventListener('scroll', onScroll, { passive: true });
+      window.addEventListener('pointerdown', onPointerDown, { passive: true });
+    }
     window.addEventListener('resize', resize, { passive: true });
 
     resize();
 
     let raf = 0;
+    // Target 60fps, but fall back to 30 if the machine cannot hold it. A
+    // background that costs the page its scroll smoothness is worse than a
+    // still one, so the field yields the frame budget rather than competing
+    // for it. The governor only ever steps down, so it cannot oscillate.
+    let frameBudget = 1000 / 60;
+    let slowFrames = 0;
     const FRAME_MS = 1000 / 60;
     // Stop drawing while the tab is backgrounded - the shader has no visible
     // effect then, so there's no reason to keep burning GPU cycles.
     const onVisibility = () => {
+      // Under reduced motion there is no loop to suspend or resume; restarting
+      // one here would quietly reintroduce the animation on tab focus.
+      if (reduced) return;
       if (document.hidden) {
         cancelAnimationFrame(raf);
         raf = 0;
@@ -345,13 +396,19 @@ export function DriivaShaderBackground({
     const tick = (now: number) => {
       raf = requestAnimationFrame(tick);
       const dt = now - state.lastFrame;
-      if (dt < FRAME_MS - 0.5) return;
+      if (dt < frameBudget - 0.5) return;
+      // A frame that took materially longer than asked for means the page is
+      // struggling. Ten of those and the field halves its own rate for good.
+      if (frameBudget < 1000 / 31 && dt > FRAME_MS * 1.8) {
+        slowFrames += 1;
+        if (slowFrames > 10) frameBudget = 1000 / 30;
+      }
       state.lastFrame = now;
       // NB: resize() is intentionally NOT called per-frame — reading
       // canvas.clientWidth/Height forces a synchronous layout, which thrashes
       // and stutters scrolling. Size is handled by the resize listener instead.
 
-      const dts = Math.min(0.05, dt / 1000) * (reduced ? 0.3 : 1);
+      const dts = Math.min(0.05, dt / 1000);
       state.time += dts;
       state.mouse[0] = lerp(state.mouse[0], state.mouseTarget[0], 0.12);
       state.mouse[1] = lerp(state.mouse[1], state.mouseTarget[1], 0.12);
@@ -366,7 +423,13 @@ export function DriivaShaderBackground({
       gl.uniform2f(U.uPulsePos, state.pulsePos[0], state.pulsePos[1]);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
     };
-    raf = requestAnimationFrame(tick);
+    if (reduced) {
+      // Reduced motion gets the composition, not a slowed-down version of the
+      // animation: one frame, then nothing further is scheduled.
+      redrawStatic();
+    } else {
+      raf = requestAnimationFrame(tick);
+    }
 
     return () => {
       cancelAnimationFrame(raf);

@@ -46,7 +46,9 @@ export function FinalCTA() {
     setStatus('success');
     setMessage(
       result.alreadyOnList
-        ? `Already on the list — you're #${result.position ?? '—'}.`
+        ? result.position
+          ? `Already on the list. You're #${result.position}.`
+          : 'Already on the list.'
         : result.position
         ? `You're #${result.position}. We'll email when the beta opens.`
         : "You're on the list. We'll email when the beta opens.",
@@ -93,7 +95,7 @@ export function FinalCTA() {
                 ? 'Adding you'
                 : status === 'success'
                 ? "You're in"
-                : 'Get Early Access'}
+                : 'Get early access'}
             </button>
           </form>
           <div

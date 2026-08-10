@@ -51,8 +51,11 @@ export function StickyCta() {
     >
       <div className="sticky-cta-inner">
         <span className="sticky-cta-dot" aria-hidden="true" />
+        {/* A count is only worth showing once there is one. At zero the
+            number argues against joining, so the bar falls back to the date
+            rather than reporting an empty list as if it were social proof. */}
         <span className="sticky-cta-text">
-          {waitlistCount === null ? (
+          {waitlistCount === null || waitlistCount === 0 ? (
             'Join the waitlist. Beta opens September.'
           ) : (
             <>
@@ -61,8 +64,20 @@ export function StickyCta() {
             </>
           )}
         </span>
+        {/* The narrow-screen variant. It is rendered from the same live count
+            as the full line, because the bar previously dropped the real
+            number below 560px and printed a fixed one from CSS instead. */}
+        <span className="sticky-cta-text-compact">
+          {waitlistCount === null || waitlistCount === 0 ? (
+            'Beta opens September'
+          ) : (
+            <>
+              <strong>{waitlistCount.toLocaleString('en-GB')}</strong> on the list
+            </>
+          )}
+        </span>
         <button type="button" className="sticky-cta-button" onClick={scrollToForm}>
-          Join Waitlist
+          Join the waitlist
         </button>
         <button
           type="button"

@@ -7,8 +7,8 @@ interface NavLink {
 }
 
 const LINKS: readonly NavLink[] = [
-  { href: '#how-it-works', label: 'How It Works' },
-  { href: '#about', label: 'About Us' },
+  { href: '#how-it-works', label: 'How it works' },
+  { href: '#about', label: 'About us' },
   { href: '#security', label: 'Security' },
 ] as const;
 
@@ -70,7 +70,7 @@ export function Nav() {
     <nav className={`nav-pill${scrolled ? ' is-scrolled' : ''}`} aria-label="Primary">
       <div className="nav-scrim" aria-hidden="true" />
       <a href="/" className="nav-pill-logo" aria-label="Driiva home" onClick={handleHome}>
-        <img src="/brand/logo-ii-mark.png" alt="Driiva" />
+        <img src="/brand/logo-wordmark-white-v3.png" alt="Driiva" width="106" height="28" />
       </a>
       <div className="nav-links">
         {LINKS.map((l) => (
@@ -90,7 +90,7 @@ export function Nav() {
         onClick={(e) => handleAnchor(e, '#cta-final')}
         data-testid="nav-cta"
       >
-        Join Waitlist
+        Join the waitlist
       </a>
     </nav>
   );
