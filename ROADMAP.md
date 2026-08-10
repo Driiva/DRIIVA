@@ -1,6 +1,6 @@
 # Driiva - Current sprint (tickets)
 
-**Last updated:** 3 August 2026
+**Last updated:** 10 August 2026
 **Product Lead:** Keith Cheng (onboarded 27 June 2026)
 **External memory for AI sessions:** Work on the next unchecked ticket only; update this list when done.
 
@@ -39,6 +39,31 @@
 - [x] Swap the hero's synthetic score-ring mockup for the real onboarding screenshot, and take the cofounder-approved FinalCTA copy verbatim - *done: `91bd4de`*
 - [x] Fix the scroll lag a cofounder reported: cap the WebGL shader background at 1x DPR and stop its animation loop when the tab is backgrounded - *done: `2e76d3c`*
 - [x] Drop the gradient-clip text treatment for legibility - 5 selectors moved to solid `--amber-2` (>9:1 on the dark surfaces); `--grad-brand` stays as a decorative background fill - *done: `76b27a4`, `f5b9b0a`*
+
+## Sprint: "Premium lift" (August 2026 - waves H to M, `docs/premium-lift/`)
+
+Integrated on `premium-lift/main` and merged to `main` on 10 August. Full record in `docs/premium-lift/progress.md`; only the ticket state lives here.
+
+- [x] Wave H, insurance and payment honesty: a cleared card is not cover and a signup is not a policy; zeros dressed as metrics, a refund that cannot be paid, and a seed one typo from production - *done: `878cc84`, `f673600`*
+- [x] Regulatory copy corrected to "working towards the FCA sandbox", not "pending authorisation" - *done: `aaaec97`*
+- [x] Drivers start at 70 and the first trip moves the score either way - *done: `bf0f565`*
+- [x] Wave I, brand: real app icon in place of the Expo template, body type off Tailwind defaults onto the ladder, Amicro and checklist.design actually applied, and the 404 that asked drivers about the router - *done: `17280f5`, `52036b8`, `2dfeeb8`, `a0594bd`*
+- [x] Fix the iOS cold-launch crash: a non-worklet function called on the UI runtime aborted the process, which also explained the dashboard reading zeros - *done: `97d8150`, `9acad43`, `486aaf7`, `b852676`*
+- [x] First on-device captures of the mobile app, dashboard included - *done: `58ba33e`, `bd388f3`, `01987d6`*
+- [x] EAS build config added now the iOS app is registered in Firebase - *done: `175baea`*
+- [x] QA gate: accessibility 80 serious/critical down to 0, banned copy removed, /rewards and /achievements reconciled - *done: `3a72b86`, `6437d4c`, `67c7c3b`*
+- [x] Wave K: integration suite green, and "nothing here" separated from "we do not know what is here" - *done: `ee0ca45`, `e7fd6c8`*
+- [x] Wave L: the design laws now reach the real product through a seeded emulator sign-in rather than demo mode, and say so when they do not - *done: `dd182ad`*
+- [x] Fabrication laws read stylesheets, not just components - the invented waitlist count was reaching the screen a third way, printed straight out of a CSS `content` declaration - *done: `e051e17`*
+- [x] Marketing redesign: canonical Driiva wash rendered rather than approximated (mean absolute error 53.5 to 34.0 per channel), living background, real type hierarchy, drawn wordmark in nav, sentence case, FAQ two-column - *done: `32f8c9d`, `3d065d2`, `7661e6b`, `0742e04`, `2c3b654`, `410143d`*
+- [x] Marketing accessibility: email error state clears on edit, `aria-invalid` and `aria-describedby` wired, skip link added, one focus ring defined that survives both ends of the wash - *done: `ad097c8`*
+- [x] Rendered-behaviour pass on `apps/marketing`, recorded as its own document - *done: `b5a2cfe`, `7f1ca28`*
+- [x] `npm run gates`, a one-command runner for the visual gates - *done: `e9dc8d9`*
+- [x] The 404 no longer stamps itself with a revision date - *done: `222a5cd`*
+- [ ] `npm run gates` is committed INCOMPLETE: sign-in does not complete, so authenticated routes report NOT REACHED and the run refuses to call itself a pass. Open piece is getting the emulator ports through to the client - *raised by `e9dc8d9`*
+- [ ] Reduced-motion CSS path unverified: the `.reveal-init` override inside the media query catches every element the JS never reaches, and reading says it resolves, but no browser has confirmed it. jsdom applies no stylesheet so a test there would manufacture a bug. Chrome on 9222 was down for the whole follow-up attempt - *raised by `7f1ca28`*
+- [ ] Extract the shared hook behind the two near-identical marketing email forms. They have drifted before and now carry the same four changes twice - *raised by `ad097c8`*
+- [ ] Merge `task/premium-k-dashboard` (`6a01ea7`): 270 degree score gauge on web to match mobile, glass off the app surfaces (`dashboard-glass-card` renamed to `.instrument-card`, 22 glass rule blocks deleted), sentence case headings, and thirteen hand-rolled spinners collapsed onto `ArcTracer`. Not on `main`; twenty Lucide icon spinners deliberately left as a separate idiom
 
 ## Sprint: "Damoov & Feedback" (Week 0 - Telematics + Compliance)
 
