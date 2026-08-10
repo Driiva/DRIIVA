@@ -3,7 +3,12 @@ import { Link } from 'wouter';
 
 interface LegalPageProps {
   title: string;
-  updated: string;
+  /**
+   * Omitted by pages that are not documents. The 404 reuses this shell for its
+   * chrome and was stamping "Last updated 2026-05-19" on itself, which reads as
+   * a revision date for a page that has no content to revise.
+   */
+  updated?: string;
   children: ReactNode;
 }
 
@@ -23,7 +28,7 @@ export function LegalPage({ title, updated, children }: LegalPageProps) {
         </Link>
         <header className="legal-head">
           <h1 className="legal-title">{title}.</h1>
-          <p className="legal-meta">Last updated {updated}</p>
+          {updated ? <p className="legal-meta">Last updated {updated}</p> : null}
         </header>
         <div className="legal-prose">{children}</div>
       </div>

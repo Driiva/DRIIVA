@@ -16,7 +16,7 @@ import { LegalPage } from '@/routes/LegalPage';
 
 function NotFound() {
   return (
-    <LegalPage title="Not found" updated="2026-05-19">
+    <LegalPage title="Not found">
       <p className="legal-lede">
         We could not find that page. The map is roughly: <strong>home</strong>,{' '}
         <strong>privacy</strong>, <strong>terms</strong>, <strong>cookies</strong>,{' '}
