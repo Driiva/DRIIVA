@@ -91,7 +91,7 @@ main {
   pointer-events: none;
 }
 .glass-hover {
-  transition: transform 0.3s var(--ease), border-color 0.3s var(--ease), box-shadow 0.3s var(--ease);
+  transition: transform 0.3s var(--easeout), border-color 0.3s var(--easeout), box-shadow 0.3s var(--easeout);
 }
 .glass-hover:hover {
   transform: translateY(-4px);
@@ -120,7 +120,7 @@ main {
   display: inline-flex;
   align-items: center;
   text-decoration: none;
-  transition: opacity 0.2s var(--ease);
+  transition: opacity 0.2s var(--easeout);
 }
 .nav-pill-logo:hover {
   opacity: 0.82;
@@ -164,7 +164,7 @@ main {
   align-items: center;
   border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
-  transition: transform 0.2s var(--ease), border-color 0.2s var(--ease), background 0.2s var(--ease);
+  transition: transform 0.2s var(--easeout), border-color 0.2s var(--easeout), background 0.2s var(--easeout);
   cursor: pointer;
 }
 .nav-pill-cta:hover {
@@ -182,7 +182,7 @@ main {
   backdrop-filter: blur(16px) saturate(140%);
   -webkit-backdrop-filter: blur(16px) saturate(140%);
   opacity: 0;
-  transition: opacity 0.35s var(--ease);
+  transition: opacity 0.35s var(--easeout);
   z-index: -1;
   pointer-events: none;
 }
@@ -362,7 +362,7 @@ main {
   opacity: 0;
   filter: drop-shadow(0 30px 60px rgba(0, 0, 0, 0.45))
     drop-shadow(0 0 80px rgba(99, 102, 241, 0.22));
-  transition: opacity 0.9s var(--ease), transform 1.2s var(--ease);
+  transition: opacity 0.9s var(--easeout), transform 1.2s var(--easeout);
 }
 .phone-frame.is-played {
   opacity: 1;
@@ -593,10 +593,13 @@ main {
 }
 .hero-headline {
   font-family: var(--font-display);
-  font-size: clamp(26px, 3.2vw, 44px);
+  /* The page's one display step. It previously topped out at 44px while every
+     section heading reached 56px, so the h1 was the smallest heading on the
+     page and the hierarchy read inverted. */
+  font-size: clamp(38px, 5.4vw, 74px);
   font-weight: 600;
-  line-height: 1.04;
-  letter-spacing: -0.03em;
+  line-height: 0.98;
+  letter-spacing: -0.038em;
   color: var(--fg-1);
   margin-top: 28px;
   margin-bottom: 28px;
@@ -746,8 +749,8 @@ main {
   cursor: pointer;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 10px 30px rgba(0, 0, 0, 0.45);
   white-space: nowrap;
-  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease), border-color 0.2s var(--ease),
-    background 0.2s var(--ease);
+  transition: transform 0.2s var(--easeout), box-shadow 0.2s var(--easeout), border-color 0.2s var(--easeout),
+    background 0.2s var(--easeout);
 }
 .waitlist-form button:hover {
   transform: translateY(-1px);
@@ -800,31 +803,80 @@ section {
   padding: var(--section-pad-y) 0;
   position: relative;
 }
-.section-head {
-  text-align: center;
-  max-width: 700px;
-  margin: 0 auto 64px;
+
+/* Rhythm tiers. Assigned by what the section does, not by its order.
+   Anchors carry the argument's turning points, connectives are joins. */
+section[data-section='brand-statement'],
+section[data-section='cta-final'] {
+  padding: var(--pad-anchor) 0;
 }
+section[data-section='trust-ribbon'],
+section[data-section='beta-countdown'] {
+  padding: var(--pad-connective) 0;
+}
+
+/* A hairline that only appears where one argument hands over to the next, so
+   the page reads as joined sections rather than stacked identical blocks. */
+section[data-section='pool'],
+section[data-section='compare'],
+section[data-section='about'] {
+  border-top: 1px solid rgb(var(--rgb-violet) / 0.16);
+}
+
+.section-head {
+  max-width: 700px;
+  margin: 0 0 clamp(40px, 4.5vw, 64px);
+}
+/* Anchors and connectives stay centred; the body of the argument reads left,
+   which is what stops nine consecutive centred blocks feeling like a template. */
+section[data-section='brand-statement'] .section-head,
+section[data-section='cta-final'] .section-head,
+section[data-section='beta-countdown'] .section-head {
+  text-align: center;
+  margin-left: auto;
+  margin-right: auto;
+}
+/* A filled, bordered badge is the loudest templated tell on a section head.
+   The label is carried instead by a mono caption led by a short rule that
+   fades out, which is the same marginalia treatment used across the other
+   operator surfaces. */
 .section-head .eyebrow-mini {
-  display: inline-block;
-  padding: 6px 14px;
-  background: rgba(167, 139, 250, 0.12);
-  border: 1px solid rgba(167, 139, 250, 0.25);
-  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
   font-family: var(--font-mono);
   font-size: 11px;
-  font-weight: 600;
-  color: var(--iris-3);
-  letter-spacing: 0.08em;
+  font-weight: 500;
+  color: var(--amber-2);
+  letter-spacing: 0.2em;
   text-transform: uppercase;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
+}
+.section-head .eyebrow-mini::before {
+  content: '';
+  width: 34px;
+  height: 1px;
+  background: linear-gradient(90deg, var(--amber-2), transparent);
+  flex: none;
+}
+/* Centred heads need the rule on both sides or the label sits off-axis. */
+section[data-section='brand-statement'] .section-head .eyebrow-mini::after,
+section[data-section='cta-final'] .section-head .eyebrow-mini::after,
+section[data-section='beta-countdown'] .section-head .eyebrow-mini::after {
+  content: '';
+  width: 34px;
+  height: 1px;
+  background: linear-gradient(270deg, var(--amber-2), transparent);
+  flex: none;
 }
 .section-head h2 {
   font-family: var(--font-display);
-  font-size: clamp(36px, 4.5vw, 56px);
+  /* One clear step below the hero display, so section heads group as peers
+     rather than competing with the page headline. */
+  font-size: clamp(30px, 3.5vw, 46px);
   font-weight: 600;
-  line-height: 1.08;
-  letter-spacing: -0.022em;
+  line-height: 1.06;
+  letter-spacing: -0.026em;
   margin-bottom: 16px;
 }
 .section-head p {
@@ -1138,7 +1190,7 @@ section {
 }
 .faq .chev {
   flex-shrink: 0;
-  transition: transform 0.3s var(--ease);
+  transition: transform 0.3s var(--easeout);
   color: var(--iris-3);
 }
 .faq[open] .chev {
@@ -1231,7 +1283,7 @@ footer {
 .footer-social {
   color: var(--fg-3);
   opacity: 0.55;
-  transition: opacity 0.2s var(--ease), transform 0.2s var(--ease), color 0.2s var(--ease);
+  transition: opacity 0.2s var(--easeout), transform 0.2s var(--easeout), color 0.2s var(--easeout);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1280,7 +1332,7 @@ footer {
   text-decoration: none;
   font-size: 13px;
   margin-bottom: 36px;
-  transition: color 0.2s var(--ease), transform 0.2s var(--ease);
+  transition: color 0.2s var(--easeout), transform 0.2s var(--easeout);
 }
 .legal-back:hover {
   color: var(--fg-1);
@@ -1766,7 +1818,7 @@ footer {
   border-radius: var(--r);
   text-decoration: none;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 8px 22px rgba(0, 0, 0, 0.4);
-  transition: transform 0.2s var(--ease), border-color 0.2s var(--ease);
+  transition: transform 0.2s var(--easeout), border-color 0.2s var(--easeout);
 }
 .calc-output-cta:hover {
   transform: translateY(-1px);
@@ -1849,7 +1901,7 @@ footer {
   transform: translate(-50%, 130%);
   z-index: 60;
   pointer-events: none;
-  transition: transform 0.45s var(--ease), opacity 0.3s var(--ease);
+  transition: transform 0.45s var(--easeout), opacity 0.3s var(--easeout);
   opacity: 0;
   max-width: calc(100vw - 32px);
 }
@@ -1899,7 +1951,7 @@ footer {
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: var(--r);
   cursor: pointer;
-  transition: transform 0.2s var(--ease), border-color 0.2s var(--ease);
+  transition: transform 0.2s var(--easeout), border-color 0.2s var(--easeout);
 }
 .sticky-cta-button:hover {
   transform: translateY(-1px);
@@ -1916,7 +1968,7 @@ footer {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s var(--ease), color 0.2s var(--ease);
+  transition: background 0.2s var(--easeout), color 0.2s var(--easeout);
 }
 .sticky-cta-close:hover {
   background: rgba(255, 255, 255, 0.16);
