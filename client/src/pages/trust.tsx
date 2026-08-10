@@ -238,7 +238,7 @@ export default function TrustPage() {
         {/* ── 1. Data & Privacy Shield ── */}
         <GlassSection>
           <AnimatedLockIcon />
-          <h2 className="text-lg font-semibold text-center mb-1">Data &amp; Privacy Shield</h2>
+          <h2 className="text-lg font-semibold text-center mb-1">Data &amp; privacy shield</h2>
           <p className="text-white/60 text-[13px] text-center mb-5">
             What we collect, why, and for how long
           </p>
@@ -282,7 +282,7 @@ export default function TrustPage() {
 
         {/* ── 2. Your Rights (GDPR Accordion) ── */}
         <GlassSection>
-          <h2 className="text-lg font-semibold mb-1">Your Rights</h2>
+          <h2 className="text-lg font-semibold mb-1">Your rights</h2>
           <p className="text-white/60 text-[13px] mb-4">
             Under UK GDPR, you have full control over your data
           </p>
@@ -303,7 +303,7 @@ export default function TrustPage() {
 
         {/* ── 3. Regulatory Badges ── */}
         <GlassSection>
-          <h2 className="text-lg font-semibold mb-4">Regulatory Status</h2>
+          <h2 className="text-lg font-semibold mb-4">Regulatory status</h2>
           {/*
             Wave 0 (0b): the badge here read "FCA Registered", which is a
             statement of regulated status Driiva does not currently hold. It is
@@ -324,7 +324,7 @@ export default function TrustPage() {
 
         {/* ── 4. Underwriting Disclosure ── */}
         <GlassSection>
-          <h2 className="text-lg font-semibold mb-2">Who Underwrites Your Policy</h2>
+          <h2 className="text-lg font-semibold mb-2">Who underwrites your policy</h2>
           <p className="text-[15px] text-white/70 leading-relaxed">
             Driiva is a technology and distribution platform.{' '}
             <strong className="text-white">Driiva is not the insurer.</strong> When we are
@@ -336,7 +336,7 @@ export default function TrustPage() {
 
         {/* ── 5. Consumer Duty Statement ── */}
         <GlassSection>
-          <h2 className="text-lg font-semibold mb-2">Our Commitment to You</h2>
+          <h2 className="text-lg font-semibold mb-2">Our commitment to you</h2>
           <p className="text-[13px] text-[var(--app-primary-text)] font-medium mb-3">FCA Consumer Duty</p>
           <p className="text-[15px] text-white/70 leading-relaxed">
             Driiva is built around the FCA's four Consumer Duty outcomes.
@@ -353,7 +353,7 @@ export default function TrustPage() {
           <p className="text-white/55 text-[15px] leading-relaxed">
             <strong className="text-white/60">Financial promotion disclaimer:</strong> Refund
             amounts shown anywhere in the Driiva app are illustrative projections based on
-            driving score performance. Actual refunds depend on community pool performance,
+            driving score performance. Actual refunds depend on Community pool performance,
             claims experience, and underwriting criteria. Past performance is not a guarantee
             of future refunds. Driiva is working towards the FCA regulatory sandbox. It is not authorised by
             the FCA and cannot sell insurance yet.

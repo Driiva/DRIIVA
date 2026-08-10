@@ -9,6 +9,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { ArcTracer } from '@/components/motion/Instrument';
 
 interface BottomSheetProps {
   isOpen: boolean;
@@ -106,7 +107,7 @@ export default function BottomSheet({ isOpen, onClose }: BottomSheetProps) {
               <AlertTriangle className="w-5 h-5 text-red-500" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-white">Report Incident</h2>
+              <h2 className="text-xl font-bold text-white">Report incident</h2>
               <p className="text-sm text-gray-400">Submit a FNOL claim or incident report</p>
             </div>
           </div>
@@ -213,7 +214,7 @@ export default function BottomSheet({ isOpen, onClose }: BottomSheetProps) {
             >
               {reportIncidentMutation.isPending ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  <ArcTracer size={16} decorative className="mr-2" />
                   Submitting...
                 </>
               ) : (
@@ -231,7 +232,7 @@ export default function BottomSheet({ isOpen, onClose }: BottomSheetProps) {
           <div className="flex items-start space-x-3">
             <FileText className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
             <div>
-              <h4 className="font-medium text-white mb-1">Legal Notice</h4>
+              <h4 className="font-medium text-white mb-1">Legal notice</h4>
               <p className="text-xs text-gray-400 leading-relaxed">
                 By submitting this report, you confirm that the information provided is accurate and complete. 
                 False claims may result in policy cancellation and legal action.

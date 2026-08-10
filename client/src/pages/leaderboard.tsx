@@ -324,7 +324,7 @@ export default function LeaderboardPage() {
               </Link>
               <div>
                 <h1 className="text-[18px]" style={{ color: 'var(--app-text-hero)' }}>
-                  Leaderboard
+                  leaderboard
                 </h1>
                 <p className="text-[13px]" style={{ color: 'var(--app-text-sec)' }}>
                   {periodLabel}

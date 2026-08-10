@@ -38,7 +38,7 @@ export function StepWelcome({ nextStep }: StepWelcomeProps) {
             <Shield className="w-6 h-6 text-[#818cf8]" />
           </div>
           <div>
-            <h3 className="text-white font-medium">AI-Powered Safety</h3>
+            <h3 className="text-white font-medium">AI-powered safety</h3>
             <p className="text-white/60 text-sm">Track trips and get a real-time safety score</p>
           </div>
         </div>
@@ -48,7 +48,7 @@ export function StepWelcome({ nextStep }: StepWelcomeProps) {
             <Wallet className="w-6 h-6 text-[#818cf8]" />
           </div>
           <div>
-            <h3 className="text-white font-medium">Earn Refunds</h3>
+            <h3 className="text-white font-medium">Earn refunds</h3>
             <p className="text-white/60 text-sm">Safe drivers can earn back a portion of their premium at renewal</p>
             <FinancialPromotionDisclaimer className="mt-1" />
           </div>
@@ -59,7 +59,7 @@ export function StepWelcome({ nextStep }: StepWelcomeProps) {
             <Users className="w-6 h-6 text-[#818cf8]" />
           </div>
           <div>
-            <h3 className="text-white font-medium">Community Pool</h3>
+            <h3 className="text-white font-medium">Community pool</h3>
             <p className="text-white/60 text-sm">Safe drivers share what the pool does not pay out in claims</p>
           </div>
         </div>

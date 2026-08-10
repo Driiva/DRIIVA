@@ -16,7 +16,7 @@ export function GlassCard({
 }: GlassCardProps) {
   return (
     <motion.div
-      className={`dashboard-glass-card ${className}`}
+      className={`instrument-card ${className}`}
       whileTap={interactive ? microInteractions.tap : undefined}
       whileHover={interactive ? microInteractions.hoverSubtle : undefined}
       transition={{ duration: timing.quick }}

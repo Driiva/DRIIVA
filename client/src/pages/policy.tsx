@@ -108,12 +108,12 @@ export default function PolicyPage() {
         <div className="backdrop-blur-xl bg-white/[0.04] border border-white/[0.08] rounded-2xl p-6">
           <div className="flex items-center gap-3 mb-6">
             <Shield className="w-6 h-6 text-blue-400" />
-            <h1 className="text-2xl font-bold">Insurance Policy Details</h1>
+            <h1 className="text-2xl font-bold">Insurance policy details</h1>
           </div>
 
           <div className="grid gap-6 mb-8">
             <div className="backdrop-blur-xl bg-white/[0.03] border border-white/[0.05] rounded-xl p-4">
-              <h3 className="text-lg font-semibold mb-3 text-blue-300">Policy Information</h3>
+              <h3 className="text-lg font-semibold mb-3 text-blue-300">Policy information</h3>
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <span className="text-gray-400">Policy Number:</span>
@@ -161,7 +161,7 @@ export default function PolicyPage() {
             </div>
 
             <div className="backdrop-blur-xl bg-white/[0.03] border border-white/[0.05] rounded-xl p-4">
-              <h3 className="text-lg font-semibold mb-3 text-purple-300">Coverage Details</h3>
+              <h3 className="text-lg font-semibold mb-3 text-purple-300">Coverage details</h3>
               <div className="space-y-3">
                 {/*
                   WAVE G: this was a hardcoded list of five cover types under green
@@ -235,12 +235,12 @@ export default function PolicyPage() {
             </h3>
             <div className="space-y-4 text-sm text-gray-300">
               <div>
-                <h4 className="font-semibold text-white mb-2">Telematics Requirements</h4>
+                <h4 className="font-semibold text-white mb-2">Telematics requirements</h4>
                 <p>Your driving data is collected via mobile app GPS and sensors. A score of 70 or above is the intended threshold for a share of the pool. The share is not a fixed percentage of your premium and no rate has been set.</p>
               </div>
               <div>
-                <h4 className="font-semibold text-white mb-2">Refund Calculation</h4>
-                <p>A refund would weight your personal driving score against community pool performance. The cadence and the weighting are not settled, and no refund has been paid.</p>
+                <h4 className="font-semibold text-white mb-2">Refund calculation</h4>
+                <p>A refund would weight your personal driving score against Community pool performance. The cadence and the weighting are not settled, and no refund has been paid.</p>
               </div>
               <div>
                 <h4 className="font-semibold text-white mb-2">Data Privacy</h4>

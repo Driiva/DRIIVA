@@ -144,7 +144,7 @@ export default function ForgotPassword() {
                                     className="h-10 w-auto mb-2"
                                 />
                                 <h1 className="text-lg font-semibold text-white mb-1">
-                                    Reset Password
+                                    Reset password
                                 </h1>
                                 <p className="text-center text-white/70 text-sm">
                                     Enter your email and we'll send you a reset link

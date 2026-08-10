@@ -91,7 +91,7 @@ export default function Privacy() {
               Driiva (“we”, “us”, “our”) is the data controller for the
               personal data we collect through the Driiva app and related
               services. We are a UK-based telematics insurance platform that
-              rewards safe driving with potential refunds from a community pool.
+              rewards safe driving with potential refunds from a Community pool.
             </P>
           </Section>
 
@@ -135,7 +135,7 @@ export default function Privacy() {
               />
               <P>
                 This data is used solely to calculate your driving safety score
-                for insurance pricing and community pool eligibility. Raw
+                for insurance pricing and Community pool eligibility. Raw
                 telemetry data is retained on a rolling 12-month basis;
                 aggregated scores are retained per our policy retention schedule
                 (Section 7).
@@ -163,7 +163,7 @@ export default function Privacy() {
             <P>We use your data to:</P>
             <List
               items={[
-                "Reward safe driving with potential refunds (from the community pool).",
+                "Reward safe driving with potential refunds (from the Community pool).",
                 "Calculate your driving score and explain how it affects your premium and refunds.",
                 "Price and administer your insurance and handle claims.",
                 "Screen drivers at onboarding (unsafe habits may result in higher premiums or declined coverage).",
@@ -176,7 +176,7 @@ export default function Privacy() {
             <SubSection title="4.1 Contract">
               <P>
                 Processing necessary to perform our contract with you: providing
-                the app, calculating scores, administering the community pool and
+                the app, calculating scores, administering the Community pool and
                 refunds, and managing your policy and claims.
               </P>
             </SubSection>

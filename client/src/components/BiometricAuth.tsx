@@ -23,6 +23,7 @@ import { auth } from '@/lib/firebase';
 import { signInWithCustomToken } from 'firebase/auth';
 import { Smartphone, ShieldCheck, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { ArcTracer } from '@/components/motion/Instrument';
 
 interface BiometricAuthProps {
   /** Email of the user trying to sign in (used for server lookup). */
@@ -151,7 +152,7 @@ export default function BiometricAuth({ email, onSuccess, onRegister }: Biometri
           >
             <div className="flex items-center gap-3">
               {isAuthenticating ? (
-                <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <ArcTracer size={24} label="Authenticating" />
               ) : (
                 <ShieldCheck className="w-6 h-6" />
               )}
@@ -175,7 +176,7 @@ export default function BiometricAuth({ email, onSuccess, onRegister }: Biometri
           >
             <div className="flex items-center gap-3">
               {isRegistering ? (
-                <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <ArcTracer size={24} label="Authenticating" />
               ) : (
                 <ShieldCheck className="w-6 h-6" />
               )}

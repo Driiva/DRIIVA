@@ -9,6 +9,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { useAuth } from "../contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { ArcTracer } from '@/components/motion/Instrument';
 
 /**
  * SIGNUP PAGE
@@ -204,7 +205,7 @@ export default function Signup() {
   if (done) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="w-10 h-10 border-3 border-white/20 border-t-white rounded-full animate-spin" />
+        <ArcTracer size={40} label="Loading" />
       </div>
     );
   }
@@ -230,7 +231,7 @@ export default function Signup() {
         transition={{ duration: timing.pageTransition / 1000, ease: easing.smoothDecel }}
         className="flex-1"
       >
-        <h1 className="text-3xl font-bold text-white mb-2">Create Account</h1>
+        <h1 className="text-3xl font-bold text-white mb-2">Create account</h1>
         <p className="text-white/60 mb-8">Get scored on how you actually drive</p>
 
         {error && (

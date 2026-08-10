@@ -266,7 +266,7 @@ export default function Trips() {
           </div>
         </motion.div>
 
-        <h2 className="text-2xl font-bold text-white mb-2">Recent Trips</h2>
+        <h2 className="text-2xl font-bold text-white mb-2">Recent trips</h2>
 
         {!loading && (
           <motion.div
@@ -297,7 +297,7 @@ export default function Trips() {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="dashboard-glass-card p-6 text-center"
+            className="instrument-card p-6 text-center"
           >
             <AlertCircle className="w-10 h-10 text-red-400/60 mx-auto mb-3" />
             <p className="text-red-300 text-sm mb-4">{error}</p>

@@ -14,7 +14,7 @@ export function KPICard({ label, value, icon, delta, loading }: KPICardProps) {
   return (
     <motion.div
       variants={item}
-      className="dashboard-glass-card flex flex-col gap-2 min-w-[160px] flex-1"
+      className="instrument-card flex flex-col gap-2 min-w-[160px] flex-1"
     >
       <div className="flex items-center justify-between">
         <span className="text-white/60 text-xs font-medium uppercase tracking-wider">

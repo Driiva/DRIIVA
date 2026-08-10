@@ -106,7 +106,7 @@ const INSIGHT_TEMPLATES: InsightTemplate[] = [
   {
     condition: () => true,
     text: (d) => d.score >= 70
-      ? "You're on track for community pool refunds. Every safe trip counts."
+      ? "You're on track for Community pool refunds. Every safe trip counts."
       : 'Focus on smooth braking and steady speeds to get your score above 70 for refund eligibility.',
   },
 ];

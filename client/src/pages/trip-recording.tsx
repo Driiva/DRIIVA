@@ -165,7 +165,7 @@ export default function TripRecording() {
         if (error.code === 1) {
           toast({
             title: 'Location Access Denied',
-            description: 'Please enable location access to record trips.',
+            description: 'Please Enable location access to record trips.',
             variant: 'destructive',
           });
         }
@@ -514,7 +514,7 @@ export default function TripRecording() {
       <div className="px-4 pb-20">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl font-bold">Trip Recording</h1>
+          <h1 className="text-2xl font-bold">Trip recording</h1>
           <button
             onClick={handleCancelTrip}
             className="text-gray-400 hover:text-white"
@@ -610,7 +610,7 @@ export default function TripRecording() {
 
         {/* Sensor Status */}
         <div className="glass-card rounded-2xl p-4 mb-6">
-          <h3 className="font-semibold mb-3">Sensor Status</h3>
+          <h3 className="font-semibold mb-3">Sensor status</h3>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-sm">GPS Location</span>

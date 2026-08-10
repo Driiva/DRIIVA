@@ -6,6 +6,7 @@ import { db } from '@/lib/firebase';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { KPICard } from '@/components/admin/KPICard';
 import { container } from '@/lib/animations';
+import { ArcTracer } from '@/components/motion/Instrument';
 
 interface FeedbackDoc {
   id: string;
@@ -119,10 +120,10 @@ export default function AdminFeedback() {
         </div>
 
         {/* Table */}
-        <div className="dashboard-glass-card overflow-hidden !p-0">
+        <div className="instrument-card overflow-hidden !p-0">
           {loading ? (
             <div className="p-12 text-center">
-              <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin mx-auto" />
+              <ArcTracer size={32} label="Loading feedback" className="mx-auto" />
             </div>
           ) : filtered.length === 0 ? (
             <div className="p-12 text-center text-white/60">

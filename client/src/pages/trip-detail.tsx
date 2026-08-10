@@ -121,13 +121,13 @@ export default function TripDetail() {
           <div className="h-[280px] bg-white/[0.04] rounded-xl mb-6" />
           <div className="grid grid-cols-3 gap-3 mb-6">
             {[1, 2, 3].map(i => (
-              <div key={i} className="dashboard-glass-card p-4 text-center">
+              <div key={i} className="instrument-card p-4 text-center">
                 <div className="h-6 w-12 bg-white/10 rounded mx-auto mb-2" />
                 <div className="h-3 w-16 bg-white/10 rounded mx-auto" />
               </div>
             ))}
           </div>
-          <div className="dashboard-glass-card p-4 mb-4">
+          <div className="instrument-card p-4 mb-4">
             <div className="h-5 w-32 bg-white/10 rounded mb-4" />
             <div className="space-y-3">
               {[1, 2, 3, 4, 5].map(i => (

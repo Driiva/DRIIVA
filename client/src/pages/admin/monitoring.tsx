@@ -10,6 +10,7 @@ import { db } from '@/lib/firebase';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { container, item } from '@/lib/animations';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { ArcTracer } from '@/components/motion/Instrument';
 
 // ============================================================================
 // TYPES
@@ -260,7 +261,7 @@ function MetricCard({ label, value, icon, status = 'good', subtitle }: MetricCar
   };
 
   return (
-    <motion.div variants={item} className="dashboard-glass-card">
+    <motion.div variants={item} className="instrument-card">
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="text-xs text-white/60 mb-1">{label}</div>
@@ -333,7 +334,7 @@ export default function MonitoringDashboard() {
     return (
       <AdminLayout title="Live Monitoring" subtitle="System health & performance metrics">
         <div className="flex items-center justify-center py-24">
-          <div className="w-12 h-12 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+          <ArcTracer size={48} label="Loading monitoring data" />
         </div>
       </AdminLayout>
     );
@@ -343,9 +344,9 @@ export default function MonitoringDashboard() {
     <AdminLayout title="Live Monitoring" subtitle="Real-time system health & observability">
       <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
         {/* System Health */}
-        <div className="dashboard-glass-card">
+        <div className="instrument-card">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold">System Health</h3>
+            <h3 className="text-lg font-semibold">System health</h3>
             <StatusBadge status={health?.status || 'down'} />
           </div>
 
@@ -370,8 +371,8 @@ export default function MonitoringDashboard() {
         </div>
 
         {/* Trip Pipeline Metrics */}
-        <div className="dashboard-glass-card">
-          <h3 className="text-lg font-semibold mb-6">Trip Pipeline (Last 24h)</h3>
+        <div className="instrument-card">
+          <h3 className="text-lg font-semibold mb-6">Trip pipeline (last 24h)</h3>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
             <MetricCard
@@ -428,8 +429,8 @@ export default function MonitoringDashboard() {
         </div>
 
         {/* Cost Tracking */}
-        <div className="dashboard-glass-card">
-          <h3 className="text-lg font-semibold mb-6">Cost Tracking</h3>
+        <div className="instrument-card">
+          <h3 className="text-lg font-semibold mb-6">Cost tracking</h3>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             <MetricCard
@@ -456,23 +457,23 @@ export default function MonitoringDashboard() {
 
         {/* Coming Soon Placeholders */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="dashboard-glass-card opacity-50">
-            <h3 className="text-lg font-semibold mb-4">Performance Vitals</h3>
+          <div className="instrument-card opacity-50">
+            <h3 className="text-lg font-semibold mb-4">Performance vitals</h3>
             <div className="text-sm text-white/60">
               Coming soon: Cold start metrics, Firestore latency, Web Vitals from Vercel
             </div>
           </div>
 
-          <div className="dashboard-glass-card opacity-50">
-            <h3 className="text-lg font-semibold mb-4">Classifier Status</h3>
+          <div className="instrument-card opacity-50">
+            <h3 className="text-lg font-semibold mb-4">Classifier status</h3>
             <div className="text-sm text-white/60">
               Coming soon: Python classifier health, latency, success rate
             </div>
           </div>
         </div>
 
-        <div className="dashboard-glass-card opacity-50">
-          <h3 className="text-lg font-semibold mb-4">Recent Alerts & Incidents</h3>
+        <div className="instrument-card opacity-50">
+          <h3 className="text-lg font-semibold mb-4">Recent alerts & incidents</h3>
           <div className="text-sm text-white/60">
             Coming soon: Sentry issues, Cloud Monitoring alerts, Watchdog warnings
           </div>

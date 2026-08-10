@@ -43,7 +43,7 @@ export default function Terms() {
           <section className="mb-5">
             <h2 className="text-lg font-semibold text-white mb-2">Our service</h2>
             <p className="text-white/80 text-[15px] leading-relaxed">
-              Driiva offers telematics-based car insurance and a community rewards programme. We use your driving data to calculate a personal score and your share of the community pool. The service is not being sold yet: Driiva is working towards the FCA regulatory sandbox, is not authorised, and is not operating under an MGA.
+              Driiva offers telematics-based car insurance and a community rewards programme. We use your driving data to calculate a personal score and your share of the Community pool. The service is not being sold yet: Driiva is working towards the FCA regulatory sandbox, is not authorised, and is not operating under an MGA.
             </p>
           </section>
 
@@ -61,7 +61,7 @@ export default function Terms() {
               Our community score averages only drivers who qualify (score 70+). High-risk drivers pay premiums that reflect their risk and help balance the pool. Refunds are capped to ensure sustainability.
             </p>
             <p className="text-white/80 text-[15px] leading-relaxed">
-              Rewards, cashback, and community pool refunds are community-based behaviour incentives. They do not constitute a guaranteed reduction in your insurance premium, a regulated financial benefit, or a contractual entitlement. Reward eligibility and amounts are determined at Driiva's discretion based on driving behaviour, pool performance, and actuarial sustainability.
+              Rewards, cashback, and Community pool refunds are community-based behaviour incentives. They do not constitute a guaranteed reduction in your insurance premium, a regulated financial benefit, or a contractual entitlement. Reward eligibility and amounts are determined at Driiva's discretion based on driving behaviour, pool performance, and actuarial sustainability.
             </p>
             <FinancialPromotionDisclaimer className="mt-3" />
           </section>
@@ -86,7 +86,7 @@ export default function Terms() {
           <section className="mb-5">
             <h2 className="text-lg font-semibold text-white mb-2">4a. Telematics data and consent</h2>
             <p className="text-white/80 text-[15px] leading-relaxed mb-2">
-              By using the Driiva app, you consent to the passive detection of driving trips and the collection of telematics data from your device's GPS, accelerometer, and gyroscope sensors. This data is processed for the purpose of insurance risk scoring, driving safety analysis, and community pool eligibility.
+              By using the Driiva app, you consent to the passive detection of driving trips and the collection of telematics data from your device's GPS, accelerometer, and gyroscope sensors. This data is processed for the purpose of insurance risk scoring, driving safety analysis, and Community pool eligibility.
             </p>
             <p className="text-white/80 text-[15px] leading-relaxed">
               Telematics data is transmitted to Driiva and its data processors (including Damoov, acting under a GDPR Article 28 agreement). You may withdraw consent at any time by deleting your account, though this will end your access to the service and any accrued rewards.

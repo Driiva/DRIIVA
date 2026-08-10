@@ -177,7 +177,7 @@ export default function Settings() {
             transition={{ delay: 0 }}
           >
             <h2 className="text-sm font-medium text-white/60 mb-3 px-1">Preferences</h2>
-            <div className="dashboard-glass-card divide-y divide-white/10">
+            <div className="instrument-card divide-y divide-white/10">
               {/* Notifications */}
               <div className="flex items-center justify-between p-4 rounded-t-xl">
                 <div className="flex items-center gap-3">
@@ -226,7 +226,7 @@ export default function Settings() {
               transition={{ delay: 0.08 }}
             >
               <h2 className="text-sm font-medium text-white/60 mb-3 px-1">Security</h2>
-              <div className="dashboard-glass-card divide-y divide-white/10">
+              <div className="instrument-card divide-y divide-white/10">
                 <div className="p-4">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
@@ -306,7 +306,7 @@ export default function Settings() {
             transition={{ delay: 0.1 }}
           >
             <h2 className="text-sm font-medium text-white/60 mb-3 px-1">Account</h2>
-            <div className="dashboard-glass-card divide-y divide-white/10">
+            <div className="instrument-card divide-y divide-white/10">
               <button
                 onClick={() => setLocation('/privacy')}
                 className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors rounded-t-xl"

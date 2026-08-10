@@ -28,7 +28,7 @@ export function StepGpsPermission({
         <MapPin className="w-12 h-12 text-[#818cf8]" />
       </div>
 
-      <h1 className="text-2xl font-bold text-white mb-3">Enable Location Access</h1>
+      <h1 className="text-2xl font-bold text-white mb-3">Enable location access</h1>
       <p className="text-white/60 mb-8 max-w-sm mx-auto">
         Driiva uses GPS to track your trips and calculate your safety score.
         Your location data is encrypted and never sold.

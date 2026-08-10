@@ -37,7 +37,7 @@ export default function Permissions() {
         </div>
 
         <h1 className="text-3xl font-bold text-white mb-4">
-          Enable Location Access
+          Enable location access
         </h1>
         <p className="text-white/60 text-lg mb-8">
           Driiva needs location access to track your trips and calculate your safety score accurately.

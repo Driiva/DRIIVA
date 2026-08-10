@@ -25,6 +25,12 @@ interface ArcTracerProps {
   strokeWidth?: number;
   /** What the reading is. Announced, because the arc itself says nothing. */
   label?: string;
+  /**
+   * True when visible copy beside the tracer already says what is happening.
+   * Two status regions saying "Finding your location" is worse than one, so
+   * the arc goes silent and the text speaks.
+   */
+  decorative?: boolean;
   className?: string;
 }
 
@@ -38,6 +44,7 @@ export function ArcTracer({
   size = 40,
   strokeWidth,
   label = 'Loading',
+  decorative = false,
   className = '',
 }: ArcTracerProps) {
   const reduce = useReducedMotion();
@@ -53,8 +60,9 @@ export function ArcTracer({
       height={size}
       viewBox={`0 0 ${size} ${size}`}
       className={className}
-      role="status"
-      aria-label={label}
+      {...(decorative
+        ? { 'aria-hidden': true as const }
+        : { role: 'status', 'aria-label': label })}
     >
       {/* The track starts at the seven o'clock position, as the gauges do. */}
       <g transform={`rotate(135 ${size / 2} ${size / 2})`}>

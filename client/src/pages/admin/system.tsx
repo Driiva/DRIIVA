@@ -4,6 +4,7 @@ import { collection, getDocs, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { container, item } from '@/lib/animations';
+import { ArcTracer } from '@/components/motion/Instrument';
 
 interface SyncLog {
   date: string;
@@ -95,14 +96,14 @@ export default function AdminSystem() {
   return (
     <AdminLayout title="System Health" subtitle="Damoov sync diagnostics">
       <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
-        <div className="dashboard-glass-card overflow-hidden !p-0">
+        <div className="instrument-card overflow-hidden !p-0">
           <div className="px-4 py-3 border-b border-white/[0.06]">
-            <h3 className="text-sm font-medium text-white/60">Damoov Sync — Last 7 Days</h3>
+            <h3 className="text-sm font-medium text-white/60">Damoov sync — last 7 days</h3>
           </div>
 
           {loading ? (
             <div className="p-12 text-center">
-              <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin mx-auto" />
+              <ArcTracer size={32} label="Loading system status" className="mx-auto" />
             </div>
           ) : (
             <div className="overflow-x-auto">

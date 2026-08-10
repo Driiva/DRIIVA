@@ -101,7 +101,7 @@ export default function TripAIInsights({
               <Brain className="w-7 h-7 text-purple-400" />
             </div>
             <div>
-              <h3 className="text-white font-semibold text-lg">AI Trip Analysis</h3>
+              <h3 className="text-white font-semibold text-lg">AI trip analysis</h3>
               <p className="text-gray-400 text-sm mt-1">
                 Get detailed driving insights powered by Claude AI
               </p>
@@ -496,7 +496,7 @@ function HistoricalComparisonCard({
     <div className="glass-card rounded-xl p-4">
       <div className="flex items-center justify-between mb-2">
         <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-          vs Your Average
+          vs your average
         </h4>
         <div className="flex items-center gap-1">
           {trendIcon}

@@ -30,7 +30,7 @@ export function StepAgePostcode({
         <UserRound className="w-12 h-12 text-cyan-400" />
       </div>
 
-      <h1 className="text-2xl font-bold text-white mb-3">About You</h1>
+      <h1 className="text-2xl font-bold text-white mb-3">About you</h1>
       <p className="text-white/60 mb-8 max-w-sm mx-auto">
         Your age and postcode help us tailor your premium estimate.
       </p>

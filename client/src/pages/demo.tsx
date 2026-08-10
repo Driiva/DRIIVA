@@ -120,7 +120,7 @@ export default function Demo() {
           }}
           className="w-full max-w-sm"
         >
-          <div className="dashboard-glass-card w-full px-5 py-6">
+          <div className="instrument-card w-full px-5 py-6">
               {/* Header */}
               <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
@@ -138,7 +138,7 @@ export default function Demo() {
                   alt="Driiva"
                   className="h-10 w-auto mb-2"
                 />
-                <h1 className="text-xl font-bold text-white mb-1">Try Driiva Demo</h1>
+                <h1 className="text-xl font-bold text-white mb-1">Try Driiva demo</h1>
                 <p className="text-center text-white/70 text-sm">
                   Experience the app with sample data
                 </p>

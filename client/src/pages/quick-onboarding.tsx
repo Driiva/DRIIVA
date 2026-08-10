@@ -45,6 +45,7 @@ import { StepCurrentInsurer } from './onboarding/steps/StepCurrentInsurer';
 import { StepCurrentPremium } from './onboarding/steps/StepCurrentPremium';
 import { StepConfirm } from './onboarding/steps/StepConfirm';
 import { StepCelebration } from './onboarding/steps/StepCelebration';
+import { ArcTracer } from '@/components/motion/Instrument';
 
 const TOTAL_STEPS = 12;
 // Celebration (step TOTAL_STEPS) is a terminal screen with no progress dot,
@@ -352,7 +353,7 @@ export default function QuickOnboarding() {
   if (authLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#050509] via-[#0a0a14] to-[#0a0a14] flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin" />
+        <ArcTracer size={48} label="Loading" />
       </div>
     );
   }

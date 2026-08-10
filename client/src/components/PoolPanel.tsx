@@ -1,7 +1,7 @@
 /**
  * POOL PANEL
  * ==========
- * The community pool told as a shape over time plus the viewer's share of it.
+ * The Community pool told as a shape over time plus the viewer's share of it.
  *
  * WHAT THIS DELIBERATELY DOES NOT DO
  * The pool money model (D6) is an open decision and there is still no funding
