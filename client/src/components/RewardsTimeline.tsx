@@ -169,7 +169,7 @@ function ProgressBar({ daysActive }: { daysActive: number }) {
           className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full"
         />
       </div>
-      <div className="flex justify-between mt-1.5 text-[10px] text-white/30">
+      <div className="flex justify-between mt-1.5 text-[10px] text-white/55">
         <span>Day 1</span>
         <span>Day 5</span>
         <span>Day 10</span>
@@ -214,15 +214,15 @@ function RewardNode({
       {isLocked && (
         <div className="absolute inset-0 rounded-[var(--radius-2xl)] backdrop-blur-[2px] z-10 flex items-center justify-center">
           <div className="flex flex-col items-center gap-1">
-            <Lock className="w-5 h-5 text-white/40" />
-            <span className="text-xs text-white/50 font-medium">{daysToGo} day{daysToGo !== 1 ? 's' : ''} to go</span>
+            <Lock className="w-5 h-5 text-white/60" />
+            <span className="text-xs text-white/60 font-medium">{daysToGo} day{daysToGo !== 1 ? 's' : ''} to go</span>
           </div>
         </div>
       )}
 
       {/* Milestone label */}
       <div className="flex items-center justify-between mb-2">
-        <span className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">
+        <span className="text-[10px] font-semibold text-white/60 uppercase tracking-wider">
           {tier.milestone}
         </span>
         {isClaimed && (
@@ -249,7 +249,7 @@ function RewardNode({
       </p>
 
       {/* Unlock criteria */}
-      <p className="text-[10px] text-white/40 mb-3">
+      <p className="text-[10px] text-white/60 mb-3">
         {tier.unlockCriteria}
       </p>
 
@@ -274,7 +274,7 @@ function RewardNode({
 
         {isClaimed && state?.redemptionCode && (
           <div className="flex-1 py-2 px-3 rounded-xl bg-white/5 border border-white/10 text-center">
-            <p className="text-[10px] text-white/40">Code</p>
+            <p className="text-[10px] text-white/60">Code</p>
             <p className="text-xs font-mono text-white/80 select-all">{state.redemptionCode}</p>
           </div>
         )}
@@ -290,9 +290,9 @@ function RewardNode({
             title={canShare() ? `Share ${tier.hashtag}` : 'Share not available'}
           >
             {canShare() ? (
-              <Share2 className="w-4 h-4 text-white/50" />
+              <Share2 className="w-4 h-4 text-white/60" />
             ) : (
-              <ExternalLink className="w-4 h-4 text-white/50" />
+              <ExternalLink className="w-4 h-4 text-white/60" />
             )}
           </button>
         )}
@@ -301,7 +301,7 @@ function RewardNode({
       {/* Hashtag pill */}
       {!isLocked && (
         <div className="mt-2 flex justify-center">
-          <span className="text-[10px] text-white/30 bg-white/5 px-2 py-0.5 rounded-full">
+          <span className="text-[10px] text-white/55 bg-white/5 px-2 py-0.5 rounded-full">
             {tier.hashtag}
           </span>
         </div>
@@ -364,7 +364,7 @@ export default function RewardsTimeline({
       </motion.div>
 
       {/* FCA disclosure */}
-      <p className="mt-4 text-[10px] text-white/30 text-center leading-relaxed max-w-md mx-auto">
+      <p className="mt-4 text-[10px] text-white/55 text-center leading-relaxed max-w-md mx-auto">
         Rewards are community recognition milestones, not insurance benefits.
         Pool Priority means earlier refund calculation notification, not a guaranteed higher refund.
         Voucher partners are independent third parties.

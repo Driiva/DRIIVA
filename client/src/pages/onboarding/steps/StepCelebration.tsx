@@ -166,7 +166,7 @@ export function StepCelebration({ onContinue, userName, userEmail }: StepCelebra
               </button>
               <button
                 onClick={() => onContinue()}
-                className="w-full py-3 rounded-xl text-white/50 hover:text-white/70 text-sm transition-colors"
+                className="w-full py-3 rounded-xl text-white/60 hover:text-white/70 text-sm transition-colors"
               >
                 Skip for now
               </button>

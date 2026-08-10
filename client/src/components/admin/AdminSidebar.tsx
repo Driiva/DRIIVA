@@ -40,13 +40,13 @@ export function AdminSidebar({ mobileOpen, onClose }: AdminSidebarProps) {
         <img src={driivaLogoPath} alt="Driiva" className="h-7 w-auto" />
         <button
           onClick={onClose}
-          className="lg:hidden p-1.5 rounded-lg hover:bg-white/10 text-white/50"
+          className="lg:hidden p-1.5 rounded-lg hover:bg-white/10 text-white/60"
         >
           <X className="w-5 h-5" />
         </button>
       </div>
 
-      <div className="px-3 text-[10px] font-semibold uppercase tracking-widest text-white/30 mb-2 mt-2 pl-5">
+      <div className="px-3 text-[10px] font-semibold uppercase tracking-widest text-white/55 mb-2 mt-2 pl-5">
         Admin
       </div>
 
@@ -65,7 +65,7 @@ export function AdminSidebar({ mobileOpen, onClose }: AdminSidebarProps) {
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                 active
                   ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/20'
-                  : 'text-white/50 hover:text-white/80 hover:bg-white/[0.04] border border-transparent'
+                  : 'text-white/60 hover:text-white/80 hover:bg-white/[0.04] border border-transparent'
               }`}
             >
               <Icon className="w-4 h-4 flex-shrink-0" />
@@ -78,7 +78,7 @@ export function AdminSidebar({ mobileOpen, onClose }: AdminSidebarProps) {
       <div className="px-3 pb-6 mt-auto">
         <button
           onClick={() => setLocation('/dashboard')}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-white/40 hover:text-white/70 hover:bg-white/[0.04] transition-all"
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-white/60 hover:text-white/70 hover:bg-white/[0.04] transition-all"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to App

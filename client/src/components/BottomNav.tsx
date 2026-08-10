@@ -81,8 +81,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({ badges }) => {
                     <Icon
                       className={`w-[22px] h-[22px] relative z-10 transition-all duration-200 ${
                         isActive
-                          ? 'text-[var(--app-primary)]'
-                          : 'text-white/45'
+                          ? 'text-[var(--app-primary-text)]'
+                          : 'text-white/60'
                       }`}
                       strokeWidth={isActive ? 2.2 : 1.8}
                     />
@@ -108,8 +108,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({ badges }) => {
 
                   <span className={`text-[10px] font-medium transition-all duration-200 ${
                     isActive
-                      ? 'text-[var(--app-primary)]'
-                      : 'text-white/35'
+                      ? 'text-[var(--app-primary-text)]'
+                      : 'text-white/55'
                   }`}>
                     {label}
                   </span>

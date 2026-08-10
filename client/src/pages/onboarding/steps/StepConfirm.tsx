@@ -107,7 +107,7 @@ export function StepConfirm({
           className={`flex-1 font-semibold py-4 rounded-xl transition-colors flex items-center justify-center gap-2 ${
             confirmed && !isLoading
               ? 'bg-[#5b4dc9] hover:bg-[#4d40b3] text-white'
-              : 'bg-white/10 text-white/40 cursor-not-allowed'
+              : 'bg-white/10 text-white/60 cursor-not-allowed'
           }`}
         >
           {isLoading ? (

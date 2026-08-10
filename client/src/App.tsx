@@ -77,7 +77,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-3">
         <div className="w-10 h-10 border-3 border-white/20 border-t-white rounded-full animate-spin" />
-        <p className="text-white/40 text-xs">Verifying admin access…</p>
+        <p className="text-white/60 text-xs">Verifying admin access…</p>
       </div>
     );
   }
@@ -86,8 +86,8 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
       <div className="min-h-screen flex items-center justify-center text-center px-6">
         <div>
           <p className="text-white/60 text-lg mb-2">Access denied</p>
-          <p className="text-white/40 text-sm mb-1">Your account does not have admin privileges.</p>
-          <p className="text-white/30 text-xs">Signed in as: {user?.email ?? 'unknown'}</p>
+          <p className="text-white/60 text-sm mb-1">Your account does not have admin privileges.</p>
+          <p className="text-white/55 text-xs">Signed in as: {user?.email ?? 'unknown'}</p>
         </div>
       </div>
     );

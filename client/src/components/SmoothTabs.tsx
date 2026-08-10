@@ -72,7 +72,7 @@ export function SmoothTabs({ tabs, activeTab, onChange, className = '' }: Smooth
             }
           }}
           className={`relative z-10 flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 text-sm font-medium transition-colors duration-150 rounded-lg min-h-[40px] ${
-            activeTab === tab.id ? 'text-white' : 'text-white/40'
+            activeTab === tab.id ? 'text-white' : 'text-white/60'
           }`}
         >
           {tab.icon}

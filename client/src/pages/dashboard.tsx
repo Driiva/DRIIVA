@@ -20,15 +20,17 @@ import { getTripPoints } from '@/lib/firestore';
 import {
   Car, FileText, AlertCircle, TrendingUp, ChevronRight,
   Bell, ChevronDown, ChevronUp, MapPin, Users, Trophy, Target,
-  Play, Navigation, RefreshCw, Shield, ExternalLink
+  Play, Navigation, RefreshCw, Shield, ExternalLink,
+  Eye, Footprints, Gauge, CornerUpLeft, PhoneOff, Moon,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { PageWrapper } from '../components/PageWrapper';
 import { BottomNav } from '../components/BottomNav';
 import { useAuth } from "@/contexts/AuthContext";
 import MapLoader from '../components/MapLoader';
 import { useDashboardData, DashboardData } from '@/hooks/useDashboardData';
 import { useCommunityData } from '@/hooks/useCommunityData';
-import { projectedRefundCents } from '@driiva/scoring';
+import { projectedRefundCents, SCORE_WEIGHTS } from '@driiva/scoring';
 import { useBetaEstimate } from '@/hooks/useBetaEstimate';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useToast } from '@/hooks/use-toast';
@@ -131,18 +133,41 @@ function getGreeting(): string {
 }
 
 function getScoreMessage(score: number): string {
-  if (score >= 80) return "Great driving! Keep it up to maximise your refund.";
-  if (score >= 70) return "Good progress! A few more safe trips will boost your score.";
+  // No exclamation marks. The brand voice is plain-English confident, and a
+  // telematics score is information, not a cheer.
+  if (score >= 80) return "Strong driving. Keep this up to maximise your refund.";
+  if (score >= 70) return "Good progress. A few more safe trips will lift your score.";
   return "Keep practising safe driving to unlock rewards.";
 }
 
+/** Lucide icons for the coaching tips, resolved by name. Never emoji. */
+const TIP_ICONS: Record<string, LucideIcon> = {
+  Eye, Footprints, Gauge, CornerUpLeft, PhoneOff, Moon,
+};
+
+function TipIcon({ name }: { name: string }) {
+  const Icon = TIP_ICONS[name] ?? Eye;
+  return <Icon className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden="true" />;
+}
+
+/*
+ * Coaching tips.
+ *
+ * The icons were EMOJI, which this brand bans outright, and the copy carried
+ * three em dashes and an equals sign standing in for a word. Icons are Lucide
+ * names resolved at render.
+ *
+ * The cornering figure is quoted from SCORE_WEIGHTS in @driiva/scoring rather
+ * than retyped: cornering is 0.2, and the marketing site has already shipped
+ * transposed weights once because somebody typed them by hand.
+ */
 const AI_DRIIVA_TIPS = [
-  { headline: "Anticipate the road ahead", tip: "Look 10–15 seconds forward. Spotting hazards early means smoother, gentler braking — which directly improves your score.", icon: "👁" },
-  { headline: "Lift off gently", tip: "Releasing the accelerator gradually before a junction saves fuel and avoids the hard-braking penalty that chips away at your score.", icon: "🦶" },
-  { headline: "Speed limits are scoring limits", tip: "Even brief periods above the limit add speeding seconds to your score. Staying within limits is the single biggest score multiplier.", icon: "🏎" },
-  { headline: "Smooth cornering = big gains", tip: "Enter bends at a steady speed rather than braking mid-corner. Your cornering component is worth 20% of your total score.", icon: "↩️" },
-  { headline: "Keep phone face-down", tip: "Phone pickups are logged and count against your score. Use Do Not Disturb before you start the engine — every pickup costs points.", icon: "📵" },
-  { headline: "Night driving costs more", tip: "Fatigue and reduced visibility increase risk at night. Keeping night trips short and smooth helps your overall risk profile.", icon: "🌙" },
+  { headline: "Anticipate the road ahead", tip: "Look 10 to 15 seconds forward. Spotting hazards early means smoother, gentler braking, which directly improves your score.", icon: "Eye" },
+  { headline: "Lift off gently", tip: "Releasing the accelerator gradually before a junction saves fuel and avoids the hard-braking penalty that chips away at your score.", icon: "Footprints" },
+  { headline: "Speed limits are scoring limits", tip: "Even brief periods above the limit add speeding seconds to your score. Staying within limits is the single biggest score multiplier.", icon: "Gauge" },
+  { headline: "Smooth cornering pays", tip: `Enter bends at a steady speed rather than braking mid-corner. Cornering is worth ${Math.round(SCORE_WEIGHTS.cornering * 100)}% of your total score.`, icon: "CornerUpLeft" },
+  { headline: "Keep your phone face down", tip: "Phone pickups are logged and count against your score. Use Do Not Disturb before you start the engine, since every pickup costs points.", icon: "PhoneOff" },
+  { headline: "Night driving costs more", tip: "Fatigue and reduced visibility increase risk at night. Keeping night trips short and smooth helps your overall risk profile.", icon: "Moon" },
 ];
 
 function getAiDriivaTip(score: number): typeof AI_DRIIVA_TIPS[0] {
@@ -421,7 +446,7 @@ export default function Dashboard() {
             </div>
             <div style={{ marginTop: '2px' }}>
               <h1 className="text-xl font-bold text-white">Driiva</h1>
-              <p className="text-sm text-white/50">Beta Programme</p>
+              <p className="text-sm text-white/60">Beta Programme</p>
               {isDemoMode && (
                 <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-emerald-500/20 text-emerald-400 rounded-full border border-emerald-500/30">
                   Demo Mode
@@ -436,6 +461,7 @@ export default function Dashboard() {
               <button 
                 onClick={refresh}
                 className="p-2 rounded-full hover:bg-white/5 transition-colors"
+                aria-label="Refresh dashboard data"
                 title="Refresh data"
               >
                 <RefreshCw className={`w-4 h-4 text-white/60 ${dataLoading ? 'animate-spin' : ''}`} />
@@ -444,8 +470,10 @@ export default function Dashboard() {
             <button
               onClick={() => { setShowNotifications(!showNotifications); setShowDropdown(false); }}
               className="p-2 rounded-full hover:bg-white/5 transition-colors"
+              aria-label="Notifications"
+              aria-expanded={showNotifications}
             >
-              <Bell className="w-5 h-5 text-white/60" />
+              <Bell className="w-5 h-5 text-white/60" aria-hidden="true" />
             </button>
             
             <button 
@@ -457,7 +485,7 @@ export default function Dashboard() {
                   {displayName[0]?.toUpperCase() ?? '?'}
                 </span>
               </div>
-              <ChevronDown className={`w-4 h-4 text-white/50 transition-transform ${showDropdown ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-4 h-4 text-white/60 transition-transform ${showDropdown ? 'rotate-180' : ''}`} />
             </button>
 
             {/* Notifications Dropdown */}
@@ -484,10 +512,10 @@ export default function Dashboard() {
                     <div className="p-4">
                       <div className="flex flex-col items-center justify-center py-6 text-center">
                         <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mb-3">
-                          <Bell className="w-5 h-5 text-white/40" />
+                          <Bell className="w-5 h-5 text-white/60" />
                         </div>
                         <p className="text-sm text-white/70 mb-1">No new notifications</p>
-                        <p className="text-xs text-white/40">We'll notify you when something happens</p>
+                        <p className="text-xs text-white/60">We'll notify you when something happens</p>
                       </div>
                     </div>
                   </motion.div>
@@ -514,7 +542,7 @@ export default function Dashboard() {
                     className="absolute top-12 right-0 w-56 z-50 backdrop-blur-2xl bg-[#1a1a2e]/95 border border-white/10 rounded-xl shadow-2xl overflow-hidden"
                   >
                     <div className="p-4">
-                      <p className="text-xs text-white/50 mb-1">Policy No:</p>
+                      <p className="text-xs text-white/60 mb-1">Policy No:</p>
                       <p className="text-sm font-medium text-white">{policyNumber ?? '—'}</p>
                     </div>
                     <div className="border-t border-white/10">
@@ -562,7 +590,7 @@ export default function Dashboard() {
           {isNewUser ? (
             <div className="flex flex-col items-center py-4">
               <div className="w-[140px] h-[140px] rounded-full border-[6px] border-white/8 flex items-center justify-center mb-3">
-                <span className="text-4xl font-bold text-white/30">—</span>
+                <span className="text-4xl font-bold text-white/55">—</span>
               </div>
               <p className="text-sm text-white/60 text-center">
                 Complete your first trip to get a driving score.
@@ -584,23 +612,23 @@ export default function Dashboard() {
           {!isDemoMode && !isNewUser && dashboardData?.scoreBreakdown && (
             <div className="mt-4 pt-4 border-t border-white/10 grid grid-cols-5 gap-2 text-center">
               <div>
-                <div className="text-xs text-white/40">Speed</div>
+                <div className="text-xs text-white/60">Speed</div>
                 <div className="text-sm font-semibold text-white">{dashboardData.scoreBreakdown.speed}</div>
               </div>
               <div>
-                <div className="text-xs text-white/40">Braking</div>
+                <div className="text-xs text-white/60">Braking</div>
                 <div className="text-sm font-semibold text-white">{dashboardData.scoreBreakdown.braking}</div>
               </div>
               <div>
-                <div className="text-xs text-white/40">Accel</div>
+                <div className="text-xs text-white/60">Accel</div>
                 <div className="text-sm font-semibold text-white">{dashboardData.scoreBreakdown.acceleration}</div>
               </div>
               <div>
-                <div className="text-xs text-white/40">Corners</div>
+                <div className="text-xs text-white/60">Corners</div>
                 <div className="text-sm font-semibold text-white">{dashboardData.scoreBreakdown.cornering}</div>
               </div>
               <div>
-                <div className="text-xs text-white/40">Phone</div>
+                <div className="text-xs text-white/60">Phone</div>
                 <div className="text-sm font-semibold text-white">{dashboardData.scoreBreakdown.phoneUsage}</div>
               </div>
             </div>
@@ -631,11 +659,14 @@ export default function Dashboard() {
                       <span className="text-sm font-semibold text-white">AI Driiva</span>
                       <span className="px-1.5 py-0.5 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-[10px] font-medium">Beta</span>
                     </div>
-                    <p className="text-xs text-white/40 truncate">Personalised driving insights</p>
+                    <p className="text-xs text-white/60 truncate">Personalised driving insights</p>
                   </div>
                 </div>
                 <div className="bg-white/5 rounded-xl p-3 mb-3">
-                  <p className="text-xs font-semibold text-indigo-300 mb-1">{tip.icon} {tip.headline}</p>
+                  <p className="text-[13px] font-semibold mb-1 flex items-center gap-1.5" style={{ color: 'var(--app-primary-text)' }}>
+                    <TipIcon name={tip.icon} />
+                    {tip.headline}
+                  </p>
                   <p className="text-xs text-white/70 leading-relaxed">{tip.tip}</p>
                 </div>
                 
@@ -674,9 +705,9 @@ export default function Dashboard() {
               <h2 className="text-lg font-semibold text-white">Live Location</h2>
             </div>
             {mapExpanded ? (
-              <ChevronUp className="w-5 h-5 text-white/50" />
+              <ChevronUp className="w-5 h-5 text-white/60" />
             ) : (
-              <ChevronDown className="w-5 h-5 text-white/50" />
+              <ChevronDown className="w-5 h-5 text-white/60" />
             )}
           </button>
           <AnimatePresence initial={false}>
@@ -696,7 +727,7 @@ export default function Dashboard() {
                       routePoints={lastTripRoutePoints.length >= 2 ? lastTripRoutePoints : undefined}
                     />
                   </Suspense>
-                  <p className="text-white/40 text-xs mt-3 text-center">
+                  <p className="text-white/60 text-xs mt-3 text-center">
                     {lastTripRoutePoints.length >= 2
                       ? 'Toggle between your live location and last trip route'
                       : 'Showing your current location'}
@@ -728,7 +759,7 @@ export default function Dashboard() {
                       {trip.score}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-xs text-white/50">
+                  <div className="flex items-center justify-between text-xs text-white/60">
                     <span>{trip.distance} mi</span>
                     <span>{trip.date}</span>
                   </div>
@@ -744,10 +775,10 @@ export default function Dashboard() {
           ) : (
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center mb-4">
-                <Car className="w-8 h-8 text-white/40" />
+                <Car className="w-8 h-8 text-white/60" />
               </div>
               <p className="text-white/60 text-sm">Start driving to see your first trip!</p>
-              <p className="text-white/40 text-xs mt-1">Your journey data will appear here</p>
+              <p className="text-white/60 text-xs mt-1">Your journey data will appear here</p>
             </div>
           )}
           
@@ -770,7 +801,7 @@ export default function Dashboard() {
             <div>
               <h2 className="text-lg font-semibold text-white">Community Pool</h2>
               {poolDaysRemaining > 0 && !isDemoMode && (
-                <p className="text-xs text-white/40">{poolDaysRemaining} days left in period</p>
+                <p className="text-xs text-white/60">{poolDaysRemaining} days left in period</p>
               )}
             </div>
             <Users className="w-5 h-5 text-purple-400" />
@@ -831,7 +862,7 @@ export default function Dashboard() {
               {/* Safety Factor Progress Bar */}
               <div className="pt-2">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-white/40">Safety Factor</span>
+                  <span className="text-xs text-white/60">Safety Factor</span>
                   <span className="text-xs text-white/60">{Math.round(safetyFactor * 100)}%</span>
                 </div>
                 <div className="h-2 bg-white/10 rounded-full overflow-hidden">
@@ -868,7 +899,7 @@ export default function Dashboard() {
               <span className="text-white/60 text-sm">Current Refund</span>
               <AnimatedNumber value={surplusProjection} prefix="£" className="text-emerald-400 font-bold text-xl" />
             </div>
-            <div className="flex items-center justify-between text-xs text-white/50">
+            <div className="flex items-center justify-between text-xs text-white/60">
               <span>Based on {drivingScore}% score</span>
               <span>Max £{Math.round(premiumAmount * 0.15)}</span>
             </div>
@@ -881,7 +912,7 @@ export default function Dashboard() {
               />
             </div>
             {isNewUser ? (
-              <p className="text-white/50 text-xs text-center mt-2">
+              <p className="text-white/60 text-xs text-center mt-2">
                 Drive safely to unlock refunds up to 15% of your premium!
               </p>
             ) : surplusProjection > 0 ? (
@@ -916,7 +947,7 @@ export default function Dashboard() {
                   <Target className="w-8 h-8 text-blue-400" />
                 </div>
                 <div className="flex-shrink-0 w-16 h-16 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
-                  <span className="text-white/30 text-2xl">?</span>
+                  <span className="text-white/55 text-2xl">?</span>
                 </div>
               </div>
               <button
@@ -931,7 +962,7 @@ export default function Dashboard() {
           ) : (
             <div className="flex flex-col items-center justify-center py-6 text-center">
               <Trophy className="w-10 h-10 text-white/20 mb-3" />
-              <p className="text-white/50 text-sm mb-4">Complete trips to unlock achievements!</p>
+              <p className="text-white/60 text-sm mb-4">Complete trips to unlock achievements!</p>
               <button
                 onClick={() => setLocation('/achievements')}
                 className="px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white/70 text-sm hover:bg-white/15 transition-all flex items-center gap-2"
@@ -968,7 +999,7 @@ export default function Dashboard() {
         <div className="flex items-center justify-center gap-4 pt-2 pb-2">
           <button
             onClick={() => setLocation('/trust')}
-            className="flex items-center gap-1 text-white/30 text-[11px] hover:text-white/60 transition-colors"
+            className="flex items-center gap-1 text-white/55 text-[11px] hover:text-white/60 transition-colors"
           >
             <Shield className="w-3 h-3" />
             Trust Centre
@@ -976,14 +1007,14 @@ export default function Dashboard() {
           <span className="text-white/20 text-[11px]">·</span>
           <button
             onClick={() => setLocation('/terms')}
-            className="text-white/30 text-[11px] hover:text-white/60 transition-colors"
+            className="text-white/55 text-[11px] hover:text-white/60 transition-colors"
           >
             Terms
           </button>
           <span className="text-white/20 text-[11px]">·</span>
           <button
             onClick={() => setLocation('/privacy')}
-            className="flex items-center gap-1 text-white/30 text-[11px] hover:text-white/60 transition-colors"
+            className="flex items-center gap-1 text-white/55 text-[11px] hover:text-white/60 transition-colors"
           >
             Privacy
             <ExternalLink className="w-2.5 h-2.5" />

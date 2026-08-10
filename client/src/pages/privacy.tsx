@@ -232,7 +232,7 @@ export default function Privacy() {
                   href="https://www.damoov.com/privacy-policy"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-teal-400 hover:underline"
+                  className="text-[var(--app-primary-text)] underline"
                 >
                   damoov.com/privacy-policy
                 </a>
@@ -243,7 +243,7 @@ export default function Privacy() {
                 Damoov on your behalf. To exercise this right, contact us at{" "}
                 <a
                   href="mailto:info@driiva.co.uk"
-                  className="text-teal-400 hover:underline"
+                  className="text-[var(--app-primary-text)] underline"
                 >
                   info@driiva.co.uk
                 </a>{" "}
@@ -302,7 +302,7 @@ export default function Privacy() {
               To exercise these rights, contact us at{" "}
               <a
                 href="mailto:info@driiva.co.uk"
-                className="text-teal-400 hover:underline"
+                className="text-[var(--app-primary-text)] underline"
               >
                 info@driiva.co.uk
               </a>
@@ -315,7 +315,7 @@ export default function Privacy() {
               For privacy questions or to exercise your rights, email us at{" "}
               <a
                 href="mailto:info@driiva.co.uk"
-                className="text-teal-400 hover:underline"
+                className="text-[var(--app-primary-text)] underline"
               >
                 info@driiva.co.uk
               </a>

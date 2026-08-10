@@ -87,10 +87,10 @@ function BillingToggle({
                   Save {annualVsMonthly}%
                 </span>
               )}
-              <span className={`font-semibold ${isActive ? 'text-white' : 'text-white/50'}`}>
+              <span className={`font-semibold ${isActive ? 'text-white' : 'text-white/60'}`}>
                 {p === 'annual' ? `${formatGbp(annualGbp)}/yr` : `${formatGbp(monthlyGbp, true)}/mo`}
               </span>
-              <span className={`text-xs mt-0.5 ${isActive ? 'text-white/60' : 'text-white/30'}`}>
+              <span className={`text-xs mt-0.5 ${isActive ? 'text-white/60' : 'text-white/55'}`}>
                 {p === 'annual' ? 'Pay annually' : 'Pay monthly'}
               </span>
             </button>
@@ -98,7 +98,7 @@ function BillingToggle({
         })}
       </div>
       {period === 'monthly' && (
-        <p className="text-center text-white/40 text-xs">
+        <p className="text-center text-white/60 text-xs">
           Monthly instalments include a 7% handling charge vs. annual.
         </p>
       )}
@@ -262,15 +262,15 @@ function PaymentForm({
             >
               {displayAmount}
             </motion.span>
-            <span className="text-white/50 text-sm ml-1.5">{displayPeriod}</span>
+            <span className="text-white/60 text-sm ml-1.5">{displayPeriod}</span>
           </div>
           {billingPeriod === 'annual' && (
-            <span className="text-xs text-white/40">
+            <span className="text-xs text-white/60">
               equiv. {formatGbp(annualPremiumGbp / 12, true)}/mo
             </span>
           )}
         </div>
-        <p className="text-white/40 text-xs">
+        <p className="text-white/60 text-xs">
           Quote expires {new Date(expiresAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
         </p>
       </div>
@@ -336,7 +336,7 @@ function PaymentForm({
         )}
       </button>
 
-      <p className="text-center text-white/30 text-xs">
+      <p className="text-center text-white/55 text-xs">
         Secured by Stripe · Cancel anytime · First refund eligibility begins next scoring period after payment.
       </p>
     </form>
@@ -493,15 +493,15 @@ export default function Checkout() {
           </button>
           <div>
             <h1 className="text-xl font-bold">Activate your policy</h1>
-            <p className="text-white/50 text-sm">Powered by Root Platform</p>
+            <p className="text-white/60 text-sm">Powered by Root Platform</p>
           </div>
         </div>
 
         {/* Loading */}
         {quoteLoading && (
           <div className="flex flex-col items-center gap-4 py-16">
-            <Loader2 className="w-8 h-8 text-white/40 animate-spin" />
-            <p className="text-white/50 text-sm">Calculating your personalised quote…</p>
+            <Loader2 className="w-8 h-8 text-white/60 animate-spin" />
+            <p className="text-white/60 text-sm">Calculating your personalised quote…</p>
           </div>
         )}
 

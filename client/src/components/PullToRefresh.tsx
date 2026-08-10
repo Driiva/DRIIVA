@@ -45,7 +45,7 @@ export function PullToRefreshIndicator({ pullDistance, progress, refreshing }: P
               width="16"
               height="16"
               viewBox="0 0 16 16"
-              className={progress >= 1 ? 'text-emerald-400' : 'text-white/50'}
+              className={progress >= 1 ? 'text-emerald-400' : 'text-white/60'}
             >
               <motion.path
                 d="M8 2v8M4 6l4-4 4 4"

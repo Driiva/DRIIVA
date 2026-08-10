@@ -43,7 +43,7 @@ export function StepCurrentInsurer({
 
       <button
         onClick={() => { setCurrentInsurer('none'); nextStep(); }}
-        className="w-full mb-8 py-2 text-sm text-white/40 hover:text-white/60 transition-colors"
+        className="w-full mb-8 py-2 text-sm text-white/60 hover:text-white/60 transition-colors"
       >
         I don't have insurance / Skip
       </button>

@@ -263,12 +263,12 @@ function MetricCard({ label, value, icon, status = 'good', subtitle }: MetricCar
     <motion.div variants={item} className="dashboard-glass-card">
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <div className="text-xs text-white/40 mb-1">{label}</div>
+          <div className="text-xs text-white/60 mb-1">{label}</div>
           <div className={`text-2xl font-bold ${statusColors[status]}`}>
             {value}
           </div>
           {subtitle && (
-            <div className="text-xs text-white/30 mt-1">{subtitle}</div>
+            <div className="text-xs text-white/55 mt-1">{subtitle}</div>
           )}
         </div>
         <div className="p-2 rounded-lg bg-white/5">
@@ -351,19 +351,19 @@ export default function MonitoringDashboard() {
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.06]">
-              <div className="text-xs text-white/40 mb-1">Cloud Functions</div>
+              <div className="text-xs text-white/60 mb-1">Cloud Functions</div>
               <div className="text-sm font-medium text-white/80">{health?.checks?.firestore || 'Unknown'}</div>
             </div>
             <div className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.06]">
-              <div className="text-xs text-white/40 mb-1">Last Trip</div>
+              <div className="text-xs text-white/60 mb-1">Last Trip</div>
               <div className="text-sm font-medium text-white/80">{formatRelative(tripMetrics?.lastTripAt || null)}</div>
             </div>
             <div className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.06]">
-              <div className="text-xs text-white/40 mb-1">Region</div>
+              <div className="text-xs text-white/60 mb-1">Region</div>
               <div className="text-sm font-medium text-white/80">{health?.region || 'europe-west2'}</div>
             </div>
             <div className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.06]">
-              <div className="text-xs text-white/40 mb-1">Version</div>
+              <div className="text-xs text-white/60 mb-1">Version</div>
               <div className="text-sm font-medium text-white/80">{health?.version || 'unknown'}</div>
             </div>
           </div>
@@ -458,14 +458,14 @@ export default function MonitoringDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="dashboard-glass-card opacity-50">
             <h3 className="text-lg font-semibold mb-4">Performance Vitals</h3>
-            <div className="text-sm text-white/40">
+            <div className="text-sm text-white/60">
               Coming soon: Cold start metrics, Firestore latency, Web Vitals from Vercel
             </div>
           </div>
 
           <div className="dashboard-glass-card opacity-50">
             <h3 className="text-lg font-semibold mb-4">Classifier Status</h3>
-            <div className="text-sm text-white/40">
+            <div className="text-sm text-white/60">
               Coming soon: Python classifier health, latency, success rate
             </div>
           </div>
@@ -473,7 +473,7 @@ export default function MonitoringDashboard() {
 
         <div className="dashboard-glass-card opacity-50">
           <h3 className="text-lg font-semibold mb-4">Recent Alerts & Incidents</h3>
-          <div className="text-sm text-white/40">
+          <div className="text-sm text-white/60">
             Coming soon: Sentry issues, Cloud Monitoring alerts, Watchdog warnings
           </div>
         </div>

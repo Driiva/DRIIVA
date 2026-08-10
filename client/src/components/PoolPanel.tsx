@@ -95,7 +95,7 @@ export function PoolPanel({
         <h2 className="text-[16px]" style={{ color: 'var(--app-text-hero)' }}>
           Community pool
         </h2>
-        <Users className="w-5 h-5" style={{ color: 'var(--app-primary)' }} aria-hidden="true" />
+        <Users className="w-5 h-5" style={{ color: 'var(--app-primary-text)' }} aria-hidden="true" />
       </div>
 
       {/* The viewer's standing in the pool: share and the score that sets it. */}

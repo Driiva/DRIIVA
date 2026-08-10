@@ -187,7 +187,7 @@ export default function ForgotPassword() {
                                             Email address
                                         </label>
                                         <div className="relative">
-                                            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-white/50" />
+                                            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-white/60" />
                                             <Input
                                                 type="email"
                                                 value={email}
@@ -242,7 +242,7 @@ export default function ForgotPassword() {
                                     </button>
 
                                     <div className="text-center pt-2">
-                                        <p className="text-white/50 text-sm">
+                                        <p className="text-white/60 text-sm">
                                             Remember your password?{" "}
                                             <button
                                                 type="button"

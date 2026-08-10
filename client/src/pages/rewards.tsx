@@ -6,7 +6,11 @@ import { BottomNav } from '../components/BottomNav';
 import { GlassCard } from "@/components/GlassCard";
 import RewardsTimeline from "@/components/RewardsTimeline";
 import type { RewardState } from "@/components/RewardsTimeline";
-import { Gift, TrendingUp, Check, Bell, ChevronDown, Loader2 } from "lucide-react";
+import {
+  Gift, TrendingUp, Check, Bell, ChevronDown, Loader2,
+  Car, Shield, Target, Star, Flame, Route, Moon, Award, Trophy,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { container, item, timing, easing, microInteractions } from "@/lib/animations";
 import { SmoothTabs } from "@/components/SmoothTabs";
 import { Shimmer } from "@/components/Shimmer";
@@ -15,8 +19,8 @@ import { useHaptics } from "@/hooks/useHaptics";
 import { useAuth } from '../contexts/AuthContext';
 import { useUserProfile } from "../hooks/useUserProfile";
 import { DEFAULT_DRIVING_PROFILE } from '../../../shared/firestore-types';
-import { getAchievementDefinitions, getUserAchievements } from "@/lib/firestore";
-import type { AchievementDef, UserAchievementRecord } from "@/lib/firestore";
+import { getUserAchievements } from "@/lib/firestore";
+import { buildAchievementViews } from "@driiva/contracts";
 import { isFirebaseConfigured } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -29,16 +33,19 @@ interface DisplayAchievement {
   id: string;
   title: string;
   description: string;
-  icon: string;
+  icon: LucideIcon;
   unlocked: boolean;
   unlockedAt?: string;
   category: string;
 }
 
-const ICON_FALLBACK: Record<string, string> = {
-  Car: '🚗', Shield: '🛡️', Target: '🎯', Users: '👥', Zap: '⚡',
-  Star: '⭐', Flame: '🔥', Route: '🛣️', Moon: '🌙', Gauge: '📊',
-  Award: '🏅', Trophy: '🏆',
+/*
+ * Lucide names from the shared catalogue. The previous table mapped each one
+ * to an EMOJI, which the brand bans outright and which rendered as the only
+ * visual for a real achievement.
+ */
+const ICON_MAP: Record<string, LucideIcon> = {
+  Car, Shield, Target, Star, Flame, Route, Moon, Award, Trophy,
 };
 
 export default function Rewards() {
@@ -95,30 +102,45 @@ export default function Rewards() {
 
     (async () => {
       try {
-        const [defs, userRecords] = await Promise.all([
-          getAchievementDefinitions(),
-          getUserAchievements(user.id),
-        ]);
-
+        /*
+         * Reads the catalogue from @driiva/contracts and only the UNLOCKS from
+         * Firestore, matching /achievements.
+         *
+         * This page was still calling getAchievementDefinitions(), which reads
+         * a top-level collection populated only by an admin seeding callable.
+         * Unseeded, it returned nothing, so this screen told a driver with
+         * three unlocks that they had "0/-" and "No achievements yet" while
+         * /achievements correctly showed 3 of 8. Two screens, one user, two
+         * different answers.
+         */
+        const userRecords = await getUserAchievements(user.id);
         if (cancelled) return;
 
-        const unlockMap = new Map(userRecords.map(r => [r.achievementId, r]));
+        const views = buildAchievementViews(
+          userRecords.map((r) => ({
+            achievementId: r.achievementId,
+            unlockedAt: r.unlockedAt?.toDate?.() ?? null,
+          })),
+          {
+            totalTrips: profile.totalTrips ?? 0,
+            totalMiles: profile.totalMiles ?? 0,
+            streakDays: profile.streakDays ?? 0,
+            currentScore: profile.currentScore ?? 0,
+          },
+        );
 
         setAchievements(
-          defs.map((def: AchievementDef) => {
-            const unlock = unlockMap.get(def.id);
-            return {
-              id: def.id,
-              title: def.name,
-              description: def.description,
-              icon: ICON_FALLBACK[def.icon] ?? '🏆',
-              unlocked: !!unlock,
-              unlockedAt: unlock?.unlockedAt?.toDate?.()?.toLocaleDateString('en-GB', {
-                day: 'numeric', month: 'short', year: 'numeric',
-              }),
-              category: def.category,
-            };
-          })
+          views.map((view) => ({
+            id: view.id,
+            title: view.name,
+            description: view.description,
+            icon: ICON_MAP[view.icon] ?? Trophy,
+            unlocked: view.unlocked,
+            unlockedAt: view.unlockedAt?.toLocaleDateString('en-GB', {
+              day: 'numeric', month: 'short', year: 'numeric',
+            }),
+            category: view.category,
+          })),
         );
       } catch (err) {
         console.error('[Rewards] Failed to load achievements:', err);
@@ -171,13 +193,13 @@ export default function Rewards() {
             </div>
             <div style={{ marginTop: '2px' }}>
               <h1 className="text-xl font-bold text-white">Driiva</h1>
-              <p className="text-sm text-white/50">{getGreeting()}, {firstName}</p>
+              <p className="text-sm text-white/60">{getGreeting()}, {firstName}</p>
             </div>
           </div>
 
           <div className="flex items-center gap-3 relative">
-            <button className="p-2 rounded-full hover:bg-white/5 transition-colors">
-              <Bell className="w-5 h-5 text-white/60" />
+            <button className="p-2 rounded-full hover:bg-white/5 transition-colors" aria-label="Notifications">
+              <Bell className="w-5 h-5 text-white/60" aria-hidden="true" />
             </button>
 
             <button
@@ -189,7 +211,7 @@ export default function Rewards() {
                   {(user?.name?.[0] ?? user?.email?.[0] ?? 'd').toUpperCase()}
                 </span>
               </div>
-              <ChevronDown className={`w-4 h-4 text-white/50 transition-transform ${showDropdown ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-4 h-4 text-white/60 transition-transform ${showDropdown ? 'rotate-180' : ''}`} />
             </button>
 
             <AnimatePresence>
@@ -210,7 +232,7 @@ export default function Rewards() {
                     className="absolute top-12 right-0 w-56 z-50 backdrop-blur-2xl bg-[#1a1a2e]/95 border border-white/10 rounded-xl shadow-2xl overflow-hidden"
                   >
                     <div className="p-4">
-                      <p className="text-xs text-white/50 mb-1">Policy No:</p>
+                      <p className="text-xs text-white/60 mb-1">Policy No:</p>
                       <p className="text-sm font-medium text-white">{policyNumber}</p>
                     </div>
                     <div className="border-t border-white/10">
@@ -272,7 +294,7 @@ export default function Rewards() {
                     <div className={`text-2xl font-semibold ${stat.accent ? 'text-emerald-400' : 'text-white'}`}>
                       {stat.value}
                     </div>
-                    <div className="text-xs text-white/50 mt-1">{stat.label}</div>
+                    <div className="text-xs text-white/60 mt-1">{stat.label}</div>
                   </motion.div>
                 ))}
               </div>
@@ -347,7 +369,16 @@ export default function Rewards() {
                             whileHover={{ rotate: 5, scale: 1.05 }}
                             transition={{ duration: timing.interaction }}
                           >
-                            <span className="text-xl">{achievement.icon}</span>
+                            <achievement.icon
+                              className="w-6 h-6"
+                              strokeWidth={2}
+                              style={{
+                                color: achievement.unlocked
+                                  ? 'var(--app-primary-text)'
+                                  : 'var(--app-text-sec)',
+                              }}
+                              aria-hidden="true"
+                            />
                           </motion.div>
 
                           <div className="flex-1">
@@ -365,10 +396,10 @@ export default function Rewards() {
                               )}
                             </div>
 
-                            <p className="text-xs text-white/50 mb-1">{achievement.description}</p>
+                            <p className="text-xs text-white/60 mb-1">{achievement.description}</p>
 
                             {achievement.unlocked && achievement.unlockedAt && (
-                              <div className="text-xs text-white/40">
+                              <div className="text-xs text-white/60">
                                 Unlocked: {achievement.unlockedAt}
                               </div>
                             )}
@@ -430,7 +461,7 @@ export default function Rewards() {
                             <div className={`text-2xl font-semibold ${stat.accent ? 'text-emerald-400' : 'text-white'}`}>
                               {stat.value}
                             </div>
-                            <div className="text-xs text-white/50 mt-1">{stat.label}</div>
+                            <div className="text-xs text-white/60 mt-1">{stat.label}</div>
                           </motion.div>
                         ))}
                       </div>
@@ -457,7 +488,7 @@ export default function Rewards() {
                           }`}
                         />
                       </div>
-                      <div className="flex justify-between text-xs text-white/40">
+                      <div className="flex justify-between text-xs text-white/60">
                         <span>0</span>
                         <span className="text-amber-400/60">70 (qualify)</span>
                         <span>100</span>

@@ -32,7 +32,7 @@ export function StepCurrentPremium({
       </p>
 
       <div className="mb-4 relative">
-        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 font-medium">&pound;</span>
+        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/60 font-medium">&pound;</span>
         <input
           type="number"
           value={currentPremiumPounds}
@@ -45,7 +45,7 @@ export function StepCurrentPremium({
 
       <button
         onClick={nextStep}
-        className="w-full mb-8 py-2 text-sm text-white/40 hover:text-white/60 transition-colors"
+        className="w-full mb-8 py-2 text-sm text-white/60 hover:text-white/60 transition-colors"
       >
         I don't know / Skip
       </button>

@@ -67,7 +67,7 @@ export default function ProfileDropdown({ user, policyNumber, memberSince }: Pro
           animate={{ rotate: isOpen ? 180 : 0 }}
           transition={{ duration: timing.interaction / 1000 }}
         >
-          <ChevronDown className="w-4 h-4 text-white/50" />
+          <ChevronDown className="w-4 h-4 text-white/60" />
         </motion.div>
       </motion.button>
 
@@ -107,7 +107,7 @@ export default function ProfileDropdown({ user, policyNumber, memberSince }: Pro
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-white truncate">{profileData.name}</p>
-                    <p className="text-xs text-white/50 truncate">{profileData.email}</p>
+                    <p className="text-xs text-white/60 truncate">{profileData.email}</p>
                   </div>
                 </div>
 
@@ -116,11 +116,11 @@ export default function ProfileDropdown({ user, policyNumber, memberSince }: Pro
                   <>
                     <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
                       <div>
-                        <p className="text-white/50">Vehicle</p>
+                        <p className="text-white/60">Vehicle</p>
                         <p className="text-white">{profileData.vehicle}</p>
                       </div>
                       <div>
-                        <p className="text-white/50">Policy</p>
+                        <p className="text-white/60">Policy</p>
                         <p className="text-white">{profileData.policyNumber}</p>
                       </div>
                     </div>

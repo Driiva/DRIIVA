@@ -58,7 +58,7 @@ export function StepGpsPermission({
             <Check className="w-6 h-6" />
             <span className="font-medium">GPS Working!</span>
           </div>
-          <p className="text-white/50 text-sm">
+          <p className="text-white/60 text-sm">
             Location detected with {gpsResult.accuracy}m accuracy
           </p>
         </div>
@@ -80,7 +80,7 @@ export function StepGpsPermission({
         </div>
       )}
 
-      <p className="text-white/40 text-xs mb-6">
+      <p className="text-white/60 text-xs mb-6">
         You can continue without GPS, but trip tracking will be limited.
       </p>
 

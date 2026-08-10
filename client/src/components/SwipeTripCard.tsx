@@ -131,7 +131,7 @@ export function SwipeTripCard({
               <h3 className="font-semibold text-white text-sm truncate">
                 {from} → {to}
               </h3>
-              <p className="text-xs text-white/50 mt-0.5">
+              <p className="text-xs text-white/60 mt-0.5">
                 {date} · {duration}
               </p>
             </div>
@@ -150,14 +150,14 @@ export function SwipeTripCard({
                   {flagged ? 'Under review' : status === 'recording' ? 'Recording' : 'Processing'}
                 </span>
               </div>
-              <div className="text-[11px] text-white/40 mt-0.5">{distance}</div>
+              <div className="text-[11px] text-white/60 mt-0.5">{distance}</div>
             </div>
           ) : (
             <div className="text-right flex-shrink-0 ml-3">
               <div className={`text-xl font-bold tabular-nums ${getScoreColor(score)}`}>
                 {score}
               </div>
-              <div className="text-[11px] text-white/40">{distance}</div>
+              <div className="text-[11px] text-white/60">{distance}</div>
             </div>
           )}
         </div>
@@ -165,7 +165,7 @@ export function SwipeTripCard({
         {isInFlight ? (
           /* In-flight status line (no final events yet) */
           <div className="mt-3 pt-3 border-t border-white/[0.06] text-center">
-            <span className="text-[11px] text-white/45">
+            <span className="text-[11px] text-white/60">
               {flagged
                 ? "This trip flagged something unusual - we're checking it"
                 : status === 'recording'
@@ -177,15 +177,15 @@ export function SwipeTripCard({
           /* Event metrics row */
           <div className="mt-3 pt-3 border-t border-white/[0.06] grid grid-cols-3 gap-2">
             <div className="text-center">
-              <div className="text-[10px] text-white/35 mb-0.5">Braking</div>
+              <div className="text-[10px] text-white/55 mb-0.5">Braking</div>
               <div className="text-xs font-semibold text-white/75 tabular-nums">{events.braking}</div>
             </div>
             <div className="text-center border-x border-white/[0.06]">
-              <div className="text-[10px] text-white/35 mb-0.5">Accel</div>
+              <div className="text-[10px] text-white/55 mb-0.5">Accel</div>
               <div className="text-xs font-semibold text-white/75 tabular-nums">{events.acceleration}</div>
             </div>
             <div className="text-center">
-              <div className="text-[10px] text-white/35 mb-0.5">Speed</div>
+              <div className="text-[10px] text-white/55 mb-0.5">Speed</div>
               <div className="text-xs font-semibold text-white/75 tabular-nums">{events.speeding}</div>
             </div>
           </div>

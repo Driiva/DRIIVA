@@ -36,7 +36,7 @@ function PillChip({ label, active, onClick }: { label: string; active: boolean; 
               'shadow-[inset_0_1px_0_rgba(52,211,153,0.18),0_0_0_1px_rgba(52,211,153,0.08)]',
             ].join(' ')
           : [
-              'bg-white/[0.04] border-white/[0.1] text-white/40',
+              'bg-white/[0.04] border-white/[0.1] text-white/60',
               'hover:bg-white/[0.09] hover:border-white/[0.22] hover:text-white/70',
             ].join(' '),
       ].join(' ')}
@@ -161,6 +161,7 @@ export default function Settings() {
         >
           <button
             onClick={() => window.history.back()}
+            aria-label="Back"
             className="p-2 rounded-full hover:bg-white/10 transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -232,7 +233,7 @@ export default function Settings() {
                       <ShieldCheck className="w-5 h-5 text-blue-400" />
                       <div>
                         <span className="text-white font-medium block">Passkeys</span>
-                        <span className="text-white/40 text-xs">Sign in with Face ID or fingerprint</span>
+                        <span className="text-white/60 text-xs">Sign in with Face ID or fingerprint</span>
                       </div>
                     </div>
                     <button
@@ -250,14 +251,14 @@ export default function Settings() {
                   </div>
 
                   {passkeysLoading && (
-                    <div className="flex items-center gap-2 text-white/40 text-sm py-2">
+                    <div className="flex items-center gap-2 text-white/60 text-sm py-2">
                       <Loader2 className="w-4 h-4 animate-spin" />
                       <span>Loading passkeys…</span>
                     </div>
                   )}
 
                   {!passkeysLoading && passkeys.length === 0 && (
-                    <p className="text-white/40 text-sm">No passkeys set up yet.</p>
+                    <p className="text-white/60 text-sm">No passkeys set up yet.</p>
                   )}
 
                   <AnimatePresence>
@@ -273,7 +274,7 @@ export default function Settings() {
                           <span className="text-white text-sm font-medium">
                             {pk.deviceName || 'Biometric Key'}
                           </span>
-                          <span className="text-white/40 text-xs block">
+                          <span className="text-white/60 text-xs block">
                             Added {new Date(pk.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                             {pk.lastUsed && ` · Last used ${new Date(pk.lastUsed).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`}
                           </span>
@@ -314,7 +315,7 @@ export default function Settings() {
                   <Shield className="w-5 h-5 text-white/60" />
                   <span className="text-white">Privacy & Security</span>
                 </div>
-                <ChevronRight className="w-4 h-4 text-white/40" />
+                <ChevronRight className="w-4 h-4 text-white/60" />
               </button>
               <button
                 onClick={() => setLocation('/trust')}
@@ -324,10 +325,10 @@ export default function Settings() {
                   <Lock className="w-5 h-5 text-indigo-400" />
                   <div className="text-left">
                     <span className="text-white block">Trust & Legal</span>
-                    <span className="text-white/40 text-xs">FCA, GDPR, your rights</span>
+                    <span className="text-white/60 text-xs">FCA, GDPR, your rights</span>
                   </div>
                 </div>
-                <ChevronRight className="w-4 h-4 text-white/40" />
+                <ChevronRight className="w-4 h-4 text-white/60" />
               </button>
               <button
                 onClick={() => setLocation('/support')}
@@ -337,7 +338,7 @@ export default function Settings() {
                   <HelpCircle className="w-5 h-5 text-white/60" />
                   <span className="text-white">Help & Support</span>
                 </div>
-                <ChevronRight className="w-4 h-4 text-white/40" />
+                <ChevronRight className="w-4 h-4 text-white/60" />
               </button>
               <button
                 onClick={() => setFeedbackOpen(true)}
@@ -347,10 +348,10 @@ export default function Settings() {
                   <MessageSquare className="w-5 h-5 text-teal-400" />
                   <div className="text-left">
                     <span className="text-white block">Share Feedback</span>
-                    <span className="text-white/40 text-xs">Help us improve Driiva</span>
+                    <span className="text-white/60 text-xs">Help us improve Driiva</span>
                   </div>
                 </div>
-                <ChevronRight className="w-4 h-4 text-white/40" />
+                <ChevronRight className="w-4 h-4 text-white/60" />
               </button>
               {user?.isAdmin && (
                 <button

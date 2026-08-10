@@ -245,6 +245,7 @@ export default function Trips() {
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={() => { haptics.light(); setLocation('/dashboard'); }}
+              aria-label="Back"
               className="p-2 -ml-2 rounded-full hover:bg-white/10 transition-colors"
             >
               <ChevronLeft className="w-5 h-5 text-white" />
@@ -255,7 +256,7 @@ export default function Trips() {
               </div>
               <div style={{ marginTop: '2px' }}>
                 <h1 className="text-xl font-bold text-white">Driiva</h1>
-                <p className="text-sm text-white/50">Your trip history</p>
+                <p className="text-sm text-white/60">Your trip history</p>
                 {isDemoMode && (
                   <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-emerald-500/20 text-emerald-400 rounded-full border border-emerald-500/30">
                     Demo Mode
@@ -274,10 +275,10 @@ export default function Trips() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
-            <p className="text-sm text-white/50">
+            <p className="text-sm text-white/60">
               {totalTrips} trip{totalTrips !== 1 ? 's' : ''}
               {totalMiles > 0 && (
-                <> · <AnimatedNumber value={totalMiles} decimals={1} className="text-white/50" suffix="mi total" /></>
+                <> · <AnimatedNumber value={totalMiles} decimals={1} className="text-white/60" suffix="mi total" /></>
               )}
             </p>
           </motion.div>
@@ -426,7 +427,7 @@ export default function Trips() {
 
             {paginationError && !loadingMore && (
               <div className="text-center py-4">
-                <p className="text-sm text-white/50 mb-3">Could not load older trips.</p>
+                <p className="text-sm text-white/60 mb-3">Could not load older trips.</p>
                 <motion.button
                   whileTap={{ scale: 0.97 }}
                   onClick={() => { haptics.light(); void loadMore(headCursor); }}
@@ -443,7 +444,7 @@ export default function Trips() {
             )}
 
             {!hasMore && trips.length > TRIPS_PAGE_SIZE && (
-              <p className="text-center text-[13px] text-white/35 py-4">
+              <p className="text-center text-[13px] text-white/55 py-4">
                 That is your full trip history.
               </p>
             )}

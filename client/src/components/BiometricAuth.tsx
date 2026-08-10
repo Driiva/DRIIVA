@@ -190,7 +190,7 @@ export default function BiometricAuth({ email, onSuccess, onRegister }: Biometri
 
       <div className="flex items-center gap-4 my-6">
         <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-        <span className="text-xs text-white/50 font-medium">OR</span>
+        <span className="text-xs text-white/60 font-medium">OR</span>
         <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
       </div>
     </div>

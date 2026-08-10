@@ -17,7 +17,7 @@ export default function Permissions() {
           onClick={() => setLocation("/dashboard")}
           whileTap={microInteractions.tap}
           transition={{ duration: timing.quick / 1000 }}
-          className="text-white/50 hover:text-white transition-colors min-h-[44px] px-4"
+          className="text-white/60 hover:text-white transition-colors min-h-[44px] px-4"
         >
           Skip for now
         </motion.button>

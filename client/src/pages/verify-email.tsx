@@ -282,14 +282,14 @@ export default function VerifyEmail() {
                   <button
                     type="button"
                     onClick={handleSkipForNow}
-                    className="flex items-center gap-1.5 mx-auto text-xs text-white/40 hover:text-white/60 transition-colors"
+                    className="flex items-center gap-1.5 mx-auto text-xs text-white/60 hover:text-white/60 transition-colors"
                   >
                     Skip for now — verify later
                   </button>
                   <button
                     type="button"
                     onClick={handleSignOut}
-                    className="flex items-center gap-1.5 mx-auto text-xs text-white/30 hover:text-white/50 transition-colors"
+                    className="flex items-center gap-1.5 mx-auto text-xs text-white/55 hover:text-white/60 transition-colors"
                   >
                     <LogOut className="w-3 h-3" />
                     Sign out and use a different account

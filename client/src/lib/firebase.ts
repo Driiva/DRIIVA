@@ -146,6 +146,29 @@ if (isFirebaseConfigured) {
       }),
     });
 
+    /*
+     * QA gate: point at the local emulators when VITE_USE_FIREBASE_EMULATOR is
+     * set. connectAuthEmulator and connectFirestoreEmulator were already
+     * imported by this module and never called, so there was no way to render
+     * the authenticated surfaces without real credentials. That is why the
+     * dashboard, trips, leaderboard and rewards pages had been through three
+     * build waves without anyone seeing them run.
+     *
+     * Guarded on DEV as well as the flag: a production bundle must never be
+     * able to talk to an emulator, whatever leaks into the environment.
+     */
+    if (import.meta.env.DEV && import.meta.env.VITE_USE_FIREBASE_EMULATOR === 'true') {
+      const host = (import.meta.env.VITE_EMULATOR_HOST as string) ?? '127.0.0.1';
+      // Ports are configurable because a second emulator set often runs
+      // alongside the default one; hardcoding 8080/9099 makes this unusable
+      // whenever anything else already holds them.
+      const authPort = Number(import.meta.env.VITE_EMULATOR_AUTH_PORT ?? 9099);
+      const storePort = Number(import.meta.env.VITE_EMULATOR_FIRESTORE_PORT ?? 8080);
+      connectAuthEmulator(auth, `http://${host}:${authPort}`, { disableWarnings: true });
+      connectFirestoreEmulator(db, host, storePort);
+      console.warn(`Firebase pointed at EMULATORS on ${host}. Not real data.`);
+    }
+
     // Analytics: initialize when measurementId is available (throws in some environments)
     if (envMeasurementId) {
       try {

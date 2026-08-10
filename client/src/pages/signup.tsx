@@ -221,7 +221,7 @@ export default function Signup() {
         >
           <span className="text-white">←</span>
         </motion.button>
-        <span className="text-sm text-white/50">Step 1 of 2</span>
+        <span className="text-sm text-white/60">Step 1 of 2</span>
       </div>
 
       <motion.div
@@ -248,13 +248,13 @@ export default function Signup() {
           <div>
             <label className="text-sm text-white/70 mb-2 block">Full Name</label>
             <div className="relative">
-              <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
+              <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/60" />
               <Input
                 type="text"
                 placeholder="Enter your full name"
                 value={formData.fullName}
                 onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                className="pl-12 h-14 bg-white/5 border-white/10 text-white placeholder:text-white/40 
+                className="pl-12 h-14 bg-white/5 border-white/10 text-white placeholder:text-white/60 
                          rounded-xl focus:border-orange-400/50 focus:ring-orange-400/20"
               />
             </div>
@@ -263,13 +263,13 @@ export default function Signup() {
           <div>
             <label className="text-sm text-white/70 mb-2 block">Email</label>
             <div className="relative">
-              <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
+              <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/60" />
               <Input
                 type="email"
                 placeholder="Enter your email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="pl-12 h-14 bg-white/5 border-white/10 text-white placeholder:text-white/40 
+                className="pl-12 h-14 bg-white/5 border-white/10 text-white placeholder:text-white/60 
                          rounded-xl focus:border-orange-400/50 focus:ring-orange-400/20"
               />
             </div>
@@ -278,19 +278,20 @@ export default function Signup() {
           <div>
             <label className="text-sm text-white/70 mb-2 block">Password</label>
             <div className="relative">
-              <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
+              <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/60" />
               <Input
                 type={showPassword ? "text" : "password"}
                 placeholder="Create a password"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="pl-12 pr-12 h-14 bg-white/5 border-white/10 text-white placeholder:text-white/40 
+                className="pl-12 pr-12 h-14 bg-white/5 border-white/10 text-white placeholder:text-white/60 
                          rounded-xl focus:border-orange-400/50 focus:ring-orange-400/20"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white/40 hover:text-white/60"
+                aria-label="Show or hide password"
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white/60 hover:text-white/60"
               >
                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
@@ -300,19 +301,20 @@ export default function Signup() {
           <div>
             <label className="text-sm text-white/70 mb-2 block">Confirm Password</label>
             <div className="relative">
-              <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
+              <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/60" />
               <Input
                 type={showConfirmPassword ? "text" : "password"}
                 placeholder="Confirm your password"
                 value={formData.confirmPassword}
                 onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                className="pl-12 pr-12 h-14 bg-white/5 border-white/10 text-white placeholder:text-white/40 
+                className="pl-12 pr-12 h-14 bg-white/5 border-white/10 text-white placeholder:text-white/60 
                          rounded-xl focus:border-orange-400/50 focus:ring-orange-400/20"
               />
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white/40 hover:text-white/60"
+                aria-label="Show or hide password"
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white/60 hover:text-white/60"
               >
                 {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
@@ -346,7 +348,7 @@ export default function Signup() {
           >
             Sign in
           </button>
-          <p className="text-white/50 text-sm">
+          <p className="text-white/60 text-sm">
             Just exploring?{" "}
             <button
               onClick={() => setLocation("/demo")}

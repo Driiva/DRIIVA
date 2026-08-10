@@ -73,7 +73,7 @@ export default function Support() {
                   </div>
                   <div>
                     <h3 className="font-medium text-white">{option.title}</h3>
-                    <p className="text-sm text-white/50">{option.description}</p>
+                    <p className="text-sm text-white/60">{option.description}</p>
                   </div>
                 </>
               );
@@ -107,14 +107,14 @@ export default function Support() {
                   <CollapsibleTrigger className="w-full flex items-center justify-between gap-3 p-4 text-left hover:bg-white/5 transition-colors">
                     <span className="font-medium text-white">{item.question}</span>
                     <ChevronDown
-                      className={`w-4 h-4 flex-shrink-0 text-white/50 transition-transform duration-200 ${
+                      className={`w-4 h-4 flex-shrink-0 text-white/60 transition-transform duration-200 ${
                         openFaq === item.id ? "rotate-180" : ""
                       }`}
                     />
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <div className="px-4 pb-4 pt-0">
-                      <p className="text-sm text-white/50">{item.answer}</p>
+                      <p className="text-sm text-white/60">{item.answer}</p>
                     </div>
                   </CollapsibleContent>
                 </div>
@@ -128,7 +128,7 @@ export default function Support() {
       <footer className="fixed bottom-0 left-0 right-0 z-50 pb-safe border-0 border-none shadow-none outline-none bg-transparent">
         <div className="relative flex items-center justify-center py-2.5 px-4">
           <span
-            className="absolute right-3 bottom-1 text-white/35 text-[10px] italic"
+            className="absolute right-3 bottom-1 text-white/55 text-[10px] italic"
             style={{ fontFamily: 'Inter, sans-serif' }}
           >
             driiva © 2026
