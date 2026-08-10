@@ -297,9 +297,18 @@ export default function Profile() {
   const premiumAmount = dashboardData?.premiumAmount
     ? dashboardData.premiumAmount.toFixed(2)
     : '—';
-  const policyNumber = dashboardData?.policyNumber ?? null;
-  const memberId = user?.id ? `DRV-${user.id.slice(0, 8).toUpperCase()}` : '—';
-  const displayPolicyNumber = policyNumber ?? memberId;
+  /*
+   * WAVE H: `displayPolicyNumber = policyNumber ?? memberId` filled a slot with
+   * whichever value happened to exist. Two problems. The member ID wore a
+   * `DRV-` prefix, which is the shape this system mints POLICY numbers in, so
+   * an account identifier read as a policy reference. And a real policy number
+   * was being rendered under a "Member ID" label whenever one existed.
+   *
+   * They are different things about different objects, so they are separate
+   * values now. The member ID is derived from the account and always exists;
+   * the policy number belongs to a policy and is shown where policies are.
+   */
+  const memberId = user?.id ? user.id.slice(0, 8).toUpperCase() : '—';
   const scoreBreakdown = dashboardData?.scoreBreakdown;
   const memberSince = dashboardData?.memberSince ?? '—';
 
@@ -375,7 +384,7 @@ export default function Profile() {
                   >
                     <div className="p-4">
                       <p className="text-xs text-white/60 mb-1">Member ID</p>
-                      <p className="text-sm font-medium text-white">{displayPolicyNumber}</p>
+                      <p className="text-sm font-medium text-white">{memberId}</p>
                     </div>
                     <div className="border-t border-white/10">
                       <button
@@ -520,7 +529,7 @@ export default function Profile() {
             )}
 
             <DetailRow label="Premium" value={premiumAmount !== '—' ? `£${premiumAmount}` : '—'} loading={loading} />
-            <DetailRow label="Member ID" value={displayPolicyNumber} loading={loading} />
+            <DetailRow label="Member ID" value={memberId} loading={loading} />
             <DetailRow label="Member since" value={memberSince} loading={loading} />
             {(loading || dashboardData?.age) && (
               <DetailRow label="Age" value={dashboardData?.age ? String(dashboardData.age) : '—'} loading={loading} />

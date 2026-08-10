@@ -73,7 +73,12 @@ export interface DashboardData {
   poolShare: number;
   poolContribution: number;
   sharePercentage: number;
-  safetyFactor: number;
+  /**
+   * Null when no pool document exists. It used to default to 1.0, which the
+   * dashboard rendered as "Safety Factor 100%": a perfect community metric
+   * manufactured from a missing document.
+   */
+  safetyFactor: number | null;
   activeParticipants: number;
   projectedRefund: number;
   age: number | null;
@@ -239,7 +244,7 @@ export function useDashboardData(userId: string | null): UseDashboardDataResult 
       poolShare: poolShare.currentShareCents / 100,
       poolContribution: poolShare.contributionCents / 100,
       sharePercentage: poolShare.sharePercentage,
-      safetyFactor: pool?.safetyFactor || 1.0,
+      safetyFactor: typeof pool?.safetyFactor === 'number' ? pool.safetyFactor : null,
       activeParticipants: pool?.activeParticipants || 0,
       projectedRefund,
       age: (userDoc as any)?.age ?? null,

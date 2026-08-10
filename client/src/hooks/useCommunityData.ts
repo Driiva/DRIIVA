@@ -47,7 +47,8 @@ export interface CommunityPoolData {
   
   // Pool metrics
   averagePoolScore: number;
-  safetyFactor: number;
+  /** Null when the pool document does not exist. Never defaulted to 1.0. */
+  safetyFactor: number | null;
   claimsThisPeriod: number;
   projectedRefundRate: number;
   
@@ -231,7 +232,7 @@ const DEFAULT_POOL_DATA: CommunityPoolData = {
   activeParticipants: 0,
   totalParticipantsEver: 0,
   averagePoolScore: 0,
-  safetyFactor: 1.0,
+  safetyFactor: null,
   claimsThisPeriod: 0,
   projectedRefundRate: 0,
   periodStart: null,

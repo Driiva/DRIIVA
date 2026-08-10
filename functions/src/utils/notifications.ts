@@ -120,6 +120,62 @@ export async function notifyAchievementsUnlocked(
 }
 
 /**
+ * Cover is confirmed. Only send this when the insurer actually said so.
+ *
+ * The policy number is included only if the insurer returned one. It used to
+ * be filled with a timestamp-derived string when they did not, which put an
+ * invented reference on a lock screen for a policy whose real reference we did
+ * not have.
+ */
+export async function notifyPolicyConfirmed(
+  userId: string,
+  policyId: string,
+  policyNumber: string | null,
+): Promise<void> {
+  const tokens = await getUserTokens(userId);
+  await sendToTokens(
+    userId,
+    tokens,
+    {
+      title: 'Your cover is confirmed',
+      body: policyNumber
+        ? `Policy ${policyNumber} is in place. Drive safely to build your score.`
+        : 'Your policy is in place. Your policy number will appear in the app shortly.',
+    },
+    { type: 'policy_confirmed', policyId, ...(policyNumber ? { policyNumber } : {}) },
+  );
+}
+
+/**
+ * We took the money and we do NOT have cover in place.
+ *
+ * This is the case the whole payment path exists to make impossible to hide.
+ * Previously the binding failure was written to a Firestore document and
+ * logged, and the driver, who had just been charged and shown "Your policy is
+ * now active", was told nothing at all. Silence after a payment is the worst
+ * available option: it is the state where somebody drives uninsured believing
+ * the opposite.
+ */
+export async function notifyPolicyNotConfirmed(
+  userId: string,
+  reason: 'failed' | 'pending',
+): Promise<void> {
+  const tokens = await getUserTokens(userId);
+  await sendToTokens(
+    userId,
+    tokens,
+    {
+      title: 'Your cover is not in place yet',
+      body:
+        reason === 'failed'
+          ? 'We have your payment but could not set up your policy. You are not insured by Driiva. We are on it and will contact you; do not drive on this cover.'
+          : 'We have your payment and your policy is still being set up. You are not covered until we confirm it. We will tell you as soon as it is done.',
+    },
+    { type: 'policy_not_confirmed', reason },
+  );
+}
+
+/**
  * Send a weekly driving summary to a user (called by scheduled function).
  */
 export async function sendWeeklySummaryToUser(

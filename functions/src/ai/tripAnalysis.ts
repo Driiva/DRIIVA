@@ -153,7 +153,6 @@ interface ClaudeAnalysisResponse {
   strengths: string[];
   improvements: string[];
   specificIncidents: Array<{
-    timestamp: string;
     type: string;
     severity: string;
     description: string;
@@ -558,7 +557,7 @@ ROLE:
 - Provide actionable, encouraging safety tips
 
 CONSTRAINTS:
-- Scores are 0-100 where 100 is perfect. Most safe trips score 80-95.
+- Scores are 0-100 where 100 is perfect. Judge this trip on its own metrics; do not anchor on a typical range.
 - Risk levels: "low", "medium", "high".
 - Be encouraging but honest. Drivers see these insights in the app.
 - UK road context: left-hand driving, motorways/A-roads/B-roads.
@@ -567,6 +566,10 @@ CONSTRAINTS:
 - Strengths: 2-4 items. Improvements: 1-3 items. Incidents: only what the data supports.
 - Safety tips: 2-4 actionable suggestions.
 - For the comparisonToAverage field, write a clear 1-2 sentence explanation.
+- Do NOT state when during the trip an incident happened: you are given totals
+  and percentiles, not a timeline, so any specific moment would be invented.
+- Do NOT infer weather. No weather data is supplied on this path, so
+  weatherConsideration is always null.
 
 OUTPUT FORMAT:
 Return ONLY a JSON object (no markdown fences, no explanation outside JSON) with this exact schema:
@@ -577,7 +580,6 @@ Return ONLY a JSON object (no markdown fences, no explanation outside JSON) with
   "improvements": ["string array of areas to improve"],
   "specificIncidents": [
     {
-      "timestamp": "<time offset description, e.g. '3 min into trip' or approximate ISO>",
       "type": "harsh_braking" | "speeding" | "rapid_acceleration" | "sharp_turn" | "phone_usage" | "tailgating" | "erratic_driving",
       "severity": "low" | "medium" | "high",
       "description": "<what happened, 1 sentence>"
@@ -602,7 +604,7 @@ Return ONLY a JSON object (no markdown fences, no explanation outside JSON) with
   },
   "contextFactors": {
     "estimatedRoadType": "motorway" | "a_road" | "urban" | "residential" | "mixed",
-    "weatherConsideration": <string or null>
+    "weatherConsideration": null
   },
   "historicalComparison": {
     "vsAverageScore": <integer delta from driver's average>,
@@ -699,7 +701,12 @@ function buildInsightDocument(
   const specificIncidents: AIIncident[] = (analysis.specificIncidents || [])
     .slice(0, 10)
     .map(inc => ({
-      timestamp: String(inc.timestamp || 'Unknown'),
+      // WAVE H: this carried a `timestamp` the model produced, e.g. "3 min
+      // into trip". The prompt only ever supplied aggregate counts and
+      // percentiles, never a per-event timeline, so the model could not know
+      // when anything happened and was generating a plausible moment. The
+      // incidents themselves are supported by the metrics; their timing was
+      // not, so it is gone rather than shown as "Unknown".
       type: validateIncidentType(inc.type),
       severity: validateRiskLevel(inc.severity),
       description: String(inc.description || 'Incident detected'),

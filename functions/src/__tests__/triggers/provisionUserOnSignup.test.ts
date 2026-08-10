@@ -2,14 +2,14 @@
  * TESTS: provisionUser / provisionUserOnSignup (dormant M1 trigger)
  * ====================================================================
  * Exercises the async side-effects of the unified provisioning handler:
- * the users/usernames/policies writes, ADMIN_EMAILS auto-promotion, and
+ * the users/usernames writes, ADMIN_EMAILS auto-promotion, and
  * Damoov-registration resilience. The trigger itself is not wired into
  * functions/src/index.ts (dormant) - these tests drive `provisionUser`
  * directly, the same seam M1 T5's emulator integration test will use.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { mockDb, mockGet, mockSet, mockUpdate, mockRunTransaction, mockWhere, mockLimit } from '../setup';
+import { mockDb, mockGet, mockSet, mockUpdate, mockRunTransaction } from '../setup';
 
 const { mockCreateDamoovUser } = vi.hoisted(() => ({
   mockCreateDamoovUser: vi.fn(),
@@ -34,36 +34,40 @@ beforeEach(() => {
   vi.clearAllMocks();
   delete process.env.ADMIN_EMAILS;
 
-  // Idempotency guard's existing-policy query: pretend no policy exists yet,
-  // so provisioning proceeds. Individual tests override this to simulate a
+  // Idempotency guard reads users/{uid}: pretend it does not exist yet, so
+  // provisioning proceeds. Individual tests override this to simulate a
   // re-run/duplicate delivery.
-  mockGet.mockResolvedValue({ empty: true });
-
-  // Counter transaction: pretend the counter doc doesn't exist yet, so
-  // generatePolicyNumber() resolves deterministically to DRV-001.
-  mockRunTransaction.mockImplementation(async (cb: (tx: unknown) => unknown) =>
-    cb({
-      get: vi.fn().mockResolvedValue({ exists: false, data: () => undefined }),
-      set: vi.fn(),
-    }),
-  );
+  mockGet.mockResolvedValue({ exists: false });
 
   mockCreateDamoovUser.mockResolvedValue(null);
 });
 
 describe('provisionUser', () => {
-  it('writes users/{uid}, usernames/{localPart} and the default policies/{...} doc', async () => {
+  it('writes users/{uid} and usernames/{localPart}, and NO policy', async () => {
     await provisionUser(fakeUserRecord());
 
     const collectionsWritten = mockDb.collection.mock.calls.map((call: unknown[]) => call[0]);
     expect(collectionsWritten).toContain('users');
     expect(collectionsWritten).toContain('usernames');
-    expect(collectionsWritten).toContain('policies');
 
-    const [userDoc, usernameDoc, policyDoc] = mockSet.mock.calls.map((call: unknown[]) => call[0]);
+    // Wave H: signing up used to mint a policies/{id} document declaring
+    // GBP 100,000 of liability cover under a sequential DRV-### number, for a
+    // contract no insurer had written. Driiva is not authorised to arrange
+    // cover, so an account is all a signup can honestly create.
+    expect(collectionsWritten).not.toContain('policies');
+
+    const [userDoc, usernameDoc] = mockSet.mock.calls.map((call: unknown[]) => call[0]);
     expect(userDoc).toMatchObject({ uid: 'user-001', email: 'jamal@example.com', onboardingComplete: false });
+    expect(userDoc.activePolicy).toBeNull();
     expect(usernameDoc).toMatchObject({ uid: 'user-001', email: 'jamal@example.com' });
-    expect(policyDoc).toMatchObject({ policyId: 'policy_user-001', userId: 'user-001', policyNumber: 'DRV-001' });
+  });
+
+  it('never touches the shared policy counter', async () => {
+    await provisionUser(fakeUserRecord());
+
+    // The DRV-### counter was shared and monotonic, so the number handed to a
+    // driver also told them roughly how many customers the company had.
+    expect(mockRunTransaction).not.toHaveBeenCalled();
   });
 
   it('auto-promotes an ADMIN_EMAILS user to isAdmin on the written doc', async () => {
@@ -131,12 +135,13 @@ describe('provisionUser', () => {
     expect(userDoc.displayName).toBe('Ada Google');
   });
 
-  it('is idempotent: a second call for the same uid does not create a second policy, re-increment the counter, or overwrite the user doc', async () => {
+  it('is idempotent: a second call for the same uid does not overwrite the user doc', async () => {
     // Simulates a re-run / at-least-once duplicate delivery of the Auth
-    // onCreate event: a policy already exists for this uid, so the
-    // idempotency guard (restored from onUserCreate) must short-circuit
-    // before any write.
-    mockGet.mockResolvedValue({ empty: false });
+    // onCreate event. The guard now keys off the USER document, because
+    // provisioning no longer creates a policy to key off; without that change
+    // a redelivery would have found no policy and clobbered everything the
+    // driver had accrued since signup.
+    mockGet.mockResolvedValue({ exists: true });
 
     await provisionUser(fakeUserRecord());
 
@@ -145,13 +150,12 @@ describe('provisionUser', () => {
     expect(mockCreateDamoovUser).not.toHaveBeenCalled();
   });
 
-  it('checks for an existing policy by userId before doing any provisioning work', async () => {
+  it('checks for an existing user document before doing any provisioning work', async () => {
     await provisionUser(fakeUserRecord());
 
     const collectionsWritten = mockDb.collection.mock.calls.map((call: unknown[]) => call[0]);
-    expect(collectionsWritten[0]).toBe('policies');
-    expect(mockWhere).toHaveBeenCalledWith('userId', '==', 'user-001');
-    expect(mockLimit).toHaveBeenCalledWith(1);
+    expect(collectionsWritten[0]).toBe('users');
+    expect(mockGet).toHaveBeenCalled();
   });
 });
 

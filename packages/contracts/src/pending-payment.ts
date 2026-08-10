@@ -6,6 +6,25 @@ export const PendingPaymentStatusSchema = z.enum(['pending', 'processing', 'comp
 export type PendingPaymentStatus = z.infer<typeof PendingPaymentStatusSchema>;
 
 /**
+ * Whether the driver has COVER, which is a different question from whether
+ * the binding attempt finished.
+ *
+ * `status: 'completed'` only means the trigger ran to the end. A policy Root
+ * returned in a pending state completes the attempt and leaves the driver
+ * uninsured, and 'none' is the case where we hold the money and hold no cover
+ * at all. Checkout reads this field, not `status`, to decide what to say.
+ */
+export const PendingPaymentPolicyStatusSchema = z.enum([
+  'active',
+  'pending',
+  'expired',
+  'cancelled',
+  'suspended',
+  'none',
+]);
+export type PendingPaymentPolicyStatus = z.infer<typeof PendingPaymentPolicyStatusSchema>;
+
+/**
  * PENDING PAYMENT DOCUMENT
  * ========================
  * Collection: `users/{uid}/pendingPayments/{stripeSubscriptionId}`. Written
@@ -21,6 +40,9 @@ export const PendingPaymentDocumentSchema = z.object({
   stripeCustomerId: z.string(),
   quoteId: z.string().optional(),
   status: PendingPaymentStatusSchema,
+  /** Absent until the trigger has resolved the binding. */
+  policyStatus: PendingPaymentPolicyStatusSchema.optional(),
+  policyId: z.string().optional(),
   error: z.string().optional(),
   createdAt: FirestoreTimestampSchema,
   processedAt: FirestoreTimestampSchema.optional(),

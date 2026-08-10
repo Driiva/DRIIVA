@@ -91,16 +91,7 @@ export function BetaEstimateCard({
     );
   }
 
-  const {
-    estimatedPremium,
-    minPremium,
-    maxPremium,
-    estimatedRefund,
-    estimatedNetCost,
-    refundRate,
-  } = estimate;
-
-  const refundPercent = (refundRate * 100).toFixed(1);
+  const { estimatedPremium, minPremium, maxPremium } = estimate;
 
   return (
     <div className="dashboard-glass-card mb-4">
@@ -130,31 +121,33 @@ export function BetaEstimateCard({
           </p>
         </div>
 
-        <div>
-          <p className="text-xs text-white/60 mb-0.5">Estimated refund</p>
-          <p className="text-lg font-semibold text-emerald-400">
-            {formatPounds(estimatedRefund)}/year
-            {Number(refundPercent) > 0 && (
-              <span className="text-sm font-normal text-white/60 ml-1">
-                ({refundPercent}%)
-              </span>
-            )}
-          </p>
-        </div>
+        {/*
+          WAVE H: this card also showed "Estimated refund £X/year" in green and
+          "Estimated net cost after refund". Both are computed from a refund
+          rate that takes the community pool's safety factor as an input, and
+          the pool has no funding path at all: addPoolContribution has never had
+          a caller, and when the pool document is missing the safety factor
+          silently defaults to 0.5. So the green number was a share of money
+          nobody has contributed, and the net cost told the driver what
+          insurance would cost them after a refund that cannot be paid.
 
-        <div>
-          <p className="text-xs text-white/60 mb-0.5">Estimated net cost after refund</p>
-          <p className="text-lg font-semibold text-white">
-            {formatPounds(estimatedNetCost)}/year
-          </p>
-        </div>
+          The same rule the mobile dashboard and the marketing pool section now
+          follow applies here: no pounds figure for a pool refund while the
+          money model is undecided. The premium estimate stays, because it is
+          an estimate of something that will exist.
+        */}
+        <p className="text-xs text-white/60 leading-relaxed">
+          Refunds depend on the community pool, which is not funded yet, so
+          there is no refund figure to show.
+        </p>
       </div>
 
       <div className="mt-4 pt-3 border-t border-white/10 flex items-start gap-2">
         <Info className="w-4 h-4 text-white/60 shrink-0 mt-0.5" />
         <p className="text-xs text-white/60 leading-relaxed">
-          Beta estimate only. Not a final insurance quote. Final pricing will be
-          provided by our authorised partners.
+          Beta estimate only, produced by Driiva's own model. It is not a quote
+          and nobody has underwritten it. Real pricing needs an insurer, and
+          Driiva is pending FCA authorisation.
         </p>
       </div>
     </div>

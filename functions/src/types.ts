@@ -136,7 +136,8 @@ export interface PoolShareSummary {
 
 export interface ActivePolicySummary {
   policyId: string;
-  policyNumber: string;
+  /** Null until the insurer issues one. Never invented. */
+  policyNumber: string | null;
   status: PolicyStatus;
   premiumCents: number;
   coverageType: CoverageType;
@@ -177,16 +178,24 @@ export interface UserDocument {
 export interface PolicyDocument {
   policyId: string;
   userId: string;
-  policyNumber: string;
+  /** Null until the insurer issues one. Never invented. */
+  policyNumber: string | null;
   status: PolicyStatus;
   coverageType: CoverageType;
+  /**
+   * What the policy actually covers, as stated by whoever underwrote it.
+   * Null when nobody has. Driiva has no underwriter, so pre-launch this is
+   * null rather than a plausible set of limits: it used to be written as
+   * GBP 100,000 liability with roadside assistance on every signup, and
+   * nothing read it, so the numbers existed only to look real.
+   */
   coverageDetails: {
     liabilityLimitCents: number;
     collisionDeductibleCents: number;
     comprehensiveDeductibleCents: number;
     includesRoadside: boolean;
     includesRental: boolean;
-  };
+  } | null;
   basePremiumCents: number;
   currentPremiumCents: number;
   discountPercentage: number;
@@ -429,8 +438,12 @@ export interface AIPattern {
  * Specific driving incident flagged by AI
  */
 export interface AIIncident {
-  /** ISO 8601 timestamp or offset description */
-  timestamp: string;
+  /**
+   * WAVE H: this carried a timestamp the model invented. The analysis prompt
+   * is built from aggregate counts and percentiles, never a per-event
+   * timeline, so nothing on this path knows when an incident occurred. The
+   * field is gone rather than filled with "Unknown".
+   */
   type: IncidentType;
   severity: AIRiskLevel;
   description: string;
