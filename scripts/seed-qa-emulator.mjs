@@ -190,13 +190,22 @@ async function main() {
     });
 
     if (i < 5) {
+      /*
+       * routeSummary must be in the writer's exact "A → B" form, and endedAt
+       * must be present: the dashboard splits the summary on that arrow and
+       * formats that date. A seed that wrote a plain phrase and no endedAt
+       * rendered "Camden to Islington → Unknown" and "Unknown" on every row,
+       * which looks exactly like an app bug and is not one.
+       */
+      const startLabel = ['12 Camden Road', 'Home', '48 Kingsland Ro...', 'Kings Cross S...', 'Work'][i % 5];
+      const endLabel = ['22 Upper Street', 'Work', 'Shoreditch Hi...', 'Angel Station', 'Home'][i % 5];
       recent.push({
         tripId,
         score,
         distanceMeters,
         durationSeconds,
-        routeSummary: ['Camden to Islington', 'Home to work', 'Hackney to Shoreditch',
-          'Kings Cross to Angel', 'Work to home'][i % 5],
+        endedAt: Timestamp.fromMillis(startedAt.toMillis() + durationSeconds * 1000),
+        routeSummary: `${startLabel} → ${endLabel}`,
       });
     }
   });

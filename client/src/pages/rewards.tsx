@@ -6,7 +6,11 @@ import { BottomNav } from '../components/BottomNav';
 import { GlassCard } from "@/components/GlassCard";
 import RewardsTimeline from "@/components/RewardsTimeline";
 import type { RewardState } from "@/components/RewardsTimeline";
-import { Gift, TrendingUp, Check, Bell, ChevronDown, Loader2 } from "lucide-react";
+import {
+  Gift, TrendingUp, Check, Bell, ChevronDown, Loader2,
+  Car, Shield, Target, Star, Flame, Route, Moon, Award, Trophy,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { container, item, timing, easing, microInteractions } from "@/lib/animations";
 import { SmoothTabs } from "@/components/SmoothTabs";
 import { Shimmer } from "@/components/Shimmer";
@@ -15,8 +19,8 @@ import { useHaptics } from "@/hooks/useHaptics";
 import { useAuth } from '../contexts/AuthContext';
 import { useUserProfile } from "../hooks/useUserProfile";
 import { DEFAULT_DRIVING_PROFILE } from '../../../shared/firestore-types';
-import { getAchievementDefinitions, getUserAchievements } from "@/lib/firestore";
-import type { AchievementDef, UserAchievementRecord } from "@/lib/firestore";
+import { getUserAchievements } from "@/lib/firestore";
+import { buildAchievementViews } from "@driiva/contracts";
 import { isFirebaseConfigured } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -29,16 +33,19 @@ interface DisplayAchievement {
   id: string;
   title: string;
   description: string;
-  icon: string;
+  icon: LucideIcon;
   unlocked: boolean;
   unlockedAt?: string;
   category: string;
 }
 
-const ICON_FALLBACK: Record<string, string> = {
-  Car: '🚗', Shield: '🛡️', Target: '🎯', Users: '👥', Zap: '⚡',
-  Star: '⭐', Flame: '🔥', Route: '🛣️', Moon: '🌙', Gauge: '📊',
-  Award: '🏅', Trophy: '🏆',
+/*
+ * Lucide names from the shared catalogue. The previous table mapped each one
+ * to an EMOJI, which the brand bans outright and which rendered as the only
+ * visual for a real achievement.
+ */
+const ICON_MAP: Record<string, LucideIcon> = {
+  Car, Shield, Target, Star, Flame, Route, Moon, Award, Trophy,
 };
 
 export default function Rewards() {
@@ -95,30 +102,45 @@ export default function Rewards() {
 
     (async () => {
       try {
-        const [defs, userRecords] = await Promise.all([
-          getAchievementDefinitions(),
-          getUserAchievements(user.id),
-        ]);
-
+        /*
+         * Reads the catalogue from @driiva/contracts and only the UNLOCKS from
+         * Firestore, matching /achievements.
+         *
+         * This page was still calling getAchievementDefinitions(), which reads
+         * a top-level collection populated only by an admin seeding callable.
+         * Unseeded, it returned nothing, so this screen told a driver with
+         * three unlocks that they had "0/-" and "No achievements yet" while
+         * /achievements correctly showed 3 of 8. Two screens, one user, two
+         * different answers.
+         */
+        const userRecords = await getUserAchievements(user.id);
         if (cancelled) return;
 
-        const unlockMap = new Map(userRecords.map(r => [r.achievementId, r]));
+        const views = buildAchievementViews(
+          userRecords.map((r) => ({
+            achievementId: r.achievementId,
+            unlockedAt: r.unlockedAt?.toDate?.() ?? null,
+          })),
+          {
+            totalTrips: profile.totalTrips ?? 0,
+            totalMiles: profile.totalMiles ?? 0,
+            streakDays: profile.streakDays ?? 0,
+            currentScore: profile.currentScore ?? 0,
+          },
+        );
 
         setAchievements(
-          defs.map((def: AchievementDef) => {
-            const unlock = unlockMap.get(def.id);
-            return {
-              id: def.id,
-              title: def.name,
-              description: def.description,
-              icon: ICON_FALLBACK[def.icon] ?? '🏆',
-              unlocked: !!unlock,
-              unlockedAt: unlock?.unlockedAt?.toDate?.()?.toLocaleDateString('en-GB', {
-                day: 'numeric', month: 'short', year: 'numeric',
-              }),
-              category: def.category,
-            };
-          })
+          views.map((view) => ({
+            id: view.id,
+            title: view.name,
+            description: view.description,
+            icon: ICON_MAP[view.icon] ?? Trophy,
+            unlocked: view.unlocked,
+            unlockedAt: view.unlockedAt?.toLocaleDateString('en-GB', {
+              day: 'numeric', month: 'short', year: 'numeric',
+            }),
+            category: view.category,
+          })),
         );
       } catch (err) {
         console.error('[Rewards] Failed to load achievements:', err);
@@ -347,7 +369,16 @@ export default function Rewards() {
                             whileHover={{ rotate: 5, scale: 1.05 }}
                             transition={{ duration: timing.interaction }}
                           >
-                            <span className="text-xl">{achievement.icon}</span>
+                            <achievement.icon
+                              className="w-6 h-6"
+                              strokeWidth={2}
+                              style={{
+                                color: achievement.unlocked
+                                  ? 'var(--app-primary-text)'
+                                  : 'var(--app-text-sec)',
+                              }}
+                              aria-hidden="true"
+                            />
                           </motion.div>
 
                           <div className="flex-1">
