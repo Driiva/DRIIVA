@@ -6,7 +6,10 @@ functions
 functions-python
 api/main.py
 api/__init__.py
-scripts
-docs
+# Anchored to the repo root on purpose. An unanchored "scripts" also matched
+# apps/marketing/scripts, so prerender.mjs was never uploaded and every
+# marketing production build has failed since the prerender work landed.
+/scripts
+/docs
 *.zip
 *.log
