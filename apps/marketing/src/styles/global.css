@@ -656,10 +656,11 @@ main {
 .hero-headline .italic {
   font-style: italic;
   font-weight: 500;
-  background: var(--grad-brand);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  /* Solid, not gradient-clipped. f5b9b0a removed this treatment site-wide for
+     legibility after Keith flagged it, and this one instance survived on the
+     hero, where the redesign has since made it the largest text on the page.
+     Same replacement colour the rest of the site moved to. */
+  color: var(--amber-2);
 }
 
 .hero-wordmark {
