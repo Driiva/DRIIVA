@@ -101,11 +101,27 @@ export async function acceptInsuranceQuoteInternal(
   // Ensure Root policyholder
   let policyholderPackageId: string = (user as any).rootPolicyholderId;
   if (!policyholderPackageId) {
-    const nameParts = (user.displayName || '').trim().split(/\s+/);
+    // The identity on an insurance record is the driver's or we do not create
+    // it. The old fallback was first_name "Driver", last_name "Unknown" at
+    // `${userId}@driiva.internal`, and since provisioning writes displayName
+    // null for email signups, that was the ordinary path rather than the edge
+    // case. Throwing here marks the pendingPayment failed, which now tells the
+    // driver their cover is not in place instead of leaving them to assume it
+    // is.
+    const nameParts = (user.displayName || '').trim().split(/\s+/).filter(Boolean);
+    const firstName = nameParts[0] ?? '';
+    const lastName = nameParts.slice(1).join(' ');
+    const email = (user.email || '').trim();
+    if (!firstName || !lastName || !email) {
+      throw new Error(
+        `Cannot create a policyholder for ${userId} without a real name and email ` +
+          `(have firstName=${Boolean(firstName)}, lastName=${Boolean(lastName)}, email=${Boolean(email)})`,
+      );
+    }
     const ph = await rootApiFetch<{ policyholder_id: string }>('/policyholders', 'POST', {
-      first_name: nameParts[0] || 'Driver',
-      last_name: nameParts.slice(1).join(' ') || 'Unknown',
-      email: user.email || `${userId}@driiva.internal`,
+      first_name: firstName,
+      last_name: lastName,
+      email,
       id: userId,
     });
     policyholderPackageId = ph.policyholder_id;

@@ -179,6 +179,50 @@ function mapCoverageToRootModule(
 const db = admin.firestore();
 
 /**
+ * The name and email that go onto an insurance record must be the driver's
+ * own, or we do not create the record.
+ *
+ * This used to fall back to first_name "Driver", last_name "Unknown" and
+ * `${userId}@driiva.internal`. Because provisioning deliberately writes
+ * displayName as null for email/password signups (see provisionUser), that
+ * fallback was the COMMON path, not the edge case: the insurer's policyholder
+ * register would have filled with people called "Driver Unknown" at an address
+ * that accepts no mail. Correspondence an insurer is obliged to send would
+ * have gone nowhere, and the identity on the record would have been false.
+ *
+ * Refusing is the honest failure. It surfaces as "we need your name before we
+ * can do this", which is true, actionable, and recoverable.
+ */
+function requirePolicyholderIdentity(
+  userId: string,
+  user: UserDocument,
+): { firstName: string; lastName: string; email: string } {
+  const missing: string[] = [];
+
+  const nameParts = (user.displayName || '').trim().split(/\s+/).filter(Boolean);
+  const firstName = nameParts[0] ?? '';
+  const lastName = nameParts.slice(1).join(' ');
+  if (!firstName) missing.push('your first name');
+  if (!lastName) missing.push('your last name');
+
+  const email = (user.email || '').trim();
+  if (!email) missing.push('your email address');
+
+  if (missing.length > 0) {
+    functions.logger.warn('[Insurance] refusing to create a policyholder without a real identity', {
+      userId,
+      missing,
+    });
+    throw new functions.https.HttpsError(
+      'failed-precondition',
+      `We need ${missing.join(' and ')} before we can set up your insurance. Please add it to your profile and try again.`,
+    );
+  }
+
+  return { firstName, lastName, email };
+}
+
+/**
  * Ensure a Root policyholder exists for this user.
  * Stores the Root policyholder_id on the Firestore user document to avoid
  * creating duplicates on subsequent calls.
@@ -192,9 +236,7 @@ async function ensurePolicyholder(
     return (user as any).rootPolicyholderId as string;
   }
 
-  const nameParts = (user.displayName || '').trim().split(/\s+/);
-  const firstName = nameParts[0] || 'Driver';
-  const lastName = nameParts.slice(1).join(' ') || 'Unknown';
+  const { firstName, lastName, email } = requirePolicyholderIdentity(userId, user);
 
   const policyholder = await rootApiFetch<RootPolicyholderResponse>({
     method: 'POST',
@@ -202,7 +244,7 @@ async function ensurePolicyholder(
     body: {
       first_name: firstName,
       last_name: lastName,
-      email: user.email || `${userId}@driiva.internal`,
+      email,
       id: userId, // Firebase UID as external reference
     },
   });

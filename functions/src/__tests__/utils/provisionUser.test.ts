@@ -22,10 +22,7 @@ const fakeTimestamp = (offsetDays = 0) => {
 const baseInput = {
   uid: 'user-abc123',
   email: 'driver@example.com',
-  policyId: 'policy_user-abc123',
-  policyNumber: 'DRV-001',
   now: fakeTimestamp(),
-  renewalDate: fakeTimestamp(365),
 };
 
 describe('buildProvisionedUserDoc', () => {
@@ -120,16 +117,19 @@ describe('buildProvisionedUserDoc', () => {
     expect(doc.phoneNumber).toBeNull();
   });
 
-  it('embeds an ActivePolicySummary pointing at the caller-supplied policyId/policyNumber, pending/standard/zero premium', () => {
+  it('gives a new user NO policy, because nobody has underwritten one', () => {
     const doc = buildProvisionedUserDoc({ ...baseInput, displayName: 'Jamal Driver' });
 
-    expect(doc.activePolicy).toEqual({
-      policyId: baseInput.policyId,
-      policyNumber: baseInput.policyNumber,
-      status: 'pending',
-      premiumCents: 0,
-      coverageType: 'standard',
-      renewalDate: baseInput.renewalDate,
-    });
+    // Wave H: this used to embed an ActivePolicySummary carrying a sequential
+    // DRV-### number and a renewal date a year out, for a contract that did
+    // not exist. Signing up gets you an account; a policy appears when an
+    // insurer issues one.
+    expect(doc.activePolicy).toBeNull();
+  });
+
+  it('has no field anywhere that could be read as a policy reference', () => {
+    const doc = buildProvisionedUserDoc({ ...baseInput, displayName: 'Jamal Driver' });
+
+    expect(JSON.stringify(doc)).not.toMatch(/DRV-/);
   });
 });

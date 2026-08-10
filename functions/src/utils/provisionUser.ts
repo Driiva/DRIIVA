@@ -94,9 +94,9 @@ export function buildProvisionedUserDoc(
     // carried an activePolicy with a sequential DRV-### number, a renewal date
     // a year out, and a matching policies/{id} document declaring GBP 100,000
     // of liability cover, GBP 500 and GBP 250 excesses and roadside
-    // assistance. None of it was underwritten by anybody, because Driiva has
-    // no underwriter and is not authorised to arrange cover. A driver who
-    // signed up held a policy number for a contract that did not exist.
+    // assistance. No insurer had agreed to any of it, and Driiva holds no
+    // permission to arrange cover. A driver who signed up held a policy
+    // number for a contract that did not exist.
     //
     // Signing up now gets you an account. A policy appears here when an
     // insurer issues one, written by the binding path and mirrored by the
