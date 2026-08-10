@@ -51,7 +51,7 @@ import { readFileSync } from 'fs';
 import path from 'path';
 import { adminAuth, adminDb, adminApp, clientAuth, clientDb } from './helpers';
 
-import { UserDocumentSchema } from '@driiva/contracts';
+import { UserDocumentSchema, STARTING_SCORE } from '@driiva/contracts';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 
@@ -86,10 +86,18 @@ describe('M1 identity integration (Auth + Firestore emulators)', () => {
     expect(parsed.email).toBe(email);
     expect(parsed.displayName).toBe('Integration Tester');
     expect(parsed.onboardingComplete).toBe(false);
-    expect(parsed.drivingProfile.currentScore).toBe(100);
+    // Read the constant, do not retype it. This assertion said 100, which was
+    // right when it was written and wrong from the moment the starting score
+    // became 70. The constant's own documentation makes the point: a number
+    // retyped in several places is a number that will disagree in several
+    // places, and this test was one of the places.
+    expect(parsed.drivingProfile.currentScore).toBe(STARTING_SCORE);
     expect(parsed.drivingProfile.totalTrips).toBe(0);
-    expect(parsed.activePolicy).not.toBeNull();
-    expect(parsed.activePolicy?.status).toBe('pending');
+    // Wave H: signing up creates an ACCOUNT, not a policy. This used to assert
+    // an activePolicy existed with status 'pending', which was true when
+    // provisioning minted a policy number and a set of cover limits nobody had
+    // underwritten. A new user holds no policy now, and this pins that.
+    expect(parsed.activePolicy).toBeNull();
     expect(parsed.poolShare.currentShareCents).toBe(0);
     expect(parsed.settings).toEqual({
       notificationsEnabled: true,
@@ -122,7 +130,8 @@ describe('M1 identity integration (Auth + Firestore emulators)', () => {
     // instead of a wrong value getting baked permanently into Firestore.
     expect(parsed.displayName).toBeNull();
     expect(parsed.onboardingComplete).toBe(false);
-    expect(parsed.drivingProfile.currentScore).toBe(100);
+    expect(parsed.drivingProfile.currentScore).toBe(STARTING_SCORE);
+    expect(parsed.activePolicy).toBeNull();
   });
 
   it('flips onboardingComplete via the T2 owner-gated write - the AuthContext/ProtectedRoute gate signal', async () => {

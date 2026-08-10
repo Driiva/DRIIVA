@@ -33,14 +33,37 @@ import { initializeApp as initializeClientApp } from 'firebase/app';
 import { getAuth, connectAuthEmulator } from 'firebase/auth';
 import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 
-export const FIRESTORE_EMULATOR_HOST = '127.0.0.1';
-export const FIRESTORE_EMULATOR_PORT = 8080;
-export const AUTH_EMULATOR_HOST = '127.0.0.1';
-export const AUTH_EMULATOR_PORT = 9099;
+/**
+ * Where the emulators actually are, taken from the environment
+ * `firebase emulators:exec` sets, and only falling back to firebase.json's
+ * declared defaults when this suite is run some other way.
+ *
+ * These used to be four hardcoded constants that also had to agree with
+ * firebase.json. They are the same numbers written down twice, which is the
+ * failure mode this repo keeps meeting: change the port in firebase.json
+ * because another worktree is holding 8080, and the suite dutifully connects
+ * to the port nobody is listening on, then reports a spray of assertion
+ * failures rather than "I cannot reach the emulator". Reading the environment
+ * means the suite follows whatever was actually started.
+ */
+function hostPortFrom(envValue: string | undefined, fallbackPort: number): [string, number] {
+  if (envValue) {
+    const match = envValue.match(/^(.*):(\d+)$/);
+    if (match) return [match[1], Number(match[2])];
+  }
+  return ['127.0.0.1', fallbackPort];
+}
 
-// `firebase emulators:exec` already sets these, but default them here too so
-// the suite is self-documenting and still points at the emulator (never a
-// real project) if run some other way.
+const [FIRESTORE_HOST, FIRESTORE_PORT] = hostPortFrom(process.env.FIRESTORE_EMULATOR_HOST, 8080);
+const [AUTH_HOST, AUTH_PORT] = hostPortFrom(process.env.FIREBASE_AUTH_EMULATOR_HOST, 9099);
+
+export const FIRESTORE_EMULATOR_HOST = FIRESTORE_HOST;
+export const FIRESTORE_EMULATOR_PORT = FIRESTORE_PORT;
+export const AUTH_EMULATOR_HOST = AUTH_HOST;
+export const AUTH_EMULATOR_PORT = AUTH_PORT;
+
+// Point the Admin SDK at the same place, for the case where this module was
+// loaded without `emulators:exec` having set them.
 process.env.FIRESTORE_EMULATOR_HOST ??= `${FIRESTORE_EMULATOR_HOST}:${FIRESTORE_EMULATOR_PORT}`;
 process.env.FIREBASE_AUTH_EMULATOR_HOST ??= `${AUTH_EMULATOR_HOST}:${AUTH_EMULATOR_PORT}`;
 
