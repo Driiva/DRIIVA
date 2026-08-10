@@ -69,7 +69,15 @@ export function Comparison() {
         <div className="compare-card glass reveal-init" role="table" aria-label="Driiva versus traditional motor insurance">
           <div className="compare-row compare-row-head" role="row">
             <div role="columnheader" className="compare-cell compare-cell-feature">Feature</div>
-            <div role="columnheader" className="compare-cell compare-cell-driiva">Driiva</div>
+            <div role="columnheader" className="compare-cell compare-cell-driiva">
+              <img
+                className="compare-wordmark"
+                src="/brand/logo-wordmark-white-v3.png"
+                alt="Driiva"
+                width="84"
+                height="22"
+              />
+            </div>
             <div role="columnheader" className="compare-cell compare-cell-trad">Traditional UK insurer</div>
           </div>
           {ROWS.map((row) => (

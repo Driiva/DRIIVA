@@ -93,7 +93,7 @@ export function FinalCTA() {
                 ? 'Adding you'
                 : status === 'success'
                 ? "You're in"
-                : 'Get Early Access'}
+                : 'Get early access'}
             </button>
           </form>
           <div

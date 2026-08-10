@@ -90,13 +90,34 @@ main {
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
   pointer-events: none;
 }
+/* Lift alone is the default card hover everywhere. Pairing a smaller lift with
+   a leading rule that wipes in from the top gives the card somewhere to point,
+   and the brand gradient does the pointing. */
 .glass-hover {
-  transition: transform 0.3s var(--easeout), border-color 0.3s var(--easeout), box-shadow 0.3s var(--easeout);
+  position: relative;
+  transition: transform 0.4s var(--easeout), border-color 0.3s var(--ease),
+    box-shadow 0.4s var(--easeout);
+}
+.glass-hover::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 14px;
+  bottom: 14px;
+  width: 1px;
+  background: linear-gradient(180deg, var(--amber-2), rgb(var(--rgb-violet) / 0));
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform 0.55s var(--ease);
+  pointer-events: none;
 }
 .glass-hover:hover {
-  transform: translateY(-4px);
-  border-color: rgba(255, 255, 255, 0.28);
+  transform: translateY(-3px);
+  border-color: rgb(var(--rgb-amber) / 0.32);
   box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+.glass-hover:hover::before {
+  transform: scaleY(1);
 }
 
 /* ─────────────────────────────────────────────────────────
@@ -125,28 +146,51 @@ main {
 .nav-pill-logo:hover {
   opacity: 0.82;
 }
+/* The drawn wordmark, not the iconmark. At nav scale the ii mark reads as a
+   stray glyph rather than a logo, and the wordmark carries its own spacing so
+   it is never set as type. */
 .nav-pill-logo img {
-  height: 40px;
+  height: 22px;
   width: auto;
+  display: block;
 }
 .nav-links {
   display: flex;
   gap: 2px;
 }
+/* A filled rounded rectangle appearing under the cursor is the heaviest way to
+   say "hoverable". The link instead grows a rule from its leading edge, which
+   is quieter and reads as craft rather than as a default button state. */
 .nav-link {
+  position: relative;
   padding: 8px 14px;
   color: var(--fg-2);
   text-decoration: none;
   font-size: 13px;
   font-weight: 500;
   letter-spacing: -0.005em;
-  border-radius: 10px;
-  transition: background 0.2s, color 0.2s;
+  transition: color 0.3s var(--ease);
   white-space: nowrap;
 }
-.nav-link:hover {
-  background: rgba(255, 255, 255, 0.08);
+.nav-link::after {
+  content: '';
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 2px;
+  height: 1px;
+  background: linear-gradient(90deg, var(--amber-2), transparent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.5s var(--easeout);
+}
+.nav-link:hover,
+.nav-link:focus-visible {
   color: var(--fg-1);
+}
+.nav-link:hover::after,
+.nav-link:focus-visible::after {
+  transform: scaleX(1);
 }
 .nav-pill-cta {
   height: 40px;
@@ -1625,6 +1669,13 @@ footer {
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+}
+/* The brand sits opposite a competitor label here, so it is set as the drawn
+   mark with its own spacing rather than as a word in the table's own face. */
+.compare-wordmark {
+  height: 20px;
+  width: auto;
+  display: block;
 }
 .compare-mark {
   width: 32px;

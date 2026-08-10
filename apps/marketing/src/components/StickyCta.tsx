@@ -62,7 +62,7 @@ export function StickyCta() {
           )}
         </span>
         <button type="button" className="sticky-cta-button" onClick={scrollToForm}>
-          Join Waitlist
+          Join the waitlist
         </button>
         <button
           type="button"
