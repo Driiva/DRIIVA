@@ -22,3 +22,5 @@ export * from './user';
 export * from './quote';
 export * from './pending-payment';
 export * from './friendship';
+export * from './starting-score';
+export * from './achievement';

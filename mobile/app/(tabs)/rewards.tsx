@@ -1,29 +1,171 @@
 /**
  * Rewards - Driiva Mobile
  *
- * Wave 0 (0a/0c): the hardcoded REWARDS timeline was deleted. It named five
- * third-party vouchers (Tesco, RAC, Halfords, Nectar, Amazon) as if they were
- * unlockable, with no partnership and no redemption path behind any of them.
- * Naming a brand and a cash value the product cannot honour is a promise, not
- * a placeholder. Wave D wires this screen to the real reward definitions in
- * Firestore; until then it states where the programme actually is.
+ * Two things live here and they are deliberately not mixed up.
+ *
+ * RECOGNITION BADGES are real: the trip-completion trigger unlocks them
+ * server-side against the driver's actual profile, and this screen reads those
+ * unlocks. They carry no cash value and no partner brand.
+ *
+ * PARTNER REWARDS are not live. Wave 0 deleted a hardcoded timeline naming
+ * five third-party vouchers with no partnership and no redemption path behind
+ * any of them. Naming a brand and a cash value the product cannot honour is a
+ * promise, not a placeholder, so that section stays a statement of where the
+ * programme actually is until a reward can be handed over.
  */
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { useEffect, useState } from 'react';
+import { View, Text, ScrollView, StyleSheet, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Spacing, FontSize, BorderRadius } from '@/constants/theme';
+import { firestore } from '@/lib/firebase';
+import { useAuth } from '@/contexts/AuthContext';
+import { C, T, S, R, RGB, alpha } from '@/components/ui/theme';
+import { buildAchievementViews, type AchievementView } from '@driiva/contracts';
+
+/** Lucide names in the shared catalogue, drawn as Ionicons here. Never emoji. */
+const ICONS: Record<string, string> = {
+  Car: 'car-sport-outline',
+  Shield: 'shield-checkmark-outline',
+  Target: 'locate-outline',
+  Star: 'star-outline',
+  Route: 'map-outline',
+  Flame: 'flame-outline',
+  Moon: 'moon-outline',
+  Award: 'ribbon-outline',
+};
+
+interface Profile {
+  totalTrips: number;
+  totalMiles: number;
+  streakDays: number;
+  currentScore: number;
+}
+
+const EMPTY_PROFILE: Profile = { totalTrips: 0, totalMiles: 0, streakDays: 0, currentScore: 0 };
+
+function Badge({ view }: { view: AchievementView }) {
+  const icon = ICONS[view.icon] ?? 'ribbon-outline';
+  const showBar = !view.unlocked && view.maxProgress !== null && view.progress !== null;
+  const pct = showBar ? Math.round((view.progress! / view.maxProgress!) * 100) : 0;
+
+  return (
+    <View style={[styles.badge, view.unlocked && styles.badgeUnlocked]}>
+      <View style={[styles.badgeIcon, view.unlocked && styles.badgeIconUnlocked]}>
+        <Ionicons
+          name={(view.unlocked ? icon : 'lock-closed-outline') as never}
+          size={20}
+          color={view.unlocked ? C.primary : C.text.mut}
+        />
+      </View>
+
+      <View style={styles.badgeBody}>
+        <Text style={[styles.badgeName, !view.unlocked && styles.badgeNameLocked]}>
+          {view.name}
+        </Text>
+        <Text style={styles.badgeDesc}>{view.description}</Text>
+
+        {showBar && (
+          <View style={styles.progressWrap}>
+            <View style={styles.progressTrack}>
+              <View style={[styles.progressFill, { width: `${pct}%` }]} />
+            </View>
+            <Text style={styles.progressText}>
+              {view.progress} of {view.maxProgress}
+            </Text>
+          </View>
+        )}
+
+        {view.unlocked && view.unlockedAt && (
+          <Text style={styles.unlockedAt}>
+            Unlocked {view.unlockedAt.toLocaleDateString('en-GB')}
+          </Text>
+        )}
+      </View>
+    </View>
+  );
+}
 
 export default function Rewards() {
+  const { user } = useAuth();
+  const [views, setViews] = useState<AchievementView[]>([]);
+  const [profile, setProfile] = useState<Profile>(EMPTY_PROFILE);
+  const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const unsubscribe = firestore()
+      .collection('users')
+      .doc(user.id)
+      .onSnapshot((snap: { data: () => Record<string, never> | undefined }) => {
+        const dp = (snap.data()?.drivingProfile ?? {}) as Partial<Profile>;
+        setProfile({
+          totalTrips: dp.totalTrips ?? 0,
+          totalMiles: dp.totalMiles ?? 0,
+          streakDays: dp.streakDays ?? 0,
+          currentScore: dp.currentScore ?? 0,
+        });
+      });
+    return unsubscribe;
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) {
+      setViews(buildAchievementViews([], EMPTY_PROFILE));
+      return;
+    }
+    const unsubscribe = firestore()
+      .collection('users')
+      .doc(user.id)
+      .collection('achievements')
+      .onSnapshot(
+        (snap: { docs: Array<{ id: string; data: () => { unlockedAt?: { toDate?: () => Date } } }> }) => {
+          const unlocked = snap.docs.map((d) => ({
+            achievementId: d.id,
+            unlockedAt: d.data().unlockedAt?.toDate?.() ?? null,
+          }));
+          setViews(buildAchievementViews(unlocked, profile));
+        },
+        () => setViews(buildAchievementViews([], profile)),
+      );
+    return unsubscribe;
+  }, [user?.id, profile]);
+
+  const unlockedCount = views.filter((v) => v.unlocked).length;
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true);
+              setTimeout(() => setRefreshing(false), 800);
+            }}
+            tintColor={C.primary}
+          />
+        }
+      >
         <Text style={styles.title}>Rewards</Text>
-        <Text style={styles.subtitle}>
-          Your safety score is what earns you money back.
-        </Text>
+        <Text style={styles.subtitle}>Your safety score is what earns you money back.</Text>
+
+        <View style={styles.sectionHead}>
+          <Text style={styles.sectionTitle}>Recognition</Text>
+          <Text style={styles.sectionCount}>
+            {unlockedCount} of {views.length}
+          </Text>
+        </View>
+
+        <View style={styles.list}>
+          {views.map((view) => (
+            <Badge key={view.id} view={view} />
+          ))}
+        </View>
 
         <View style={styles.card}>
-          <Ionicons name="gift-outline" size={28} color={Colors.primaryLight} />
+          <Ionicons name="gift-outline" size={28} color={C.primaryLight} />
           <Text style={styles.cardTitle}>Reward partners are not live yet.</Text>
           <Text style={styles.cardBody}>
             We are not going to list rewards we cannot hand over. When partner
@@ -31,9 +173,8 @@ export default function Rewards() {
             will be told what unlocks them.
           </Text>
           <Text style={styles.cardBody}>
-            In the meantime your driving still counts. Every trip you record
-            feeds your safety score, and your score sets your share of the
-            community pool.
+            The badges above are recognition, not vouchers. They carry no cash
+            value.
           </Text>
         </View>
 
@@ -47,30 +188,73 @@ export default function Rewards() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.bg },
-  scroll: { paddingHorizontal: Spacing.md, paddingBottom: 100 },
-  title: { fontSize: FontSize.xxl, fontWeight: '800', color: Colors.textPrimary, marginTop: Spacing.md },
-  subtitle: {
-    fontSize: FontSize.md, color: Colors.textSecondary,
-    marginTop: Spacing.xs, marginBottom: Spacing.lg,
+  container: { flex: 1, backgroundColor: C.bg },
+  scroll: { padding: S.md, paddingBottom: S.xxl },
+
+  title: { ...T.h1, color: C.text.hero, marginBottom: S.xs },
+  subtitle: { ...T.body, color: C.text.sec, marginBottom: S.lg },
+
+  sectionHead: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    marginBottom: S.sm,
   },
+  sectionTitle: { ...T.label, color: C.text.sec },
+  sectionCount: { ...T.number, color: C.text.sec },
+
+  list: { gap: S.sm, marginBottom: S.lg },
+
+  badge: {
+    flexDirection: 'row',
+    gap: S.sm,
+    backgroundColor: C.surface1,
+    borderRadius: R.card,
+    borderWidth: 1,
+    borderColor: C.border,
+    padding: S.md,
+    opacity: 0.72,
+  },
+  badgeUnlocked: { opacity: 1, borderColor: alpha(RGB.primary, 0.3) },
+
+  badgeIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: R.badge,
+    backgroundColor: C.surface2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeIconUnlocked: { backgroundColor: alpha(RGB.primary, 0.16) },
+
+  badgeBody: { flex: 1, minWidth: 0 },
+  badgeName: { ...T.h2, color: C.text.pri },
+  badgeNameLocked: { color: C.text.sec },
+  badgeDesc: { ...T.caption, color: C.text.sec, marginTop: 2 },
+
+  progressWrap: { marginTop: S.sm },
+  progressTrack: {
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: C.surface3,
+    overflow: 'hidden',
+  },
+  progressFill: { height: 4, borderRadius: 2, backgroundColor: C.primary },
+  progressText: { ...T.caption, color: C.text.mut, marginTop: 4 },
+
+  unlockedAt: { ...T.caption, color: C.text.mut, marginTop: 4 },
 
   card: {
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.lg,
+    backgroundColor: C.surface1,
+    borderRadius: R.card,
     borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-    padding: Spacing.lg,
-    gap: Spacing.sm,
+    borderColor: C.border,
+    padding: S.md,
+    gap: S.sm,
+    marginBottom: S.lg,
   },
-  cardTitle: {
-    fontSize: FontSize.lg, fontWeight: '700',
-    color: Colors.textPrimary, marginTop: Spacing.xs,
-  },
-  cardBody: { fontSize: FontSize.sm, color: Colors.textSecondary, lineHeight: 21 },
+  cardTitle: { ...T.h2, color: C.text.pri },
+  cardBody: { ...T.body, color: C.text.sec },
 
-  disclaimer: {
-    fontSize: FontSize.xs, color: Colors.textMuted,
-    lineHeight: 17, marginTop: Spacing.lg,
-  },
+  disclaimer: { ...T.caption, color: C.text.mut, lineHeight: 16 },
 });

@@ -5,8 +5,8 @@ import { useRouter } from 'expo-router';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
 import { TripReplay } from '@/components/onboarding/TripReplay';
-import { ScoreRing } from '@/components/onboarding/ScoreRing';
-import { Colors, Spacing, BorderRadius } from '@/constants/theme';
+import { ScoreRing } from '@/components/ui/ScoreRing';
+import { C, F, S, R, RGB, alpha } from '@/components/ui/theme';
 import { ecoGrade } from '@/hooks/useTripSeed';
 
 export default function TripDemo() {
@@ -43,7 +43,7 @@ export default function TripDemo() {
         {phase === 'result' && (
           <View style={styles.result}>
             <View style={styles.ringWrap}>
-              <ScoreRing score={state.seedScore} size={180} label="Trip score" animate />
+              <ScoreRing score={state.seedScore} size={180} label="Trip score" animated />
             </View>
 
             <View style={styles.ecoCard}>
@@ -60,7 +60,7 @@ export default function TripDemo() {
             </View>
 
             <Text style={styles.simNote}>
-              {/* Simulated score — not based on actual driving data until account is active */}
+              {/* Simulated score - not based on actual driving data until account is active */}
               Score simulated based on your driving profile. Real scores activate after your first live trip.
             </Text>
           </View>
@@ -92,37 +92,37 @@ function BreakdownRow({ label, value, special }: { label: string; value: string;
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.bg },
-  progress: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm },
-  content: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: 100 },
+  container: { flex: 1, backgroundColor: C.bg },
+  progress: { paddingHorizontal: S.lg, paddingTop: S.sm },
+  content: { paddingHorizontal: S.lg, paddingTop: S.md, paddingBottom: 100 },
   headline: {
-    color: '#fafafa', fontSize: 24, fontWeight: '600',
+    color: C.text.hero, fontSize: 24, fontFamily: F.bodySemiBold,
     letterSpacing: -0.025, lineHeight: 30, marginBottom: 6,
   },
   sub: {
-    color: 'rgba(255,255,255,0.45)', fontSize: 15, marginBottom: 24,
+    color: C.text.sec, fontFamily: F.body, fontSize: 15, marginBottom: 24,
   },
   result: { gap: 16 },
   ringWrap: { alignItems: 'center', paddingVertical: 8 },
   ecoCard: {
-    backgroundColor: 'rgba(34,197,94,0.08)',
-    borderRadius: BorderRadius.lg,
+    backgroundColor: alpha(RGB.success, 0.08),
+    borderRadius: R.card,
     borderWidth: 1,
-    borderColor: 'rgba(34,197,94,0.2)',
+    borderColor: alpha(RGB.success, 0.2),
     padding: 18,
     alignItems: 'center',
   },
   ecoLabel: {
-    color: 'rgba(255,255,255,0.4)', fontSize: 10, fontWeight: '600',
+    color: C.text.mut, fontSize: 10, fontFamily: F.bodySemiBold,
     letterSpacing: 0.08, textTransform: 'uppercase', marginBottom: 4,
   },
-  ecoGrade: { color: Colors.success, fontSize: 36, fontWeight: '700', letterSpacing: -0.03 },
-  ecoSub: { color: Colors.success, fontSize: 13, marginTop: 2 },
+  ecoGrade: { color: C.success, fontSize: 36, fontFamily: F.bodyBold, letterSpacing: -0.03 },
+  ecoSub: { color: C.success, fontFamily: F.body, fontSize: 13, marginTop: 2 },
   breakdown: {
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.lg,
+    backgroundColor: C.surface1,
+    borderRadius: R.card,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: C.border,
     overflow: 'hidden',
   },
   breakdownRow: {
@@ -131,20 +131,20 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.04)',
+    borderBottomColor: C.hairline,
   },
-  breakdownLabel: { color: 'rgba(255,255,255,0.65)', fontSize: 14 },
-  breakdownValue: { color: Colors.success, fontSize: 14, fontWeight: '600' },
-  breakdownValueSpecial: { color: Colors.warning },
+  breakdownLabel: { color: C.text.pri, fontFamily: F.body, fontSize: 14 },
+  breakdownValue: { color: C.success, fontSize: 14, fontFamily: F.bodySemiBold },
+  breakdownValueSpecial: { color: C.warning },
   simNote: {
-    color: 'rgba(255,255,255,0.25)', fontSize: 12,
+    color: C.text.mut, fontFamily: F.body, fontSize: 12,
     lineHeight: 18, textAlign: 'center',
     paddingHorizontal: 8,
   },
-  footer: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: Spacing.lg },
+  footer: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: S.lg },
   primaryBtn: {
-    backgroundColor: Colors.primary, borderRadius: BorderRadius.md,
+    backgroundColor: C.primary, borderRadius: R.card,
     paddingVertical: 16, alignItems: 'center',
   },
-  primaryBtnText: { color: '#fafafa', fontSize: 15, fontWeight: '600', letterSpacing: -0.005 },
+  primaryBtnText: { color: C.text.hero, fontSize: 15, fontFamily: F.bodySemiBold, letterSpacing: -0.005 },
 });

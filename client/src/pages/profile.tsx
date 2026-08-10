@@ -5,7 +5,6 @@ import { doc, updateDoc, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { PageWrapper } from '../components/PageWrapper';
 import { BottomNav } from '../components/BottomNav';
-import PolicyDownload from "@/components/PolicyDownload";
 import ExportDataButton from "@/components/ExportDataButton";
 import DeleteAccount from "@/components/DeleteAccount";
 import { ChevronDown, Bell, Pencil, Check, X, Loader2, Shield } from "lucide-react";
@@ -116,6 +115,22 @@ function CoverageTypeSection({ currentScore, coverageType, premiumAmount, loadin
             className="overflow-hidden"
           >
             <div className="px-4 pb-4 pt-2 border-t border-white/[0.08]">
+              {/*
+                WAVE G: this benefit list, the excess panel and the premium-reduction
+                line used to render for every signed-in user, whether or not they had a
+                policy. Driiva has never issued one, so a driver with no cover was being
+                shown "Third-Party Liability up to £20M" and "Legal Expenses up to
+                £100,000" as though those limits applied to them. They are gated on a
+                real coverage type now: no policy, no benefits list.
+              */}
+              {!coverageType ? (
+                <p className="text-sm text-white/50">
+                  You have no cover in place. Driiva cannot issue policies until it is
+                  FCA-authorised, so there is nothing to summarise here yet. Your driving
+                  score is still being recorded in the meantime.
+                </p>
+              ) : (
+              <>
               <p className="text-sm text-white/50 mb-4">Full coverage with extras</p>
 
               <div className="space-y-3">
@@ -157,6 +172,8 @@ function CoverageTypeSection({ currentScore, coverageType, premiumAmount, loadin
                     </p>
                   </div>
                 </div>
+              )}
+              </>
               )}
             </div>
           </motion.div>
@@ -672,17 +689,6 @@ export default function Profile() {
           </button>
 
           <div className="space-y-3">
-            <PolicyDownload
-              userId={user?.id ? parseInt(user.id, 10) || 0 : 0}
-              userData={{
-                id: 0,
-                email: user?.email || '',
-                username: user?.name || '',
-                premiumAmount: premiumAmount,
-                policyNumber: displayPolicyNumber
-              } as any}
-              policyNumber={displayPolicyNumber}
-            />
             <ExportDataButton userId={user?.id ?? ''} />
             <div className="border-t border-white/5 pt-3">
               <DeleteAccount userId={user?.id ?? ''} />

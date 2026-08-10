@@ -19,7 +19,8 @@ export interface AIInsight {
     improvementAreas: string[];
   };
   communityComparison: {
-    betterThan: number;
+    /** Null until a real cohort exists to be a percentile of. */
+    betterThan: number | null;
     topPercentile: boolean;
     potentialRefundBoost: number;
   };
@@ -120,9 +121,11 @@ export class AIInsightsEngine {
       recommendations.push('Gentle acceleration could improve your score by up to 5 points');
     }
 
-    // Always provide positive reinforcement
+    // WAVE G: this used to assert a top-decile ranking among Driiva drivers.
+    // There is no cohort to rank within, and nothing computed a percentile.
+    // Praise the behaviour, which is measured, not a rank, which is not.
     if ((profile.currentScore ?? 0) >= 85) {
-      recommendations.push('Your consistent safe driving puts you in the top 10% of drivers');
+      recommendations.push('Your driving has been consistently smooth. Keep it there.');
     }
 
     return recommendations.slice(0, 3); // Max 3 recommendations
@@ -206,11 +209,16 @@ export class AIInsightsEngine {
   }
   
   private compareWithCommunity(score: number, communityAvg: number): AIInsight['communityComparison'] {
-    const betterThan = Math.round((score / 100) * 100);
+    // WAVE G: `betterThan` was Math.round((score / 100) * 100), which is the
+    // driver's own score relabelled as "you drive better than N% of the
+    // community". It is not a percentile and there is no community to rank
+    // against, so it is null until a real cohort exists. `topPerformerScore`
+    // was likewise an invented benchmark; it is now the top of the scale, which
+    // is at least true by definition.
+    const betterThan = null;
     const topPercentile = score >= 85;
-    
-    // Potential boost if matching top performers
-    const topPerformerScore = 92;
+
+    const topPerformerScore = 100;
     const potentialBoost = topPerformerScore - score;
     const potentialRefundBoost = potentialBoost > 0 ? Math.round((potentialBoost / 100) * 500 * 0.15) : 0;
     

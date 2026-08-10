@@ -53,14 +53,34 @@ describe('firestore.rules: deny-by-design collections + catch-all', () => {
   });
 
   describe('feedback', () => {
+    // Wave D: the payload here gained a shape. Create used to accept anything
+    // at all from a signed-in user, and this test passed `{ message }` alone.
+    // The rules now validate uid, rating, message length and platform, so the
+    // test files a well-formed document; the intent, that an authenticated
+    // user CAN leave feedback, is unchanged. Shape validation itself is
+    // covered in tests/rules/feedback.test.ts.
     it('allows an authenticated user to create feedback', async () => {
       const alice = testEnv.authenticatedContext(ALICE);
-      await assertSucceeds(setDoc(doc(alice.firestore(), 'feedback/f1'), { message: 'great app' }));
+      await assertSucceeds(
+        setDoc(doc(alice.firestore(), 'feedback/f1'), {
+          uid: ALICE,
+          rating: 5,
+          message: 'great app',
+          platform: 'web',
+        }),
+      );
     });
 
     it('denies an unauthenticated create', async () => {
       const anon = testEnv.unauthenticatedContext();
-      await assertFails(setDoc(doc(anon.firestore(), 'feedback/f1'), { message: 'anon' }));
+      await assertFails(
+        setDoc(doc(anon.firestore(), 'feedback/f1'), {
+          uid: ALICE,
+          rating: 5,
+          message: 'anon',
+          platform: 'web',
+        }),
+      );
     });
 
     describe('once feedback exists', () => {

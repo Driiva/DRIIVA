@@ -30,7 +30,11 @@
     "test:root-api": "tsx scripts/test-root-api.ts",
     "export-firestore": "cd functions && npm run export-firestore",
     "design:laws": "node tests/design-laws.mjs",
-    "design:laws:plant": "PLANT_VIOLATION=1 node tests/design-laws.mjs"
+    "design:laws:plant": "PLANT_VIOLATION=1 node tests/design-laws.mjs",
+    "design:laws:mobile": "node tests/mobile-source-laws.mjs",
+    "design:laws:mobile:plant": "PLANT_VIOLATION=1 node tests/mobile-source-laws.mjs",
+    "fabrication:laws": "node tests/fabrication-laws.mjs",
+    "fabrication:laws:plant": "PLANT_VIOLATION=1 node tests/fabrication-laws.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^0.10.4",

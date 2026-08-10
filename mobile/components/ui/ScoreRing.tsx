@@ -1,80 +1,112 @@
 /**
- * ScoreRing — Animated radial gauge with brand gradient stroke.
+ * ScoreRing - the score as a 270-degree arc gauge.
  *
- * The hero component. From your working screenshots: the ring uses the
- * amber→indigo brand gradient as the stroke, animates on mount,
- * and fires haptics on completion.
+ * Rule 6 of the design system: an automotive gauge, not a 360-degree progress
+ * ring. A full circle reads as "loading" and gives the eye no start and no end;
+ * a 270-degree sweep opening at the bottom reads as an instrument, which is
+ * what the score is. The stroke carries the brand gradient, which is the one
+ * place the gradient is allowed above the ground.
  *
- * Sizes: sm (44px, trip cards), md (80px, inline), lg (130px, dashboard hero).
+ * Sizes: sm (44px, trip cards), md (80px, inline), lg (150px, dashboard hero).
  */
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Animated as A, Platform } from 'react-native';
-import Svg, { Defs, LinearGradient, Stop, Circle } from 'react-native-svg';
+import { AccessibilityInfo, View, Text, StyleSheet, Animated as A, Platform } from 'react-native';
+import Svg, { Defs, LinearGradient, Stop, Path } from 'react-native-svg';
 
-const AnimatedCircle = A.createAnimatedComponent(Circle);
+import { C, T, F, FS } from './theme';
 
-// Brand gradient stops (from your logo: amber → burnt → violet → indigo)
-const GRADIENT_STOPS = [
-  { offset: '0%', color: '#d4850a' },
-  { offset: '33%', color: '#a04c2a' },
-  { offset: '66%', color: '#6b3fa0' },
-  { offset: '100%', color: '#3b2d8b' },
-];
+const AnimatedPath = A.createAnimatedComponent(Path);
+
+/** The gauge sweeps 270 degrees, opening at the bottom: 225deg round to 135deg. */
+const SWEEP_DEGREES = 270;
+const START_DEGREES = 225;
 
 const SIZES = {
-  sm: { diameter: 44, stroke: 3, showLabel: false, fontSize: 14, fontWeight: '700' as const },
-  md: { diameter: 80, stroke: 5, showLabel: true, fontSize: 24, fontWeight: '700' as const },
-  lg: { diameter: 130, stroke: 7, showLabel: true, fontSize: 38, fontWeight: '800' as const },
+  sm: { diameter: 44, stroke: 3, showLabel: false, fontSize: FS.sm },
+  md: { diameter: 80, stroke: 5, showLabel: true, fontSize: FS.xxl },
+  lg: { diameter: 150, stroke: 8, showLabel: true, fontSize: FS.xxxl },
 } as const;
 
 interface ScoreRingProps {
   score: number;
-  size?: 'sm' | 'md' | 'lg';
+  /** A named step, or an explicit diameter in px for one-off hero layouts. */
+  size?: 'sm' | 'md' | 'lg' | number;
   animated?: boolean;
-  /** Override the default "/ 100" subtitle */
-  subtitle?: string;
+  /** The caption under the figure. Defaults to the denominator. */
+  label?: string;
+}
+
+/** A one-off diameter still gets proportional stroke and figure sizes. */
+function configFor(size: 'sm' | 'md' | 'lg' | number) {
+  if (typeof size !== 'number') return SIZES[size];
+  return {
+    diameter: size,
+    stroke: Math.max(3, Math.round(size * 0.053)),
+    showLabel: size >= 80,
+    fontSize: Math.round(size * 0.26),
+  };
+}
+
+/** Polar to cartesian on the gauge circle, with 0deg at twelve o'clock. */
+function pointAt(centre: number, radius: number, degrees: number): [number, number] {
+  const radians = ((degrees - 90) * Math.PI) / 180;
+  return [centre + radius * Math.cos(radians), centre + radius * Math.sin(radians)];
+}
+
+/** The full 270-degree track as a single SVG arc path. */
+function arcPath(centre: number, radius: number): string {
+  const [x1, y1] = pointAt(centre, radius, START_DEGREES);
+  const [x2, y2] = pointAt(centre, radius, START_DEGREES + SWEEP_DEGREES);
+  return `M ${x1} ${y1} A ${radius} ${radius} 0 1 1 ${x2} ${y2}`;
 }
 
 export const ScoreRing: React.FC<ScoreRingProps> = ({
   score,
   size = 'lg',
   animated = true,
-  subtitle = '/ 100',
+  label = '/ 100',
 }) => {
-  const cfg = SIZES[size];
+  const cfg = configFor(size);
   const radius = (cfg.diameter - cfg.stroke) / 2;
-  const circumference = 2 * Math.PI * radius;
+  const centre = cfg.diameter / 2;
+  const arcLength = (2 * Math.PI * radius * SWEEP_DEGREES) / 360;
   const pct = Math.min(Math.max(score, 0), 100) / 100;
-  const center = cfg.diameter / 2;
 
-  const fillAnim = useRef(new A.Value(circumference)).current;
+  const [reduceMotion, setReduceMotion] = useState(false);
+  const fillAnim = useRef(new A.Value(arcLength)).current;
   const counterAnim = useRef(new A.Value(0)).current;
-  const [displayScore, setDisplayScore] = useState(animated ? 0 : score);
+  const [displayScore, setDisplayScore] = useState(score);
 
   useEffect(() => {
-    if (!animated) {
-      fillAnim.setValue(circumference * (1 - pct));
+    let mounted = true;
+    AccessibilityInfo.isReduceMotionEnabled().then((on) => {
+      if (mounted) setReduceMotion(on);
+    });
+    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', (on) => {
+      if (mounted) setReduceMotion(on);
+    });
+    return () => {
+      mounted = false;
+      sub.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    // A driver who has asked the system to stop animating gets the figure
+    // straight away. The score is information, never withheld for an effect.
+    if (!animated || reduceMotion) {
+      fillAnim.setValue(arcLength * (1 - pct));
       setDisplayScore(score);
       return;
     }
 
-    // Reset and animate
-    fillAnim.setValue(circumference);
+    fillAnim.setValue(arcLength);
     counterAnim.setValue(0);
 
     A.parallel([
-      A.timing(fillAnim, {
-        toValue: circumference * (1 - pct),
-        duration: 900,
-        useNativeDriver: false,
-      }),
-      A.timing(counterAnim, {
-        toValue: score,
-        duration: 900,
-        useNativeDriver: false,
-      }),
+      A.timing(fillAnim, { toValue: arcLength * (1 - pct), duration: 900, useNativeDriver: false }),
+      A.timing(counterAnim, { toValue: score, duration: 900, useNativeDriver: false }),
     ]).start(() => {
-      // Haptic on animation complete
       if (Platform.OS !== 'web') {
         try {
           const Haptics = require('expo-haptics');
@@ -88,59 +120,48 @@ export const ScoreRing: React.FC<ScoreRingProps> = ({
     });
 
     return () => counterAnim.removeListener(listener);
-  }, [score, animated]);
+  }, [score, animated, reduceMotion, arcLength, pct]);
+
+  const track = arcPath(centre, radius);
 
   return (
-    <View style={{ width: cfg.diameter, height: cfg.diameter, alignSelf: 'center' }}>
+    <View
+      style={{ width: cfg.diameter, height: cfg.diameter, alignSelf: 'center' }}
+      accessibilityRole="image"
+      accessibilityLabel={`Safety score ${Math.round(score)} out of 100`}
+    >
       <Svg width={cfg.diameter} height={cfg.diameter}>
         <Defs>
           <LinearGradient id="scoreGrad" x1="0" y1="0" x2="1" y2="1">
-            {GRADIENT_STOPS.map((s, i) => (
-              <Stop key={i} offset={s.offset} stopColor={s.color} />
+            {C.ring.map((stop) => (
+              <Stop key={stop.o} offset={stop.o} stopColor={stop.c} />
             ))}
           </LinearGradient>
         </Defs>
 
-        {/* Track (background circle) */}
-        <Circle
-          cx={center}
-          cy={center}
-          r={radius}
-          stroke="rgba(255, 255, 255, 0.06)"
+        <Path
+          d={track}
+          stroke={C.surface3}
           strokeWidth={cfg.stroke}
-          fill="transparent"
+          strokeLinecap="round"
+          fill="none"
         />
 
-        {/* Fill (animated, gradient stroke) */}
-        <AnimatedCircle
-          cx={center}
-          cy={center}
-          r={radius}
+        <AnimatedPath
+          d={track}
           stroke="url(#scoreGrad)"
           strokeWidth={cfg.stroke}
-          fill="transparent"
-          strokeDasharray={circumference}
-          strokeDashoffset={fillAnim}
           strokeLinecap="round"
-          rotation={-90}
-          origin={`${center}, ${center}`}
+          fill="none"
+          strokeDasharray={arcLength}
+          strokeDashoffset={fillAnim}
         />
       </Svg>
 
-      {/* Center text overlay */}
       <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
-        <View style={styles.center}>
-          <Text
-            style={[
-              styles.scoreText,
-              { fontSize: cfg.fontSize, fontWeight: cfg.fontWeight },
-            ]}
-          >
-            {displayScore}
-          </Text>
-          {cfg.showLabel && (
-            <Text style={styles.subtitleText}>{subtitle}</Text>
-          )}
+        <View style={styles.centre}>
+          <Text style={[styles.scoreText, { fontSize: cfg.fontSize }]}>{displayScore}</Text>
+          {cfg.showLabel && <Text style={styles.subtitleText}>{label}</Text>}
         </View>
       </View>
     </View>
@@ -148,18 +169,20 @@ export const ScoreRing: React.FC<ScoreRingProps> = ({
 };
 
 const styles = StyleSheet.create({
-  center: {
+  centre: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   scoreText: {
-    color: '#fff',
-    letterSpacing: -1,
+    fontFamily: F.monoSemiBold,
+    color: C.text.hero,
+    letterSpacing: -1.5,
+    fontVariant: ['tabular-nums'],
   },
   subtitleText: {
-    fontSize: 11,
-    color: 'rgba(255, 255, 255, 0.5)',
+    ...T.caption,
+    color: C.text.mut,
     marginTop: -2,
   },
 });

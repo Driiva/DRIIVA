@@ -3,9 +3,21 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
-import { Colors, Spacing, BorderRadius } from '@/constants/theme';
+import { C, F, S, R } from '@/components/ui/theme';
 
 const TOTAL = 14;
+
+/**
+ * The proposition, stated plainly. This card used to be a mock leaderboard
+ * with two invented drivers, two invented refunds and a ticker claiming a
+ * GBP 47 refund was processing. None of it was real, and Driiva has never
+ * paid a refund, so the first screen a driver saw opened with a fabrication.
+ */
+const STEPS = [
+  { title: 'Drive as you already do', text: 'Your phone scores each trip. No black box to fit.' },
+  { title: 'Your score sets your share', text: 'Safer driving earns a larger share of the community pool.' },
+  { title: 'The surplus comes back', text: 'What the pool does not pay out in claims returns to safe drivers.' },
+];
 
 export default function Welcome() {
   const router = useRouter();
@@ -27,38 +39,29 @@ export default function Welcome() {
           <Text style={styles.eyebrow}>Driiva</Text>
           <Text style={styles.headline}>Your driving is worth more than you're being paid for.</Text>
           <Text style={styles.sub}>
-            Join the community where safe drivers get rewarded — not just insured.
+            Join the community where safe drivers get rewarded, not just insured.
           </Text>
         </View>
 
         <View style={styles.previewCard}>
           <View style={styles.leaderboardHeader}>
-            <Text style={styles.leaderboardTitle}>Community pool</Text>
-            <View style={styles.liveDot} />
+            <Text style={styles.leaderboardTitle}>How it works</Text>
           </View>
-          {[
-            { name: 'J. Williams', score: 94, refund: '£182' },
-            { name: 'P. Sharma', score: 91, refund: '£167' },
-            { name: 'You', score: '—', refund: '?' },
-          ].map((row, i) => (
-            <View key={i} style={[styles.leaderRow, i === 2 && styles.leaderRowYou]}>
-              <View style={styles.leaderLeft}>
-                <Text style={styles.leaderRank}>{i + 1}</Text>
-                <Text style={[styles.leaderName, i === 2 && styles.leaderNameYou]}>{row.name}</Text>
-              </View>
-              <View style={styles.leaderRight}>
-                <Text style={styles.leaderScore}>{row.score}</Text>
-                <Text style={[styles.leaderRefund, i === 2 && styles.leaderRefundYou]}>{row.refund}</Text>
+          {STEPS.map((step, i) => (
+            <View key={step.title} style={[styles.stepRow, i === STEPS.length - 1 && styles.stepRowLast]}>
+              <Text style={styles.stepIndex}>{i + 1}</Text>
+              <View style={styles.stepBody}>
+                <Text style={styles.stepTitle}>{step.title}</Text>
+                <Text style={styles.stepText}>{step.text}</Text>
               </View>
             </View>
           ))}
-          <View style={styles.tickerRow}>
-            <View style={styles.tickerDot} />
-            <Text style={styles.tickerText}>£47 refund processing now</Text>
-          </View>
         </View>
 
-        <Text style={styles.caveat}>Up to 15% of your premium back. No black box required.</Text>
+        <Text style={styles.caveat}>
+          Refunds depend on your policy, your claims and how the pool performs. Driiva Ltd is
+          pending FCA authorisation.
+        </Text>
       </ScrollView>
 
       <View style={styles.footer}>
@@ -74,114 +77,92 @@ export default function Welcome() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.bg },
-  progress: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm },
-  content: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.xl, paddingBottom: Spacing.lg },
+  container: { flex: 1, backgroundColor: C.bg },
+  progress: { paddingHorizontal: S.lg, paddingTop: S.sm },
+  content: { paddingHorizontal: S.lg, paddingTop: S.xl, paddingBottom: S.lg },
   top: { marginBottom: 28 },
   eyebrow: {
-    color: Colors.primary,
+    color: C.primary,
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: F.bodySemiBold,
     letterSpacing: 0.1,
     textTransform: 'uppercase',
     marginBottom: 12,
   },
   headline: {
-    color: '#fafafa',
+    color: C.text.hero,
     fontSize: 28,
-    fontWeight: '600',
+    fontFamily: F.bodySemiBold,
     letterSpacing: -0.025,
     lineHeight: 34,
     marginBottom: 12,
   },
   sub: {
-    color: 'rgba(255,255,255,0.55)',
+    color: C.text.sec,
+    fontFamily: F.body,
     fontSize: 15,
     lineHeight: 23,
     letterSpacing: -0.005,
   },
   previewCard: {
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.xl,
+    backgroundColor: C.surface1,
+    borderRadius: R.sheet,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: C.border,
     padding: 20,
     marginBottom: 16,
   },
   leaderboardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     marginBottom: 14,
   },
   leaderboardTitle: {
-    color: 'rgba(255,255,255,0.5)',
+    color: C.text.sec,
     fontSize: 11,
-    fontWeight: '500',
+    fontFamily: F.bodySemiBold,
     letterSpacing: 0.08,
     textTransform: 'uppercase',
   },
-  liveDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: Colors.success,
-  },
-  leaderRow: {
+  stepRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 10,
+    alignItems: 'flex-start',
+    gap: 12,
+    paddingBottom: 12,
+    marginBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.04)',
+    borderBottomColor: C.hairline,
   },
-  leaderRowYou: {
-    backgroundColor: 'rgba(107,95,220,0.08)',
-    marginHorizontal: -8,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-    borderBottomWidth: 0,
+  stepRowLast: { paddingBottom: 0, marginBottom: 0, borderBottomWidth: 0 },
+  stepIndex: {
+    color: C.text.mut,
+    fontFamily: F.monoSemiBold,
+    fontSize: 12,
+    width: 14,
+    fontVariant: ['tabular-nums'],
   },
-  leaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  leaderRight: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  leaderRank: { color: 'rgba(255,255,255,0.3)', fontSize: 12, width: 16 },
-  leaderName: { color: '#fafafa', fontSize: 14, fontWeight: '500' },
-  leaderNameYou: { color: Colors.primaryLight, fontWeight: '600' },
-  leaderScore: { color: 'rgba(255,255,255,0.5)', fontSize: 13, fontWeight: '600', width: 30, textAlign: 'right' },
-  leaderRefund: { color: Colors.success, fontSize: 14, fontWeight: '700', width: 50, textAlign: 'right' },
-  leaderRefundYou: { color: Colors.primaryLight },
-  tickerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.04)',
-  },
-  tickerDot: {
-    width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.success,
-  },
-  tickerText: { color: 'rgba(255,255,255,0.4)', fontSize: 12 },
+  stepBody: { flex: 1, minWidth: 0 },
+  stepTitle: { color: C.text.hero, fontFamily: F.bodySemiBold, fontSize: 14 },
+  stepText: { color: C.text.sec, fontFamily: F.body, fontSize: 13, lineHeight: 19, marginTop: 2 },
   caveat: {
-    color: 'rgba(255,255,255,0.3)',
+    color: C.text.mut,
+    fontFamily: F.body,
     fontSize: 12,
     textAlign: 'center',
   },
   footer: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.lg,
+    paddingHorizontal: S.lg,
+    paddingBottom: S.lg,
     gap: 12,
   },
   primaryBtn: {
-    backgroundColor: Colors.primary,
-    borderRadius: BorderRadius.md,
+    backgroundColor: C.primary,
+    borderRadius: R.card,
     paddingVertical: 16,
     alignItems: 'center',
   },
-  primaryBtnText: { color: '#fafafa', fontSize: 15, fontWeight: '600', letterSpacing: -0.005 },
+  primaryBtnText: { color: C.text.hero, fontSize: 15, fontFamily: F.bodySemiBold, letterSpacing: -0.005 },
   secondaryLink: {
-    color: 'rgba(255,255,255,0.4)',
+    color: C.text.mut,
+    fontFamily: F.body,
     fontSize: 14,
     textAlign: 'center',
   },

@@ -22,7 +22,8 @@ import { SCORE_WEIGHTS } from '@driiva/scoring';
 import { firestore } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { C, T, S, R, scoreColor } from '@/components/ui/theme';
-import { GlassCard } from '@/components/ui/GlassCard';
+import { maybeAskForReview } from '@/lib/review';
+import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import { ScoreBreakdownBar } from '@/components/ui/ScoreBreakdownBar';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader';
@@ -68,6 +69,27 @@ export default function TripDetail() {
   const router = useRouter();
   const [trip, setTrip] = useState<Trip | null | undefined>(undefined);
   const [points, setPoints] = useState<StoredTripPoint[] | undefined>(undefined);
+  // Read once, only so the review gate can tell an established driver from
+  // someone on their first week. Not rendered.
+  const [profileTrips, setProfileTrips] = useState(0);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    firestore()
+      .collection('users')
+      .doc(user.id)
+      .get()
+      .then((snap: { data: () => { drivingProfile?: { totalTrips?: number } } | undefined }) => {
+        if (!cancelled) setProfileTrips(snap.data()?.drivingProfile?.totalTrips ?? 0);
+      })
+      .catch(() => {
+        /* the gate simply will not fire */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
 
   useEffect(() => {
     if (!tripId) return;
@@ -115,6 +137,26 @@ export default function TripDetail() {
       cancelled = true;
     };
   }, [tripId]);
+
+  /*
+   * The one genuinely positive moment in the app: a driver has opened a trip
+   * that scored well. maybeAskForReview decides whether it qualifies (never on
+   * launch, never twice, not before the driver has real history), so this only
+   * has to hand it the facts.
+   *
+   * Deliberately here rather than on the dashboard: opening a trip detail is
+   * an intentional act, whereas the dashboard appears whether or not anyone
+   * wanted it to.
+   */
+  useEffect(() => {
+    if (!trip || trip.score == null) return;
+    maybeAskForReview({
+      tripScore: trip.score,
+      totalTrips: profileTrips,
+    }).catch(() => {
+      // A prompt that cannot be shown is not worth surfacing to the user.
+    });
+  }, [trip, profileTrips]);
 
   const route = useMemo(
     () => (points ?? []).map((p) => ({ latitude: p.lat, longitude: p.lng })),
@@ -181,7 +223,7 @@ export default function TripDetail() {
   const dateLabel = formatDate(trip.startedAt);
   const startLabel = trip.startLocation?.address?.split(',')[0] || null;
   const endLabel = trip.endLocation?.address?.split(',')[0] || null;
-  const routeTitle = trip.routeSummary || (startLabel && endLabel ? `${startLabel} → ${endLabel}` : 'Trip');
+  const routeTitle = trip.routeSummary || (startLabel && endLabel ? `${startLabel} to ${endLabel}` : 'Trip');
 
   // Weights read from the scoring package, paired with the factor each one
   // actually multiplies in computeDrivingScore. Adding a sixth factor there
@@ -212,7 +254,7 @@ export default function TripDetail() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <Header onBack={() => router.back()} />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <GlassCard padding="lg" style={{ marginBottom: S.md }}>
+        <SurfaceCard padding="lg" style={{ marginBottom: S.md }}>
           <View style={styles.headerRow}>
             <View style={{ flex: 1 }}>
               <Text style={styles.route}>{routeTitle}</Text>
@@ -228,9 +270,9 @@ export default function TripDetail() {
             <Stat label="Duration" value={`${durationMinutes} min`} />
             <Stat label="Status" value={trip.status} />
           </View>
-        </GlassCard>
+        </SurfaceCard>
 
-        <GlassCard padding="lg" style={{ marginBottom: S.md }}>
+        <SurfaceCard padding="lg" style={{ marginBottom: S.md }}>
           <Text style={styles.sectionTitle}>Route</Text>
           {points === undefined ? (
             <SkeletonLoader width="100%" height={200} borderRadius={R.card} />
@@ -255,9 +297,9 @@ export default function TripDetail() {
               No route was recorded for this trip.
             </Text>
           )}
-        </GlassCard>
+        </SurfaceCard>
 
-        <GlassCard padding="lg" style={{ marginBottom: S.md }}>
+        <SurfaceCard padding="lg" style={{ marginBottom: S.md }}>
           <Text style={styles.sectionTitle}>Score breakdown</Text>
           {hasBreakdown ? (
             <>
@@ -276,9 +318,9 @@ export default function TripDetail() {
           ) : (
             <Text style={styles.emptyLine}>Breakdown not available for this trip yet.</Text>
           )}
-        </GlassCard>
+        </SurfaceCard>
 
-        <GlassCard padding="lg">
+        <SurfaceCard padding="lg">
           <Text style={styles.sectionTitle}>Driving events</Text>
           {trip.events ? (
             <View style={styles.eventsGrid}>
@@ -290,7 +332,7 @@ export default function TripDetail() {
           ) : (
             <Text style={styles.emptyLine}>Event data not available for this trip yet.</Text>
           )}
-        </GlassCard>
+        </SurfaceCard>
       </ScrollView>
     </SafeAreaView>
   );

@@ -10,7 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { firestore } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { C, T, S, R } from '@/components/ui/theme';
-import { GlassCard } from '@/components/ui/GlassCard';
+import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader';
@@ -52,7 +52,7 @@ export default function Policy() {
         {policy === undefined ? (
           <SkeletonLoader width="100%" height={160} borderRadius={R.card} />
         ) : policy ? (
-          <GlassCard padding="lg">
+          <SurfaceCard padding="lg">
             <View style={styles.iconWrap}>
               <Ionicons name="shield-checkmark-outline" size={28} color={C.primary} />
             </View>
@@ -63,7 +63,7 @@ export default function Policy() {
               {policy.coverageType && <DetailRow label="Coverage" value={policy.coverageType} />}
               {renewalLabel && <DetailRow label="Renewal" value={renewalLabel} />}
             </View>
-          </GlassCard>
+          </SurfaceCard>
         ) : (
           <EmptyState
             icon="shield-outline"

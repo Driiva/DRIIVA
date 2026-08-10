@@ -6,7 +6,7 @@ import { View, Text, ScrollView, StyleSheet, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { C, T, S, R, F } from '@/components/ui/theme';
-import { GlassCard } from '@/components/ui/GlassCard';
+import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 
 const DATA_COLLECTED = [
@@ -28,7 +28,7 @@ export default function Trust() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScreenHeader title="Trust centre" subtitle="How Driiva protects you and your data" />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <GlassCard padding="lg" style={{ marginBottom: S.md }}>
+        <SurfaceCard padding="lg" style={{ marginBottom: S.md }}>
           <View style={styles.iconWrap}>
             <Ionicons name="lock-closed-outline" size={24} color={C.primary} />
           </View>
@@ -45,9 +45,9 @@ export default function Trust() {
               </View>
             ))}
           </View>
-        </GlassCard>
+        </SurfaceCard>
 
-        <GlassCard padding="lg" style={{ marginBottom: S.md }}>
+        <SurfaceCard padding="lg" style={{ marginBottom: S.md }}>
           <Text style={styles.cardTitle}>Your rights</Text>
           <Text style={styles.cardSubtitle}>Under UK GDPR, you have full control over your data</Text>
           <View style={{ marginTop: S.md, gap: S.md }}>
@@ -64,18 +64,18 @@ export default function Trust() {
           >
             To exercise any right, email info@driiva.co.uk
           </Text>
-        </GlassCard>
+        </SurfaceCard>
 
-        <GlassCard padding="lg" style={{ marginBottom: S.md }}>
+        <SurfaceCard padding="lg" style={{ marginBottom: S.md }}>
           <Text style={styles.cardTitle}>Who underwrites your policy</Text>
           <Text style={styles.rightBody}>
             Driiva is a technology and distribution platform. Insurance policies are
             underwritten by our capacity partner and are subject to their terms and
             conditions. Driiva is not the insurer.
           </Text>
-        </GlassCard>
+        </SurfaceCard>
 
-        <GlassCard padding="lg">
+        <SurfaceCard padding="lg">
           <Text style={styles.disclaimer}>
             Financial promotion disclaimer: refund amounts shown anywhere in the
             Driiva app are illustrative projections based on driving score
@@ -83,7 +83,7 @@ export default function Trust() {
             claims experience, and underwriting criteria. Past performance is not a
             guarantee of future refunds. Driiva Ltd is pending FCA authorisation.
           </Text>
-        </GlassCard>
+        </SurfaceCard>
       </ScrollView>
     </SafeAreaView>
   );

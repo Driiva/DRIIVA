@@ -1,34 +1,19 @@
-import { useEffect, useRef } from 'react';
 import { useReveal } from '@/hooks/useReveal';
 import { useInView } from '@/hooks/useInView';
-import { animate, prefersReducedMotion } from '@/lib/motion';
 
-const POOL_FILL_PCT = 68;
+/*
+ * WAVE G: this section used to carry a progress bar reading "Pool funded ·
+ * Q1 2026 - 68% of reserve target", animating up to 68 on scroll. There is no
+ * reserve target and no pool: addPoolContribution has never had a caller, so
+ * the balance is zero by construction. A funded percentage was the most
+ * concrete financial claim on the site and it was a constant. The worked
+ * example below is kept because the mechanism is real, but it is now labelled
+ * as an illustration rather than presented as a statement of position.
+ */
 
 export function Pool() {
   const revealRef = useReveal<HTMLElement>();
-  const [poolRef, poolInView] = useInView<HTMLDivElement>({ threshold: 0.3, once: true });
-  const barRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (!poolInView) return;
-    const bar = barRef.current;
-    if (!bar) return;
-    if (prefersReducedMotion()) {
-      bar.style.width = `${POOL_FILL_PCT}%`;
-      return;
-    }
-    const proxy = { v: 0 };
-    animate(proxy as unknown as Element, {
-      v: [0, POOL_FILL_PCT],
-      duration: 1600,
-      delay: 280,
-      ease: 'cubicBezier(0.16, 1, 0.3, 1)',
-      update: () => {
-        bar.style.width = `${proxy.v}%`;
-      },
-    } as never);
-  }, [poolInView]);
+  const [poolRef] = useInView<HTMLDivElement>({ threshold: 0.3, once: true });
 
   return (
     <section ref={revealRef} id="pool" data-section="pool">
@@ -60,14 +45,9 @@ export function Pool() {
             </div>
           </div>
 
-          <div className="pool-bar-wrap">
-            <div className="pool-bar-head">
-              <span className="label">Pool funded · Q1 2026</span>
-              <span className="value">{POOL_FILL_PCT}% of reserve target</span>
-            </div>
-            <div className="pool-bar-track">
-              <div ref={barRef} className="pool-bar-fill" data-pct={POOL_FILL_PCT} />
-            </div>
+          <div className="pool-bar-head">
+            <span className="label">Illustration, not a quote</span>
+            <span className="value">Nothing is paid until we are FCA-authorised</span>
           </div>
 
           <div className="pool-split">

@@ -38,6 +38,16 @@ jobs:
       - name: Type check
         run: npx tsc --noEmit
 
+      # The web design laws need a browser and a dev server, so they cannot run
+      # here. The mobile laws are a static source lint for exactly that reason.
+      - name: Mobile design laws
+        run: npm run design:laws:mobile
+
+      # Static sweep for invented money, people and regulatory claims on the
+      # web surfaces. Every hit is either deleted or acknowledged by name.
+      - name: Fabrication laws
+        run: npm run fabrication:laws
+
   build:
     name: Build (client + server)
     runs-on: ubuntu-latest

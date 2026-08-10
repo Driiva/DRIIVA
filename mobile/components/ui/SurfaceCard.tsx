@@ -1,11 +1,11 @@
 /**
- * GlassCard — The foundational surface for Driiva.
+ * SurfaceCard - the one card surface in the app.
  *
- * Matched to working app screenshots: darker purple-tinted glass,
- * not generic slate. Border is subtle but present. Shadow gives depth
- * without looking floaty.
- *
- * Every card in the app uses this. No exceptions.
+ * This replaces the old glass card. Glassmorphism is the marketing mode and the design
+ * system says the two modes are never mixed: an app surface is solid #12111f
+ * on #0a0a14, so a translucent purple pane sitting on the tab stack was the
+ * marketing site leaking into the instrument. Same props, same radius, same
+ * padding ladder, opaque material.
  */
 import React from 'react';
 import {
@@ -15,6 +15,7 @@ import {
   ViewStyle,
   StyleProp,
 } from 'react-native';
+import { C, R, RGB, alpha } from './theme';
 
 type Padding = 'none' | 'sm' | 'md' | 'lg' | 'xl';
 
@@ -26,16 +27,16 @@ const PAD: Record<Padding, number> = {
   xl: 22,
 };
 
-interface GlassCardProps {
+interface SurfaceCardProps {
   children: React.ReactNode;
   padding?: Padding;
   style?: StyleProp<ViewStyle>;
   onPress?: () => void;
-  /** Slightly brighter surface for nested/hover states */
+  /** One step up the dark scale, for nested or active surfaces. */
   elevated?: boolean;
 }
 
-export const GlassCard: React.FC<GlassCardProps> = ({
+export const SurfaceCard: React.FC<SurfaceCardProps> = ({
   children,
   padding = 'md',
   style,
@@ -65,24 +66,23 @@ export const GlassCard: React.FC<GlassCardProps> = ({
 
 const styles = StyleSheet.create({
   base: {
-    borderRadius: 16,
+    borderRadius: R.card,
     borderWidth: 1,
-    // Shadow: subtle, not floaty
-    shadowColor: '#000',
+    // Depth comes from the shadow, not from letting the ground show through.
+    shadowColor: alpha(RGB.black, 1),
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.25,
     shadowRadius: 16,
     elevation: 6,
   },
   default: {
-    // Matches the working Driiva screenshots — deep purple-tinted glass
-    backgroundColor: 'rgba(30, 20, 50, 0.55)',
-    borderColor: 'rgba(255, 255, 255, 0.12)',
+    backgroundColor: C.surface1,
+    borderColor: C.border,
   },
   elevated: {
-    backgroundColor: 'rgba(40, 30, 60, 0.65)',
-    borderColor: 'rgba(255, 255, 255, 0.18)',
+    backgroundColor: C.surface2,
+    borderColor: C.borderActive,
   },
 });
 
-export default GlassCard;
+export default SurfaceCard;

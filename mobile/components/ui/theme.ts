@@ -1,17 +1,40 @@
 /**
- * Driiva Design System v4 — Mobile
+ * Driiva Design System v4 - Mobile
+ *
+ * The single theme for every app surface. Instrument mode only: solid dark
+ * surfaces on a near-black ground, one accent, colour earned through data.
+ * Glassmorphism belongs to the marketing site and never appears in here.
  *
  * Principles (from competitive research):
- * 1. One accent color (#5b4dc9) for interactive elements
- * 2. Score colors ONLY on score data (green/amber/red = earned)
- * 3. Solid dark backgrounds, not rgba() — cleaner on Android
- * 4. Three font weights max: 400, 600, 700
+ * 1. One accent colour (#5b4dc9) for interactive elements
+ * 2. Score colours ONLY on score data (green/amber/red = earned)
+ * 3. Solid dark backgrounds, not rgba(), cleaner on Android
+ * 4. Three font weights max: 400, 600, 700, carried by the FAMILY not fontWeight
  * 5. Tabular figures on all numbers
  * 6. 270-degree arc gauge (automotive), not 360-degree ring (progress bar)
  * 7. 16px universal card radius, 24px for sheets
  * 8. Fixed row heights: 72px trips, 64px stats, 48px settings
  */
 import type { TextStyle } from 'react-native';
+
+/**
+ * Raw rgb triplets, so a translucent tint of a brand colour is derived rather
+ * than pasted. Retuning C.primary without these leaves every hand-written
+ * rgba() glow pointing at the old hue, which is exactly how the app ended up
+ * with rgba(107, 95, 220, ...) tints of an accent that is #5b4dc9.
+ */
+export const RGB = {
+  primary: '91, 77, 201',
+  success: '16, 185, 129',
+  error: '239, 68, 68',
+  white: '255, 255, 255',
+  black: '0, 0, 0',
+} as const;
+
+/** Compose a translucent colour from a token triplet. Never inline an rgba(). */
+export function alpha(rgb: string, a: number): string {
+  return `rgba(${rgb}, ${a})`;
+}
 
 // ─── COLOURS ─────────────────────────────────────────────────────────────────
 
@@ -24,7 +47,7 @@ export const C = {
     indigo: '#3b2d8b',
   },
 
-  // Primary interactive (one colour rule — this is the ONLY UI accent)
+  // Primary interactive (one colour rule - this is the ONLY UI accent)
   primary: '#5b4dc9',
   primaryLight: '#8b7de8',
 
@@ -34,23 +57,21 @@ export const C = {
   error: '#EF4444',
   teal: '#2DD4BF',
 
-  // Dark scale (solid shades, not rgba — Rule 7 from research)
+  // Dark scale (solid shades, not rgba - Rule 7 from research)
   bg: '#0a0a14',           // Near-black, faint blue undertone
   surface1: '#12111f',     // Cards
   surface2: '#1a1830',     // Elevated cards, active states
   surface3: '#241f40',     // Pressed states, inputs
 
   // Borders
+  hairline: 'rgba(255, 255, 255, 0.04)',
   border: 'rgba(255, 255, 255, 0.08)',
   borderActive: 'rgba(255, 255, 255, 0.16)',
 
-  // Glass (reserved for hero elements ONLY — score card, modals)
-  glass: {
-    card: 'rgba(25, 18, 50, 0.55)',
-    border: 'rgba(255, 255, 255, 0.14)',
-  },
+  // Scrim for overlays and sheets sitting above a screen
+  scrim: 'rgba(0, 0, 0, 0.55)',
 
-  // Text (not pure white — Rule 20)
+  // Text (not pure white, Rule 20)
   text: {
     pri: '#e8eaf0',     // Body text, readable
     hero: '#f8fafc',    // Hero numbers only
@@ -58,7 +79,7 @@ export const C = {
     mut: '#5c5c70',     // Timestamps, tertiary
   },
 
-  // Score ring gradient stops (amber → indigo, the brand identity)
+  // Score ring gradient stops (amber to indigo, the brand identity)
   ring: [
     { o: '0%', c: '#d4850a' },
     { o: '33%', c: '#a04c2a' },
@@ -90,8 +111,26 @@ export const F = {
   monoSemiBold: 'JetBrainsMono-SemiBold',
 } as const;
 
+// ─── TYPE SCALE ──────────────────────────────────────────────────────────────
+// The size ladder the T presets are cut from. Screens that need a size outside
+// a preset take it from here rather than typing a number.
+
+export const FS = {
+  xs: 11,
+  sm: 13,
+  md: 15,
+  lg: 17,
+  xl: 20,
+  xxl: 28,
+  xxxl: 36,
+  display: 48,
+} as const;
+
 // ─── TYPOGRAPHY ──────────────────────────────────────────────────────────────
-// Three weights only: 400, 600, 700. Tabular figures on all numbers.
+// Three weights only: 400, 600, 700, and the WEIGHT IS THE FAMILY. React Native
+// picks a face by family name, so a fontWeight on top of a named face either
+// does nothing or synthesises a fake bold. Every text style therefore sets
+// fontFamily and never fontWeight.
 
 export const T = {
   hero:    { fontFamily: F.monoSemiBold, fontSize: 42, letterSpacing: -1.5, fontVariant: ['tabular-nums' as const] },

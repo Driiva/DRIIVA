@@ -1,5 +1,5 @@
 /**
- * TripCard — Single trip row in lists.
+ * TripCard - Single trip row in lists.
  *
  * Rule 3: Fixed 72px row height. No exceptions.
  * Rule 4: Tabular figures on score and metrics.
@@ -14,7 +14,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { C, T, S, R, ROW, scoreColor } from './theme';
+import { C, T, F, S, R, ROW, scoreColor } from './theme';
 
 interface Trip {
   id?: string;
@@ -108,8 +108,8 @@ const styles = StyleSheet.create({
     backgroundColor: C.surface2,
   },
   scoreText: {
+    fontFamily: F.monoSemiBold,
     fontSize: 16,
-    fontWeight: '700',
     fontVariant: ['tabular-nums'],
   },
 });

@@ -1,0 +1,79 @@
+import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import {
+  STARTING_SCORE,
+  STARTING_SCORE_COPY,
+  isProvisionalScore,
+} from '../starting-score';
+import { buildProvisionedUserDoc } from '../../../../functions/src/utils/provisionUser';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = path.resolve(__dirname, '../../../..');
+
+const ts = { seconds: 1_770_000_000, nanoseconds: 0 };
+
+function provisioned() {
+  return buildProvisionedUserDoc({
+    uid: 'uid-1',
+    email: 'driver@example.com',
+    displayName: 'Test Driver',
+    isAdmin: false,
+    policyId: 'policy_uid-1',
+    policyNumber: 'DRV-0001',
+    now: ts as never,
+    renewalDate: ts as never,
+  });
+}
+
+describe('starting score', () => {
+  // Keith's scope doc assumed 70. The code writes 100. The explainer quotes
+  // this constant, so this test is what stops the number users read drifting
+  // away from the number provisioning writes.
+  it('is exactly what provisioning writes into a new profile', () => {
+    expect(provisioned().drivingProfile.currentScore).toBe(STARTING_SCORE);
+  });
+
+  it('is 100, and this test exists so changing it is a deliberate act', () => {
+    expect(STARTING_SCORE).toBe(100);
+  });
+
+  it('matches every factor of the provisioned score breakdown', () => {
+    const breakdown = provisioned().drivingProfile.scoreBreakdown;
+    for (const value of Object.values(breakdown)) {
+      expect(value).toBe(STARTING_SCORE);
+    }
+  });
+
+  it('is provisional only while no trip has been scored', () => {
+    expect(isProvisionalScore(0)).toBe(true);
+    expect(isProvisionalScore(1)).toBe(false);
+    expect(isProvisionalScore(42)).toBe(false);
+  });
+
+  it('quotes the real number in the copy users read', () => {
+    expect(STARTING_SCORE_COPY.short).toContain(String(STARTING_SCORE));
+    expect(STARTING_SCORE_COPY.long).toContain(String(STARTING_SCORE));
+  });
+
+  // The copy says the first trip REPLACES the starting score. If the trigger
+  // ever changed to average it in instead, the copy would quietly become a
+  // lie, so the claim is pinned against the trigger's own source.
+  it('the copy claim matches the trigger: first trip replaces, it does not average', () => {
+    const trigger = readFileSync(
+      path.join(REPO_ROOT, 'functions/src/triggers/trips.ts'),
+      'utf8',
+    );
+    expect(trigger).toMatch(/oldWeight\s*===\s*0\s*\n?\s*\?\s*trip\.score/);
+    expect(STARTING_SCORE_COPY.long).toMatch(/replaces it outright/);
+  });
+
+  it('never promises the score can be protected or maintained', () => {
+    const all = `${STARTING_SCORE_COPY.short} ${STARTING_SCORE_COPY.long}`.toLowerCase();
+    for (const forbidden of ['protect', 'maintain', 'keep your']) {
+      expect(all).not.toContain(forbidden);
+    }
+  });
+});

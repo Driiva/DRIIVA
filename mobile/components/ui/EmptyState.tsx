@@ -1,5 +1,5 @@
 /**
- * EmptyState — Centered placeholder for empty lists/sections.
+ * EmptyState - Centred placeholder for empty lists/sections.
  */
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';

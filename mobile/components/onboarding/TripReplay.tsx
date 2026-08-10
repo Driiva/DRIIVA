@@ -5,8 +5,7 @@ import Animated, {
   useSharedValue, useAnimatedProps, withTiming, withDelay,
   useAnimatedStyle, withSequence,
 } from 'react-native-reanimated';
-import { Colors, BorderRadius } from '@/constants/theme';
-import { scoreColor } from '@/constants/theme';
+import { C, F, R, RGB, alpha } from '@/components/ui/theme';
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 const TRIP_PATH = 'M 20 200 C 40 185 55 175 70 160 S 95 145 115 130 S 140 115 160 105 S 185 90 205 80 S 230 68 255 58 S 272 48 285 42';
@@ -56,15 +55,15 @@ export function TripReplay({ onComplete }: Props) {
           />
           <AnimatedPath
             d={TRIP_PATH}
-            stroke={Colors.primary}
+            stroke={C.primary}
             strokeWidth={3}
             fill="none"
             strokeDasharray={PATH_LENGTH}
             animatedProps={animatedPathProps}
             strokeLinecap="round"
           />
-          <Circle cx={20} cy={200} r={5} fill={Colors.success} />
-          <Circle cx={285} cy={42} r={5} fill={Colors.primary} />
+          <Circle cx={20} cy={200} r={5} fill={C.success} />
+          <Circle cx={285} cy={42} r={5} fill={C.primary} />
         </Svg>
         <View style={styles.badge}>
           <Text style={styles.badgeText}>Simulated trip</Text>
@@ -108,10 +107,10 @@ function EventRow({ event, index }: { event: Event; index: number }) {
 const styles = StyleSheet.create({
   mapContainer: {
     height: 220,
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    borderRadius: BorderRadius.lg,
+    backgroundColor: C.surface1,
+    borderRadius: R.card,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: C.border,
     overflow: 'hidden',
     marginBottom: 16,
   },
@@ -120,15 +119,15 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 12,
     right: 12,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: alpha(RGB.black, 0.5),
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
   },
   badgeText: {
-    color: 'rgba(255,255,255,0.5)',
+    color: C.text.sec,
     fontSize: 10,
-    fontWeight: '500',
+    fontFamily: F.bodySemiBold,
     letterSpacing: 0.04,
   },
   events: { gap: 8 },
@@ -138,11 +137,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
     paddingHorizontal: 14,
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: C.surface1,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: C.border,
   },
-  eventLabel: { color: 'rgba(255,255,255,0.8)', fontSize: 13 },
-  eventDelta: { color: Colors.success, fontSize: 13, fontWeight: '700' },
+  eventLabel: { color: C.text.pri, fontFamily: F.body, fontSize: 13 },
+  eventDelta: { color: C.success, fontSize: 13, fontFamily: F.bodyBold },
 });

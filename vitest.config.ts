@@ -7,6 +7,20 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
+    /*
+     * 5s is vitest's default and it is too tight for this suite. The heaviest
+     * client tests render a whole page into jsdom, drive it through
+     * testing-library and wait on async auth mocks; in isolation each takes
+     * around a second, but 50-odd test files run in parallel on a machine that
+     * is also running a dev server and emulators, and they tip over the limit.
+     *
+     * The symptom was three to five failures per run, a DIFFERENT three to
+     * five each time, all of which passed on their own. That reads as a
+     * regression every time somebody sees it, so it costs more attention than
+     * the tests are worth. Nothing here indicates a product defect.
+     */
+    testTimeout: 20_000,
+    hookTimeout: 20_000,
     setupFiles: ['./client/src/__tests__/setup.ts'],
     include: [
       'client/src/**/*.test.{ts,tsx}',

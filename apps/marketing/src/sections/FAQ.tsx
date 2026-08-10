@@ -8,7 +8,7 @@ interface Q {
 const QS: readonly Q[] = [
   {
     q: 'Will this really be cheaper than my current insurance?',
-    a: "For safe drivers, yes, demonstrably. Our modelling shows the top 40% of drivers save 8 to 15% versus their current renewal. If you drive aggressively, we're not for you, and that's deliberate.",
+    a: "That is the intention, and we are not going to put a number on it before we have priced a single real policy. The model rewards safe driving and charges aggressive driving accordingly, so if you drive hard, we are deliberately not for you.",
   },
   {
     q: 'What counts as a "safe" trip?',
@@ -16,11 +16,11 @@ const QS: readonly Q[] = [
   },
   {
     q: 'What happens if I have an accident?',
-    a: 'Your claim is paid immediately and in full by our reinsurance capital. Score refunds are separate from claim protection. One bad week does not bankrupt you.',
+    a: 'Nothing yet, because we cannot sell you a policy until the FCA authorises us. When we can, claims handling and score refunds will be separate: a claim is settled under the policy, and refunds depend on how the pool performs. Until then this is a waitlist and you are insured by whoever you are with today.',
   },
   {
     q: 'Is this legal? Are you FCA-regulated?',
-    a: 'Application in progress with the FCA Regulatory Sandbox, underwritten by a PRA-regulated UK reinsurer. We cannot sell policies yet, that is why this is a waitlist, not a checkout.',
+    a: 'Not yet. Our application to the FCA Regulatory Sandbox is in progress, and capital backing will come from a PRA-regulated UK reinsurer once underwriting begins. We cannot sell policies today, which is why this is a waitlist, not a checkout.',
   },
   {
     q: 'Do I need to install a dashcam or OBD dongle?',

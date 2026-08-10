@@ -7,7 +7,7 @@ import { View, Text, ScrollView, TouchableOpacity, Linking, StyleSheet } from 'r
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { C, T, S, R } from '@/components/ui/theme';
-import { GlassCard } from '@/components/ui/GlassCard';
+import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 
 const SUPPORT_OPTIONS = [
@@ -54,7 +54,7 @@ export default function Support() {
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <Text style={styles.sectionTitle}>Get in touch</Text>
         {SUPPORT_OPTIONS.map((option) => (
-          <GlassCard
+          <SurfaceCard
             key={option.title}
             padding="md"
             style={{ marginBottom: S.sm }}
@@ -69,14 +69,14 @@ export default function Support() {
                 <Text style={styles.optionDesc}>{option.description}</Text>
               </View>
             </View>
-          </GlassCard>
+          </SurfaceCard>
         ))}
 
         <Text style={[styles.sectionTitle, { marginTop: S.lg }]}>Frequently asked questions</Text>
         {FAQ_ITEMS.map((item) => {
           const isOpen = openFaq === item.id;
           return (
-            <GlassCard key={item.id} padding="none" style={{ marginBottom: S.sm }}>
+            <SurfaceCard key={item.id} padding="none" style={{ marginBottom: S.sm }}>
               <TouchableOpacity
                 style={styles.faqHeader}
                 onPress={() => setOpenFaq(isOpen ? null : item.id)}
@@ -92,7 +92,7 @@ export default function Support() {
               {isOpen && (
                 <Text style={styles.faqAnswer}>{item.answer}</Text>
               )}
-            </GlassCard>
+            </SurfaceCard>
           );
         })}
       </ScrollView>

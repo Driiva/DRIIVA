@@ -139,7 +139,7 @@ export function RefundMoment({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(10, 10, 20, 0.88)',
+    backgroundColor: C.scrim,
     justifyContent: 'center',
     padding: S.md,
   },

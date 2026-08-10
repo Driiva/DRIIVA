@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
-import { Colors, Spacing, BorderRadius } from '@/constants/theme';
+import { C, F, S, R, RGB, alpha } from '@/components/ui/theme';
 
 const OPTIONS = [
   "I've never claimed but my premium keeps rising",
   'My insurer uses my data but never shares it with me',
-  'I had to install a black box — it felt invasive',
+  'I had to install a black box, and it felt invasive',
   'I drive carefully but get the same rate as everyone else',
   'The whole system feels opaque and unfair',
   "I don't know where my money actually goes",
@@ -39,7 +40,7 @@ export default function PainPoints() {
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <TouchableOpacity onPress={() => router.back()} style={styles.back}>
-          <Text style={styles.backText}>←</Text>
+          <Ionicons name="chevron-back" size={20} color={C.text.mut} />
         </TouchableOpacity>
         <Text style={styles.headline}>What frustrates you most about car insurance?</Text>
         <Text style={styles.sub}>Select all that apply.</Text>
@@ -55,7 +56,7 @@ export default function PainPoints() {
                 activeOpacity={0.7}
               >
                 <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
-                  {isSelected && <Text style={styles.checkmark}>✓</Text>}
+                  {isSelected && <Ionicons name="checkmark" size={12} color={C.text.hero} />}
                 </View>
                 <Text style={[styles.optionLabel, isSelected && styles.optionLabelSelected]}>
                   {opt}
@@ -78,16 +79,15 @@ export default function PainPoints() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.bg },
-  progress: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm },
-  content: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: Spacing.lg },
-  back: { marginBottom: Spacing.lg },
-  backText: { color: 'rgba(255,255,255,0.4)', fontSize: 20 },
+  container: { flex: 1, backgroundColor: C.bg },
+  progress: { paddingHorizontal: S.lg, paddingTop: S.sm },
+  content: { paddingHorizontal: S.lg, paddingTop: S.md, paddingBottom: S.lg },
+  back: { marginBottom: S.lg },
   headline: {
-    color: '#fafafa', fontSize: 26, fontWeight: '600',
+    color: C.text.hero, fontSize: 26, fontFamily: F.bodySemiBold,
     letterSpacing: -0.025, lineHeight: 32, marginBottom: 8,
   },
-  sub: { color: 'rgba(255,255,255,0.45)', fontSize: 15, marginBottom: 24 },
+  sub: { color: C.text.sec, fontFamily: F.body, fontSize: 15, marginBottom: 24 },
   options: { gap: 10 },
   option: {
     flexDirection: 'row',
@@ -95,30 +95,29 @@ const styles = StyleSheet.create({
     gap: 14,
     paddingVertical: 14,
     paddingHorizontal: 16,
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.lg,
+    backgroundColor: C.surface1,
+    borderRadius: R.card,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: C.border,
   },
   optionSelected: {
-    borderColor: Colors.primary,
-    backgroundColor: 'rgba(107,95,220,0.10)',
+    borderColor: C.primary,
+    backgroundColor: alpha(RGB.primary, 0.1),
   },
   checkbox: {
     width: 22, height: 22, borderRadius: 6,
-    borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.2)',
+    borderWidth: 1.5, borderColor: C.borderActive,
     justifyContent: 'center', alignItems: 'center',
   },
   checkboxSelected: {
-    backgroundColor: Colors.primary, borderColor: Colors.primary,
+    backgroundColor: C.primary, borderColor: C.primary,
   },
-  checkmark: { color: '#fff', fontSize: 12, fontWeight: '700' },
-  optionLabel: { color: 'rgba(255,255,255,0.65)', fontSize: 14, flex: 1, lineHeight: 20 },
-  optionLabelSelected: { color: '#fafafa' },
-  footer: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
+  optionLabel: { color: C.text.pri, fontFamily: F.body, fontSize: 14, flex: 1, lineHeight: 20 },
+  optionLabelSelected: { color: C.text.hero },
+  footer: { paddingHorizontal: S.lg, paddingBottom: S.lg },
   primaryBtn: {
-    backgroundColor: Colors.primary, borderRadius: BorderRadius.md,
+    backgroundColor: C.primary, borderRadius: R.card,
     paddingVertical: 16, alignItems: 'center',
   },
-  primaryBtnText: { color: '#fafafa', fontSize: 15, fontWeight: '600', letterSpacing: -0.005 },
+  primaryBtnText: { color: C.text.hero, fontSize: 15, fontFamily: F.bodySemiBold, letterSpacing: -0.005 },
 });

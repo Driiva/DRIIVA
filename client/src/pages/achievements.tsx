@@ -22,8 +22,9 @@ import type { LucideIcon } from "lucide-react";
 import { PageWrapper } from "../components/PageWrapper";
 import { BottomNav } from "../components/BottomNav";
 import { useAuth } from "@/contexts/AuthContext";
-import { getAchievementDefinitions, getUserAchievements } from "@/lib/firestore";
-import type { AchievementDef, UserAchievementRecord } from "@/lib/firestore";
+import { getUserAchievements } from "@/lib/firestore";
+import { buildAchievementViews, type AchievementView } from "@driiva/contracts";
+import { useUserProfile } from "@/hooks/useUserProfile";
 import { isFirebaseConfigured } from "@/lib/firebase";
 
 /**
@@ -59,21 +60,19 @@ const CATEGORY_STYLES: Record<string, { color: string; bgColor: string; borderCo
   milestone: { color: 'text-emerald-400', bgColor: 'from-emerald-500/20 to-emerald-600/20', borderColor: 'border-emerald-500/30' },
 };
 
-function defToAchievement(
-  def: AchievementDef,
-  unlockRecord: UserAchievementRecord | undefined,
-): Achievement {
-  const style = CATEGORY_STYLES[def.category] ?? CATEGORY_STYLES.milestone;
+function viewToAchievement(view: AchievementView): Achievement {
+  const style = CATEGORY_STYLES[view.category] ?? CATEGORY_STYLES.milestone;
   return {
-    id: def.id,
-    title: def.name,
-    description: def.description,
-    icon: ICON_MAP[def.icon] ?? Trophy,
+    id: view.id,
+    title: view.name,
+    description: view.description,
+    icon: ICON_MAP[view.icon] ?? Trophy,
     ...style,
-    unlocked: !!unlockRecord,
-    unlockedDate: unlockRecord?.unlockedAt?.toDate?.()?.toISOString(),
-    maxProgress: def.maxProgress ?? undefined,
-    category: def.category,
+    unlocked: view.unlocked,
+    unlockedDate: view.unlockedAt?.toISOString(),
+    progress: view.progress ?? undefined,
+    maxProgress: view.maxProgress ?? undefined,
+    category: view.category,
   };
 }
 
@@ -81,9 +80,15 @@ function defToAchievement(
   Wave 0 (0a): the hardcoded DEMO_ACHIEVEMENTS catalogue was deleted. It
   carried invented unlock dates (2026-01-15) and invented progress counters
   (47/100 trips, 62/100 pounds refunded), and every real user hit it through
-  EMPTY_ACHIEVEMENTS on the not-configured, not-seeded and error paths. The
-  page now shows only achievement definitions that exist in Firestore, and
-  says so plainly when there are none.
+  EMPTY_ACHIEVEMENTS on the not-configured, not-seeded and error paths.
+
+  Wave D: the catalogue now comes from @driiva/contracts, the same source the
+  unlock engine builds its predicates from, rather than from a top-level
+  Firestore collection populated by an admin-only seeding callable. If nobody
+  had run that callable in an environment, the page rendered nothing even for a
+  user whose unlocks existed. Only the UNLOCKS are read from Firestore, which
+  is the part that is genuinely per-user. Progress is computed from the real
+  driving profile; nothing here is invented.
 */
 
 const categoryLabels: Record<string, string> = {
@@ -103,6 +108,7 @@ const categoryColors: Record<string, string> = {
 export default function Achievements() {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
+  const { userDoc: profile } = useUserProfile(user?.id ?? null);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -122,20 +128,24 @@ export default function Achievements() {
 
     (async () => {
       try {
-        const [defs, userRecords] = await Promise.all([
-          getAchievementDefinitions(),
-          getUserAchievements(user.id),
-        ]);
-
+        const userRecords = await getUserAchievements(user.id);
         if (cancelled) return;
 
-        const unlockMap = new Map(userRecords.map(r => [r.achievementId, r]));
+        const unlocked = userRecords.map((r) => ({
+          achievementId: r.achievementId,
+          unlockedAt: r.unlockedAt?.toDate?.() ?? null,
+        }));
 
-        // An empty definitions collection is an honest empty state, not a
-        // cue to substitute a catalogue nobody has seeded.
-        setAchievements(defs.map(d => defToAchievement(d, unlockMap.get(d.id))));
+        const views = buildAchievementViews(unlocked, {
+          totalTrips: profile?.drivingProfile?.totalTrips ?? 0,
+          totalMiles: profile?.drivingProfile?.totalMiles ?? 0,
+          streakDays: profile?.drivingProfile?.streakDays ?? 0,
+          currentScore: profile?.drivingProfile?.currentScore ?? 0,
+        });
+
+        setAchievements(views.map(viewToAchievement));
       } catch (err) {
-        console.error('[Achievements] Failed to load:', err);
+        console.error('[Achievements] Failed to load unlocks:', err);
         if (!cancelled) {
           setAchievements([]);
           setLoadError(true);
@@ -146,7 +156,7 @@ export default function Achievements() {
     })();
 
     return () => { cancelled = true; };
-  }, [user?.id]);
+  }, [user?.id, profile]);
 
   const filteredAchievements = selectedCategory
     ? achievements.filter(a => a.category === selectedCategory)

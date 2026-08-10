@@ -1,5 +1,5 @@
 /**
- * StatCard — Single metric in a row of 3.
+ * StatCard - Single metric in a row of 3.
  *
  * Rule 2: Numbers are architecture. The number IS the design.
  * Rule 4: Tabular figures.

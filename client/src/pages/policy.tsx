@@ -163,12 +163,16 @@ export default function PolicyPage() {
             <div className="backdrop-blur-xl bg-white/[0.03] border border-white/[0.05] rounded-xl p-4">
               <h3 className="text-lg font-semibold mb-3 text-purple-300">Coverage Details</h3>
               <div className="space-y-3">
-                {['Comprehensive Coverage', 'Third Party Liability', 'Personal Injury Protection', 'Telematics Monitoring', '24/7 Roadside Assistance'].map((item) => (
-                  <div key={item} className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-400" />
-                    <span className="text-sm">{item}</span>
-                  </div>
-                ))}
+                {/*
+                  WAVE G: this was a hardcoded list of five cover types under green
+                  ticks, which reads as "your policy includes these". Driiva has no
+                  underwriter and has never issued a policy, so it included nothing.
+                  Cover is listed here when a real policy document says what it is.
+                */}
+                <p className="text-sm text-gray-400">
+                  Cover is set by the policy your insurer issues. Driiva cannot issue one
+                  until it is FCA-authorised, so there is nothing to list here yet.
+                </p>
               </div>
             </div>
           </div>
@@ -220,7 +224,7 @@ export default function PolicyPage() {
           {/* Refund timeline trust line */}
           <div className="backdrop-blur-xl bg-emerald-500/[0.06] border border-emerald-500/[0.15] rounded-xl p-4 mb-6">
             <p className="text-sm text-emerald-200/80 text-center">
-              Refunds are calculated at the end of each period and paid out within 14 days of the period close.
+              Refunds are calculated at the end of each period. Nothing is paid until Driiva is FCA-authorised and the pool is funded.
             </p>
           </div>
 
@@ -232,11 +236,11 @@ export default function PolicyPage() {
             <div className="space-y-4 text-sm text-gray-300">
               <div>
                 <h4 className="font-semibold text-white mb-2">Telematics Requirements</h4>
-                <p>Your driving data is collected via mobile app GPS and sensors. Maintaining a score of 70+ qualifies you for refunds ranging from 5% to 15% of your annual premium.</p>
+                <p>Your driving data is collected via mobile app GPS and sensors. A score of 70 or above is the intended threshold for a share of the pool. The share is not a fixed percentage of your premium and no rate has been set.</p>
               </div>
               <div>
                 <h4 className="font-semibold text-white mb-2">Refund Calculation</h4>
-                <p>Refunds are calculated monthly based on your personal driving score (80% weight) and community pool performance (20% weight). Refunds are processed quarterly.</p>
+                <p>A refund would weight your personal driving score against community pool performance. The cadence and the weighting are not settled, and no refund has been paid.</p>
               </div>
               <div>
                 <h4 className="font-semibold text-white mb-2">Data Privacy</h4>

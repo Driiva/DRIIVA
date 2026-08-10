@@ -42,6 +42,7 @@ import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { useHaptics } from '@/hooks/useHaptics';
 import { container, item } from '@/lib/animations';
 import { Skeleton, SkeletonList } from '@/components/ui/EmptyState';
+import { StartingScoreExplainer } from '@/components/StartingScoreExplainer';
 
 const LeafletMap = lazy(() => import('../components/LeafletMap'));
 
@@ -566,6 +567,10 @@ export default function Dashboard() {
               <p className="text-sm text-white/60 text-center">
                 Complete your first trip to get a driving score.
               </p>
+              {/* Keith Q1: what score do I begin on. Answered from the same
+                  constant provisioning writes, rather than a number typed
+                  into copy. */}
+              <StartingScoreExplainer />
             </div>
           ) : (
             <div className="flex flex-col items-center">

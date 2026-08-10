@@ -5,11 +5,11 @@ import { useRouter } from 'expo-router';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
 import { SwipeCard } from '@/components/onboarding/SwipeCard';
-import { Colors, Spacing } from '@/constants/theme';
+import { C, F, S } from '@/components/ui/theme';
 
 const STATEMENTS = [
   "I've driven carefully for years and never once been rewarded for it.",
-  "My insurance premium went up at renewal — even though I didn't claim.",
+  "My insurance premium went up at renewal, even though I didn't claim.",
   "I have no idea what happens to my premium money.",
   "I'd switch insurers if I actually trusted the alternative.",
 ];
@@ -60,26 +60,26 @@ export default function TinderCards() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.bg },
-  progress: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm },
+  container: { flex: 1, backgroundColor: C.bg },
+  progress: { paddingHorizontal: S.lg, paddingTop: S.sm },
   content: {
     flex: 1,
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.xl,
+    paddingHorizontal: S.lg,
+    paddingTop: S.xl,
     alignItems: 'center',
   },
   headline: {
-    color: '#fafafa', fontSize: 26, fontWeight: '600',
+    color: C.text.hero, fontSize: 26, fontFamily: F.bodySemiBold,
     letterSpacing: -0.025, lineHeight: 32, marginBottom: 8,
     alignSelf: 'flex-start',
   },
   sub: {
-    color: 'rgba(255,255,255,0.45)', fontSize: 15,
+    color: C.text.sec, fontFamily: F.body, fontSize: 15,
     marginBottom: 36, alignSelf: 'flex-start',
   },
   cardArea: { width: '100%', alignItems: 'center' },
   hint: {
-    color: 'rgba(255,255,255,0.25)', fontSize: 13,
+    color: C.text.mut, fontFamily: F.body, fontSize: 13,
     marginTop: 24,
   },
 });

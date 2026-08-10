@@ -16,6 +16,7 @@
  * which calls this builder and supplies the resolved inputs.
  */
 
+import { STARTING_SCORE } from '@driiva/contracts';
 import type { UserDocument, FirestoreTimestampLike } from '@driiva/contracts';
 
 export interface BuildProvisionedUserDocInput {
@@ -74,7 +75,12 @@ export function buildProvisionedUserDoc(
     createdAt: now,
     updatedAt: now,
     drivingProfile: {
-      currentScore: 100, // Start at 100 (perfect) - decreases with bad driving.
+      // STARTING_SCORE, not a literal: the onboarding explainer and the
+      // dashboard first-run state both quote this number to the user, and a
+      // retyped copy is one that eventually disagrees with what is written
+      // here. Note it is replaced outright by the first scored trip rather
+      // than averaged down; see the constant's own documentation.
+      currentScore: STARTING_SCORE,
       scoreBreakdown: {
         speedScore: 100,
         brakingScore: 100,

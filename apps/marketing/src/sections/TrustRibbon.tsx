@@ -14,8 +14,8 @@ const ITEMS: readonly RibbonItem[] = [
   },
   {
     icon: 'capital',
-    label: 'PRA-regulated',
-    body: 'Reinsurance capital backing',
+    label: 'Reinsurance backed',
+    body: 'PRA-regulated capital at launch',
   },
   {
     icon: 'lock',

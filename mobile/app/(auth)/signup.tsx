@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { Link } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
-import { Colors, Spacing, FontSize, BorderRadius } from '@/constants/theme';
+import { C, F, FS, S, R } from '@/components/ui/theme';
 import * as Haptics from 'expo-haptics';
 
 export default function SignUp() {
@@ -61,7 +61,7 @@ export default function SignUp() {
           <TextInput
             style={styles.input}
             placeholder="Full name"
-            placeholderTextColor={Colors.textMuted}
+            placeholderTextColor={C.text.mut}
             value={name}
             onChangeText={setName}
             autoCapitalize="words"
@@ -71,7 +71,7 @@ export default function SignUp() {
           <TextInput
             style={styles.input}
             placeholder="Email"
-            placeholderTextColor={Colors.textMuted}
+            placeholderTextColor={C.text.mut}
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
@@ -82,7 +82,7 @@ export default function SignUp() {
           <TextInput
             style={styles.input}
             placeholder="Password (min 6 characters)"
-            placeholderTextColor={Colors.textMuted}
+            placeholderTextColor={C.text.mut}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -96,7 +96,7 @@ export default function SignUp() {
             activeOpacity={0.8}
           >
             {loading ? (
-              <ActivityIndicator color={Colors.textPrimary} />
+              <ActivityIndicator color={C.text.pri} />
             ) : (
               <Text style={styles.buttonText}>Create Account</Text>
             )}
@@ -121,19 +121,19 @@ export default function SignUp() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.bg },
-  content: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: Spacing.lg },
-  logoContainer: { alignItems: 'center', marginBottom: Spacing.xxl },
-  logoText: { fontSize: FontSize.display, fontWeight: '800', color: Colors.textPrimary, letterSpacing: -1 },
-  tagline: { fontSize: FontSize.md, color: Colors.textSecondary, marginTop: Spacing.xs },
-  card: { backgroundColor: Colors.bgCard, borderRadius: BorderRadius.xl, borderWidth: 1, borderColor: Colors.bgCardBorder, padding: Spacing.lg },
-  title: { fontSize: FontSize.xl, fontWeight: '700', color: Colors.textPrimary, marginBottom: Spacing.lg },
-  input: { backgroundColor: Colors.bgInput, borderRadius: BorderRadius.md, paddingHorizontal: Spacing.md, paddingVertical: 14, fontSize: FontSize.md, color: Colors.textPrimary, marginBottom: Spacing.sm, borderWidth: 1, borderColor: Colors.bgCardBorder },
-  button: { backgroundColor: Colors.primary, borderRadius: BorderRadius.md, paddingVertical: 16, alignItems: 'center', marginTop: Spacing.md },
+  container: { flex: 1, backgroundColor: C.bg },
+  content: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: S.lg },
+  logoContainer: { alignItems: 'center', marginBottom: S.xxl },
+  logoText: { fontSize: FS.display, fontFamily: F.display, color: C.text.pri, letterSpacing: -1 },
+  tagline: { fontFamily: F.body, fontSize: FS.md, color: C.text.sec, marginTop: S.xs },
+  card: { backgroundColor: C.surface1, borderRadius: R.sheet, borderWidth: 1, borderColor: C.border, padding: S.lg },
+  title: { fontSize: FS.xl, fontFamily: F.bodyBold, color: C.text.pri, marginBottom: S.lg },
+  input: { backgroundColor: C.surface3, borderRadius: R.card, paddingHorizontal: S.md, paddingVertical: 14, fontFamily: F.body, fontSize: FS.md, color: C.text.pri, marginBottom: S.sm, borderWidth: 1, borderColor: C.border },
+  button: { backgroundColor: C.primary, borderRadius: R.card, paddingVertical: 16, alignItems: 'center', marginTop: S.md },
   buttonDisabled: { opacity: 0.6 },
-  buttonText: { color: Colors.textPrimary, fontSize: FontSize.lg, fontWeight: '700' },
-  terms: { color: Colors.textMuted, fontSize: FontSize.xs, textAlign: 'center', marginTop: Spacing.md, lineHeight: 16 },
-  footer: { flexDirection: 'row', justifyContent: 'center', marginTop: Spacing.lg, paddingBottom: Spacing.xxl },
-  footerText: { color: Colors.textSecondary, fontSize: FontSize.md },
-  footerLink: { color: Colors.primaryLight, fontSize: FontSize.md, fontWeight: '600' },
+  buttonText: { color: C.text.pri, fontSize: FS.lg, fontFamily: F.bodyBold },
+  terms: { color: C.text.mut, fontFamily: F.body, fontSize: FS.xs, textAlign: 'center', marginTop: S.md, lineHeight: 16 },
+  footer: { flexDirection: 'row', justifyContent: 'center', marginTop: S.lg, paddingBottom: S.xxl },
+  footerText: { color: C.text.sec, fontFamily: F.body, fontSize: FS.md },
+  footerLink: { color: C.primaryLight, fontSize: FS.md, fontFamily: F.bodySemiBold },
 });
