@@ -11,7 +11,7 @@
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0a0e1a"
+      "backgroundColor": "#0a0a14"
     },
     "ios": {
       "supportsTablet": false,
@@ -31,7 +31,8 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#0a0e1a"
+        "backgroundImage": "./assets/images/adaptive-icon-background.png",
+        "backgroundColor": "#0a0a14"
       },
       "package": "com.driiva.app",
       "permissions": [
