@@ -37,7 +37,8 @@
     "fabrication:laws:plant": "PLANT_VIOLATION=1 node tests/fabrication-laws.mjs",
     "qa:seed": "FIRESTORE_EMULATOR_HOST=127.0.0.1:8085 FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9098 GCLOUD_PROJECT=driiva node scripts/seed-qa-emulator.mjs",
     "qa:emulators": "firebase emulators:start --only auth,firestore --config firebase.qa.json --project driiva",
-    "axe": "node tests/axe-audit.mjs"
+    "axe": "node tests/axe-audit.mjs",
+    "gates": "./scripts/run-gates.sh"
   },
   "dependencies": {
     "@neondatabase/serverless": "^0.10.4",
