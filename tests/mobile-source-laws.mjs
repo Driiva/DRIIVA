@@ -188,6 +188,24 @@ const LAWS = [
     },
   },
   {
+    id: 'type-scale',
+    title: 'Type comes from the scale, not from a typed number',
+    /**
+     * Scoped to the primitives, which are where the ladder has to hold: a
+     * screen can be re-laid out, but a Button that sets its own size makes
+     * every screen using it wrong at once. The screens themselves still carry
+     * off-ladder sizes and are named as debt rather than pretended away.
+     */
+    check(file, source) {
+      if (file === PALETTE_SOURCE || !file.startsWith('mobile/components/ui/')) return [];
+      const hits = [];
+      for (const match of source.matchAll(/\bfontSize\s*:\s*(\d+(?:\.\d+)?)/g)) {
+        hits.push({ line: lineOf(source, match.index), detail: match[0] });
+      }
+      return hits;
+    },
+  },
+  {
     id: 'legacy-theme',
     title: 'The legacy theme is gone',
     check(file, source) {
@@ -208,7 +226,7 @@ const PLANTED = `
 /** A planted file - it breaks every law on purpose. */
 import { Colors } from '@/constants/theme';
 const styles = {
-  shout: { color: '#ff00ff', fontWeight: '800' },
+  shout: { color: '#ff00ff', fontWeight: '800', fontSize: 17 },
   pill: { width: 120, height: 32, borderRadius: 9999 },
 };
 export const copy = 'Great news, your score went up!';
@@ -222,7 +240,12 @@ export function runMobileSourceLaws({ planted = false } = {}) {
   );
 
   const targets = planted
-    ? [...files.map((f) => [f, readFileSync(join(ROOT, f), 'utf8')]), ['planted.tsx', PLANTED]]
+    ? [
+        ...files.map((f) => [f, readFileSync(join(ROOT, f), 'utf8')]),
+        // Named inside the primitives so the type-scale law, which is scoped
+        // there, is exercised by the planted run like every other law.
+        ['mobile/components/ui/planted.tsx', PLANTED],
+      ]
     : files.map((f) => [f, readFileSync(join(ROOT, f), 'utf8')]);
 
   const byLaw = new Map(LAWS.map((law) => [law.id, []]));

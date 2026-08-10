@@ -150,14 +150,14 @@ export function SwipeTripCard({
                   {flagged ? 'Under review' : status === 'recording' ? 'Recording' : 'Processing'}
                 </span>
               </div>
-              <div className="text-[11px] text-white/60 mt-0.5">{distance}</div>
+              <div className="text-xs text-white/60 mt-0.5 tabular">{distance}</div>
             </div>
           ) : (
             <div className="text-right flex-shrink-0 ml-3">
               <div className={`text-xl font-bold tabular-nums ${getScoreColor(score)}`}>
                 {score}
               </div>
-              <div className="text-[11px] text-white/60">{distance}</div>
+              <div className="text-xs text-white/60 tabular">{distance}</div>
             </div>
           )}
         </div>
@@ -165,7 +165,7 @@ export function SwipeTripCard({
         {isInFlight ? (
           /* In-flight status line (no final events yet) */
           <div className="mt-3 pt-3 border-t border-white/[0.06] text-center">
-            <span className="text-[11px] text-white/60">
+            <span className="text-xs text-white/45">
               {flagged
                 ? "This trip flagged something unusual - we're checking it"
                 : status === 'recording'
