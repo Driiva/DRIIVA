@@ -74,7 +74,11 @@ export function PoolPanel({
   userWeightedScore,
   loading = false,
 }: PoolPanelProps) {
-  const { history, loading: historyLoading } = usePoolHistory();
+  // usePoolHistory has always tracked a subscription error; nothing read it,
+  // so a failed read rendered "No closed periods yet", which asserts the pool
+  // has never finished a period. That is a claim about the product, made from
+  // a read that failed.
+  const { history, loading: historyLoading, error: historyError } = usePoolHistory();
   const reduce = useReducedMotion();
 
   // The chart plots participation, not money. Participation is real today;
@@ -172,6 +176,13 @@ export function PoolPanel({
         <span className="stat-label">Pool over time</span>
         {historyLoading ? (
           <Skeleton className="h-[140px] w-full mt-2" style={{ borderRadius: 'var(--radius-md)' }} />
+        ) : historyError ? (
+          <EmptyState
+            tone="error"
+            icon={<TrendingUp size={24} strokeWidth={2} />}
+            heading="The pool history did not load"
+            subtext="We could not read the closed periods, so we cannot draw the trend. This is a read problem, not an empty pool."
+          />
         ) : series.length < 2 ? (
           <EmptyState
             icon={<TrendingUp size={24} strokeWidth={2} />}

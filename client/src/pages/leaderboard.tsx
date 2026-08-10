@@ -443,6 +443,7 @@ export default function LeaderboardPage() {
                 <LeaderboardSkeleton />
               ) : leaderboardError ? (
                 <EmptyState
+                  tone="error"
                   icon={<Trophy size={24} strokeWidth={2} />}
                   heading="The leaderboard did not load"
                   subtext="Your score and trips are safe. This is a problem reading the board, not a problem with your data."

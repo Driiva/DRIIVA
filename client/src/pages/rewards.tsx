@@ -60,6 +60,7 @@ export default function Rewards() {
 
   const [achievements, setAchievements] = useState<DisplayAchievement[]>([]);
   const [achievementsLoading, setAchievementsLoading] = useState(true);
+  const [achievementsError, setAchievementsError] = useState<Error | null>(null);
   const { toast } = useToast();
 
   // Reward milestone states, derived from streakDays + drivingScore
@@ -102,6 +103,8 @@ export default function Rewards() {
     let cancelled = false;
 
     (async () => {
+      setAchievementsError(null);
+
       try {
         /*
          * Reads the catalogue from @driiva/contracts and only the UNLOCKS from
@@ -144,7 +147,12 @@ export default function Rewards() {
           })),
         );
       } catch (err) {
+        // A swallowed read error left `achievements` empty, and the render
+        // below then told the driver "No achievements yet. Nothing is hidden
+        // here, there is simply nothing to show yet." That is a confident
+        // claim about their account made from a read that never landed.
         console.error('[Rewards] Failed to load achievements:', err);
+        if (!cancelled) setAchievementsError(err instanceof Error ? err : new Error(String(err)));
       } finally {
         if (!cancelled) setAchievementsLoading(false);
       }
@@ -344,6 +352,13 @@ export default function Rewards() {
                       </div>
                     </GlassCard>
                   ))
+                ) : achievementsError ? (
+                  <EmptyState
+                    tone="error"
+                    icon={<Gift size={24} strokeWidth={2} />}
+                    heading="We could not load your achievements"
+                    subtext="This is a problem reading them, not a sign you have none. Your unlocks are safe. Try again in a moment."
+                  />
                 ) : achievements.length === 0 ? (
                   <EmptyState
                     icon={<Gift size={24} strokeWidth={2} />}

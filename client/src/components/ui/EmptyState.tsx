@@ -5,8 +5,19 @@
  * The rule this enforces: empty means empty. An empty state never fills the
  * gap with a sample trip, a demo leaderboard, or a plausible number. It says
  * what is not there yet, why, and what produces the first row.
+ *
+ * THE ERROR VARIANT, and why it is not optional. "You have no achievements"
+ * and "we could not read your achievements" are different sentences, and only
+ * one of them is true when a read fails. Rendering the empty copy on a failed
+ * read is a confident answer to a question we do not have the data to answer,
+ * which is the same class of defect as an invented figure: the user is told
+ * something specific and false about their own account. A component that can
+ * only say "nothing here" will be used to say it when the truth is "we do not
+ * know", so the variant lives here rather than being improvised per caller.
  */
 import type { ReactNode } from 'react';
+
+type EmptyStateTone = 'empty' | 'error';
 
 interface EmptyStateProps {
   /** Lucide icon at 24px, or a mark. Never an emoji. */
@@ -14,17 +25,31 @@ interface EmptyStateProps {
   heading: string;
   subtext: ReactNode;
   action?: ReactNode;
+  /**
+   * 'empty' means we read successfully and there is nothing there.
+   * 'error' means we do not know what is there. Never use 'empty' for a
+   * failed read.
+   */
+  tone?: EmptyStateTone;
 }
 
-export function EmptyState({ icon, heading, subtext, action }: EmptyStateProps) {
+export function EmptyState({ icon, heading, subtext, action, tone = 'empty' }: EmptyStateProps) {
+  const isError = tone === 'error';
+  // Colour is earned: the wash and the icon carry the accent for an ordinary
+  // empty state, and the error tone for a read that failed.
+  const accentRgb = isError ? 'var(--err-rgb)' : 'var(--app-primary-rgb)';
+  const accentColor = isError ? 'var(--err)' : 'var(--app-primary)';
+
   return (
-    <div className="relative flex flex-col items-center justify-center py-14 px-6 text-center overflow-hidden">
+    <div
+      className="relative flex flex-col items-center justify-center py-14 px-6 text-center overflow-hidden"
+      role={isError ? 'alert' : undefined}
+    >
       {/* A single wash of the accent, well under the text. Colour is earned. */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          background:
-            'radial-gradient(360px circle at 50% 40%, rgba(var(--app-primary-rgb), 0.07), transparent 70%)',
+          background: `radial-gradient(360px circle at 50% 40%, rgba(${accentRgb}, 0.07), transparent 70%)`,
         }}
         aria-hidden="true"
       />
@@ -34,9 +59,9 @@ export function EmptyState({ icon, heading, subtext, action }: EmptyStateProps) 
           className="relative mb-5 inline-flex h-14 w-14 items-center justify-center"
           style={{
             borderRadius: 'var(--radius-card)',
-            background: 'rgba(var(--app-primary-rgb), 0.10)',
-            boxShadow: 'inset 0 0 0 1px rgba(var(--app-primary-rgb), 0.18)',
-            color: 'var(--app-primary)',
+            background: `rgba(${accentRgb}, 0.10)`,
+            boxShadow: `inset 0 0 0 1px rgba(${accentRgb}, 0.18)`,
+            color: accentColor,
           }}
           aria-hidden="true"
         >

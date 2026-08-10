@@ -186,6 +186,12 @@ button, a, input, select, textarea, [role="button"] {
   --err:  #ef4444;
   --teal: #2dd4bf;
 
+  /* The error hue as an rgb triplet, so a translucent tint of it is DERIVED
+     rather than pasted. Same reason --app-primary-rgb exists: retune --err
+     without this and every hand-written rgba(239, 68, 68, ...) keeps pointing
+     at the old colour. */
+  --err-rgb: 239, 68, 68;
+
   /* ── Hairlines ───────────────────────────────────────────── */
   --hairline:        rgba(255, 255, 255, 0.06);
   --hairline-hi:     rgba(255, 255, 255, 0.10);

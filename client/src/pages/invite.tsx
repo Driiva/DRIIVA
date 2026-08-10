@@ -110,6 +110,7 @@ export default function InvitePage() {
 
         {state === 'failed' && (
           <EmptyState
+            tone="error"
             icon={<UserPlus size={24} strokeWidth={2} />}
             heading="This invite could not be used"
             subtext={FAILURE_COPY[failure ?? 'write-failed']}
