@@ -26,7 +26,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { firestore } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
-import { C, T, F, S, scoreColor } from '@/components/ui/theme';
+import { C, T, F, S, scoreColor, FS } from '@/components/ui/theme';
 import { ScoreRing } from '@/components/ui/ScoreRing';
 import { StatCard } from '@/components/ui/StatCard';
 import { ScoreBreakdownBar } from '@/components/ui/ScoreBreakdownBar';
@@ -374,7 +374,7 @@ const styles = StyleSheet.create({
   targetLabel: { ...T.label, color: C.text.sec, textTransform: 'uppercase', letterSpacing: 0.5 },
   targetValue: {
     fontFamily: F.monoSemiBold,
-    fontSize: 28,
+    fontSize: FS.xxl,
     color: C.text.hero,
     fontVariant: ['tabular-nums'],
   },
@@ -400,7 +400,7 @@ const styles = StyleSheet.create({
   },
   tripRoute: { ...T.body, color: C.text.pri },
   tripMeta: { ...T.caption, color: C.text.sec, marginTop: 2 },
-  tripScore: { ...T.stat, fontSize: 20 },
+  tripScore: T.stat,
 
   emptyText: { ...T.body, color: C.text.mut, textAlign: 'center', paddingVertical: S.lg },
 });

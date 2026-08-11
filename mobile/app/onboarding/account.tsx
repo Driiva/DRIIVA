@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
 import { ScoreRing } from '@/components/ui/ScoreRing';
-import { C, F, S, R, RGB, alpha } from '@/components/ui/theme';
+import { C, F, S, R, RGB, alpha, FS } from '@/components/ui/theme';
 
 export default function Account() {
   const router = useRouter();
@@ -88,11 +88,11 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: S.lg, paddingTop: S.md, paddingBottom: 100 },
   scorePreview: { alignItems: 'center', marginBottom: 28 },
   headline: {
-    color: C.text.hero, fontSize: 28, fontFamily: F.bodySemiBold,
+    color: C.text.hero, fontSize: FS.xxl, fontFamily: F.bodySemiBold,
     letterSpacing: -0.025, lineHeight: 34, marginBottom: 10,
   },
   sub: {
-    color: C.text.sec, fontFamily: F.body, fontSize: 15, lineHeight: 23, marginBottom: 28,
+    color: C.text.sec, fontFamily: F.body, fontSize: FS.md, lineHeight: 23, marginBottom: 28,
   },
   summaryCard: {
     backgroundColor: C.surface1,
@@ -111,8 +111,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: C.hairline,
   },
-  summaryLabel: { color: C.text.sec, fontFamily: F.body, fontSize: 14 },
-  summaryValue: { color: C.text.hero, fontSize: 14, fontFamily: F.bodySemiBold },
+  summaryLabel: { color: C.text.sec, fontFamily: F.body, fontSize: FS.md },
+  summaryValue: { color: C.text.hero, fontSize: FS.md, fontFamily: F.bodySemiBold },
   shariahBadge: {
     backgroundColor: alpha(RGB.primary, 0.08),
     borderRadius: R.card,
@@ -120,11 +120,11 @@ const styles = StyleSheet.create({
     borderColor: alpha(RGB.primary, 0.18),
     padding: 14,
   },
-  shariahText: { color: C.text.mut, fontFamily: F.body, fontSize: 13, lineHeight: 19 },
+  shariahText: { color: C.text.mut, fontFamily: F.body, fontSize: FS.sm, lineHeight: 19 },
   footer: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: S.lg },
   primaryBtn: {
     backgroundColor: C.primary, borderRadius: R.card,
     paddingVertical: 16, alignItems: 'center',
   },
-  primaryBtnText: { color: C.text.hero, fontSize: 15, fontFamily: F.bodySemiBold, letterSpacing: -0.005 },
+  primaryBtnText: { color: C.text.hero, fontSize: FS.md, fontFamily: F.bodySemiBold, letterSpacing: -0.005 },
 });

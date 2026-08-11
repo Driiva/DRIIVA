@@ -17,7 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
-import { C, F, S, R } from '@/components/ui/theme';
+import { C, F, S, R, FS, LH, TR } from '@/components/ui/theme';
 
 const PRINCIPLES = [
   {
@@ -85,10 +85,10 @@ const styles = StyleSheet.create({
   content: { flex: 1, paddingTop: S.md, paddingHorizontal: S.lg },
   back: { marginBottom: S.lg },
   headline: {
-    color: C.text.hero, fontSize: 26, fontFamily: F.bodySemiBold,
-    letterSpacing: -0.025, lineHeight: 32, marginBottom: 8,
+    color: C.text.hero, fontSize: FS.xxl, fontFamily: F.bodySemiBold,
+    letterSpacing: TR.xxl, lineHeight: LH.xxl, marginBottom: 8,
   },
-  sub: { color: C.text.sec, fontFamily: F.body, fontSize: 15, marginBottom: 24 },
+  sub: { color: C.text.sec, fontFamily: F.body, fontSize: FS.md, marginBottom: 24 },
 
   list: { gap: 12 },
   card: {
@@ -98,11 +98,11 @@ const styles = StyleSheet.create({
     borderColor: C.border,
     padding: 18,
   },
-  cardTitle: { color: C.text.hero, fontSize: 15, fontFamily: F.bodySemiBold, marginBottom: 6 },
-  cardBody: { color: C.text.sec, fontFamily: F.body, fontSize: 14, lineHeight: 21 },
+  cardTitle: { color: C.text.hero, fontSize: FS.md, fontFamily: F.bodySemiBold, marginBottom: 6 },
+  cardBody: { color: C.text.sec, fontFamily: F.body, fontSize: FS.md, lineHeight: LH.md },
 
   disclaimer: {
-    color: C.text.mut, fontFamily: F.body, fontSize: 12,
+    color: C.text.mut, fontFamily: F.body, fontSize: FS.sm,
     lineHeight: 18, marginTop: S.lg,
   },
 
@@ -111,5 +111,5 @@ const styles = StyleSheet.create({
     backgroundColor: C.primary, borderRadius: R.card,
     paddingVertical: 16, alignItems: 'center',
   },
-  primaryBtnText: { color: C.text.hero, fontSize: 15, fontFamily: F.bodySemiBold, letterSpacing: -0.005 },
+  primaryBtnText: { color: C.text.hero, fontSize: FS.md, fontFamily: F.bodySemiBold, letterSpacing: -0.005 },
 });

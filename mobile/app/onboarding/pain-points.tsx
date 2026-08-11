@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
-import { C, F, S, R, RGB, alpha } from '@/components/ui/theme';
+import { C, F, S, R, RGB, alpha, FS, LH, TR } from '@/components/ui/theme';
 
 const OPTIONS = [
   "I've never claimed but my premium keeps rising",
@@ -84,10 +84,10 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: S.lg, paddingTop: S.md, paddingBottom: S.lg },
   back: { marginBottom: S.lg },
   headline: {
-    color: C.text.hero, fontSize: 26, fontFamily: F.bodySemiBold,
-    letterSpacing: -0.025, lineHeight: 32, marginBottom: 8,
+    color: C.text.hero, fontSize: FS.xxl, fontFamily: F.bodySemiBold,
+    letterSpacing: TR.xxl, lineHeight: LH.xxl, marginBottom: 8,
   },
-  sub: { color: C.text.sec, fontFamily: F.body, fontSize: 15, marginBottom: 24 },
+  sub: { color: C.text.sec, fontFamily: F.body, fontSize: FS.md, marginBottom: 24 },
   options: { gap: 10 },
   option: {
     flexDirection: 'row',
@@ -112,12 +112,12 @@ const styles = StyleSheet.create({
   checkboxSelected: {
     backgroundColor: C.primary, borderColor: C.primary,
   },
-  optionLabel: { color: C.text.pri, fontFamily: F.body, fontSize: 14, flex: 1, lineHeight: 20 },
+  optionLabel: { color: C.text.pri, fontFamily: F.body, fontSize: FS.md, flex: 1, lineHeight: 20 },
   optionLabelSelected: { color: C.text.hero },
   footer: { paddingHorizontal: S.lg, paddingBottom: S.lg },
   primaryBtn: {
     backgroundColor: C.primary, borderRadius: R.card,
     paddingVertical: 16, alignItems: 'center',
   },
-  primaryBtnText: { color: C.text.hero, fontSize: 15, fontFamily: F.bodySemiBold, letterSpacing: -0.005 },
+  primaryBtnText: { color: C.text.hero, fontSize: FS.md, fontFamily: F.bodySemiBold, letterSpacing: -0.005 },
 });

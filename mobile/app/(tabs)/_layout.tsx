@@ -6,7 +6,7 @@
 import { Tabs } from 'expo-router';
 import { View, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { C, F, S } from '@/components/ui/theme';
+import { C, F, S, FS } from '@/components/ui/theme';
 
 export default function TabLayout() {
   return (
@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
     paddingBottom: Platform.OS === 'ios' ? 28 : S.xs,
   },
   tabLabel: {
-    fontSize: 10,
+    fontSize: FS.xs,
     fontFamily: F.bodySemiBold,
   },
   recordButton: {

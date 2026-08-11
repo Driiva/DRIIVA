@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useOnboarding, DrivingFrequency, DrivingTime, DrivingRoutes } from '@/contexts/OnboardingContext';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
-import { C, F, S, R, RGB, alpha } from '@/components/ui/theme';
+import { C, F, S, R, RGB, alpha, FS, LH, TR } from '@/components/ui/theme';
 import { seedScore as calcSeed } from '@/hooks/useTripSeed';
 
 const STEPS = [
@@ -106,8 +106,8 @@ const styles = StyleSheet.create({
   },
   stepDotActive: { backgroundColor: C.primary },
   headline: {
-    color: C.text.hero, fontSize: 26, fontFamily: F.bodySemiBold,
-    letterSpacing: -0.025, lineHeight: 32, marginBottom: 28,
+    color: C.text.hero, fontSize: FS.xxl, fontFamily: F.bodySemiBold,
+    letterSpacing: TR.xxl, lineHeight: LH.xxl, marginBottom: 28,
   },
   options: { gap: 10 },
   option: {
@@ -125,6 +125,6 @@ const styles = StyleSheet.create({
     borderColor: C.primary,
     backgroundColor: alpha(RGB.primary, 0.12),
   },
-  optionText: { color: C.text.pri, fontFamily: F.body, fontSize: 15 },
+  optionText: { color: C.text.pri, fontFamily: F.body, fontSize: FS.md },
   optionTextSelected: { color: C.text.hero, fontFamily: F.bodySemiBold },
 });

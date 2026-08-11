@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import {
   View, Text, PanResponder, Animated, StyleSheet, Dimensions,
 } from 'react-native';
-import { C, F, R, RGB, alpha } from '@/components/ui/theme';
+import { C, F, R, RGB, alpha, FS, LH } from '@/components/ui/theme';
 
 const { width } = Dimensions.get('window');
 const SWIPE_THRESHOLD = width * 0.3;
@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
   },
   counter: {
     color: C.text.mut,
-    fontSize: 11,
+    fontSize: FS.xs,
     fontFamily: F.bodySemiBold,
     letterSpacing: 0.06,
     textTransform: 'uppercase',
@@ -110,9 +110,9 @@ const styles = StyleSheet.create({
   },
   statement: {
     color: C.text.hero,
-    fontSize: 20,
+    fontSize: FS.xl,
     fontFamily: F.body,
-    lineHeight: 29,
+    lineHeight: LH.xl,
     letterSpacing: -0.01,
   },
   hintRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
   hint: {
     color: C.text.mut,
     fontFamily: F.body,
-    fontSize: 12,
+    fontSize: FS.sm,
   },
   label: {
     position: 'absolute',
@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
   },
   labelText: {
     color: C.text.hero,
-    fontSize: 13,
+    fontSize: FS.sm,
     fontFamily: F.bodyBold,
   },
 });

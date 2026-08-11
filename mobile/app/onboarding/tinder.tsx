@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
 import { SwipeCard } from '@/components/onboarding/SwipeCard';
-import { C, F, S } from '@/components/ui/theme';
+import { C, F, S, FS, LH, TR } from '@/components/ui/theme';
 
 const STATEMENTS = [
   "I've driven carefully for years and never once been rewarded for it.",
@@ -69,17 +69,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headline: {
-    color: C.text.hero, fontSize: 26, fontFamily: F.bodySemiBold,
-    letterSpacing: -0.025, lineHeight: 32, marginBottom: 8,
+    color: C.text.hero, fontSize: FS.xxl, fontFamily: F.bodySemiBold,
+    letterSpacing: TR.xxl, lineHeight: LH.xxl, marginBottom: 8,
     alignSelf: 'flex-start',
   },
   sub: {
-    color: C.text.sec, fontFamily: F.body, fontSize: 15,
+    color: C.text.sec, fontFamily: F.body, fontSize: FS.md,
     marginBottom: 36, alignSelf: 'flex-start',
   },
   cardArea: { width: '100%', alignItems: 'center' },
   hint: {
-    color: C.text.mut, fontFamily: F.body, fontSize: 13,
+    color: C.text.mut, fontFamily: F.body, fontSize: FS.sm,
     marginTop: 24,
   },
 });

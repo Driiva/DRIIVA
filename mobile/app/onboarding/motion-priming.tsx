@@ -6,7 +6,7 @@ import { useRouter } from 'expo-router';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
-import { C, F, S, R, RGB, alpha } from '@/components/ui/theme';
+import { C, F, S, R, RGB, alpha, FS, LH, TR } from '@/components/ui/theme';
 
 const BULLETS = [
   'Powers your Stop-Go Classifier score.',
@@ -104,19 +104,19 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   headline: {
-    color: C.text.hero, fontSize: 26, fontFamily: F.bodySemiBold,
-    letterSpacing: -0.025, lineHeight: 32, marginBottom: 12,
+    color: C.text.hero, fontSize: FS.xxl, fontFamily: F.bodySemiBold,
+    letterSpacing: TR.xxl, lineHeight: LH.xxl, marginBottom: 12,
   },
-  sub: { color: C.text.sec, fontFamily: F.body, fontSize: 15, lineHeight: 23, marginBottom: 28 },
+  sub: { color: C.text.sec, fontFamily: F.body, fontSize: FS.md, lineHeight: 23, marginBottom: 28 },
   bullets: { gap: 14, marginBottom: 24 },
   bullet: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  bulletText: { color: C.text.pri, fontFamily: F.body, fontSize: 15, flex: 1, lineHeight: 22 },
+  bulletText: { color: C.text.pri, fontFamily: F.body, fontSize: FS.md, flex: 1, lineHeight: 22 },
   footer: { paddingHorizontal: S.lg, paddingBottom: S.lg, gap: 12 },
   primaryBtn: {
     backgroundColor: C.primary, borderRadius: R.card,
     paddingVertical: 16, alignItems: 'center',
   },
   primaryBtnLoading: { opacity: 0.6 },
-  primaryBtnText: { color: C.text.hero, fontSize: 15, fontFamily: F.bodySemiBold, letterSpacing: -0.005 },
-  skipText: { color: C.text.mut, fontFamily: F.body, fontSize: 14, textAlign: 'center' },
+  primaryBtnText: { color: C.text.hero, fontSize: FS.md, fontFamily: F.bodySemiBold, letterSpacing: -0.005 },
+  skipText: { color: C.text.mut, fontFamily: F.body, fontSize: FS.sm, textAlign: 'center' },
 });

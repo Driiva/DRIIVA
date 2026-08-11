@@ -82,8 +82,28 @@ describe('mobile type scale', () => {
     expect(ratio(FS.base, LH.base)).toBeGreaterThan(ratio(FS.xxl, LH.xxl));
   });
 
-  it('the hero number is the largest thing on the scale', () => {
-    const largest = Math.max(...Object.values(T).map((s) => (s as { fontSize: number }).fontSize));
-    expect((T.hero as { fontSize: number }).fontSize).toBe(largest);
+  it('nothing outgrows a hero number', () => {
+    // The rule this protects is that no heading or body style is ever bigger
+    // than the numbers, which are the point of an instrument. It used to be
+    // written as "T.hero is the largest", which assumed a single hero style;
+    // T.heroLg was added for the refund reveal and is legitimately larger.
+    const sizeOf = (s: unknown) => (s as { fontSize: number }).fontSize;
+    const largest = Math.max(...Object.values(T).map(sizeOf));
+    const heroes = [sizeOf(T.hero), sizeOf(T.heroLg)];
+    expect(heroes).toContain(largest);
+    for (const [name, style] of Object.entries(T)) {
+      if (name === 'hero' || name === 'heroLg') continue;
+      expect(sizeOf(style)).toBeLessThan(sizeOf(T.hero));
+    }
+  });
+
+  it('the step above display keeps the leading curve tightening', () => {
+    // A new step is only a step if it obeys the curve the others do.
+    expect(FS.mega).toBeGreaterThan(FS.display);
+    // display already sits at exactly 1.0, so the curve can flatten here but
+    // must not reopen: a step above display with looser leading than display
+    // is not a bigger step, it is a different curve.
+    expect(LH.mega / FS.mega).toBeLessThanOrEqual(LH.display / FS.display);
+    expect(TR.mega).toBeLessThan(TR.display);
   });
 });

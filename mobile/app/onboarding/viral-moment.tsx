@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
 import { ScoreRing } from '@/components/ui/ScoreRing';
-import { C, F, S, R, RGB, alpha } from '@/components/ui/theme';
+import { C, F, S, R, RGB, alpha, FS, LH } from '@/components/ui/theme';
 import { refundEstimate, scorePercentile } from '@/hooks/useTripSeed';
 
 // FCA DISCLOSURE REQUIRED - refund estimates are illustrative, not guaranteed
@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
   progress: { paddingHorizontal: S.lg, paddingTop: S.sm },
   content: { paddingHorizontal: S.lg, paddingTop: S.md, paddingBottom: 100 },
   headline: {
-    color: C.text.hero, fontSize: 22, fontFamily: F.bodySemiBold,
+    color: C.text.hero, fontSize: FS.xl, fontFamily: F.bodySemiBold,
     letterSpacing: -0.025, lineHeight: 30, marginBottom: 24,
   },
   heroCard: {
@@ -107,11 +107,11 @@ const styles = StyleSheet.create({
   ringWrap: { marginBottom: 24 },
   refundRow: { alignItems: 'center', marginBottom: 16 },
   refundLabel: {
-    color: C.text.sec, fontFamily: F.body, fontSize: 12,
+    color: C.text.sec, fontFamily: F.body, fontSize: FS.sm,
     textAlign: 'center', marginBottom: 4,
   },
   refundValue: {
-    color: C.success, fontSize: 28, fontFamily: F.bodyBold,
+    color: C.success, fontSize: FS.xxl, fontFamily: F.bodyBold,
     letterSpacing: -0.03,
   },
   poolRow: {
@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
   liveDot: {
     width: 6, height: 6, borderRadius: 3, backgroundColor: C.success,
   },
-  poolText: { color: C.text.sec, fontFamily: F.body, fontSize: 13 },
+  poolText: { color: C.text.sec, fontFamily: F.body, fontSize: FS.sm },
   shareBtn: {
     backgroundColor: alpha(RGB.primary, 0.15),
     borderRadius: R.card,
@@ -132,9 +132,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 10,
   },
-  shareBtnText: { color: C.primaryLight, fontSize: 15, fontFamily: F.bodySemiBold },
+  shareBtnText: { color: C.primaryLight, fontSize: FS.md, fontFamily: F.bodySemiBold },
   shareHint: {
-    color: C.text.mut, fontFamily: F.body, fontSize: 13, textAlign: 'center',
+    color: C.text.mut, fontFamily: F.body, fontSize: FS.sm, textAlign: 'center',
     lineHeight: 19, marginBottom: 20,
   },
   disclaimer: {
@@ -142,11 +142,11 @@ const styles = StyleSheet.create({
     borderRadius: R.card,
     padding: 14,
   },
-  disclaimerText: { color: C.text.mut, fontFamily: F.body, fontSize: 12, lineHeight: 18 },
+  disclaimerText: { color: C.text.mut, fontFamily: F.body, fontSize: FS.sm, lineHeight: LH.sm },
   footer: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: S.lg },
   primaryBtn: {
     backgroundColor: C.primary, borderRadius: R.card,
     paddingVertical: 16, alignItems: 'center',
   },
-  primaryBtnText: { color: C.text.hero, fontSize: 15, fontFamily: F.bodySemiBold, letterSpacing: -0.005 },
+  primaryBtnText: { color: C.text.hero, fontSize: FS.md, fontFamily: F.bodySemiBold, letterSpacing: -0.005 },
 });

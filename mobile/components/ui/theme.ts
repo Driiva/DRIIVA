@@ -131,6 +131,12 @@ export const FS = {
   xxl: 28,
   xxxl: 36,
   display: 48,
+  /**
+   * One step above display, for the refund reveal and nothing else so far.
+   * Added rather than left as a literal: RefundMoment was overriding T.hero to
+   * 72 and inheriting LH.display, which set the leading SMALLER than the size.
+   */
+  mega: 72,
 } as const;
 
 /**
@@ -148,6 +154,7 @@ export const LH = {
   xxl: 32,
   xxxl: 38,
   display: 48,
+  mega: 72,
 } as const;
 
 /**
@@ -156,6 +163,7 @@ export const LH = {
  * mono labels, which are set in capitals and need the air.
  */
 export const TR = {
+  mega: -2.0,
   display: -1.4,
   xxxl: -1.0,
   xxl: -0.7,
@@ -188,6 +196,7 @@ const tabular = ['tabular-nums' as const];
 
 export const T = {
   hero:     { fontFamily: F.monoSemiBold, fontSize: FS.display, lineHeight: LH.display, letterSpacing: TR.display, fontVariant: tabular },
+  heroLg:   { fontFamily: F.monoSemiBold, fontSize: FS.mega, lineHeight: LH.mega, letterSpacing: TR.mega, fontVariant: tabular },
   statLg:   { fontFamily: F.monoSemiBold, fontSize: FS.xxl, lineHeight: LH.xxl, letterSpacing: TR.xxl, fontVariant: tabular },
   stat:     { fontFamily: F.monoSemiBold, fontSize: FS.xl, lineHeight: LH.xl, letterSpacing: TR.xl, fontVariant: tabular },
   number:   { fontFamily: F.monoSemiBold, fontSize: FS.base, lineHeight: LH.base, letterSpacing: TR.base, fontVariant: tabular },

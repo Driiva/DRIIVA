@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
-import { C, F, S, R } from '@/components/ui/theme';
+import { C, F, S, R, FS, LH, TR } from '@/components/ui/theme';
 
 // FCA DISCLOSURE REQUIRED on financial claims before launch
 const ALL_SOLUTIONS = [
@@ -79,10 +79,10 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: S.lg, paddingTop: S.md, paddingBottom: S.lg },
   back: { marginBottom: S.lg },
   headline: {
-    color: C.text.hero, fontSize: 26, fontFamily: F.bodySemiBold,
-    letterSpacing: -0.025, lineHeight: 32, marginBottom: 8,
+    color: C.text.hero, fontSize: FS.xxl, fontFamily: F.bodySemiBold,
+    letterSpacing: TR.xxl, lineHeight: LH.xxl, marginBottom: 8,
   },
-  sub: { color: C.text.sec, fontFamily: F.body, fontSize: 15, marginBottom: 24 },
+  sub: { color: C.text.sec, fontFamily: F.body, fontSize: FS.md, marginBottom: 24 },
   solutions: { gap: 12 },
   solutionCard: {
     backgroundColor: C.surface1,
@@ -92,12 +92,12 @@ const styles = StyleSheet.create({
     padding: 18,
   },
   painText: {
-    color: C.text.mut, fontSize: 13,
+    color: C.text.mut, fontSize: FS.sm,
     fontFamily: F.bodySemiBold, letterSpacing: -0.005,
   },
   arrow: { marginVertical: 8 },
   fixText: {
-    color: C.text.hero, fontSize: 15,
+    color: C.text.hero, fontSize: FS.md,
     lineHeight: 22, fontFamily: F.body, letterSpacing: -0.005,
   },
   footer: { paddingHorizontal: S.lg, paddingBottom: S.lg },
@@ -105,5 +105,5 @@ const styles = StyleSheet.create({
     backgroundColor: C.primary, borderRadius: R.card,
     paddingVertical: 16, alignItems: 'center',
   },
-  primaryBtnText: { color: C.text.hero, fontSize: 15, fontFamily: F.bodySemiBold, letterSpacing: -0.005 },
+  primaryBtnText: { color: C.text.hero, fontSize: FS.md, fontFamily: F.bodySemiBold, letterSpacing: -0.005 },
 });

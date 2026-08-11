@@ -19,7 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { firestore } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
-import { C, T, S, R } from '@/components/ui/theme';
+import { C, T, S, R, FS, LH, TR } from '@/components/ui/theme';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 
@@ -294,7 +294,9 @@ const styles = StyleSheet.create({
   nameMe: { color: C.primary },
   meta: { ...T.caption, color: C.text.sec },
 
-  score: { ...T.stat, fontSize: 18, color: C.text.hero },
+  // T.stat is xl; dropping the size to lg has to bring lg's leading and
+  // tracking with it, or the row keeps xl's 28px leading under 18px type.
+  score: { ...T.stat, fontSize: FS.lg, lineHeight: LH.lg, letterSpacing: TR.lg, color: C.text.hero },
   change: { flexDirection: 'row', alignItems: 'center', gap: 2, width: 44, justifyContent: 'flex-end' },
   changeText: { ...T.caption, fontVariant: ['tabular-nums'] },
 });

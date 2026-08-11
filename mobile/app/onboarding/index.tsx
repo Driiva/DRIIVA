@@ -3,7 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
-import { C, F, S, R } from '@/components/ui/theme';
+import { C, F, S, R, FS } from '@/components/ui/theme';
 
 const TOTAL = 14;
 
@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
   top: { marginBottom: 28 },
   eyebrow: {
     color: C.primary,
-    fontSize: 11,
+    fontSize: FS.xs,
     fontFamily: F.bodySemiBold,
     letterSpacing: 0.1,
     textTransform: 'uppercase',
@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
   },
   headline: {
     color: C.text.hero,
-    fontSize: 28,
+    fontSize: FS.xxl,
     fontFamily: F.bodySemiBold,
     letterSpacing: -0.025,
     lineHeight: 34,
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
   sub: {
     color: C.text.sec,
     fontFamily: F.body,
-    fontSize: 15,
+    fontSize: FS.md,
     lineHeight: 23,
     letterSpacing: -0.005,
   },
@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
   },
   leaderboardTitle: {
     color: C.text.sec,
-    fontSize: 11,
+    fontSize: FS.xs,
     fontFamily: F.bodySemiBold,
     letterSpacing: 0.08,
     textTransform: 'uppercase',
@@ -135,17 +135,17 @@ const styles = StyleSheet.create({
   stepIndex: {
     color: C.text.mut,
     fontFamily: F.monoSemiBold,
-    fontSize: 12,
+    fontSize: FS.sm,
     width: 14,
     fontVariant: ['tabular-nums'],
   },
   stepBody: { flex: 1, minWidth: 0 },
-  stepTitle: { color: C.text.hero, fontFamily: F.bodySemiBold, fontSize: 14 },
-  stepText: { color: C.text.sec, fontFamily: F.body, fontSize: 13, lineHeight: 19, marginTop: 2 },
+  stepTitle: { color: C.text.hero, fontFamily: F.bodySemiBold, fontSize: FS.md },
+  stepText: { color: C.text.sec, fontFamily: F.body, fontSize: FS.sm, lineHeight: 19, marginTop: 2 },
   caveat: {
     color: C.text.mut,
     fontFamily: F.body,
-    fontSize: 12,
+    fontSize: FS.sm,
     textAlign: 'center',
   },
   footer: {
@@ -159,11 +159,11 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
   },
-  primaryBtnText: { color: C.text.hero, fontSize: 15, fontFamily: F.bodySemiBold, letterSpacing: -0.005 },
+  primaryBtnText: { color: C.text.hero, fontSize: FS.md, fontFamily: F.bodySemiBold, letterSpacing: -0.005 },
   secondaryLink: {
     color: C.text.mut,
     fontFamily: F.body,
-    fontSize: 14,
+    fontSize: FS.md,
     textAlign: 'center',
   },
 });

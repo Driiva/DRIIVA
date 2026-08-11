@@ -5,7 +5,7 @@ import Animated, {
   useSharedValue, useAnimatedProps, withTiming, withDelay,
   useAnimatedStyle, withSequence,
 } from 'react-native-reanimated';
-import { C, F, R, RGB, alpha } from '@/components/ui/theme';
+import { C, F, R, RGB, alpha, FS } from '@/components/ui/theme';
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 const TRIP_PATH = 'M 20 200 C 40 185 55 175 70 160 S 95 145 115 130 S 140 115 160 105 S 185 90 205 80 S 230 68 255 58 S 272 48 285 42';
@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     color: C.text.sec,
-    fontSize: 10,
+    fontSize: FS.xs,
     fontFamily: F.bodySemiBold,
     letterSpacing: 0.04,
   },
@@ -142,6 +142,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: C.border,
   },
-  eventLabel: { color: C.text.pri, fontFamily: F.body, fontSize: 13 },
-  eventDelta: { color: C.success, fontSize: 13, fontFamily: F.bodyBold },
+  eventLabel: { color: C.text.pri, fontFamily: F.body, fontSize: FS.sm },
+  eventDelta: { color: C.success, fontSize: FS.sm, fontFamily: F.bodyBold },
 });

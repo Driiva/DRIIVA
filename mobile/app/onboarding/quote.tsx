@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
 import { ScoreRing } from '@/components/ui/ScoreRing';
-import { C, F, S, R, RGB, alpha } from '@/components/ui/theme';
+import { C, F, S, R, RGB, alpha, FS, LH, TR } from '@/components/ui/theme';
 import { refundEstimate } from '@/hooks/useTripSeed';
 import { joinWaitlist, WaitlistError } from '@/lib/waitlist';
 
@@ -157,8 +157,8 @@ const styles = StyleSheet.create({
   progress: { paddingHorizontal: S.lg, paddingTop: S.sm },
   content: { paddingHorizontal: S.lg, paddingTop: S.md, paddingBottom: 120 },
   headline: {
-    color: C.text.hero, fontSize: 26, fontFamily: F.bodySemiBold,
-    letterSpacing: -0.025, lineHeight: 32, marginBottom: 24,
+    color: C.text.hero, fontSize: FS.xxl, fontFamily: F.bodySemiBold,
+    letterSpacing: TR.xxl, lineHeight: LH.xxl, marginBottom: 24,
   },
   scoreCard: {
     flexDirection: 'row',
@@ -172,8 +172,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   refundEstimate: { flex: 1 },
-  refundLabel: { color: C.text.sec, fontFamily: F.body, fontSize: 13, marginBottom: 6 },
-  refundRange: { color: C.success, fontSize: 22, fontFamily: F.bodyBold, letterSpacing: -0.02 },
+  refundLabel: { color: C.text.sec, fontFamily: F.body, fontSize: FS.sm, marginBottom: 6 },
+  refundRange: { color: C.success, fontSize: FS.xl, fontFamily: F.bodyBold, letterSpacing: -0.02 },
   quoteStub: {
     backgroundColor: alpha(RGB.primary, 0.08),
     borderRadius: R.card,
@@ -183,11 +183,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   quoteStubEyebrow: {
-    color: C.primaryLight, fontSize: 10, fontFamily: F.bodySemiBold,
+    color: C.primaryLight, fontSize: FS.xs, fontFamily: F.bodySemiBold,
     letterSpacing: 0.1, textTransform: 'uppercase', marginBottom: 6,
   },
-  quoteStubTitle: { color: C.text.hero, fontSize: 20, fontFamily: F.bodySemiBold, marginBottom: 8 },
-  quoteStubSub: { color: C.text.sec, fontFamily: F.body, fontSize: 14, lineHeight: 20 },
+  quoteStubTitle: { color: C.text.hero, fontSize: FS.xl, fontFamily: F.bodySemiBold, marginBottom: 8 },
+  quoteStubSub: { color: C.text.sec, fontFamily: F.body, fontSize: FS.md, lineHeight: LH.md },
   waitlistCard: {
     backgroundColor: C.surface1,
     borderRadius: R.card,
@@ -196,8 +196,8 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 16,
   },
-  waitlistTitle: { color: C.text.hero, fontSize: 16, fontFamily: F.bodySemiBold, marginBottom: 4 },
-  waitlistSub: { color: C.text.mut, fontFamily: F.body, fontSize: 13, marginBottom: 16 },
+  waitlistTitle: { color: C.text.hero, fontSize: FS.base, fontFamily: F.bodySemiBold, marginBottom: 4 },
+  waitlistSub: { color: C.text.mut, fontFamily: F.body, fontSize: FS.sm, marginBottom: 16 },
   emailInput: {
     backgroundColor: C.surface2,
     borderRadius: R.card,
@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 13,
     fontFamily: F.body,
-    fontSize: 15,
+    fontSize: FS.md,
     color: C.text.hero,
     marginBottom: 12,
   },
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
     paddingVertical: 13, alignItems: 'center',
   },
   waitlistBtnDisabled: { opacity: 0.5 },
-  waitlistBtnText: { color: C.text.hero, fontSize: 15, fontFamily: F.bodySemiBold },
+  waitlistBtnText: { color: C.text.hero, fontSize: FS.md, fontFamily: F.bodySemiBold },
   joinedBadge: {
     backgroundColor: alpha(RGB.success, 0.12),
     borderRadius: R.card,
@@ -224,13 +224,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: alpha(RGB.success, 0.25),
   },
-  joinedText: { color: C.success, fontSize: 15, fontFamily: F.bodySemiBold },
+  joinedText: { color: C.success, fontSize: FS.md, fontFamily: F.bodySemiBold },
   waitlistErrorText: {
-    color: C.error, fontFamily: F.body, fontSize: 13,
+    color: C.error, fontFamily: F.body, fontSize: FS.sm,
     marginTop: 10, lineHeight: 18,
   },
   disclaimer: { padding: 2 },
-  disclaimerText: { color: C.text.mut, fontFamily: F.body, fontSize: 12, lineHeight: 18 },
+  disclaimerText: { color: C.text.mut, fontFamily: F.body, fontSize: FS.sm, lineHeight: LH.sm },
   footer: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
     padding: S.lg, gap: 12,
@@ -242,6 +242,6 @@ const styles = StyleSheet.create({
     backgroundColor: C.primary, borderRadius: R.card,
     paddingVertical: 16, alignItems: 'center',
   },
-  primaryBtnText: { color: C.text.hero, fontSize: 15, fontFamily: F.bodySemiBold, letterSpacing: -0.005 },
-  skipText: { color: C.text.mut, fontFamily: F.body, fontSize: 14, textAlign: 'center' },
+  primaryBtnText: { color: C.text.hero, fontSize: FS.md, fontFamily: F.bodySemiBold, letterSpacing: -0.005 },
+  skipText: { color: C.text.mut, fontFamily: F.body, fontSize: FS.sm, textAlign: 'center' },
 });

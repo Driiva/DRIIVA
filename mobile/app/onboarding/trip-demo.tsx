@@ -6,7 +6,7 @@ import { useOnboarding } from '@/contexts/OnboardingContext';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
 import { TripReplay } from '@/components/onboarding/TripReplay';
 import { ScoreRing } from '@/components/ui/ScoreRing';
-import { C, F, S, R, RGB, alpha } from '@/components/ui/theme';
+import { C, F, S, R, RGB, alpha, FS, LH, TR } from '@/components/ui/theme';
 import { ecoGrade } from '@/hooks/useTripSeed';
 
 export default function TripDemo() {
@@ -96,11 +96,11 @@ const styles = StyleSheet.create({
   progress: { paddingHorizontal: S.lg, paddingTop: S.sm },
   content: { paddingHorizontal: S.lg, paddingTop: S.md, paddingBottom: 100 },
   headline: {
-    color: C.text.hero, fontSize: 24, fontFamily: F.bodySemiBold,
-    letterSpacing: -0.025, lineHeight: 30, marginBottom: 6,
+    color: C.text.hero, fontSize: FS.xxl, fontFamily: F.bodySemiBold,
+    letterSpacing: TR.xxl, lineHeight: LH.xxl, marginBottom: 6,
   },
   sub: {
-    color: C.text.sec, fontFamily: F.body, fontSize: 15, marginBottom: 24,
+    color: C.text.sec, fontFamily: F.body, fontSize: FS.md, marginBottom: 24,
   },
   result: { gap: 16 },
   ringWrap: { alignItems: 'center', paddingVertical: 8 },
@@ -113,11 +113,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   ecoLabel: {
-    color: C.text.mut, fontSize: 10, fontFamily: F.bodySemiBold,
+    color: C.text.mut, fontSize: FS.xs, fontFamily: F.bodySemiBold,
     letterSpacing: 0.08, textTransform: 'uppercase', marginBottom: 4,
   },
-  ecoGrade: { color: C.success, fontSize: 36, fontFamily: F.bodyBold, letterSpacing: -0.03 },
-  ecoSub: { color: C.success, fontFamily: F.body, fontSize: 13, marginTop: 2 },
+  ecoGrade: { color: C.success, fontSize: FS.xxxl, fontFamily: F.bodyBold, letterSpacing: -0.03 },
+  ecoSub: { color: C.success, fontFamily: F.body, fontSize: FS.sm, marginTop: 2 },
   breakdown: {
     backgroundColor: C.surface1,
     borderRadius: R.card,
@@ -133,11 +133,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: C.hairline,
   },
-  breakdownLabel: { color: C.text.pri, fontFamily: F.body, fontSize: 14 },
-  breakdownValue: { color: C.success, fontSize: 14, fontFamily: F.bodySemiBold },
+  breakdownLabel: { color: C.text.pri, fontFamily: F.body, fontSize: FS.md },
+  breakdownValue: { color: C.success, fontSize: FS.md, fontFamily: F.bodySemiBold },
   breakdownValueSpecial: { color: C.warning },
   simNote: {
-    color: C.text.mut, fontFamily: F.body, fontSize: 12,
+    color: C.text.mut, fontFamily: F.body, fontSize: FS.sm,
     lineHeight: 18, textAlign: 'center',
     paddingHorizontal: 8,
   },
@@ -146,5 +146,5 @@ const styles = StyleSheet.create({
     backgroundColor: C.primary, borderRadius: R.card,
     paddingVertical: 16, alignItems: 'center',
   },
-  primaryBtnText: { color: C.text.hero, fontSize: 15, fontFamily: F.bodySemiBold, letterSpacing: -0.005 },
+  primaryBtnText: { color: C.text.hero, fontSize: FS.md, fontFamily: F.bodySemiBold, letterSpacing: -0.005 },
 });

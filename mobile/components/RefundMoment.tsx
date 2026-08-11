@@ -157,8 +157,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   score: {
-    ...T.hero,
-    fontSize: 72,
+    ...T.heroLg,
     marginTop: S.sm,
   },
   scoreCaption: {

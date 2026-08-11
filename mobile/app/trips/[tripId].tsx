@@ -21,7 +21,7 @@ import MapView, { Marker, Polyline, PROVIDER_DEFAULT } from 'react-native-maps';
 import { SCORE_WEIGHTS } from '@driiva/scoring';
 import { firestore } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
-import { C, T, S, R, scoreColor } from '@/components/ui/theme';
+import { C, T, S, R, scoreColor, FS, LH, TR } from '@/components/ui/theme';
 import { maybeAskForReview } from '@/lib/review';
 import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import { ScoreBreakdownBar } from '@/components/ui/ScoreBreakdownBar';
@@ -397,7 +397,7 @@ const styles = StyleSheet.create({
   scoreText: { ...T.stat },
   statRow: { flexDirection: 'row', marginTop: S.lg, gap: S.lg },
   stat: { flex: 1 },
-  statValue: { ...T.number, color: C.text.pri, fontSize: 17 },
+  statValue: { ...T.number, color: C.text.pri },
   statLabel: { ...T.caption, color: C.text.sec, marginTop: 2, textTransform: 'capitalize' },
   sectionTitle: { ...T.label, color: C.text.sec, marginBottom: S.sm, textTransform: 'uppercase', letterSpacing: 0.5 },
   emptyLine: { ...T.body, color: C.text.mut },
@@ -406,6 +406,7 @@ const styles = StyleSheet.create({
   breakdownFootnote: { ...T.caption, color: C.text.mut, marginTop: S.sm, lineHeight: 16 },
   eventsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: S.md },
   eventStat: { width: '45%' },
-  eventValue: { ...T.number, color: C.text.pri, fontSize: 18 },
+  // Same: T.number is base, so lg needs lg's leading, not base's.
+  eventValue: { ...T.number, color: C.text.pri, fontSize: FS.lg, lineHeight: LH.lg, letterSpacing: TR.lg },
   eventLabel: { ...T.caption, color: C.text.sec, marginTop: 2 },
 });

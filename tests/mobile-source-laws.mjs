@@ -191,13 +191,17 @@ const LAWS = [
     id: 'type-scale',
     title: 'Type comes from the scale, not from a typed number',
     /**
-     * Scoped to the primitives, which are where the ladder has to hold: a
-     * screen can be re-laid out, but a Button that sets its own size makes
-     * every screen using it wrong at once. The screens themselves still carry
-     * off-ladder sizes and are named as debt rather than pretended away.
+     * Now the whole of mobile/, screens included. It was scoped to the
+     * primitives while the screens still carried 108 hardcoded sizes, which is
+     * exactly how those 108 survived a law named after them: a law that
+     * exempts the place the problem lives reports green forever. The debt is
+     * paid, so the exemption goes with it.
+     *
+     * The theme is the one file allowed to state a number, because it is where
+     * the ladder is defined.
      */
     check(file, source) {
-      if (file === PALETTE_SOURCE || !file.startsWith('mobile/components/ui/')) return [];
+      if (file === PALETTE_SOURCE || file === 'mobile/components/ui/theme.ts') return [];
       const hits = [];
       for (const match of source.matchAll(/\bfontSize\s*:\s*(\d+(?:\.\d+)?)/g)) {
         hits.push({ line: lineOf(source, match.index), detail: match[0] });
@@ -242,9 +246,7 @@ export function runMobileSourceLaws({ planted = false } = {}) {
   const targets = planted
     ? [
         ...files.map((f) => [f, readFileSync(join(ROOT, f), 'utf8')]),
-        // Named inside the primitives so the type-scale law, which is scoped
-        // there, is exercised by the planted run like every other law.
-        ['mobile/components/ui/planted.tsx', PLANTED],
+        ['mobile/app/planted.tsx', PLANTED],
       ]
     : files.map((f) => [f, readFileSync(join(ROOT, f), 'utf8')]);
 
