@@ -3,16 +3,40 @@ import { useEffect, useRef } from 'react';
 /**
  * DriivaShaderBackground
  * ----------------------
- * Full-viewport animated mesh-gradient wallpaper for the marketing site.
- * Brand palette (amber → burnt → violet → indigo) arranged on an S-curve with
- * floating twinkling orbs, reacting in real time to mouse, scroll and click.
+ * Full-viewport animated field behind the marketing site.
  *
- * Ported from the design handoff. Only the production "mesh" mode is kept; the
- * four exploratory modes (aurora / chrome / gravity / bloom) were dropped per
- * the handoff. Sits at z-index -1 behind all content and is purely visual
- * (pointer-events: none) — clicks are read off `window`, so the canvas never
- * intercepts UI input. Falls back to solid ink without WebGL, and respects
- * prefers-reduced-motion (animation at 30% speed, click ripples disabled).
+ * WHAT CHANGED AND WHY. This used to be five gaussian bands laid along x,
+ * reverse-engineered from design-system/assets/gradient-background.png. It
+ * matched that PNG closely, and that was the problem: a still image made into
+ * a moving one is still a wash. The bands could only ever breathe against each
+ * other, so at any instant the screen was a horizontal smear of orange into
+ * purple with no structure to look at.
+ *
+ * It is now built on the technique from shippers 4.0 / frontier six, which is
+ * the reference Jamal actually asked for: a single-pass domain-warped fBm
+ * nebula. Two noise fields, where the first warps the coordinates of the
+ * second (q feeds into f), which is what produces filament and cloud structure
+ * instead of gradient. Colour is then assigned by DENSITY rather than by
+ * position - each brand stop is mixed in over a smoothstep window of the noise
+ * value - so the palette organises itself into deep voids and bright edges
+ * wherever the noise happens to go, and never repeats.
+ *
+ * The four canonical brand stops are unchanged and are still the only source
+ * of hue. What changed is where they land: indigo and violet hold the mass of
+ * the field, burnt marks the denser edges, and amber is reserved for the
+ * brightest filaments, so the gradient still reads amber-to-indigo but as
+ * light rather than as a ladder.
+ *
+ * Kept from frontier six: pointer parallax on the sample point, the sparse
+ * star field, the scroll-driven warm horizon lift, the radial falloff, and the
+ * single 0.88 multiply at the end that holds the field under the text
+ * contrast floor.
+ *
+ * Kept from the previous implementation: the whole performance harness, which
+ * was hard won and is unrelated to how the field looks. Render scale is capped
+ * at 1, the loop self-governs down to 30fps if frames slip, drawing stops
+ * while the tab is hidden, and reduced motion gets one composed still frame
+ * rather than a slowed animation.
  */
 
 const VERT = `attribute vec2 aPos; void main(){ gl_Position = vec4(aPos, 0.0, 1.0); }`;
@@ -28,161 +52,99 @@ uniform float uScroll;
 uniform float uPulse;
 uniform vec2  uPulsePos;
 
-/* Driiva palette (linear-ish; gentle gamma applied at the end). The four brand
- * stops are canonical and must not be retuned here; C_PLUM is the ink the
- * stops are darkened against and C_BLOOM is sampled straight out of the
- * bottom-right corner of the reference wash. */
-const vec3 C_AMBER  = vec3(0.835, 0.521, 0.040); // #d4850a
+/* The four canonical Driiva stops. These are the only source of hue in the
+ * field and must not be retuned here; retune them in design-system tokens and
+ * mirror the value across. C_DEEP is the ink the field sits in, taken from the
+ * top of the surface ladder rather than invented. */
+const vec3 C_AMBER  = vec3(0.831, 0.522, 0.039); // #d4850a
 const vec3 C_BURNT  = vec3(0.627, 0.298, 0.165); // #a04c2a
 const vec3 C_VIOLET = vec3(0.420, 0.247, 0.627); // #6b3fa0
 const vec3 C_INDIGO = vec3(0.231, 0.176, 0.545); // #3b2d8b
-const vec3 C_PLUM   = vec3(0.102, 0.059, 0.122); // #1a0f1f
-const vec3 C_BLOOM  = vec3(0.357, 0.137, 0.176); // #5b232d, corner of the wash
+const vec3 C_DEEP   = vec3(0.020, 0.020, 0.036); // #050509 ink
 
-float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float h(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+
 float vnoise(vec2 p){
   vec2 i = floor(p), f = fract(p);
-  vec2 u = f*f*(3.0-2.0*f);
-  return mix(mix(hash(i),         hash(i+vec2(1,0)), u.x),
-             mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)), u.x), u.y);
+  f = f*f*(3.0-2.0*f);
+  return mix(mix(h(i),           h(i+vec2(1,0)), f.x),
+             mix(h(i+vec2(0,1)), h(i+vec2(1,1)), f.x), f.y);
 }
+
+/* Five octaves through a rotation-and-scale matrix rather than a plain
+ * doubling. The rotation is what stops successive octaves lining up into
+ * visible axis-aligned tiling, and it is the reason this reads as cloud
+ * rather than as noise. */
 float fbm(vec2 p){
   float v = 0.0, a = 0.5;
-  for (int i=0;i<5;i++){ v += a*vnoise(p); p = p*2.02 + 17.3; a *= 0.5; }
+  mat2 m = mat2(1.6, 1.2, -1.2, 1.6);
+  for (int i = 0; i < 5; i++){ v += a*vnoise(p); p = m*p; a *= 0.5; }
   return v;
 }
 
-/* The wash is the brand stops SATURATED and DEEPENED, not blended toward each
- * other. Sampling the reference makes this unambiguous: its middle is
- * #5d140b, whose blue channel is 11/255, while any burnt-to-violet blend puts
- * blue near 100. Pushing a stop away from its own grey and then darkening it
- * reproduces the wash while keeping the four canonical stops as the only
- * source of hue. */
-vec3 deepen(vec3 c, float sat, float dark){
-  float l = dot(c, vec3(0.299, 0.587, 0.114));
-  return max(mix(vec3(l), c, sat), 0.0) * dark;
-}
-
-/* The canonical Driiva wash, animated.
- *
- * design-system/assets/gradient-background.png is the source of truth. Sampled
- * on a 9x9 grid it is a HORIZONTAL progression and barely varies vertically:
- * amber #92490a hard against the left edge, rust #5d140b, deep maroon #470c1a
- * through the middle, indigo #23124a on the right, plus one warm plum bloom
- * #5b232d in the bottom-right corner. There are no orbs, no sparkles and no
- * cursor-coloured blob in the reference, so there are none here.
- *
- * The composition is therefore driven by x, and the motion is the band
- * boundaries breathing against each other rather than stops wandering the
- * frame. A stop that travels far enough to leave its side of the picture
- * stops being this wash, which is the thing that has to survive the animation. */
-vec3 meshBlend(vec2 uv){
-  float t  = uTime * 0.16;
-  float drift = uTime * 0.020;
-  float mx = (uMouse.x - 0.5);
-  float s  = uScroll;
-
-  /* Band centres along x, placed on the sampled positions. Each breathes on
-   * its own long-period sine at rates sharing no common multiple, so the
-   * boundaries never resynchronise into a visible loop, but the amplitudes are
-   * small enough that amber stays a left-edge colour and indigo a right-edge
-   * one at every point in the cycle. */
-  /* The outer two sit off-screen. With the amber peak at x=0 exactly, half its
-   * falloff is outside the viewport and the left edge only ever shows the
-   * shoulder of the band, which reads far weaker than the reference. */
-  float b0 = -0.08 + 0.030*sin(drift*0.61);
-  float b1 =  0.22 + 0.042*sin(drift*0.43 + 1.7);
-  float b2 =  0.48 + 0.048*sin(drift*0.29 + 3.1);
-  float b3 =  0.74 + 0.042*sin(drift*0.37 + 4.6);
-  float b4 =  1.08 + 0.030*sin(drift*0.23 + 5.8);
-
-  /* Pointer and scroll lean the whole ladder rather than moving one stop, so
-   * the field answers the reader without the composition sliding off. */
-  float shift = mx*0.030 + s*0.045;
-  b0 += shift*0.3; b1 += shift*0.6; b2 += shift; b3 += shift*0.8; b4 += shift*0.4;
-
-  /* A slight lean and a slow wave so the bands are not dead-straight columns. */
-  float x = uv.x + (uv.y - 0.5)*0.055 + 0.022*sin(t*0.5 + uv.y*2.3);
-
-  /* Each band is one canonical stop, saturated and deepened onto its sampled
-   * value in the reference. The ladder runs warm to cool exactly as the brand
-   * gradient does; only the depth changes across it. */
-  /* The amber edge is the only part of the wash bright enough to threaten text
-   * contrast, and it was rendering slightly brighter than the reference, so
-   * pulling it down serves the match and the legibility at the same time. */
-  vec3 cAmber  = deepen(C_AMBER,  1.80, 0.92);            // #92490a
-  vec3 cRust   = deepen(C_BURNT,  2.15, 0.92);            // #5d140b
-  vec3 cMaroon = deepen(mix(C_BURNT, C_VIOLET, 0.30), 2.00, 0.62); // #470c1a
-  vec3 cViolet = deepen(mix(C_VIOLET, C_INDIGO, 0.62), 1.52, 0.74); // #241046
-  vec3 cIndigo = deepen(C_INDIGO, 1.34, 0.84 - s*0.08);   // #2b1547
-
-  /* Band softness. Wide relative to the 0.24 spacing, so neighbouring bands
-   * overlap heavily and no boundary can read as an edge. */
-  const float sd = 0.21;
-  float w0 = exp(-pow((x-b0)/sd, 2.0));
-  float w1 = exp(-pow((x-b1)/sd, 2.0));
-  float w2 = exp(-pow((x-b2)/sd, 2.0));
-  float w3 = exp(-pow((x-b3)/sd, 2.0));
-  float w4 = exp(-pow((x-b4)/sd, 2.0));
-
-  /* Warp the weights so the boundaries are not mathematically clean. */
-  float n = fbm(vec2(uv.x*2.2, uv.y*1.5) + uTime*0.03);
-  float warp = (n - 0.5) * 0.10;
-  w0 *= 1.0 + warp;        w1 *= 1.0 - warp;
-  w2 *= 1.0 + warp*0.6;    w3 *= 1.0 - warp;
-  w4 *= 1.0 + warp*0.4;
-
-  float wsum = w0+w1+w2+w3+w4 + 1e-4;
-  vec3 col = (cAmber*w0 + cRust*w1 + cMaroon*w2 + cViolet*w3 + cIndigo*w4) / wsum;
-
-  /* The plum bloom in the bottom-right corner, the one genuinely 2-D feature
-   * of the source wash. */
-  vec2 bloomC = vec2(1.04 + 0.020*sin(drift*0.31), 1.00 + 0.020*cos(drift*0.27));
-  float bloomD = distance(vec2(uv.x, (uv.y - 1.0)*0.85 + 1.0), bloomC);
-  float bloom = exp(-pow(bloomD/0.54, 2.0));
-  col = mix(col, C_BLOOM, bloom*0.42);
-
-  /* The reference lifts slightly at the top and bottom of the amber edge and
-   * carries no strong vignette, so this is a gentle shaping pass only. */
-  float edgeLift = (1.0 - smoothstep(0.0, 0.34, uv.x)) * pow(abs(uv.y - 0.5)*2.0, 2.0);
-  col *= 1.0 + edgeLift*0.10;
-
-  vec2 q = uv - 0.5;
-  col *= mix(0.92, 1.02, 1.0 - dot(q,q)*0.70);
-
-  /* Click ripple, kept because it is an interaction rather than a colour, and
-   * tinted amber so it stays inside the wash. */
-  float clickD = distance(uv, uPulsePos);
-  float ripple = uPulse * exp(-clickD*4.0) * sin(clickD*22.0 - uTime*8.0);
-  col += ripple * 0.05 * C_AMBER;
-
-  /* Previously 0.88 here and 0.84 again in main(), so the brand stops were
-   * mixed at full strength and then cut to 74% before they ever reached a
-   * pixel. That is what made a moving field read as a flat wash. The dimming
-   * now happens once, in main(), against the text-contrast floor. */
-  col  = pow(max(col, 0.0), vec3(1.06));
-
-  return col;
-}
-
 void main(){
-  vec2 uv = gl_FragCoord.xy / uRes.xy;
-  vec3 col = meshBlend(uv);
+  /* Centred and aspect-corrected, so the composition does not stretch on wide
+   * monitors the way a straight 0..1 mapping does. */
+  vec2 uv  = (gl_FragCoord.xy - 0.5*uRes) / uRes.y;
+  vec2 uv01 = gl_FragCoord.xy / uRes.xy;
 
-  // One dimming pass, sized so body copy still clears contrast over the
-  // brightest part of the field (the amber edge). A multiply rather than a
-  // gamma, so it scales every channel proportionally instead of lifting the
-  // near-zero ones the wash depends on.
+  /* Parallax moves the point we SAMPLE the noise at, not the finished image,
+   * so the cloud appears to sit at depth behind the page instead of sliding
+   * across it. */
+  vec2 par = (uMouse - 0.5) * 0.09;
+  vec2 p = uv*1.35 + par;
+
+  float t = uTime * 0.022;
+
+  /* The domain warp. q is a slow field; feeding it into the coordinates of f
+   * is what turns two smooth noises into filaments and voids. */
+  float q = fbm(p + vec2(t, -t*0.6));
+  float f = fbm(p*1.8 + q*1.5 + vec2(-t*0.7, t*0.4));
+
+  /* Colour by density. Each stop is mixed over its own smoothstep window of
+   * the noise, so the ladder runs cool in the mass of the cloud and warm at
+   * the bright edges. Amber sits last and weakest: it is the highlight, and
+   * it is also the only stop bright enough to threaten text contrast. */
+  vec3 col = C_DEEP;
+  col = mix(col, C_INDIGO, smoothstep(0.24, 0.62, f));
+  col = mix(col, C_VIOLET, smoothstep(0.46, 0.80, f) * 0.72);
+  col = mix(col, C_BURNT,  smoothstep(0.62, 0.94, f) * 0.46);
+  col = mix(col, C_AMBER,  smoothstep(0.74, 1.05, f*q + f*0.25) * 0.38);
+
+  /* One deep violet bloom off the upper left, the single placed feature in an
+   * otherwise procedural field. It gives the composition somewhere to sit. */
+  col = mix(col, C_VIOLET*0.55,
+            smoothstep(0.95, 0.15, length(uv - vec2(-0.72, 0.44))) * 0.13 * (0.6 + 0.4*q));
+
+  /* Warm horizon along the bottom that opens up as the reader scrolls, so the
+   * page warms rather than the background simply scrolling away. */
+  float hor = smoothstep(0.55, -0.42, uv.y);
+  col = mix(col, C_AMBER*0.8, hor*hor * (0.05 + 0.17*uScroll) * (0.5 + 0.5*f));
+
+  /* Sparse stars. The threshold is deliberately severe: a handful per screen
+   * reads as depth, any more reads as a screensaver. */
+  vec2 sp = uv * uRes.y / 3.1 + par*36.0;
+  vec2 cell = floor(sp);
+  vec2 fc = fract(sp) - 0.5;
+  float sr = h(cell);
+  if (sr > 0.9955){
+    float tw = 0.5 + 0.5*sin(uTime*(1.0 + sr*3.0) + sr*44.0);
+    col += vec3(1.0, 0.95, 0.85) * smoothstep(0.15, 0.0, length(fc)) * tw * 0.45;
+  }
+
+  /* Click ripple, tinted amber so an interaction cannot introduce a colour
+   * that is not in the palette. */
+  float clickD = distance(uv01, uPulsePos);
+  col += uPulse * exp(-clickD*4.0) * sin(clickD*22.0 - uTime*8.0) * 0.05 * C_AMBER;
+
+  /* Radial falloff, then one dimming pass. This 0.88 is the contrast lever:
+   * it is the single place the whole field is scaled against the body-copy
+   * floor, so changing it changes legibility everywhere at once. */
+  col *= 1.0 - 0.5*dot(uv, uv);
   col *= 0.88;
 
-  // gentle gamma correction
-  /* Near 1.0 on purpose. A lifting gamma raises the near-zero channels most,
-   * and the reference wash is built on channels that sit near zero (its middle
-   * is #470c1a, green 12/255). At 0.92 that lift alone put roughly ten points
-   * of green and blue into every dark band and turned the maroon olive. */
-  col = pow(max(col, 0.0), vec3(0.99));
-
-  // light animated film grain (doubles as anti-banding)
+  /* Animated grain, which doubles as the anti-banding dither the smooth
+   * gradients need at 8 bits. */
   float grain = (fract(sin(dot(gl_FragCoord.xy + uTime*37.0, vec2(12.9898, 78.233)))*43758.5453) - 0.5) * 0.040;
   col += grain;
 
