@@ -135,6 +135,18 @@ VITE_EMULATOR_FIRESTORE_PORT=8085
 ENVEOF
 
 # ── 3. Dev server ────────────────────────────────────────────────────────────
+# Refuse to run if the port is already taken. A foreign server answering on it
+# is worse than nothing: wait_for below only checks that SOMETHING responds, so
+# a squatter silently turns this into a gate that audits a DIFFERENT branch's
+# app and then reports the result under this branch's name. That is not
+# hypothetical - it ran for six hours against another worktree's vite on 5202.
+if lsof -nP -iTCP:"$PORT" -sTCP:LISTEN >/dev/null 2>&1; then
+  echo "gates: port $PORT is already in use, refusing to start."
+  echo "gates: something else is serving it - most likely another worktree's"
+  echo "gates: dev server. Stop it, or set GATE_PORT to a free port."
+  exit 1
+fi
+
 echo "gates: starting the dev server on $PORT"
 # Through `npm run dev`, not a bare tsx call: the server reads DATABASE_URL and
 # the rest of its config from Doppler, and starting it directly dies on
