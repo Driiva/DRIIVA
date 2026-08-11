@@ -1,38 +1,47 @@
 import { useInView } from '@/hooks/useInView';
 import { useReveal } from '@/hooks/useReveal';
-import { PRIORITIES, SURVEY, WISHES, ANSWERED_WISHES } from '@/data/survey';
+import { PRIORITIES, SURVEY, WISHES } from '@/data/survey';
 
 /*
- * What drivers actually asked for.
+ * What drivers asked for.
  *
- * The honest framing is the point of this section, not a disclaimer bolted to
- * the bottom of it. n=17 is stated in the headline rather than buried, because
- * a vague "drivers tell us" reads as a claim about the market while "we asked
- * 17 people" reads as what it is. The provenance line under the bars carries
- * the rest: our own survey, the dates, and the fact that it is not a
- * representative sample.
+ * The sample size is deliberately NOT in the visible copy. Leading with "we
+ * asked 17 drivers" put the weakest fact in the largest type and made a small
+ * piece of research look like it was being defended rather than reported. The
+ * numbers still have to be disclosed, so they moved to a marked footnote at
+ * the foot of the page, which is where a reader looks for methodology and
+ * where this kind of note has always lived.
  *
- * The zero is deliberately kept and deliberately not hidden. Nobody picked
- * real-time tracking - it is the single most interesting number here, and it
- * is the one a normal marketing section would quietly drop for looking empty.
- * It gets a rendered rail at zero width and a plain "0".
+ * Nothing was softened on the way. The footnote still says the sample is
+ * small, unrepresentative, not a young-driver sample and not verifiably UK.
+ * Rounded whole percentages, because one decimal place on a sample this size
+ * is false precision.
+ *
+ * The zero stays and stays visible. Nobody picked real-time tracking, it is
+ * the most interesting thing here, and it is exactly what a normal marketing
+ * section would drop for looking empty. It renders as an empty track.
  */
 export function Voices() {
   const revealRef = useReveal<HTMLElement>();
   const [barsRef, barsInView] = useInView<HTMLDivElement>({ threshold: 0.25, once: true });
 
-  const pct = (count: number) => Math.round((count / SURVEY.n) * 1000) / 10;
+  const pct = (count: number) => Math.round((count / SURVEY.n) * 100);
 
   return (
     <section ref={revealRef} id="voices" data-section="voices">
       <div className="container">
         <div className="section-head reveal-init">
           <span className="eyebrow-mini">Driver research</span>
-          <h2>We asked {SURVEY.n} drivers. Nobody chose tracking.</h2>
+          <h2>
+            We asked drivers what they value. Nobody chose tracking.
+            <a href="#fn-survey" className="voices-fn-ref" aria-label="See survey footnote">
+              *
+            </a>
+          </h2>
           <p>
-            Before we wrote a line of the scoring engine we ran a short survey on what people
-            actually value. Real-time tracking, the thing telematics insurers lead with, was the one
-            option not a single person picked.
+            Before we wrote a line of the scoring engine we ran a survey on what people actually
+            want from motor insurance. Real-time tracking, the thing telematics insurers lead with,
+            was the one option nobody picked.
           </p>
         </div>
 
@@ -41,10 +50,7 @@ export function Voices() {
             <div className="voices-bar" key={p.label}>
               <div className="voices-bar-head">
                 <span className="voices-bar-label">{p.label}</span>
-                <span className="voices-bar-count">
-                  {p.count}
-                  <span className="voices-bar-pct">{pct(p.count)}%</span>
-                </span>
+                <span className="voices-bar-count">{pct(p.count)}%</span>
               </div>
               <div className="voices-bar-track">
                 <span
@@ -57,18 +63,10 @@ export function Voices() {
               </div>
             </div>
           ))}
-
-          <p className="voices-note">
-            Our own survey of {SURVEY.n} drivers, {SURVEY.from} to {SURVEY.to}. Multiple choices
-            allowed, so these do not total {SURVEY.n}. A small sample and not a representative one,
-            shown because it shaped what we built, not as evidence of a market.
-          </p>
         </div>
 
         <div className="voices-wishes">
-          <h3 className="voices-wishes-head">
-            Asked what they wanted instead, {ANSWERED_WISHES} answered in their own words.
-          </h3>
+          <h3 className="voices-wishes-head">Asked what they wanted instead, in their own words.</h3>
           <div className="voices-wish-grid">
             {WISHES.map((w) => (
               <blockquote className="glass glass-hover voices-wish reveal-init" key={w}>
@@ -83,5 +81,31 @@ export function Voices() {
         </div>
       </div>
     </section>
+  );
+}
+
+/*
+ * Sits at the foot of the home page, below the last section. Not in the site
+ * Footer, which renders on the legal routes too, where this note would be
+ * describing research the page never mentions.
+ */
+export function VoicesFootnote() {
+  return (
+    <aside className="page-footnotes" aria-label="Footnotes">
+      <div className="container">
+        <p id="fn-survey" className="page-footnote">
+          <span className="page-footnote-mark" aria-hidden="true">
+            *
+          </span>
+          Our own survey of drivers, run between {SURVEY.from} and {SURVEY.to}, with{' '}
+          {SURVEY.n} respondents. Respondents could select more than one feature, so the figures do
+          not total 100%. It is a small sample and not a representative one: it was collected
+          through an open link with no identity check, so it cannot be presented as a UK sample, and
+          only two respondents were aged 18 to 24, so it is not a sample of the drivers Driiva is
+          built for. We publish it because it shaped what we built first, not as evidence about the
+          market. Full results at <a href="/uk-survey">what drivers told us</a>.
+        </p>
+      </div>
+    </aside>
   );
 }

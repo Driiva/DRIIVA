@@ -7,7 +7,7 @@ import { Pool } from '@/sections/Pool';
 import { BetaCountdown } from '@/sections/BetaCountdown';
 import { BrandStatement } from '@/sections/BrandStatement';
 import { Comparison } from '@/sections/Comparison';
-import { Voices } from '@/sections/Voices';
+import { Voices, VoicesFootnote } from '@/sections/Voices';
 import { Security } from '@/sections/Security';
 import { About } from '@/sections/About';
 import { FAQ } from '@/sections/FAQ';
@@ -30,6 +30,7 @@ export function Home() {
       <About />
       <FAQ />
       <FinalCTA />
+      <VoicesFootnote />
     </main>
   );
 }

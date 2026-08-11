@@ -2270,20 +2270,10 @@ footer {
 }
 
 .voices-bar-count {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.5rem;
   font-variant-numeric: tabular-nums;
   font-size: 1.05rem;
   font-weight: 600;
   color: var(--fg-1);
-}
-
-.voices-bar-pct {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 0.72rem;
-  font-weight: 500;
-  color: var(--fg-4);
 }
 
 .voices-bar-track {
@@ -2344,4 +2334,48 @@ footer {
   .voices-bar-fill {
     transition: none;
   }
+}
+
+/* ── Page footnotes ───────────────────────────────────────────────────────
+   The marked note at the foot of the page. Deliberately quiet: this is the
+   place a reader goes looking for methodology, not something to be sold. The
+   mark is a real character rather than a ::before, so it survives the
+   stylesheet lint that reads content declarations, and so it can be copied
+   with the text. */
+.page-footnotes {
+  padding: 0 0 4.5rem;
+}
+
+.page-footnote {
+  position: relative;
+  max-width: 44rem;
+  padding-top: 1.6rem;
+  border-top: 1px solid rgb(255 255 255 / 0.07);
+  font-size: 0.78rem;
+  line-height: 1.65;
+  color: var(--fg-4);
+}
+
+.page-footnote-mark {
+  margin-right: 0.4rem;
+  color: var(--fg-3);
+}
+
+.page-footnote a {
+  color: var(--fg-3);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.voices-fn-ref {
+  margin-left: 0.2em;
+  font-size: 0.55em;
+  vertical-align: super;
+  line-height: 0;
+  color: var(--fg-4);
+  text-decoration: none;
+}
+
+.voices-fn-ref:hover {
+  color: var(--fg-2);
 }
