@@ -1,6 +1,6 @@
 # Driiva - Current sprint (tickets)
 
-**Last updated:** 10 August 2026
+**Last updated:** 11 August 2026
 **Product Lead:** Keith Cheng (onboarded 27 June 2026)
 **External memory for AI sessions:** Work on the next unchecked ticket only; update this list when done.
 
@@ -39,6 +39,11 @@
 - [x] Swap the hero's synthetic score-ring mockup for the real onboarding screenshot, and take the cofounder-approved FinalCTA copy verbatim - *done: `91bd4de`*
 - [x] Fix the scroll lag a cofounder reported: cap the WebGL shader background at 1x DPR and stop its animation loop when the tab is backgrounded - *done: `2e76d3c`*
 - [x] Drop the gradient-clip text treatment for legibility - 5 selectors moved to solid `--amber-2` (>9:1 on the dark surfaces); `--grad-brand` stays as a decorative background fill - *done: `76b27a4`, `f5b9b0a`*
+- [x] Fix the waitlist, which was accepting signups into a void and saying yes. Both API routes imported `./lib/waitlist-core` with no file extension, which Node's ESM resolver rejects, so each function died at import and 500'd; then with credentials present both failed at init on `require is not defined`, the module being ESM on Vercel. In production the endpoint now refuses rather than pretending, and the count returns null rather than a hardcoded 117 when the store cannot be reached - *done: `4758c61`, `6efa5d3`, `efd6d46`, `ce62818`*
+- [x] Build the waitlist confirmation email on the canonical shell. It was hand-rolled and arrived blank: the card was `rgba(30,41,59,0.6)` with no `bgcolor` attribute on either table, and Outlook reads only `bgcolor`, so what landed was an empty white rectangle. Rebuilt on `design-system/email-shell.html` - *done: `72c62da`, plus `d56767c` to pick up the Resend key*
+- [x] Publish the driver survey and lighten the FCA drumbeat. Our own UX survey ran to 17 responses between 08/07/25 and 03/08/25 and then sat unread in SurveyMonkey for a year; the most interesting number in it is a zero, since not one respondent picked real-time tracking. Counts live in `src/data/survey.ts` with their provenance and percentages are computed at render. `/uk-survey` publishes the results rather than inviting people to a survey that had already closed. Three promotional FCA mentions removed (TrustRibbon badge, Security card, Comparison row); every protective mention kept - *done: `f5e22d1`, `621fb9d` moved the sample size out of the headline into a marked footnote*
+- [x] Rebuild the hero and the background. Wordmark roughly doubled to a 240-400px clamp and the strapline brought down from a 74px cap to 40px so the two stop cancelling each other out; the phone and `PhoneFrame` removed, leaving one centred column; Instrument Sans actually loaded, having been named as the body face since the email shell was written and never shipped; Lenis retuned from 0.9/1.1 to 0.55/1.45; the background rebuilt as a single diagonal amber-to-purple axis with noise demoted to a perturbation, after the noise-driven nebula came out uniformly violet; Amicro reveals ported rather than installed, since its components want Motion and this site ships anime.js alone - *done: `2c90f97`, `9955783`, `002fd93`; contrast measured off the composed frame behind five regions, worst 6.4x against a 4.5x floor, 14 tests and 8 of 8 fabrication laws green*
+- [ ] Bring the phone frame back when there is a real app capture to put in it. It was removed rather than updated because no current render exists in the repo and inventing an app screen is not an option - *raised by `002fd93`*
 
 ## Sprint: "Premium lift" (August 2026 - waves H to M, `docs/premium-lift/`)
 
@@ -60,10 +65,12 @@ Integrated on `premium-lift/main` and merged to `main` on 10 August. Full record
 - [x] Rendered-behaviour pass on `apps/marketing`, recorded as its own document - *done: `b5a2cfe`, `7f1ca28`*
 - [x] `npm run gates`, a one-command runner for the visual gates - *done: `e9dc8d9`*
 - [x] The 404 no longer stamps itself with a revision date - *done: `222a5cd`*
-- [ ] `npm run gates` is committed INCOMPLETE: sign-in does not complete, so authenticated routes report NOT REACHED and the run refuses to call itself a pass. Open piece is getting the emulator ports through to the client - *raised by `e9dc8d9`*
+- [ ] `npm run gates` is still committed INCOMPLETE, but for one reason now rather than two. The client env was being exported into the dev server, where Vite never reads it, so the gate signed in against the 9099/8080 defaults with nothing listening; it is written to `.env.local` and restored on exit, the emulator is reused when one is already listening, and the axe blocker is fixed. Sign-in itself still does not complete, and the INCOMPLETE notice stays until a run is actually green - *advanced by `316781c`, `299b131`, `69b41cf`*
 - [ ] Reduced-motion CSS path unverified: the `.reveal-init` override inside the media query catches every element the JS never reaches, and reading says it resolves, but no browser has confirmed it. jsdom applies no stylesheet so a test there would manufacture a bug. Chrome on 9222 was down for the whole follow-up attempt - *raised by `7f1ca28`*
-- [ ] Extract the shared hook behind the two near-identical marketing email forms. They have drifted before and now carry the same four changes twice - *raised by `ad097c8`*
-- [ ] Merge `task/premium-k-dashboard` (`6a01ea7`): 270 degree score gauge on web to match mobile, glass off the app surfaces (`dashboard-glass-card` renamed to `.instrument-card`, 22 glass rule blocks deleted), sentence case headings, and thirteen hand-rolled spinners collapsed onto `ArcTracer`. Not on `main`; twenty Lucide icon spinners deliberately left as a separate idiom
+- [x] Extract the shared hook behind the two near-identical marketing email forms. They have drifted before and now carry the same four changes twice - *done: `3d40acc`, `useWaitlistForm` owns state, validation, submit, analytics tagging and button copy; Hero 258 lines to 163, FinalCTA 132 to 37; FinalCTA gained the three tests extraction put at risk*
+- [x] Merge `task/premium-k-dashboard` (`6a01ea7`): 270 degree score gauge on web to match mobile, glass off the app surfaces (`dashboard-glass-card` renamed to `.instrument-card`, 22 glass rule blocks deleted), sentence case headings, and thirteen hand-rolled spinners collapsed onto `ArcTracer` - *done: merged to `main` in `7be1f67`, `1bbb04e`; twenty Lucide icon spinners deliberately left as a separate idiom*
+- [x] Gate runner refuses to run when the dev port is already taken. `wait_for()` only checked that something answers, so another worktree's dev server got audited under this branch's name for six hours - an lsof check now turns that silent wrong answer into a loud refusal naming `GATE_PORT` as the escape hatch - *done: `ad6c16b`*
+- [x] Put mobile type on the ladder and make the law reach it: 108 hardcoded `fontSize` values across `mobile/app` and `mobile/components` in 16 distinct sizes, now zero. The law had been scoped to `mobile/components/ui`, which is exactly how 108 off-ladder sizes survived a law named after them; it now covers all of `mobile/` with only the theme allowed to state a number - *done: `8fd2e21`, mobile tsc clean, 674 passing, 8 of 8 laws green against a planted violation*
 
 ## Sprint: "Damoov & Feedback" (Week 0 - Telematics + Compliance)
 
@@ -156,6 +163,7 @@ These are known gaps that don't have tickets yet:
 - [x] Fix notification bell button on dashboard - *done: was dead button; now opens dropdown with mutual exclusion*
 - [x] Premium mobile UX polish - *done: haptics, pull-to-refresh, shimmer skeletons, swipe cards, animated numbers*
 - [x] Fix auth performance (10-20s delay) - *done: localStorage cache, hard timeout, splash screen*
+- [x] Un-red CI on `main`. `mobile/tsconfig.json` extended `expo/tsconfig.base`, which resolves through `mobile/node_modules`, and CI installs at the root and in `functions/` only; the root suite imports four mobile modules on purpose, so vite found that tsconfig, could not resolve the extends, and killed five test files before a single assertion ran. Tests, Lint and E2E had been red on main because of it, so no PR could go green. Expo's base is inlined with a guard test that fails on a planted violation, and the Tests job now installs `functions/` deps too since the root suite imports `firebase-functions` at module scope - *done: `efafe39`; verified with `mobile/node_modules` absent, 5 failed / 57 passed before, 63 passed (676 tests) after*
 - [ ] Split `server/routes.ts` into domain-specific route modules
 - [ ] Add OpenAPI documentation for Express API
 - [ ] Set up structured logging with Sentry breadcrumbs
