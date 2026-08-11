@@ -3,46 +3,38 @@ import { useEffect, useRef } from 'react';
 /**
  * DriivaShaderBackground
  * ----------------------
- * Full-viewport animated field behind the marketing site.
+ * The field behind the marketing site: one directional brand gradient, amber
+ * to indigo, animated.
  *
- * WHAT CHANGED AND WHY. This used to be five gaussian bands laid along x,
- * reverse-engineered from design-system/assets/gradient-background.png. It
- * matched that PNG closely, and that was the problem: a still image made into
- * a moving one is still a wash. The bands could only ever breathe against each
- * other, so at any instant the screen was a horizontal smear of orange into
- * purple with no structure to look at.
+ * THREE VERSIONS DEEP, AND WHY THIS ONE. It began as five gaussian bands laid
+ * along x, reverse-engineered from a static PNG, which read as a horizontal
+ * smear. It was then rebuilt as a domain-warped fBm nebula ported from
+ * shippers 4.0 / frontier six, which had real structure but the wrong kind:
+ * letting noise decide where colour goes means there is no direction to read,
+ * so the eye finds shapes instead of a gradient, and the fine octaves resolved
+ * into vertical filaments drifting up the page.
  *
- * It is now built on the technique from shippers 4.0 / frontier six, which is
- * the reference Jamal actually asked for: a single-pass domain-warped fBm
- * nebula. Two noise fields, where the first warps the coordinates of the
- * second (q feeds into f), which is what produces filament and cloud structure
- * instead of gradient. Colour is then assigned by DENSITY rather than by
- * position - each brand stop is mixed in over a smoothstep window of the noise
- * value - so the palette organises itself into deep voids and bright edges
- * wherever the noise happens to go, and never repeats.
+ * So the hierarchy is now inverted from that attempt. The composition is a
+ * single axis and nothing is allowed to compete with it. Noise survives only
+ * as a small perturbation of WHERE that axis sits, at an amplitude too low to
+ * close a shape - enough that it does not look like a CSS linear-gradient, not
+ * enough to become an object. Three octaves rather than five, because the fine
+ * detail was the streaking.
  *
- * The four canonical brand stops are unchanged and are still the only source
- * of hue. What changed is where they land: indigo and violet hold the mass of
- * the field, burnt marks the denser edges, and amber is reserved for the
- * brightest filaments, so the gradient still reads amber-to-indigo but as
- * light rather than as a ladder.
- *
- * Kept from frontier six: pointer parallax on the sample point, the sparse
- * star field, the scroll-driven warm horizon lift, the radial falloff, and the
- * single 0.88 multiply at the end that holds the field under the text
- * contrast floor.
+ * The four canonical stops are the only source of hue and are darkened on the
+ * way into the ramp rather than dimmed afterwards, so the far end stays a true
+ * ink instead of a muddy indigo. The top of the frame is pulled down
+ * separately because it carries the nav and the wordmark.
  *
  * Kept from the previous implementation: the whole performance harness, which
- * was hard won and is unrelated to how the field looks. Render scale is capped
- * at 1, the loop self-governs down to 30fps if frames slip, drawing stops
- * while the tab is hidden, and reduced motion gets one composed still frame
- * rather than a slowed animation.
+ * is unrelated to how the field looks. Render scale capped at 1, the loop
+ * self-governs to 30fps if frames slip, drawing suspends while the tab is
+ * hidden, and reduced motion gets one composed still frame rather than a
+ * slowed animation.
  */
 
 const VERT = `attribute vec2 aPos; void main(){ gl_Position = vec4(aPos, 0.0, 1.0); }`;
 
-// Mesh-gradient fragment shader. The meshBlend body is the approved source of
-// truth from the handoff (shader.js); only the multi-mode dispatch was removed.
 const FRAG = `precision highp float;
 
 uniform vec2  uRes;
@@ -52,15 +44,20 @@ uniform float uScroll;
 uniform float uPulse;
 uniform vec2  uPulsePos;
 
-/* The four canonical Driiva stops. These are the only source of hue in the
- * field and must not be retuned here; retune them in design-system tokens and
- * mirror the value across. C_DEEP is the ink the field sits in, taken from the
- * top of the surface ladder rather than invented. */
+/* The four canonical Driiva stops, and the ink they sit in. Only source of
+ * hue in the field. Retune in design-system tokens and mirror here. */
 const vec3 C_AMBER  = vec3(0.831, 0.522, 0.039); // #d4850a
 const vec3 C_BURNT  = vec3(0.627, 0.298, 0.165); // #a04c2a
 const vec3 C_VIOLET = vec3(0.420, 0.247, 0.627); // #6b3fa0
 const vec3 C_INDIGO = vec3(0.231, 0.176, 0.545); // #3b2d8b
 const vec3 C_DEEP   = vec3(0.020, 0.020, 0.036); // #050509 ink
+/* The warm extreme. Neither amber alone works here: #fbbf24 and #d4850a are
+ * both yellow-leaning, and darkening either one far enough to sit behind text
+ * drops the red faster than the green, so the corner read olive rather than
+ * orange. Blending amber toward burnt raises red against green and lands a
+ * true orange while staying entirely inside the palette - it is two canonical
+ * stops mixed, not a fifth colour. */
+const vec3 C_ORANGE = vec3(0.760, 0.444, 0.083); // mix(#d4850a, #a04c2a, 0.35)
 
 float h(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 
@@ -71,93 +68,60 @@ float vnoise(vec2 p){
              mix(h(i+vec2(0,1)), h(i+vec2(1,1)), f.x), f.y);
 }
 
-/* Five octaves through a rotation-and-scale matrix rather than a plain
- * doubling. The rotation is what stops successive octaves lining up into
- * visible axis-aligned tiling, and it is the reason this reads as cloud
- * rather than as noise. */
+/* Three octaves, not five. The extra two only ever added fine detail, and
+ * fine detail in a noise field is exactly what read as streaks. */
 float fbm(vec2 p){
   float v = 0.0, a = 0.5;
   mat2 m = mat2(1.6, 1.2, -1.2, 1.6);
-  for (int i = 0; i < 5; i++){ v += a*vnoise(p); p = m*p; a *= 0.5; }
+  for (int i = 0; i < 3; i++){ v += a*vnoise(p); p = m*p; a *= 0.5; }
   return v;
 }
 
 void main(){
-  /* Centred and aspect-corrected, so the composition does not stretch on wide
-   * monitors the way a straight 0..1 mapping does. */
-  vec2 uv  = (gl_FragCoord.xy - 0.5*uRes) / uRes.y;
+  vec2 uv   = (gl_FragCoord.xy - 0.5*uRes) / uRes.y;
   vec2 uv01 = gl_FragCoord.xy / uRes.xy;
 
-  /* Parallax moves the point we SAMPLE the noise at, not the finished image,
-   * so the cloud appears to sit at depth behind the page instead of sliding
-   * across it. */
-  vec2 par = (uMouse - 0.5) * 0.09;
-  vec2 p = uv*1.35 + par;
+  /* ONE DIRECTION. The whole composition is a single axis: amber at one end,
+   * indigo at the other, running on a fixed diagonal. The nebula version
+   * before this let noise decide where colour went, which is what produced
+   * the drifting blobs and the vertical filaments - there was no direction to
+   * read, so the eye found shapes instead of a gradient. */
+  vec2 dir = normalize(vec2(1.0, 0.52));
+  float g = dot(uv, dir) * 0.62 + 0.5;
 
-  float t = uTime * 0.022;
+  /* Noise is demoted to a perturbation of WHERE the ramp sits, at an
+   * amplitude too small to ever close a shape. It keeps the gradient from
+   * looking like a CSS linear-gradient and stops 8-bit banding, and that is
+   * all it is allowed to do. Parallax and drift move the ramp, not the hue. */
+  vec2 par = (uMouse - 0.5) * 0.06;
+  float n = fbm(uv*1.15 + par + vec2(uTime*0.014, uTime*-0.009));
+  g += (n - 0.5) * 0.085;
+  g += uScroll * 0.06;
 
-  /* The domain warp. q is a slow field; feeding it into the coordinates of f
-   * is what turns two smooth noises into filaments and voids. */
-  float q = fbm(p + vec2(t, -t*0.6));
-  float f = fbm(p*1.8 + q*1.5 + vec2(-t*0.7, t*0.4));
+  /* The ramp. Stops are darkened on the way in rather than dimmed afterwards,
+   * so the dark end stays a true ink instead of a muddy indigo. */
+  vec3 col = mix(C_ORANGE*0.98,   C_ORANGE*0.80, smoothstep(-0.14, 0.12, g));
+  col      = mix(col,             C_BURNT*0.72, smoothstep(0.08, 0.40, g));
+  col      = mix(col,             C_VIOLET*0.70, smoothstep(0.32, 0.66, g));
+  col      = mix(col,             C_INDIGO*0.76, smoothstep(0.60, 0.90, g));
+  col      = mix(col,             C_DEEP,        smoothstep(0.86, 1.18, g));
 
-  /* Direction. Colouring purely by noise density loses the brand gradient:
-   * fBm almost never reaches its top of range, so gating the warm stops on
-   * the densest noise meant amber and burnt effectively never fired and the
-   * whole field came out uniformly violet.
-   *
-   * This restores the amber-to-indigo direction without going back to bands.
-   * It does not place the colours - it decides which stops are ALLOWED to
-   * appear across the frame, and the noise still decides where inside that
-   * region they actually land. The diagonal term leans the axis so it is not
-   * a vertical wipe. */
-  float warm = smoothstep(0.85, -0.55, uv.x - uv.y*0.35);
+  /* Top of the frame carries the nav and the wordmark, so it is pulled down
+   * regardless of where the ramp happens to be. */
+  col *= mix(0.80, 1.0, smoothstep(0.98, 0.42, uv01.y));
 
-  /* Colour by density within that direction. Indigo and violet carry the mass
-   * of the cloud everywhere; burnt marks dense edges on the warm side; amber
-   * is squared so it concentrates into the brightest filaments at the warm
-   * extreme, which is the only stop bright enough to threaten text contrast. */
-  vec3 col = C_DEEP;
-  col = mix(col, C_INDIGO, smoothstep(0.20, 0.58, f));
-  col = mix(col, C_VIOLET, smoothstep(0.40, 0.76, f) * 0.78);
-  col = mix(col, C_BURNT,  smoothstep(0.46, 0.82, f) * 0.72 * warm);
-  col = mix(col, C_AMBER,  smoothstep(0.52, 0.90, f*0.75 + q*0.45) * 0.62 * warm * warm);
-
-  /* One deep violet bloom off the upper left, the single placed feature in an
-   * otherwise procedural field. It gives the composition somewhere to sit. */
-  col = mix(col, C_VIOLET*0.55,
-            smoothstep(0.95, 0.15, length(uv - vec2(-0.72, 0.44))) * 0.13 * (0.6 + 0.4*q));
-
-  /* Warm horizon along the bottom that opens up as the reader scrolls, so the
-   * page warms rather than the background simply scrolling away. */
-  float hor = smoothstep(0.55, -0.42, uv.y);
-  col = mix(col, C_AMBER*0.8, hor*hor * (0.05 + 0.17*uScroll) * (0.5 + 0.5*f));
-
-  /* Sparse stars. The threshold is deliberately severe: a handful per screen
-   * reads as depth, any more reads as a screensaver. */
-  vec2 sp = uv * uRes.y / 3.1 + par*36.0;
-  vec2 cell = floor(sp);
-  vec2 fc = fract(sp) - 0.5;
-  float sr = h(cell);
-  if (sr > 0.9955){
-    float tw = 0.5 + 0.5*sin(uTime*(1.0 + sr*3.0) + sr*44.0);
-    col += vec3(1.0, 0.95, 0.85) * smoothstep(0.15, 0.0, length(fc)) * tw * 0.45;
-  }
-
-  /* Click ripple, tinted amber so an interaction cannot introduce a colour
-   * that is not in the palette. */
+  /* Click ripple, amber so an interaction cannot introduce an off-palette
+   * colour. */
   float clickD = distance(uv01, uPulsePos);
-  col += uPulse * exp(-clickD*4.0) * sin(clickD*22.0 - uTime*8.0) * 0.05 * C_AMBER;
+  col += uPulse * exp(-clickD*4.0) * sin(clickD*22.0 - uTime*8.0) * 0.04 * C_AMBER;
 
-  /* Radial falloff, then one dimming pass. This 0.88 is the contrast lever:
-   * it is the single place the whole field is scaled against the body-copy
-   * floor, so changing it changes legibility everywhere at once. */
-  col *= 1.0 - 0.5*dot(uv, uv);
-  col *= 0.88;
+  /* Gentle falloff, then the single contrast lever for the whole field. */
+  col *= 1.0 - 0.34*dot(uv, uv);
+  col *= 0.92;
 
-  /* Animated grain, which doubles as the anti-banding dither the smooth
-   * gradients need at 8 bits. */
-  float grain = (fract(sin(dot(gl_FragCoord.xy + uTime*37.0, vec2(12.9898, 78.233)))*43758.5453) - 0.5) * 0.040;
+  /* Dither. At these very low channel values 8-bit output bands visibly
+   * across a smooth ramp, and this is the cheapest fix. */
+  float grain = (fract(sin(dot(gl_FragCoord.xy + uTime*37.0, vec2(12.9898, 78.233)))*43758.5453) - 0.5) * 0.030;
   col += grain;
 
   gl_FragColor = vec4(col, 1.0);

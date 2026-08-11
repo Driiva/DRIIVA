@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { animate, createTimeline, prefersReducedMotion } from '@/lib/motion';
+import { blurText, characterStagger } from '@/lib/text-reveal';
 import { useWaitlistForm } from '@/hooks/useWaitlistForm';
-import { PhoneFrame } from './PhoneFrame';
 
 // The status region doubles as the field's description, so it needs a stable
 // id to point aria-describedby at. Unique per form: this page renders two.
@@ -20,10 +20,9 @@ export function Hero() {
     message, inputRef, buttonRef, handleSubmit, inputProps, buttonProps, buttonLabel, statusProps,
   } = useWaitlistForm({ source: 'hero', statusId: STATUS_ID });
 
-  // Hero entrance: live strip → eyebrow → wordmark → headline → form stack.
-  // The phone frame self-reveals via its own IntersectionObserver, on a
-  // parallel track so the right column lands at roughly the same moment
-  // as the wordmark settles.
+  // Hero entrance: eyebrow → wordmark → headline → form stack. The wordmark
+  // is the centrepiece now rather than one element among several, so it gets
+  // the longest beat and everything after it is timed to settle around it.
   useEffect(() => {
     const eyebrow = eyebrowRef.current;
     const wordmark = wordmarkRef.current;
@@ -46,14 +45,19 @@ export function Hero() {
       return;
     }
 
+    /* Amicro blur-text on the positioning line, then the wordmark, then Amicro
+     * character-stagger on the strapline. The two reveals drive their own
+     * elements, so the timeline only carries the wordmark between them. */
+    blurText(eyebrow, 120);
+
     const tl = createTimeline({ defaults: { ease: 'cubicBezier(0.16, 1, 0.3, 1)', duration: 750 } });
-    tl.add(eyebrow, { opacity: [0, 1], translateY: [16, 0] })
-      .add(
-        wordmark,
-        { opacity: [0, 1], translateY: [28, 0], scale: [0.92, 1], duration: 1100 },
-        '-=500',
-      )
-      .add(headline, { opacity: [0, 1], translateY: [22, 0], duration: 850 }, '-=550');
+    tl.add(
+      wordmark,
+      { opacity: [0, 1], translateY: [28, 0], scale: [0.92, 1], duration: 1100 },
+      380,
+    );
+
+    characterStagger(headline, 900);
 
     const formStack: HTMLElement[] = [];
     if (sub) formStack.push(sub);
@@ -151,10 +155,6 @@ export function Hero() {
               </svg>
               Early refund guarantee. If our models don't deliver, we refund early.
             </div>
-          </div>
-
-          <div className="hero-grid-right">
-            <PhoneFrame />
           </div>
         </div>
       </div>

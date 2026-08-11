@@ -45,7 +45,7 @@ beforeEach(() => {
     removeEventListener: vi.fn(),
     dispatchEvent: vi.fn(),
   })) as typeof window.matchMedia;
-  // jsdom doesn't ship IntersectionObserver; PhoneFrame needs it on mount.
+  // jsdom doesn't ship IntersectionObserver; section reveals need it on mount.
   (globalThis as unknown as { IntersectionObserver: unknown }).IntersectionObserver =
     FakeIntersectionObserver;
   (window as unknown as { IntersectionObserver: unknown }).IntersectionObserver =
@@ -53,13 +53,26 @@ beforeEach(() => {
 });
 
 describe('Hero', () => {
+  /* Queried by textContent rather than getByText, because the Amicro reveals
+   * split both lines into per-word and per-character spans on mount. The text
+   * and the italic wrapper must both survive that, which is the whole point of
+   * the assertions below: an earlier splitter rebuilt the headline from its
+   * flattened text and silently dropped the italic span, taking the amber with
+   * it. */
   it('renders the canonical eyebrow line and italic headline', () => {
-    render(<Hero />);
-    expect(screen.getByText(/Insurance, simplified\./i)).toBeInTheDocument();
+    const { container } = render(<Hero />);
+
+    const eyebrow = container.querySelector('.hero-eyebrow-line');
+    expect(eyebrow).not.toBeNull();
+    expect(eyebrow).toHaveTextContent(/Insurance, simplified\./i);
+
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
       /AI-Powered\. Community-driven\./i,
     );
-    expect(screen.getByText(/Community-driven\./i)).toHaveClass('italic');
+
+    const italic = container.querySelector('.hero-headline .italic');
+    expect(italic).not.toBeNull();
+    expect(italic).toHaveTextContent(/Community-driven\./i);
   });
 
   it('places the wordmark above the headline so the headline reads as the wordmark sub-claim', () => {
@@ -78,14 +91,6 @@ describe('Hero', () => {
     expect(imgs.length).toBe(5);
   });
 
-  it('renders the phone frame product preview with the real app screenshot', () => {
-    render(<Hero />);
-    const phone = screen.getByTestId('phone-frame');
-    expect(phone).toBeInTheDocument();
-    const img = phone.querySelector('img.phone-screen-img');
-    expect(img).toBeTruthy();
-    expect(img).toHaveAttribute('src', '/brand/app-preview.png');
-  });
 
   it('renders the canonical sub-headline and the Get Early Access CTA', () => {
     render(<Hero />);

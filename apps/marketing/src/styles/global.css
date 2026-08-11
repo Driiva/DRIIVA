@@ -294,7 +294,9 @@ main {
    HERO
    ───────────────────────────────────────────────────────── */
 .hero {
-  padding: 132px 0 70px;
+  /* Sits lower on the page than it did. The wordmark is the centrepiece and a
+     centrepiece needs air above it, not a nav pressed against its shoulder. */
+  padding: 178px 0 84px;
   text-align: center;
   position: relative;
 }
@@ -302,30 +304,31 @@ main {
 /* ─────────────────────────────────────────────────────────
    HERO 2-COL GRID, form left, product preview right
    ───────────────────────────────────────────────────────── */
+/* One centred column since the phone came out. The two-column split existed
+   only to give the phone somewhere to stand; with it gone, a left-aligned
+   form hanging off centre under a centred wordmark reads as a mistake. */
 .hero-grid {
   display: grid;
-  grid-template-columns: 1.05fr 0.95fr;
-  gap: 56px;
-  align-items: center;
-  max-width: 1040px;
-  margin: 36px auto 0;
-  text-align: left;
+  grid-template-columns: 1fr;
+  max-width: 640px;
+  margin: 44px auto 0;
+  text-align: center;
 }
 .hero-grid-left {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
 }
 .hero-grid-left .hero-sub {
-  text-align: left;
-  margin: 0 0 22px;
+  text-align: center;
+  margin: 0 auto 24px;
   max-width: 460px;
 }
 .hero-grid-left .waitlist-form {
-  margin: 0;
+  margin: 0 auto;
 }
 .hero-grid-left .form-status {
-  text-align: left;
+  text-align: center;
   align-self: stretch;
 }
 .hero-grid-left .hero-guarantee {
@@ -674,25 +677,28 @@ main {
 }
 
 .hero-eyebrow-line {
+  /* This is the positioning line and it was set at 13px, smaller than body
+     copy, so the single clearest statement on the page was also the quietest
+     thing on it. It now reads as a line someone wrote rather than a tag. */
   font-family: var(--font-ui);
-  font-size: 13px;
-  font-weight: 500;
-  letter-spacing: -0.01em;
-  color: var(--iris-3);
-  margin-bottom: 30px;
+  font-size: clamp(17px, 1.9vw, 26px);
+  font-weight: 400;
+  letter-spacing: -0.018em;
+  color: var(--fg-2);
+  margin-bottom: 40px;
 }
 .hero-headline {
   font-family: var(--font-display);
-  /* The page's one display step. It previously topped out at 44px while every
-     section heading reached 56px, so the h1 was the smallest heading on the
-     page and the hierarchy read inverted. */
-  font-size: clamp(38px, 5.4vw, 74px);
-  font-weight: 600;
-  line-height: 0.98;
-  letter-spacing: -0.038em;
+  /* Deliberately no longer the largest thing in the hero. The WORDMARK is the
+     display step here; this is the strapline under it. Sized at 74px it
+     competed with the logo and the two of them cancelled each other out. */
+  font-size: clamp(22px, 2.9vw, 40px);
+  font-weight: 500;
+  line-height: 1.06;
+  letter-spacing: -0.028em;
   color: var(--fg-1);
-  margin-top: 28px;
-  margin-bottom: 28px;
+  margin-top: 26px;
+  margin-bottom: 30px;
   text-wrap: balance;
 }
 .hero-headline .italic {
@@ -709,7 +715,9 @@ main {
   position: relative;
   display: inline-block;
   margin: 0 auto;
-  max-width: clamp(150px, 16vw, 210px);
+  /* The centrepiece. Roughly doubled: at 210px it read as a logo parked above
+     a headline rather than as the thing the page is about. */
+  max-width: clamp(240px, 27vw, 400px);
   /* High-fidelity rendering on Chrome / Safari retina */
   image-rendering: -webkit-optimize-contrast;
   transform: translateZ(0);
@@ -2378,4 +2386,43 @@ footer {
 
 .voices-fn-ref:hover {
   color: var(--fg-2);
+}
+
+/* ── Amicro card-hover ────────────────────────────────────────────────────
+   Timings taken from Amicro's card-hover: 150ms in, 150ms out with a 100ms
+   delay on the way out, and a 200ms border transition. The asymmetry is the
+   whole trick - the highlight arrives immediately and leaves reluctantly, so
+   a cursor crossing a grid does not strobe every card it passes over.
+
+   Applied to .glass-hover, which is already the shared class on every card
+   surface on the site, so this reaches the pool bullets, the security cards
+   and the survey quotes without touching any of them individually. */
+.glass-hover {
+  transition:
+    border-color 200ms var(--easeout),
+    transform 200ms var(--easeout),
+    background-color 150ms var(--easeout);
+}
+
+.glass-hover:hover {
+  border-color: rgb(var(--rgb-amber) / 0.28);
+  transform: translateY(-2px);
+}
+
+/* The leaving transition is the slower one, per the source. */
+.glass-hover:not(:hover) {
+  transition:
+    border-color 150ms var(--easeout) 100ms,
+    transform 150ms var(--easeout) 100ms,
+    background-color 150ms var(--easeout) 100ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glass-hover,
+  .glass-hover:not(:hover) {
+    transition: border-color 200ms linear;
+  }
+  .glass-hover:hover {
+    transform: none;
+  }
 }
