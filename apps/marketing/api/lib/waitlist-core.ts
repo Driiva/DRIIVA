@@ -52,7 +52,7 @@ export async function processWaitlist(
   }
   const source = (body.source ?? 'hero').slice(0, 32);
 
-  const firestore = createFirestoreClient();
+  const firestore = await createFirestoreClient();
   const email = createEmailClient();
 
   try {
@@ -85,7 +85,7 @@ export async function getWaitlistCount(): Promise<number | null> {
   // "0 drivers" from an unreachable store is a claim about the product made
   // on no evidence.
   try {
-    const firestore = createFirestoreClient();
+    const firestore = await createFirestoreClient();
     const total = await firestore.count();
     return BASE_COUNT + total;
   } catch (err) {
@@ -109,7 +109,7 @@ let firestoreInstance: unknown | null = null;
  */
 class WaitlistNotConfiguredError extends Error {}
 
-function createFirestoreClient(): FirestoreClient {
+async function createFirestoreClient(): Promise<FirestoreClient> {
   const sa = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
   const projectId = process.env.FIREBASE_PROJECT_ID;
   if (!sa || !projectId) {
@@ -125,7 +125,7 @@ function createFirestoreClient(): FirestoreClient {
     return inMemoryClient();
   }
   try {
-    initFirebaseOnce(sa, projectId);
+    await initFirebaseOnce(sa, projectId);
     return firestoreClientReal();
   } catch (err) {
     console.error('[waitlist] Firebase init failed', err);
@@ -140,12 +140,13 @@ function isProduction(): boolean {
   return process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production';
 }
 
-function initFirebaseOnce(sa: string, projectId: string) {
+async function initFirebaseOnce(sa: string, projectId: string) {
   if (firebaseInited) return;
-  // Dynamic import keeps firebase-admin out of the Vite client bundle.
-  // The require runs only in Node contexts (Vercel function or Vite SSR plugin).
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const admin = require('firebase-admin') as typeof import('firebase-admin');
+  // A real dynamic import, not require. These functions run as ESM on Vercel,
+  // where require is not defined, so the previous version threw
+  // "ReferenceError: require is not defined" at init and every signup failed.
+  // The import still keeps firebase-admin out of the Vite client bundle.
+  const admin = (await import('firebase-admin')).default;
   if (admin.apps.length === 0) {
     admin.initializeApp({
       credential: admin.credential.cert(JSON.parse(sa)),
@@ -216,8 +217,7 @@ function createEmailClient(): EmailClient {
   }
   return {
     async sendConfirmation(email, position) {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { Resend } = require('resend') as typeof import('resend');
+      const { Resend } = await import('resend');
       const resend = new Resend(key);
       await resend.emails.send({
         from,
