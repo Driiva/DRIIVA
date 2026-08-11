@@ -8,11 +8,6 @@ interface RibbonItem {
 
 const ITEMS: readonly RibbonItem[] = [
   {
-    icon: 'shield',
-    label: 'FCA Sandbox',
-    body: 'Application in progress',
-  },
-  {
     icon: 'capital',
     label: 'Reinsurance backed',
     body: 'PRA-regulated capital at launch',

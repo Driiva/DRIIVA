@@ -32,11 +32,6 @@ const ROWS: readonly Row[] = [
     driiva: { has: true, note: 'Pool returns to drivers' },
     traditional: { has: false, note: 'Profit kept by insurer' },
   },
-  {
-    feature: 'FCA-aligned from day one',
-    driiva: { has: true, note: 'Sandbox application in progress' },
-    traditional: { has: true, note: 'Established' },
-  },
 ];
 
 function Check({ on }: { on: boolean }) {

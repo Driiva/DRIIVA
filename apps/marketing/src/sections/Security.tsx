@@ -8,11 +8,6 @@ interface TrustCard {
   icon: () => JSX.Element;
 }
 
-const Shield = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-  </svg>
-);
 const Lock = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <rect x="3" y="11" width="18" height="11" rx="2" />
@@ -44,12 +39,6 @@ const Capital = () => (
 );
 
 const CARDS: readonly TrustCard[] = [
-  {
-    id: 'fca',
-    title: 'FCA Sandbox in progress',
-    body: 'Application underway with the FCA. Full regulatory oversight from the day we write our first policy, not bolted on later.',
-    icon: Shield,
-  },
   {
     id: 'encrypted',
     title: 'End-to-end encrypted',

@@ -2237,3 +2237,111 @@ footer {
     transform: none;
   }
 }
+
+/* ── Voices: what drivers asked for ───────────────────────────────────────
+   The bars fill from zero when the block enters view. The fill is the brand
+   gradient clipped to the rail, so the four stops read left to right across
+   the whole set rather than restarting inside each bar - the same trick the
+   score rails use, and the reason the gradient is applied to a wide layer and
+   masked rather than painted per element.
+
+   The zero-count rail still renders its track. A bar that vanishes at zero
+   reads as missing data; an empty track reads as the answer, which is what it
+   is. */
+.voices-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 1.05rem;
+  max-width: 46rem;
+}
+
+.voices-bar-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.45rem;
+}
+
+.voices-bar-label {
+  font-size: 0.95rem;
+  color: var(--fg-2);
+  letter-spacing: -0.01em;
+}
+
+.voices-bar-count {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-variant-numeric: tabular-nums;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--fg-1);
+}
+
+.voices-bar-pct {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--fg-4);
+}
+
+.voices-bar-track {
+  position: relative;
+  height: 7px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.07);
+  overflow: hidden;
+}
+
+.voices-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--grad-brand);
+  background-size: 46rem 100%;
+  background-repeat: no-repeat;
+  transition: width 1100ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.voices-note {
+  margin-top: 1.35rem;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--fg-4);
+  max-width: 42rem;
+}
+
+.voices-wishes {
+  margin-top: 3.25rem;
+}
+
+.voices-wishes-head {
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: var(--fg-3);
+  letter-spacing: -0.01em;
+  margin: 0 0 1.15rem;
+}
+
+.voices-wish-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15.5rem, 1fr));
+  gap: 0.9rem;
+}
+
+.voices-wish {
+  margin: 0;
+  padding: 1.15rem 1.25rem;
+  border-radius: 16px;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--fg-2);
+  letter-spacing: -0.01em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .voices-bar-fill {
+    transition: none;
+  }
+}
