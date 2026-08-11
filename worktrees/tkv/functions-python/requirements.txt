@@ -1,0 +1,12 @@
+# Firebase Functions
+functions-framework==3.*
+firebase-admin>=6.0.0
+
+# Stop-Go-Classifier dependencies
+scipy>=1.8.0
+numpy>=1.22.3
+pandas>=1.4.1
+pyproj>=3.4.0
+
+# HTTP utilities
+flask>=2.0.0

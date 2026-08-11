@@ -1,0 +1,418 @@
+diff --git a/.gitignore b/.gitignore
+index f9ba7f8..3302d44 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -1,6 +1,58 @@
++# Dependencies
+ node_modules
++
++# Build outputs
+ dist
++lib
++*.tar.gz
++
++# OS files
+ .DS_Store
++Thumbs.db
++
++# Editor files
++*.swp
++*.swo
++.idea/
++.vscode/
++
++# Build artifacts
+ server/public
+ vite.config.ts.*
+-*.tar.gz
+\ No newline at end of file
++
++# =============================================================================
++# SENSITIVE FILES - NEVER COMMIT THESE
++# =============================================================================
++.env
++.env.local
++.env.*.local
++.env.production
++.env.development
++
++# Firebase
++.firebase/
++firebase-debug.log
++firebase-debug.*.log
++firestore-debug.log
++ui-debug.log
++
++# Service account keys
++**/serviceAccount*.json
++**/service-account*.json
++**/*-credentials.json
++**/firebase-adminsdk*.json
++
++# Functions
++functions/lib/
++functions/.runtimeconfig.json
++
++# Logs
++*.log
++npm-debug.log*
++yarn-debug.log*
++yarn-error.log*
++
++# Test files with credentials
++test-auth.js
++create-user.js
++check-user.js
+\ No newline at end of file
+diff --git a/client/src/pages/welcome.tsx b/client/src/pages/welcome.tsx
+index d8e16d5..5582bf9 100644
+--- a/client/src/pages/welcome.tsx
++++ b/client/src/pages/welcome.tsx
+@@ -81,8 +81,8 @@ export default function Welcome() {
+             />
+           </div>
+           <div className="text-center mt-2">
+-            <p className="text-cyan-400 text-2xl font-medium mb-1">AI-powered, community-driven.</p>
+-            <p className="text-white/80 text-xl">Your driving, rewarded.</p>
++            <p className="text-cyan-400 text-4xl font-medium mb-1">AI-powered, community-driven.</p>
++            <p className="text-white/80 text-sm">Your driving, rewarded.</p>
+           </div>
+         </motion.div>
+ 
+diff --git a/firestore.indexes.json b/firestore.indexes.json
+index 8909354..f60a834 100644
+--- a/firestore.indexes.json
++++ b/firestore.indexes.json
+@@ -1,5 +1,21 @@
+ {
+   "indexes": [
++    {
++      "collectionGroup": "quotes",
++      "queryScope": "COLLECTION",
++      "fields": [
++        { "fieldPath": "userId", "order": "ASCENDING" },
++        { "fieldPath": "createdAt", "order": "DESCENDING" }
++      ]
++    },
++    {
++      "collectionGroup": "quotes",
++      "queryScope": "COLLECTION",
++      "fields": [
++        { "fieldPath": "status", "order": "ASCENDING" },
++        { "fieldPath": "validUntil", "order": "ASCENDING" }
++      ]
++    },
+     {
+       "collectionGroup": "trips",
+       "queryScope": "COLLECTION",
+diff --git a/firestore.rules b/firestore.rules
+index eb744e5..404596c 100644
+--- a/firestore.rules
++++ b/firestore.rules
+@@ -181,6 +181,24 @@ service cloud.firestore {
+       allow write: if false;
+     }
+     
++    // =========================================================================
++    // QUOTES COLLECTION
++    // =========================================================================
++    
++    match /quotes/{quoteId} {
++      // Users can read their own quotes
++      allow read: if isAuthenticated()
++        && resource.data.userId == request.auth.uid;
++      
++      // Only Cloud Functions (admin SDK) can create/update quotes
++      // Quotes are generated server-side via Root Platform API
++      allow create: if false;
++      allow update: if false;
++      
++      // Quotes cannot be deleted
++      allow delete: if false;
++    }
++    
+     // =========================================================================
+     // CATCH-ALL: DENY EVERYTHING ELSE
+     // =========================================================================
+diff --git a/functions/src/index.ts b/functions/src/index.ts
+index c946191..c5f041f 100644
+--- a/functions/src/index.ts
++++ b/functions/src/index.ts
+@@ -42,3 +42,9 @@ export { finalizePoolPeriod, recalculatePoolShares } from './scheduled/pool';
+ // ============================================================================
+ 
+ export { initializePool } from './http/admin';
++
++// ============================================================================
++// PRICING FUNCTIONS (Root Platform Integration)
++// ============================================================================
++
++export { getDriverQuote, getQuoteHistory, expireOldQuotes } from './http/pricing';
+diff --git a/functions/src/types.ts b/functions/src/types.ts
+index 0ed482a..13a2077 100644
+--- a/functions/src/types.ts
++++ b/functions/src/types.ts
+@@ -22,6 +22,7 @@ export const COLLECTION_NAMES = {
+   COMMUNITY_POOL: 'communityPool',
+   POOL_SHARES: 'poolShares',
+   LEADERBOARD: 'leaderboard',
++  QUOTES: 'quotes',
+ } as const;
+ 
+ export type RiskTier = 'low' | 'medium' | 'high';
+@@ -245,3 +246,152 @@ export interface LeaderboardDocument {
+   calculatedAt: Timestamp;
+   nextCalculationAt: Timestamp;
+ }
++
++// ============================================================================
++// QUOTES COLLECTION (Root Platform Integration)
++// ============================================================================
++
++export type QuoteStatus = 'pending' | 'active' | 'expired' | 'converted' | 'declined';
++
++/**
++ * Extended user profile for Root API
++ * Additional fields required for insurance quotes
++ */
++export interface ExtendedUserProfile {
++  firstName: string;
++  lastName: string;
++  dateOfBirth: string;          // ISO 8601 date
++  idNumber: string;             // SA ID number (13 digits)
++  postalCode: string;
++}
++
++/**
++ * Vehicle info for Root API (extended)
++ */
++export interface QuoteVehicleInfo {
++  make: string;
++  model: string;
++  year: number;
++  registration: string;
++  vin?: string;
++}
++
++/**
++ * Telematics data formatted for Root API
++ */
++export interface RootTelematicsData {
++  overall_score: number;
++  trip_count: number;
++  total_distance_km: number;
++  avg_speed_kph: number;
++  recent_trips: RootTripSummary[];
++}
++
++export interface RootTripSummary {
++  date: string;                 // ISO 8601
++  distance_km: number;
++  duration_seconds: number;
++  score: number;
++  harsh_braking_events: number;
++  speeding_events: number;
++}
++
++/**
++ * Root API Request Body
++ */
++export interface RootQuoteRequest {
++  type: string;                 // "root_insurance_za.car.comprehensive"
++  policyholder: {
++    id: string;
++    first_name: string;
++    last_name: string;
++    email: string;
++    date_of_birth: string;
++    id_number: string;
++  };
++  vehicle: {
++    make: string;
++    model: string;
++    year: number;
++    registration: string;
++  };
++  telematics: RootTelematicsData;
++  billing_amount: {
++    currency: string;
++    amount: number;
++  };
++}
++
++/**
++ * Root API Response
++ */
++export interface RootQuoteResponse {
++  quote_package_id: string;
++  package_name: string;
++  sum_assured: number;
++  base_premium: number;           // In cents
++  monthly_premium: number;        // In cents
++  suggested_premium: number;      // In cents, with telematics discount
++  created_at: string;             // ISO 8601
++}
++
++/**
++ * Transformed quote for Driiva
++ */
++export interface DrivaQuote {
++  quoteId: string;
++  basePremiumZAR: number;         // In ZAR (converted from cents)
++  telematicsDiscountZAR: number;
++  finalPremiumZAR: number;
++  monthlyPremiumZAR: number;
++  currency: 'ZAR';
++  validUntil: Date;
++  provider: 'Root';
++  isMockQuote: boolean;
++}
++
++/**
++ * Quote document stored in Firestore
++ * Collection: quotes/{quoteId}
++ */
++export interface QuoteDocument {
++  quoteId: string;
++  userId: string;
++  
++  // Root API Reference
++  rootQuotePackageId: string | null;
++  rootPackageName: string | null;
++  
++  // Financial (all in cents for precision)
++  basePremiumCents: number;
++  telematicsDiscountCents: number;
++  finalPremiumCents: number;
++  monthlyPremiumCents: number;
++  sumAssuredCents: number;
++  currency: 'ZAR';
++  
++  // Telematics snapshot at quote time
++  telematicsSnapshot: {
++    overallScore: number;
++    tripCount: number;
++    totalDistanceKm: number;
++    avgSpeedKph: number;
++  };
++  
++  // Vehicle at quote time
++  vehicle: QuoteVehicleInfo;
++  
++  // Status
++  status: QuoteStatus;
++  isMockQuote: boolean;           // True if Root API was unavailable
++  
++  // Timestamps
++  createdAt: Timestamp;
++  validUntil: Timestamp;
++  convertedAt: Timestamp | null;  // When converted to policy
++  
++  // Audit
++  createdBy: string;
++  updatedBy: string;
++  updatedAt: Timestamp;
++}
+diff --git a/shared/firestore-types.ts b/shared/firestore-types.ts
+index 579eb4b..eaf4a06 100644
+--- a/shared/firestore-types.ts
++++ b/shared/firestore-types.ts
+@@ -30,6 +30,7 @@ export const COLLECTION_NAMES = {
+   COMMUNITY_POOL: 'communityPool',
+   POOL_SHARES: 'poolShares',
+   LEADERBOARD: 'leaderboard',
++  QUOTES: 'quotes',
+ } as const;
+ 
+ export type RiskTier = 'low' | 'medium' | 'high';
+@@ -506,6 +507,90 @@ export interface LeaderboardDocument {
+ // HELPER TYPES
+ // ============================================================================
+ 
++// ============================================================================
++// QUOTES COLLECTION (Root Platform Integration)
++// ============================================================================
++
++export type QuoteStatus = 'pending' | 'active' | 'expired' | 'converted' | 'declined';
++
++/**
++ * Extended user profile for Root API
++ * Additional fields required for insurance quotes
++ */
++export interface ExtendedUserProfile {
++  firstName: string;
++  lastName: string;
++  dateOfBirth: string;          // ISO 8601 date
++  idNumber: string;             // SA ID number (13 digits)
++  postalCode: string;
++}
++
++/**
++ * Vehicle info for Root API (extended)
++ */
++export interface QuoteVehicleInfo {
++  make: string;
++  model: string;
++  year: number;
++  registration: string;
++  vin?: string;
++}
++
++/**
++ * Telematics snapshot at quote time
++ */
++export interface TelematicsSnapshot {
++  overallScore: number;
++  tripCount: number;
++  totalDistanceKm: number;
++  avgSpeedKph: number;
++}
++
++/**
++ * Quote document stored in Firestore
++ * Collection: quotes/{quoteId}
++ */
++export interface QuoteDocument {
++  quoteId: string;
++  userId: string;
++  
++  // Root API Reference
++  rootQuotePackageId: string | null;
++  rootPackageName: string | null;
++  
++  // Financial (all in cents for precision)
++  basePremiumCents: number;
++  telematicsDiscountCents: number;
++  finalPremiumCents: number;
++  monthlyPremiumCents: number;
++  sumAssuredCents: number;
++  currency: 'ZAR';
++  
++  // Telematics snapshot at quote time
++  telematicsSnapshot: TelematicsSnapshot;
++  
++  // Vehicle at quote time
++  vehicle: QuoteVehicleInfo;
++  
++  // Status
++  status: QuoteStatus;
++  isMockQuote: boolean;           // True if Root API was unavailable
++  
++  // Timestamps
++  createdAt: Timestamp;
++  validUntil: Timestamp;
++  convertedAt: Timestamp | null;  // When converted to policy
++  
++  // Audit
++  createdBy: string;
++  updatedBy: string;
++  updatedAt: Timestamp;
++}
++
++// ============================================================================
++// HELPER TYPES
++// ============================================================================
++
+ /**
+  * Firestore converter helper type
+  */

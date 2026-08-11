@@ -1,0 +1,62 @@
+/**
+ * SYNC TRIP ON COMPLETE
+ * =====================
+ * Firestore trigger: when a trip's status becomes 'completed', write a summary row
+ * to PostgreSQL trips_summary for API access.
+ */
+
+import * as functions from 'firebase-functions';
+import * as admin from 'firebase-admin';
+import { COLLECTION_NAMES, TripDocument } from '../types';
+import { getPgUserIdByFirebaseUid, insertTripSummary } from '../lib/neon';
+
+const db = admin.firestore();
+
+export const syncTripOnComplete = functions.firestore
+  .document(`${COLLECTION_NAMES.TRIPS}/{tripId}`)
+  .onUpdate(async (change, context) => {
+    const before = change.before.data() as TripDocument;
+    const after = change.after.data() as TripDocument;
+    if (before.status === after.status || after.status !== 'completed') {
+      return;
+    }
+    const tripId = context.params.tripId;
+    const trip = after;
+    try {
+      const pgUserId = await getPgUserIdByFirebaseUid(trip.userId);
+      if (pgUserId === null) {
+        functions.logger.warn('No PostgreSQL user for Firebase uid, skipping trip sync', { tripId, firebaseUid: trip.userId });
+        return;
+      }
+      const startedAt = trip.startedAt?.toDate?.() ?? new Date();
+      const endedAt = trip.endedAt?.toDate?.() ?? new Date();
+      const distanceKm = trip.distanceMeters / 1000;
+      const events = trip.events ?? {
+        hardBrakingCount: 0,
+        hardAccelerationCount: 0,
+        speedingSeconds: 0,
+        sharpTurnCount: 0,
+        phonePickupCount: 0,
+      };
+      await insertTripSummary({
+        userId: pgUserId,
+        firestoreTripId: tripId,
+        startedAt,
+        endedAt,
+        distanceKm,
+        durationSeconds: trip.durationSeconds ?? 0,
+        score: trip.score ?? 0,
+        hardBrakingEvents: events.hardBrakingCount,
+        harshAcceleration: events.hardAccelerationCount,
+        speedViolations: Math.floor((events.speedingSeconds ?? 0) / 60),
+        nightDriving: trip.context?.isNightDriving ?? false,
+        sharpCorners: events.sharpTurnCount,
+        startAddress: trip.startLocation?.address ?? null,
+        endAddress: trip.endLocation?.address ?? null,
+      });
+      functions.logger.info('Synced trip to PostgreSQL', { tripId, userId: trip.userId, pgUserId });
+    } catch (error) {
+      functions.logger.error('Failed to sync trip to PostgreSQL', { tripId, error });
+      throw error;
+    }
+  });
