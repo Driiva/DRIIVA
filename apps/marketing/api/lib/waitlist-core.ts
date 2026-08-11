@@ -80,10 +80,18 @@ export async function processWaitlist(
   }
 }
 
-export async function getWaitlistCount(): Promise<number> {
-  const firestore = createFirestoreClient();
-  const total = await firestore.count();
-  return BASE_COUNT + total;
+export async function getWaitlistCount(): Promise<number | null> {
+  // null, not 0. A store we cannot reach is an unknown count, and rendering
+  // "0 drivers" from an unreachable store is a claim about the product made
+  // on no evidence.
+  try {
+    const firestore = createFirestoreClient();
+    const total = await firestore.count();
+    return BASE_COUNT + total;
+  } catch (err) {
+    console.error('[waitlist] count unavailable', err);
+    return null;
+  }
 }
 
 /* ─────────────────────────────────────────────────────────
@@ -92,19 +100,44 @@ export async function getWaitlistCount(): Promise<number> {
 let firebaseInited = false;
 let firestoreInstance: unknown | null = null;
 
+/**
+ * Thrown when the waitlist has nowhere durable to write. It is deliberately
+ * NOT caught into a success: a signup that lands in a serverless instance's
+ * memory is discarded the moment that instance recycles, and telling someone
+ * they are on a list they are not on is the exact failure this endpoint
+ * exists to avoid.
+ */
+class WaitlistNotConfiguredError extends Error {}
+
 function createFirestoreClient(): FirestoreClient {
   const sa = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
   const projectId = process.env.FIREBASE_PROJECT_ID;
   if (!sa || !projectId) {
+    // In-memory is a LOCAL convenience. In production it silently drops every
+    // signup, so refuse instead. driiva-marketing had no environment variables
+    // at all, which is how this went unnoticed: every join returned success
+    // and nothing was ever stored.
+    if (isProduction()) {
+      throw new WaitlistNotConfiguredError(
+        'FIREBASE_SERVICE_ACCOUNT_JSON and FIREBASE_PROJECT_ID are unset, so there is nowhere durable to record a signup',
+      );
+    }
     return inMemoryClient();
   }
   try {
     initFirebaseOnce(sa, projectId);
     return firestoreClientReal();
   } catch (err) {
-    console.warn('[waitlist] falling back to in-memory store, Firebase init failed', err);
+    console.error('[waitlist] Firebase init failed', err);
+    if (isProduction()) {
+      throw new WaitlistNotConfiguredError('Firebase init failed, so there is nowhere durable to record a signup');
+    }
     return inMemoryClient();
   }
+}
+
+function isProduction(): boolean {
+  return process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production';
 }
 
 function initFirebaseOnce(sa: string, projectId: string) {
