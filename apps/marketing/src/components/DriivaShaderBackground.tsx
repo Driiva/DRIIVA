@@ -101,15 +101,27 @@ void main(){
   float q = fbm(p + vec2(t, -t*0.6));
   float f = fbm(p*1.8 + q*1.5 + vec2(-t*0.7, t*0.4));
 
-  /* Colour by density. Each stop is mixed over its own smoothstep window of
-   * the noise, so the ladder runs cool in the mass of the cloud and warm at
-   * the bright edges. Amber sits last and weakest: it is the highlight, and
-   * it is also the only stop bright enough to threaten text contrast. */
+  /* Direction. Colouring purely by noise density loses the brand gradient:
+   * fBm almost never reaches its top of range, so gating the warm stops on
+   * the densest noise meant amber and burnt effectively never fired and the
+   * whole field came out uniformly violet.
+   *
+   * This restores the amber-to-indigo direction without going back to bands.
+   * It does not place the colours - it decides which stops are ALLOWED to
+   * appear across the frame, and the noise still decides where inside that
+   * region they actually land. The diagonal term leans the axis so it is not
+   * a vertical wipe. */
+  float warm = smoothstep(0.85, -0.55, uv.x - uv.y*0.35);
+
+  /* Colour by density within that direction. Indigo and violet carry the mass
+   * of the cloud everywhere; burnt marks dense edges on the warm side; amber
+   * is squared so it concentrates into the brightest filaments at the warm
+   * extreme, which is the only stop bright enough to threaten text contrast. */
   vec3 col = C_DEEP;
-  col = mix(col, C_INDIGO, smoothstep(0.24, 0.62, f));
-  col = mix(col, C_VIOLET, smoothstep(0.46, 0.80, f) * 0.72);
-  col = mix(col, C_BURNT,  smoothstep(0.62, 0.94, f) * 0.46);
-  col = mix(col, C_AMBER,  smoothstep(0.74, 1.05, f*q + f*0.25) * 0.38);
+  col = mix(col, C_INDIGO, smoothstep(0.20, 0.58, f));
+  col = mix(col, C_VIOLET, smoothstep(0.40, 0.76, f) * 0.78);
+  col = mix(col, C_BURNT,  smoothstep(0.46, 0.82, f) * 0.72 * warm);
+  col = mix(col, C_AMBER,  smoothstep(0.52, 0.90, f*0.75 + q*0.45) * 0.62 * warm * warm);
 
   /* One deep violet bloom off the upper left, the single placed feature in an
    * otherwise procedural field. It gives the composition somewhere to sit. */
