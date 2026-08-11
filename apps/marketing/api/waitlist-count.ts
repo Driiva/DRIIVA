@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getWaitlistCount } from './lib/waitlist-core';
+import { getWaitlistCount } from './lib/waitlist-core.js';
 
 export default async function handler(_req: VercelRequest, res: VercelResponse) {
   res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120');
