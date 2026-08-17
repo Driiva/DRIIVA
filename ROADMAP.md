@@ -22,6 +22,7 @@
 - [ ] Stripe end-to-end - dependencies present, webhook handlers and payment flow not wired
 - [ ] WebAuthn UI - backend scaffolded, frontend not built
 - [ ] Phone pickup detection - scoring weight reserved at 10%, currently hardcoded to 100
+- [ ] Decide on the `@google-cloud/storage` major bump. The 2026-08-17 sweep (`0386e00`) took 46 vulnerabilities to 16 and cleared all three criticals, but the 16 left all trace to that package through `retry-request` and `teeny-request` and only clear on a major, so they need a deliberate call rather than another routine `npm audit fix`
 
 ## Sprint: "Marketing + SEO" (May-June 2026)
 

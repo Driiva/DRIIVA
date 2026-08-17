@@ -5,6 +5,16 @@
 
 ## Entries
 
+### 2026-08-17 - Dependency security sweep on main
+
+- **Vulnerability sweep** (`fix(deps)`, `0386e00`) - `npm audit fix` with non-breaking fixes only, no `--force`. 46 vulnerabilities down to 16. Clears all three criticals: protobufjs arbitrary code execution, node-tar PAX path confusion, and websocket-driver resource limit bypass, plus 16 of the 17 highs.
+- **What was left, and why** - the 16 that remain all trace to `@google-cloud/storage` through `retry-request` and `teeny-request`, and only clear on a major bump. Left as a deliberate decision rather than folded into a routine sweep.
+- **Gates:** tsc clean, 63 test files and 677 tests passing, unchanged from baseline. Lockfile only, no source change.
+
+**Caveat:** as with the 2026-08-03 batch, no MANUAL_TEST_CHECKLIST run is recorded against this entry. The dependency change is lockfile-only and the automated suite is unchanged from baseline.
+
+---
+
 ### 2026-08-03 - Marketing Site: Scroll Performance, Text Legibility, Real Hero Screenshot
 
 Seven commits on the marketing site, reconstructed from git history on 2026-08-04. The nightly `docs: nightly roadmap/changelog sync` job runs daily but only ever writes `ROADMAP.md`, so none of this batch reached this file at the time.
