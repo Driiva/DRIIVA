@@ -4,7 +4,7 @@
  * PUBLIC (no auth): POST /api/auth/login, POST /api/auth/register, POST /api/auth/firebase,
  *   WebAuthn endpoints, GET /api/community-pool, GET /api/leaderboard, GET /api/achievements (list).
  *
- * PROTECTED (requireAuth): /api/profile/me, /api/auth/check, POST /api/trips, POST /api/incidents,
+ * PROTECTED (requireAuth): /api/profile/me, /api/auth/check, POST /api/incidents,
  *   POST /api/simulate-refund, POST /api/ask. Routes with :userId also use requireResourceOwner
  *   so User A cannot access User B's data (dashboard, trips, scores, insights, achievements, GDPR).
  *
@@ -13,14 +13,13 @@
  */
 import type { Express } from "express";
 import { storage } from "./storage";
-import { crypto } from "./lib/crypto";
-import { telematicsProcessor, TelematicsData, TripJSON } from "./lib/telematics";
+import { calculateRefundCents } from "../packages/scoring/src/refund";
 import { aiInsightsEngine } from "./lib/aiInsights";
 import { scoreAggregation } from "./lib/scoreAggregation";
-import { insertTripSchema, insertIncidentSchema, type InsertDrivingProfile, type Policy } from "@shared/schema";
+import { insertIncidentSchema, type Policy } from "@shared/schema";
 import { z } from "zod";
 import { webauthnService } from "./webauthn";
-import { authLimiter, tripDataLimiter, webhookLimiter, coachLimiter } from "./middleware/security";
+import { authLimiter, webhookLimiter, coachLimiter } from "./middleware/security";
 import { gdprDeleteLimiter, poolModificationLimiter } from "./middleware/rateLimiter";
 import {
   verifyFirebaseAuth,
@@ -48,10 +47,6 @@ function getCachedLeaderboard(key: string): unknown | null {
 
 function setCachedLeaderboard(key: string, data: unknown): void {
   leaderboardCache.set(key, { data, expiresAt: Date.now() + LEADERBOARD_CACHE_TTL_MS });
-}
-
-function invalidateLeaderboardCache(): void {
-  leaderboardCache.clear();
 }
 
 /**
@@ -305,12 +300,19 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(404).json({ message: "User not found" });
       }
 
-      // Calculate projected refund
+      // Calculate projected refund. Inlined from the retired
+      // server/lib/telematics.ts TelematicsProcessor.calculateRefund wrapper:
+      // fixed default community score of 75, premium amount doubles as both
+      // the contribution and the cap base, same as before.
       const poolSafetyFactor = pool?.safetyFactor || 0.80;
-      const projectedRefund = telematicsProcessor.calculateRefund(
+      const communityScore = 75;
+      const premiumCents = Math.round(Number(user.premiumAmount) * 100);
+      const projectedRefund = calculateRefundCents(
         profile.currentScore || 0,
+        communityScore,
+        premiumCents,
         Number(poolSafetyFactor),
-        Number(user.premiumAmount)
+        premiumCents
       );
       res.json({
         user,
@@ -323,133 +325,6 @@ export async function registerRoutes(app: Express): Promise<void> {
     } catch (error: any) {
       console.error("Dashboard error details:", error);
       res.status(500).json({ message: "Error fetching dashboard data" });
-    }
-  });
-
-  // Submit trip data (protected: auth required; userId taken from token, not body)
-  app.post("/api/trips", requireAuth, tripDataLimiter, async (req: AuthRequest, res) => {
-    try {
-      const authenticatedUserId = req.auth!.userId!;
-      const body = { ...req.body, userId: authenticatedUserId };
-      const tripData = insertTripSchema.parse(body);
-      const telematicsDataOrJSON: TelematicsData | TripJSON = req.body.telematicsData || req.body;
-      const userId = tripData.userId;
-
-      // Get existing trips for duplicate detection (last 24 hours)
-      const checkStart = new Date();
-      checkStart.setHours(checkStart.getHours() - 24);
-      const existingTrips = await storage.getTripsByDateRange(
-        userId,
-        checkStart,
-        new Date(),
-        100
-      );
-
-      // Convert to format needed for duplicate check
-      const existingTripsForCheck = existingTrips.map(t => ({
-        startTime: new Date(t.startTime),
-        endTime: new Date(t.endTime),
-        distance: Number(t.distance)
-      }));
-
-      // Process telematics data with anomaly detection
-      const metrics = await telematicsProcessor.processTrip(
-        telematicsDataOrJSON,
-        userId,
-        existingTripsForCheck
-      );
-
-      // Log anomalies if detected
-      if (metrics.anomalies.hasImpossibleSpeed || metrics.anomalies.hasGPSJumps || metrics.anomalies.isDuplicate) {
-        console.warn(`Trip anomalies detected for user ${userId}:`, {
-          impossibleSpeed: metrics.anomalies.hasImpossibleSpeed,
-          gpsJumps: metrics.anomalies.hasGPSJumps,
-          duplicate: metrics.anomalies.isDuplicate,
-          anomalyScore: metrics.anomalies.anomalyScore
-        });
-      }
-
-      // Reject duplicate trips outright. Persisting a duplicate would double-count
-      // its miles, trip count and score into the running aggregates and the
-      // leaderboard — a fraud and data-integrity gap. This must happen BEFORE any
-      // write so no aggregate is mutated. Impossible-speed / GPS-jump anomalies are
-      // not rejected: they are kept and already soft-penalised in metrics.score by
-      // the processor, so we persist them rather than silently lose the trip.
-      if (metrics.anomalies.isDuplicate) {
-        return res.status(409).json({
-          message: "Duplicate trip rejected",
-          anomalies: metrics.anomalies
-        });
-      }
-
-      // Require a real encryption key — no insecure fallback in production
-      const encryptionKey = process.env.ENCRYPTION_KEY;
-      if (!encryptionKey) {
-        console.error('ENCRYPTION_KEY env var not set; refusing to store telematics data');
-        return res.status(500).json({ message: 'Server configuration error' });
-      }
-
-      // Read the current profile and compute the next aggregate values. The read
-      // stays outside the transaction; the three writes below commit atomically.
-      const profile = await storage.getDrivingProfile(tripData.userId);
-      let newCurrentScore: number | undefined;
-      let profileUpdate: Partial<InsertDrivingProfile> | undefined;
-      if (profile) {
-        const currentScore = profile.currentScore || 0;
-        const totalTrips = profile.totalTrips || 0;
-        newCurrentScore = Math.round((currentScore * totalTrips + metrics.score) / (totalTrips + 1));
-
-        profileUpdate = {
-          currentScore: newCurrentScore,
-          hardBrakingScore: (profile.hardBrakingScore || 0) + metrics.hardBrakingEvents,
-          accelerationScore: (profile.accelerationScore || 0) + metrics.harshAccelerationEvents,
-          speedAdherenceScore: (profile.speedAdherenceScore || 0) + metrics.speedViolations,
-          nightDrivingScore: (profile.nightDrivingScore || 0) + (metrics.nightDriving ? 1 : 0),
-          corneringScore: (profile.corneringScore || 0) + metrics.sharpCorners,
-          totalTrips: totalTrips + 1,
-          totalMiles: (Number(profile.totalMiles) + metrics.distanceKm * 0.621371).toString() // Convert km to miles
-        };
-      }
-
-      // Persist trip + profile + leaderboard atomically (all-or-nothing). A partial
-      // write would corrupt the running aggregates the next trip is computed from.
-      const { trip } = await storage.recordTripAtomic({
-        trip: {
-          ...tripData,
-          score: metrics.score,
-          hardBrakingEvents: metrics.hardBrakingEvents,
-          harshAcceleration: metrics.harshAccelerationEvents,
-          speedViolations: metrics.speedViolations,
-          nightDriving: metrics.nightDriving,
-          sharpCorners: metrics.sharpCorners,
-          distance: metrics.distanceKm.toString(), // Store in km
-          duration: metrics.duration,
-          telematicsData: crypto.encrypt(
-            JSON.stringify(telematicsDataOrJSON),
-            encryptionKey
-          )
-        },
-        profileUpdate,
-        leaderboardScore: profile ? newCurrentScore : undefined
-      });
-
-      // Bust the leaderboard cache only when the leaderboard actually changed.
-      if (profile) {
-        invalidateLeaderboardCache();
-      }
-
-      res.json({
-        trip,
-        metrics: {
-          ...metrics,
-          distance_km: metrics.distanceKm,
-          avg_speed: metrics.avgSpeed,
-          harsh_braking_count: metrics.harshBrakingCount
-        },
-        anomalies: metrics.anomalies
-      });
-    } catch (error: any) {
-      res.status(500).json({ message: "Error processing trip" });
     }
   });
 
@@ -637,7 +512,9 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.post("/api/simulate-refund", requireAuth, async (req, res) => {
     try {
       const { personalScore, poolSafetyFactor, premiumAmount } = req.body;
-      const refund = telematicsProcessor.calculateRefund(personalScore, poolSafetyFactor, premiumAmount);
+      const communityScore = 75;
+      const premiumCents = Math.round(premiumAmount * 100);
+      const refund = calculateRefundCents(personalScore, communityScore, premiumCents, poolSafetyFactor, premiumCents);
       res.json({ refund });
     } catch (error: any) {
       res.status(500).json({ message: "Error simulating refund" });

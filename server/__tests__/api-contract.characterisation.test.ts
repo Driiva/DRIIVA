@@ -6,9 +6,11 @@
  * never "found a bug". Contract source: docs/rebuild/audit-api-contracts.md
  * (API-01..API-36).
  *
- * Real: Express wiring, middleware order, zod schemas, route logic.
+ * Real: Express wiring, middleware order, zod schemas, route logic, refund
+ * calculation (@driiva/scoring's calculateRefundCents - a pure function, not
+ * mocked).
  * Mocked at the module boundary: Firebase Admin, Neon storage, Stripe,
- * telematics processor, WebAuthn service, AI providers.
+ * WebAuthn service, AI providers.
  * Rate limiters are pass-through here; their 429 contract is characterised
  * separately in rate-limit.characterisation.test.ts (own module registry).
  */
@@ -82,13 +84,6 @@ vi.mock("firebase-admin", () => ({
   firestore: { FieldValue: { serverTimestamp: () => "SERVER_TIMESTAMP" } },
 }));
 
-vi.mock("../lib/telematics", () => ({
-  telematicsProcessor: {
-    processTrip: vi.fn(),
-    calculateRefund: vi.fn(() => 42),
-  },
-}));
-
 vi.mock("../lib/aiInsights", () => ({
   aiInsightsEngine: { generateInsights: vi.fn(() => ({ insights: [] })) },
 }));
@@ -156,7 +151,7 @@ vi.mock("../middleware/rateLimiter", async (importOriginal) => {
 import { app, ready } from "../app";
 import { storage } from "../storage";
 import { verifyFirebaseToken, getFirebaseAdmin } from "../lib/firebase-admin";
-import { telematicsProcessor } from "../lib/telematics";
+import { calculateRefundCents } from "../../packages/scoring/src/refund";
 import { scoreAggregation } from "../lib/scoreAggregation";
 import { webauthnService } from "../webauthn";
 
@@ -293,57 +288,6 @@ describe("API-02/03 profile/me", () => {
   });
 });
 
-describe("API-14 POST /api/trips", () => {
-  /**
-   * MAJOR CHARACTERISATION FINDING (pinned, not fixed):
-   * insertTripSchema = createInsertSchema(trips) with NO date coercion, so
-   * startTime/endTime are z.date(). JSON transport can only deliver strings,
-   * so EVERY over-HTTP body fails Zod validation, which the catch-all swallows
-   * into a generic 500. The duplicate-409, ENCRYPTION_KEY-500 and
-   * recordTripAtomic branches below the parse are UNREACHABLE over HTTP JSON —
-   * consistent with Firestore (client tripService) being the live trip
-   * ingestion path and this Neon endpoint being legacy (findings P1-8).
-   */
-  const wellFormedTrip = {
-    startTime: new Date("2026-07-01T10:00:00Z").toISOString(),
-    endTime: new Date("2026-07-01T10:30:00Z").toISOString(),
-    distance: "12.50",
-    duration: 30,
-    score: 88,
-  };
-
-  beforeEach(() => {
-    vi.mocked(storage.getTripsByDateRange).mockResolvedValue([] as never);
-  });
-
-  it("QUIRK: a well-formed JSON trip body still 500s (ISO date strings fail z.date(); Zod error swallowed to generic message)", async () => {
-    const headers = asUser();
-    const res = await request(app).post("/api/trips").set(headers).send(wellFormedTrip);
-    expect(res.status).toBe(500);
-    expect(res.body.message).toBe("Error processing trip");
-    expect(telematicsProcessor.processTrip).not.toHaveBeenCalled();
-    expect(storage.recordTripAtomic).not.toHaveBeenCalled();
-  });
-
-  it("QUIRK: garbage body gets the identical generic 500 — validation failures are indistinguishable from server errors", async () => {
-    const headers = asUser();
-    const res = await request(app).post("/api/trips").set(headers).send({ notATrip: true });
-    expect(res.status).toBe(500);
-    expect(res.body.message).toBe("Error processing trip");
-  });
-
-  it("body userId is overwritten from the verified token before validation (spoofed userId never reaches the parse result)", async () => {
-    const headers = asUser();
-    await request(app)
-      .post("/api/trips")
-      .set(headers)
-      .send({ ...wellFormedTrip, userId: 666 });
-    // Parse fails on dates either way, but nothing downstream ever saw userId 666:
-    expect(telematicsProcessor.processTrip).not.toHaveBeenCalled();
-    expect(storage.recordTripAtomic).not.toHaveBeenCalled();
-  });
-});
-
 describe("API-15 GET /api/trips/:userId", () => {
   it("QUIRK: startDate without endDate is silently ignored — falls through to the pagination path, 200", async () => {
     const headers = asUser();
@@ -420,7 +364,10 @@ describe("API-13 dashboard aggregate", () => {
     vi.mocked(storage.getLeaderboard).mockResolvedValue([] as never);
     const res = await request(app).get("/api/dashboard/7").set(headers);
     expect(res.status).toBe(200);
-    expect(res.body.profile).toHaveProperty("projectedRefund", 42);
+    // Real calculateRefundCents (unmocked): communityScore 75, premium 840.00
+    // -> 84000 cents contribution and cap base, safetyFactor 0.80.
+    const expectedRefund = calculateRefundCents(90, 75, 84000, 0.80, 84000);
+    expect(res.body.profile).toHaveProperty("projectedRefund", expectedRefund);
     expect(res.body).toHaveProperty("communityPool");
     expect(res.body).toHaveProperty("leaderboard");
   });

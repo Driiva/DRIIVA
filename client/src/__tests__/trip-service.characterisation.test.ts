@@ -1,9 +1,10 @@
 /**
  * CHARACTERISATION SUITE — client trip service (rebuild mission, 2026-07).
  *
- * client/src/lib/tripService.ts is the LIVE trip ingestion path (Firestore) —
- * the Neon POST /api/trips endpoint is unreachable over JSON (see findings
- * §0.4). This locks in: the TripPointStreamer batching contract, the
+ * client/src/lib/tripService.ts is the LIVE trip ingestion path (Firestore) -
+ * the Neon POST /api/trips endpoint was unreachable over JSON (see findings
+ * §0.4) and has since been removed outright (dead-code sweep, 2026-08-18).
+ * This locks in: the TripPointStreamer batching contract, the
  * startTrip atomic write shape, endTrip's rule-lock contract (score fields
  * intentionally absent), cancelTrip's Cloud Function delegation, and the
  * client-side default scoring weights.
