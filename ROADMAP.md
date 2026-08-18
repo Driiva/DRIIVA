@@ -111,7 +111,7 @@ Integrated on `premium-lift/main` and merged to `main` on 10 August. Full record
 ## Sprint: "Make It Payable" (Week 5–6)
 
 - [ ] Build Stripe checkout for premium payments
-- [x] Build Stripe webhook handlers (payment success, subscription changes) - *done on `rebuild/m4-payments` (not yet merged to main): idempotent `stripe_events` table, real handlers for `payment_failed`/`subscription.deleted`/`checkout.session.completed`, policy lifecycle state machine with an audit-log trail on every transition, real premium/coverage/expiration bound from the actual Stripe invoice+subscription instead of hardcoded placeholders - `226233c`, `1cb66ef`, `1a0b2a6`, `58668a8`, `cb6bae7`*
+- [x] Build Stripe webhook handlers (payment success, subscription changes) - *done on `rebuild/m4-payments`, merged to main 18 Aug (`702256d`): idempotent `stripe_events` table, real handlers for `payment_failed`/`subscription.deleted`/`checkout.session.completed`, policy lifecycle state machine with an audit-log trail on every transition, real premium/coverage/expiration bound from the actual Stripe invoice+subscription instead of hardcoded placeholders - `226233c`, `1cb66ef`, `1a0b2a6`, `58668a8`, `cb6bae7`*
 - [ ] Wire premium payments to community pool contributions - *emit seam landed (`ba1326d`): `handleStripePaymentSucceeded` now emits a `PoolContributionEvent` carrying the Stripe event id, but M3's pool ledger consumer doesn't exist yet (blocked on D6), so it only logs today*
 - [ ] Test Root Platform quote → accept → policy flow end-to-end - *RootAdapter interface seam landed (`ba1326d`): typed interface + `RootHttpAdapter` wrapping the existing HTTP calls, still unverified pending Root sandbox creds*
 - [ ] Add premium amount display on policy page
@@ -138,7 +138,7 @@ These are known gaps that don't have tickets yet:
 
 - [x] **Weather API** - *done: Open-Meteo archive API (free, no key). `functions/src/utils/weather.ts` fetches WMO weather codes and maps to clear/cloudy/rain/snow/fog/storm. Wired into trip processing triggers. 3s timeout, graceful fallback to null.*
 - [ ] **Root Platform credentials** - scaffolded but not wired. Needs sandbox creds from Root to test quote → bind → policy flow. Once wired, the `/api/insurance` endpoints become live.
-- [ ] **Stripe wiring** - webhook handlers, idempotency, and the policy lifecycle state machine now wired on `rebuild/m4-payments` (not yet merged to main). Pool-contribution emit seam landed but has no consumer yet (blocked on M3/D6).
+- [x] **Stripe wiring** - webhook handlers, idempotency, and the policy lifecycle state machine merged to main 18 Aug (`702256d`). Pool-contribution emit seam landed but has no consumer yet (blocked on M3/D6).
 - [x] **Profile page real data** - *done: profile.tsx reads from useDashboardData hook; edit mode for name/phone/vehicle writes to Firestore via updateDoc; loading skeletons on every section; error state with retry*
 - [x] **Trip route visualisation** - TripRouteMap component + TripDetail page wired.
 - [x] **Phone pickup detection** - *done: see the "Phone pickup detection" ticket above and `docs/rebuild/m2-dec-1-phone-usage.md`.*

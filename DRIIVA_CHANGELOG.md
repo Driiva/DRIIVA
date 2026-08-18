@@ -7,7 +7,7 @@
 
 ### 2026-08-18 - Phone-usage scoring wired end-to-end (M2-DEC-1 Option A)
 
-`feat/phone-usage-detection` (not merged to main). Closes the gap flagged in
+`feat/phone-usage-detection`, merged to main 18 Aug (`f520505`). Closes the gap flagged in
 `docs/rebuild/m2-dec-1-phone-usage.md`: the phone-usage 10% of every driving
 score was permanently, silently hardcoded to a neutral 100 because
 `phonePickupCount` never reached the server. It now does.
@@ -85,7 +85,7 @@ shipped on mobile.
 
 ### 2026-08-18 - Mobile: background trip capture wired (authored, not verified on device)
 
-On `feat/mobile-background-trip-capture` (not yet merged to main). Closes the gap `record.tsx`'s own header comment flagged: foreground GPS capture was real and working, background capture was named as missing.
+On `feat/mobile-background-trip-capture`, merged to main 18 Aug (`8156a5a`). Closes the gap `record.tsx`'s own header comment flagged: foreground GPS capture was real and working, background capture was named as missing.
 
 - **Background task** (`lib/backgroundLocation.ts`, `lib/backgroundLocationBuffer.ts`) - `expo-task-manager` added via `npx expo install` (resolved `~14.0.9` as the SDK 54-compatible version, not hand-pinned). `TaskManager.defineTask` + `Location.startLocationUpdatesAsync` feed the exact same `TripPointWriter` the foreground watch in `record.tsx` already writes to - `setActiveWriter`/`getActiveWriter` register the one writer a trip in progress is using, so this is not a second point buffer next to the one the foreground path already streams to `tripPoints/{tripId}/batches/{n}`. That "second buffer" shape is the one this repo has already been bitten by once (duplicate trip writes), so it was designed out deliberately rather than caught in review.
 - **Additive, not a replacement** - the foreground watch (`Location.watchPositionAsync`) is unchanged and stays the primary path. Background capture starts alongside it when a trip begins and is torn down in the same `teardown()` that already stops the foreground watch, the tick interval and the score listener, so every existing exit path (stop, cancel, unmount, the error branch in `beginTrip`) now also stops the background task. `defineTask` is wrapped in a `try/catch`: a JS bundle pushed via OTA update without a matching native rebuild would otherwise hit a missing native module at import time and take down the whole bundle, not just this feature.

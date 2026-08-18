@@ -97,6 +97,7 @@ Quirk dispositions to decide in-module: dead `onboardingCompleted` field (drop),
 Scope: tripService streaming (keep the June-hardened batch-index contract - pinned tests carry over), scoring via `@driiva/scoring` in ONE idempotent Cloud Function (event-versioned trip doc; kills the double-fire and the four-implementation split), trip history + detail + route map, anomaly handling (persist-flagged vs reject policy made explicit), phone-usage weight either wired or removed-and-renormalised (CONTEXT.md Rule 8 either way).
 **New integration test:** emulator round-trip - endTrip status flip → function scores → profile updated EXACTLY once (regression lock on the double-fire).
 **Status (21 Jul 2026):** `rebuild/m2-trips` merged to main. A whole-branch-review follow-up (T9) closed separately - server-side refund in `server/lib/telematics.ts` repointed from the retired `shared/refundCalculator.ts` shim to the canonical `@driiva/scoring` source; the policy page's displayed refund rate now gates on the same `projectedRefund > 0` condition and unrounded score as the projected-refund figure, fixing a live rate showing next to a "no refund" result at the 69.5-70 score boundary. Display-only, no scoring or refund formula changed.
+**M2-DEC-1 closed (18 Aug 2026):** the phone-usage weight is wired, not removed - `computeTripMetrics` takes a client-reported pickup count (web `visibilitychange` proxy; mobile accelerometer heuristic), sanitised and rate-capped server-side before it can move a score. Merged to main (`f520505`); see `docs/rebuild/m2-dec-1-phone-usage.md`. The mobile heuristic is still unverified on a real device.
 
 ### M3: Dashboard, leaderboard, community pool — **blocked on D6**
 
@@ -107,6 +108,7 @@ Scope: dashboard reads from denormalised user doc (one writer), leaderboard sing
 
 Scope: server-authoritative pricing (client engine becomes display-only estimator labelled as such; D7 postcode model), Stripe checkout/subscription with the existing allow-list contract, **webhook → durable outbox → worker** (kills the swallow-then-200; payment_failed/subscription.deleted get real handlers with policy-state effects), Root adapter behind an interface (sandbox creds + currency resolution are prerequisites — manual-verify items 1-3), policy lifecycle state machine with an audit trail.
 **New integration test:** signed Stripe webhook → outbox row → policy state transition, with a forced Firestore failure proving redelivery works (the exact money-in/no-cover scenario).
+**Status (18 Aug 2026):** `rebuild/m4-payments` merged to main (`702256d`) - idempotent `stripe_events` ledger, real `payment_failed`/`subscription.deleted`/`checkout.session.completed` handlers, policy lifecycle state machine with an audit trail, `RootAdapter` interface seam (unverified pending Root sandbox creds), and the pool-contribution emit seam (M3's consumer is blocked on D6, so it only logs today).
 
 ### M5: Compliance & ops
 
