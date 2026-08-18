@@ -21,13 +21,19 @@
  * so a correction collected after scoring could not undo the score it had
  * already contributed. Asking first means the answer is always honoured.
  *
- * FOREGROUND ONLY. This watches location while the screen is up. Background
- * capture needs expo-task-manager and a background location entitlement, which
- * are not wired, so the copy tells the driver to keep Driiva open rather than
- * implying automatic detection that does not exist.
+ * FOREGROUND WATCH IS PRIMARY. Location.watchPositionAsync above is the
+ * confirmed, on-device path and stays the first line of capture. Since (see
+ * DRIIVA_CHANGELOG.md) a background task via expo-task-manager +
+ * Location.startLocationUpdatesAsync is layered on top of it, additively:
+ * when a trip starts, if "Always" location is already granted it starts
+ * silently; otherwise the driver is shown an explicit card asking before the
+ * OS "Always" prompt ever appears (see the backgroundOffer state below, and
+ * lib/backgroundLocation.ts). Declining leaves capture exactly as before -
+ * foreground only, driver told to keep the app open. Background capture is
+ * NOT VERIFIED ON A PHYSICAL DEVICE; see DRIIVA_CHANGELOG.md.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, AppState } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, AppState, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -38,6 +44,7 @@ import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import { DriivButton } from '@/components/ui/DriivButton';
 import { RefundMoment } from '@/components/RefundMoment';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePermissions } from '@/hooks/usePermissions';
 import { firestore, isExpoGo } from '@/lib/firebase';
 import {
   TripCaptureError,
@@ -47,6 +54,12 @@ import {
   submitTripForScoring,
   type SampledLocation,
 } from '@/lib/trips';
+import {
+  hasBackgroundLocationPermission,
+  setActiveWriter,
+  startBackgroundLocationUpdates,
+  stopBackgroundLocationUpdates,
+} from '@/lib/backgroundLocation';
 
 type Phase = 'idle' | 'starting' | 'recording' | 'confirming' | 'submitting' | 'waiting';
 
@@ -73,12 +86,19 @@ function formatDuration(seconds: number): string {
 
 export default function Record() {
   const { user } = useAuth();
+  const { requestBackgroundLocation, markBackgroundLocationOffered } = usePermissions();
   const [phase, setPhase] = useState<Phase>('idle');
   const [error, setError] = useState<string | null>(null);
   const [elapsed, setElapsed] = useState(0);
   const [pointsCount, setPointsCount] = useState(0);
   const [distanceMeters, setDistanceMeters] = useState(0);
   const [landed, setLanded] = useState<LandedTrip | null>(null);
+  /** Explicit ask card for "Always" location, shown once per trip when undecided. */
+  const [backgroundOffer, setBackgroundOffer] = useState<'hidden' | 'offering' | 'requesting'>(
+    'hidden',
+  );
+  /** Whether the background task is actually running for the trip in progress. */
+  const [backgroundActive, setBackgroundActive] = useState(false);
 
   const tripIdRef = useRef<string | null>(null);
   const writerRef = useRef<TripPointWriter | null>(null);
@@ -91,6 +111,10 @@ export default function Record() {
     score: null,
     premiumCents: null,
   });
+  /** Set from the same user-doc read as baselineRef; true once the driver has
+   * already seen the background-capture ask (accepted or "not now"), so it is
+   * not shown again on every trip. */
+  const backgroundOfferedRef = useRef(false);
 
   const teardown = useCallback(() => {
     watcherRef.current?.remove();
@@ -103,6 +127,15 @@ export default function Record() {
     // on the server), but it must not outlive the screen.
     scoreWatchRef.current?.();
     scoreWatchRef.current = null;
+    // Background capture is additive and follows the same lifecycle as the
+    // foreground watch above: started when a trip begins, stopped here on
+    // every exit path teardown() already covers (stop, cancel, unmount).
+    setActiveWriter(null);
+    stopBackgroundLocationUpdates().catch((err) =>
+      console.error('[record] background stop failed', err),
+    );
+    setBackgroundOffer('hidden');
+    setBackgroundActive(false);
   }, []);
 
   // A recording left running when the screen unmounts would keep a GPS watch,
@@ -160,7 +193,11 @@ export default function Record() {
       try {
         const snap = await firestore().collection('users').doc(user.id).get();
         const data = snap.data() as
-          | { drivingProfile?: { currentScore?: number }; activePolicy?: { premiumCents?: number } }
+          | {
+              drivingProfile?: { currentScore?: number };
+              activePolicy?: { premiumCents?: number };
+              permissions?: { backgroundLocationOfferedAt?: unknown };
+            }
           | undefined;
         baselineRef.current = {
           score: typeof data?.drivingProfile?.currentScore === 'number'
@@ -170,8 +207,10 @@ export default function Record() {
             ? data.activePolicy.premiumCents
             : null,
         };
+        backgroundOfferedRef.current = data?.permissions?.backgroundLocationOfferedAt != null;
       } catch {
         baselineRef.current = { score: null, premiumCents: null };
+        backgroundOfferedRef.current = false;
       }
 
       const tripId = await startTrip(user.id, {
@@ -208,6 +247,23 @@ export default function Record() {
 
       setPhase('recording');
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
+
+      // Background capture is additive: the foreground watch above is
+      // already running and is the trip's primary GPS source. Anything below
+      // failing must not undo it, so it gets its own try/catch rather than
+      // sharing the one around trip start.
+      try {
+        setActiveWriter(writer);
+        const alreadyGranted = await hasBackgroundLocationPermission();
+        if (alreadyGranted) {
+          await startBackgroundLocationUpdates();
+          setBackgroundActive(true);
+        } else if (!backgroundOfferedRef.current) {
+          setBackgroundOffer('offering');
+        }
+      } catch (bgErr) {
+        console.error('[record] background capture setup failed', bgErr);
+      }
     } catch (err) {
       teardown();
       setPhase('idle');
@@ -216,6 +272,37 @@ export default function Record() {
       );
     }
   }, [user?.id, handleSample, teardown]);
+
+  /**
+   * The driver said yes to the explicit background-capture card. Triggers the
+   * OS "Always" prompt; if the OS denies it, the trip carries on exactly as
+   * it would have without this feature - foreground only, nothing lost.
+   */
+  const enableBackgroundCapture = useCallback(async () => {
+    setBackgroundOffer('requesting');
+    try {
+      const granted = await requestBackgroundLocation();
+      if (granted) {
+        await startBackgroundLocationUpdates();
+        setBackgroundActive(true);
+      } else {
+        Alert.alert(
+          'Background recording not enabled',
+          "Driiva will keep recording only while this screen is open. You can turn this on later in Settings.",
+        );
+      }
+    } catch (err) {
+      console.error('[record] background enable failed', err);
+    } finally {
+      setBackgroundOffer('hidden');
+    }
+  }, [requestBackgroundLocation]);
+
+  /** The driver said not now. Foreground-only capture continues unchanged. */
+  const declineBackgroundCapture = useCallback(() => {
+    setBackgroundOffer('hidden');
+    markBackgroundLocationOffered().catch(() => {});
+  }, [markBackgroundLocationOffered]);
 
   const stopRecording = useCallback(async () => {
     teardown();
@@ -390,11 +477,38 @@ export default function Record() {
               <LiveStat label="Points" value={String(pointsCount)} />
             </View>
             {wasBackgrounded && (
-              <Text style={styles.warning}>
-                Driiva was in the background for part of this trip, so some of the
-                route may be missing.
+              <Text style={backgroundActive ? styles.info : styles.warning}>
+                {backgroundActive
+                  ? 'Driiva kept recording in the background.'
+                  : 'Driiva was in the background for part of this trip, so some of the route may be missing.'}
               </Text>
             )}
+          </SurfaceCard>
+        )}
+
+        {phase === 'recording' && backgroundOffer !== 'hidden' && (
+          <SurfaceCard padding="lg" style={styles.liveCard}>
+            <Text style={styles.question}>Keep recording if you switch apps?</Text>
+            <Text style={styles.questionMeta}>
+              Right now Driiva only records this trip while this screen stays
+              open. Turning this on lets your phone keep recording your
+              location in the background for this trip, so a call or a locked
+              screen does not cut it short. You can turn it off again in
+              Settings at any time.
+            </Text>
+            <DriivButton
+              title="Enable background recording"
+              onPress={enableBackgroundCapture}
+              loading={backgroundOffer === 'requesting'}
+              style={{ marginTop: S.md }}
+            />
+            <DriivButton
+              title="Not now"
+              variant="secondary"
+              onPress={declineBackgroundCapture}
+              disabled={backgroundOffer === 'requesting'}
+              style={{ marginTop: S.sm }}
+            />
           </SurfaceCard>
         )}
 
@@ -502,6 +616,7 @@ const styles = StyleSheet.create({
   liveValue: { ...T.stat, color: C.text.hero },
   liveLabel: { ...T.caption, color: C.text.sec, marginTop: 2 },
   warning: { ...T.caption, color: C.warning, marginTop: S.md, lineHeight: 16 },
+  info: { ...T.caption, color: C.success, marginTop: S.md, lineHeight: 16 },
   question: { ...T.h2, color: C.text.pri },
   questionMeta: { ...T.caption, color: C.text.sec, marginTop: S.xs },
   questionFootnote: { ...T.caption, color: C.text.mut, marginTop: S.md, lineHeight: 16 },
