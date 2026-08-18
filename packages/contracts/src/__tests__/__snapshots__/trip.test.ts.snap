@@ -21,5 +21,6 @@ exports[`TripDocumentSchema > pins the current field set (drift guard: fails if 
   "createdBy",
   "pointsCount",
   "segmentation",
+  "clientReportedPhonePickupCount",
 ]
 `;

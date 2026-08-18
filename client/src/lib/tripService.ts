@@ -350,12 +350,26 @@ export async function endTrip(
   // them from the GPS points via finalizeTripFromPoints. Writing them client-side
   // gets the whole batch rejected with permission-denied, leaving the trip stuck
   // in 'recording' and never scored.
+  //
+  // clientReportedPhonePickupCount IS written here (M2-DEC-1 Option A). It is
+  // a separate field from `events`, not locked by firestore.rules the same
+  // way, and carries only the visibilitychange-based pickup count the caller
+  // already tracked locally (see trip-recording.tsx) - not the rest of
+  // `events`, which stays server-only. finalizeTripFromPoints reads it and
+  // sanitises/rate-caps it before it can move the score; a non-finite or
+  // negative value here is normalised to 0 rather than trusted as-is.
+  const rawPickupCount = input.events?.phonePickupCount;
+  const clientReportedPhonePickupCount = Number.isFinite(rawPickupCount)
+    ? Math.max(0, Math.round(rawPickupCount as number))
+    : 0;
+
   batch.update(tripRef, {
     endedAt: now,
     endLocation: input.endLocation,
     distanceMeters: Math.round(input.distanceMeters),
     status: 'processing', // Cloud Function computes score, then sets 'completed'
     pointsCount,
+    clientReportedPhonePickupCount,
   });
 
   // Update trip points metadata

@@ -79,4 +79,21 @@ describe('TripDocumentSchema', () => {
   it('rejects a score outside 0-100', () => {
     expect(() => TripDocumentSchema.parse({ ...validFixture, score: 101 })).toThrow();
   });
+
+  it('parses with clientReportedPhonePickupCount present (M2-DEC-1 Option A)', () => {
+    const withPickups = { ...validFixture, clientReportedPhonePickupCount: 3 };
+    expect(TripDocumentSchema.parse(withPickups)).toEqual(withPickups);
+  });
+
+  it('rejects a negative clientReportedPhonePickupCount', () => {
+    expect(() =>
+      TripDocumentSchema.parse({ ...validFixture, clientReportedPhonePickupCount: -1 })
+    ).toThrow();
+  });
+
+  it('rejects a non-integer clientReportedPhonePickupCount', () => {
+    expect(() =>
+      TripDocumentSchema.parse({ ...validFixture, clientReportedPhonePickupCount: 2.5 })
+    ).toThrow();
+  });
 });

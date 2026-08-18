@@ -155,6 +155,7 @@ const DATA_COLLECTED = [
   { item: 'Accelerometer & gyroscope', detail: 'To detect braking, acceleration, and cornering patterns' },
   { item: 'Speed & heading', detail: 'For safety scoring and route context' },
   { item: 'Trip metadata', detail: 'Start/end time, duration, distance' },
+  { item: 'Tab visibility', detail: 'Whether you switch away from the trip screen while driving, as a phone-pickup proxy' },
 ];
 
 const GDPR_RIGHTS: { title: string; content: React.ReactNode }[] = [

@@ -8,9 +8,24 @@
  * here. See the M0 Task 2 report for characterisation evidence and any
  * bugs spotted but intentionally left unchanged.
  *
+ * ONE deliberate exception to that freeze: phone-usage wiring (M2-DEC-1
+ * Option A, docs/rebuild/m2-dec-1-phone-usage.md). `computeTripMetrics` took
+ * a second, optional `clientReportedPhonePickupCount` parameter so the 10%
+ * phone-usage weight (SCORE_WEIGHTS.phoneUsage below) can score something
+ * other than a permanent, undisclosed 100. See `sanitizePhonePickupCount`
+ * for what "wired" means here: a client-reported number the server
+ * sanity-checks and rate-caps, not an independently verified one - there is
+ * no server-side accelerometer stream to check it against. Everything else
+ * in this file is still the frozen, byte-faithful port.
+ *
  * `TripEvents` / `TripMetrics` mirror `functions/src/types.ts` `TripEvents`
  * / `ComputedTripMetrics` field-for-field. @driiva/contracts does not yet
  * define these shapes, so they are declared locally per the brief.
+ *
+ * THIS FILE IS THE AUTHORED SOURCE. `functions/src/scoring/tripMetrics.ts`
+ * is a build-time copy (see functions/package.json `prebuild`, which `cp`s
+ * this file over it) - edit here, then sync that copy by hand if you are not
+ * running the functions build.
  */
 import type { TripPoint, ScoreBreakdown } from '@driiva/contracts';
 
@@ -88,9 +103,22 @@ const calculateDistance = haversineMeters;
 /**
  * Compute trip metrics from raw GPS points.
  * This is the core algorithm that processes GPS data to derive metrics and
- * scores. Frozen signature (M0 Task 2 brief).
+ * scores. Frozen signature for everything except `clientReportedPhonePickupCount`
+ * (M0 Task 2 brief; M2-DEC-1 Option A added the second parameter - see the
+ * file header).
+ *
+ * `clientReportedPhonePickupCount` is the client's own count of phone
+ * pickups during the trip (web: visibilitychange while recording; mobile: an
+ * on-device accelerometer heuristic - see the call sites in
+ * functions/src/triggers/trips.ts and each client for what "pickup" means on
+ * that platform). It is sanitised via `sanitizePhonePickupCount` before it
+ * can influence `events.phonePickupCount` or the score, because it is client
+ * input the server has no independent way to verify.
  */
-export function computeTripMetrics(points: TripPoint[]): TripMetrics {
+export function computeTripMetrics(
+  points: TripPoint[],
+  clientReportedPhonePickupCount?: number
+): TripMetrics {
   if (points.length < 2) {
     return getDefaultMetrics();
   }
@@ -115,8 +143,16 @@ export function computeTripMetrics(points: TripPoint[]): TripMetrics {
   // 3. Compute speed statistics
   const { avgSpeedMps, maxSpeedMps, speedVariance } = computeSpeedStats(sortedPoints);
 
-  // 4. Detect driving events
+  // 4. Detect driving events from the GPS trace itself (braking, acceleration,
+  // speeding, cornering). Phone pickups cannot be detected from GPS alone, so
+  // detectDrivingEvents still always initialises phonePickupCount to 0 here -
+  // it is overlaid with the sanitised client-reported count immediately
+  // below, once durationSeconds (needed for the rate cap) is known.
   const events = detectDrivingEvents(sortedPoints);
+  events.phonePickupCount = sanitizePhonePickupCount(
+    clientReportedPhonePickupCount,
+    durationSeconds
+  );
 
   // 5. Compute driving score
   const { score, scoreBreakdown } = computeDrivingScore(
@@ -276,6 +312,41 @@ function computePhoneUsageScore(phonePickupCount: number, durationSeconds: numbe
 }
 
 /**
+ * Maximum realistic phone-pickup rate. There is no server-side accelerometer
+ * stream to verify a client-reported pickup count against - unlike every
+ * other event in this file, which is derived entirely from the GPS trace the
+ * server already trusts, phone pickups are (for now) a client-reported
+ * number the server has to take on faith. This cap is the defence against
+ * that: no legitimate use of a phone while driving produces a pickup faster
+ * than roughly once every 10 seconds sustained, so 6/minute is generous
+ * headroom, not a tuned estimate of normal behaviour.
+ */
+const MAX_PICKUPS_PER_MINUTE = 6;
+
+/**
+ * Sanitise a client-reported phone-pickup count before it can reach
+ * `events.phonePickupCount` or the score. Rejects anything that is not a
+ * finite, positive number (guards against NaN/Infinity/negative values
+ * corrupting `computePhoneUsageScore`'s arithmetic - `Math.max(20, NaN)` is
+ * `NaN`, which would otherwise poison the whole composite score, not just
+ * the phone-usage component), floors to a whole pickup, then caps the rate
+ * at MAX_PICKUPS_PER_MINUTE so a malformed or malicious payload cannot
+ * distort a driver's score.
+ */
+function sanitizePhonePickupCount(
+  rawCount: number | undefined,
+  durationSeconds: number
+): number {
+  if (rawCount === undefined || !Number.isFinite(rawCount) || rawCount <= 0) {
+    return 0;
+  }
+  const count = Math.floor(rawCount);
+  const durationMinutes = Math.max(1, durationSeconds) / 60;
+  const cap = Math.max(1, Math.ceil(durationMinutes * MAX_PICKUPS_PER_MINUTE));
+  return Math.min(count, cap);
+}
+
+/**
  * Normalize heading delta to -180 to 180 range
  */
 function normalizeHeadingDelta(delta: number): number {
@@ -292,7 +363,9 @@ function normalizeHeadingDelta(delta: number): number {
  * - Braking Score (25%): Penalizes hard braking events
  * - Acceleration Score (20%): Penalizes aggressive acceleration
  * - Cornering Score (20%): Penalizes sharp turns
- * - Phone Usage Score (10%): Placeholder (no phone detection yet)
+ * - Phone Usage Score (10%): Rate-based on a sanitised, client-reported
+ *   pickup count (M2-DEC-1 Option A) - not GPS-derived like the other four,
+ *   see sanitizePhonePickupCount and computeTripMetrics's header comment
  */
 function computeDrivingScore(
   points: TripPoint[],

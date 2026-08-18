@@ -22,7 +22,7 @@
 - [x] Stripe end-to-end - webhook handlers, idempotency, and policy lifecycle state machine merged to main 18 Aug (`702256d`) - *done, but the pool-contribution seam it emits on is still log-only, see the Stripe wiring note below*
 - [ ] Pool funding pipe - Stripe payment success never credits `contributionCents` (`server/lib/poolContribution.ts` is a documented no-op); the refund/distribution side of the pool is real, the money-in side is not. Blocked on D6 (pool money model).
 - [x] WebAuthn UI - *done: `client/src/components/BiometricAuth.tsx` wired into `signin.tsx`, `settings.tsx` (full passkey list/add/remove), and onboarding's `StepCelebration.tsx`, all against the real `server/webauthn.ts` backend. This ticket and CLAUDE.md/CONTEXT.md's "backend complete, frontend pending" note were stale as of 18 Aug - the frontend has been live for a while, the docs just hadn't caught up.*
-- [ ] Phone pickup detection - scoring weight reserved at 10%, currently hardcoded to 100
+- [x] Phone pickup detection - *done: `feat/phone-usage-detection`, 18 Aug 2026 (M2-DEC-1 Option A). `computeTripMetrics` takes a client-reported pickup count (web: `visibilitychange` proxy; mobile: new `mobile/lib/phonePickup.ts` accelerometer heuristic), sanitised and rate-capped server-side (`sanitizePhonePickupCount`) before it can move a score - see `docs/rebuild/m2-dec-1-phone-usage.md`. Pipeline verified end-to-end (unit tests + a real Firestore-emulator integration test). The mobile accelerometer heuristic itself is UNVERIFIED ON A REAL DEVICE - thresholds are reasoned, not calibrated against real trip data.*
 - [ ] Decide on the `@google-cloud/storage` major bump. The 2026-08-17 sweep (`0386e00`) took 46 vulnerabilities to 16 and cleared all three criticals, but the 16 left all trace to that package through `retry-request` and `teeny-request` and only clear on a major, so they need a deliberate call rather than another routine `npm audit fix`
 
 ## Sprint: "Marketing + SEO" (May-June 2026)
@@ -128,7 +128,7 @@ Integrated on `premium-lift/main` and merged to `main` on 10 August. Full record
 - [x] AI Driving Coach feedback widget - *done: AIFeedbackWidget component with round-robin engagement comments, Perplexity API integration (8s timeout, 1 retry, silent fallback), Firebase ai_feedback_events logging, glassmorphic UI with pulsing AI orb; wired into trip-detail page*
 - [x] Rewards Programme redesign - *done: 5-tier RewardsTimeline component (#Day5 Tesco £5, #Day10 RAC trial, #TeamDriiva Halfords £10, #Month3 500 Nectar pts, #Anniversary Amazon £25); vertical mobile / horizontal desktop; lock/unlock/claimed states; FCA-compliant framing; Web Share API; wired into rewards page*
 - [x] Card/Default unification - *done: GlassCard component now uses dashboard-glass-card spec; unified bg/border/radius/padding/shadow across all card instances*
-- [ ] Phone usage detection for scoring
+- [x] Phone usage detection for scoring - *done: see the "Phone pickup detection" ticket above and `docs/rebuild/m2-dec-1-phone-usage.md`.*
 - [x] Build achievements backend - *done: 8 achievement definitions in functions/src/utils/achievements.ts; checkAndUnlockAchievements called after trip completion; Firestore collections (achievements/{id}, users/{uid}/achievements/{achId}); seedAchievements admin callable; frontend wired to real data*
 - [x] Weather API integration - *done: Open-Meteo archive API in functions/src/utils/weather.ts; maps WMO codes to clear/cloudy/rain/snow/fog/storm; 3s timeout + graceful null fallback; wired into both trip triggers in trips.ts*
 
@@ -141,7 +141,7 @@ These are known gaps that don't have tickets yet:
 - [ ] **Stripe wiring** - webhook handlers, idempotency, and the policy lifecycle state machine now wired on `rebuild/m4-payments` (not yet merged to main). Pool-contribution emit seam landed but has no consumer yet (blocked on M3/D6).
 - [x] **Profile page real data** - *done: profile.tsx reads from useDashboardData hook; edit mode for name/phone/vehicle writes to Firestore via updateDoc; loading skeletons on every section; error state with retry*
 - [x] **Trip route visualisation** - TripRouteMap component + TripDetail page wired.
-- [ ] **Phone pickup detection** - scoring has a 10% weight for phone usage but it's hardcoded to 100 (no penalty). Needs accelerometer pattern recognition to detect phone pickups while driving.
+- [x] **Phone pickup detection** - *done: see the "Phone pickup detection" ticket above and `docs/rebuild/m2-dec-1-phone-usage.md`.*
 - [x] **Push notifications** - FCM wired end-to-end: trip complete, achievement unlock, weekly summary.
 - [x] **Leaderboard rank recalculation** - Firestore scheduled function now filters weekly/monthly by lastTripAt period bounds and uses dense ranking for tied scores. PG table remains stale (not primary).
 - [x] GDPR data export - implemented GET /api/gdpr/export/:userId; returns JSON of all user data

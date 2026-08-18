@@ -222,7 +222,7 @@ Modifications to this shared utility impact all trip evaluations across the ecos
     - **Hard acceleration:** $≥ 3.0$ m/s² (or $> 0.2g$)
     - **Speeding:** Above **31.3 m/s** (~70 mph) or **+5 km/h** over local limit
     - **Sharp turns:** Heading change rate $> 30^\circ$/s or lateral force $> 0.25$
-    - Phone pickups (when wired)
+    - Phone pickups (client-reported, sanitised server-side - see 5.3)
 
 ### 5.3 Driving Score
 
@@ -233,7 +233,7 @@ Modifications to this shared utility impact all trip evaluations across the ecos
   - Braking: **25%**
   - Acceleration: **20%**
   - Cornering: **20%**
-  - Phone usage: **10%** (Currently hardcoded to 100/100 until phone detection is implemented)
+  - Phone usage: **10%** (M2-DEC-1 Option A, 18 Aug 2026: wired end-to-end - web reports a `visibilitychange`-based pickup count, mobile an accelerometer heuristic (`mobile/lib/phonePickup.ts`); the server sanitises/rate-caps the client-reported count before scoring it. No longer a permanent 100. The detection heuristics themselves are documented, deterministic proxies, not verified-accurate gesture recognition - mobile in particular is unverified on a real device. See `docs/rebuild/m2-dec-1-phone-usage.md`.)
 
 - Pipeline:
 

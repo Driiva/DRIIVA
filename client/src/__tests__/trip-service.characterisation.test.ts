@@ -188,7 +188,7 @@ describe("startTrip", () => {
   });
 });
 
-describe("endTrip — the rule-lock contract", () => {
+describe("endTrip - the rule-lock contract", () => {
   it("flips status to 'processing' and NEVER writes score/scoreBreakdown/events (Cloud Function authority; client write would be permission-denied)", async () => {
     await endTrip(
       "trip-9",
@@ -203,6 +203,7 @@ describe("endTrip — the rule-lock contract", () => {
     expect(fsMock.batch.update).toHaveBeenCalledTimes(2);
     const tripUpdate = fsMock.batch.update.mock.calls[0][1] as Record<string, unknown>;
     expect(Object.keys(tripUpdate).sort()).toEqual([
+      "clientReportedPhonePickupCount",
       "distanceMeters",
       "endLocation",
       "endedAt",
@@ -216,10 +217,55 @@ describe("endTrip — the rule-lock contract", () => {
     expect(tripUpdate).not.toHaveProperty("score");
     expect(tripUpdate).not.toHaveProperty("scoreBreakdown");
     expect(tripUpdate).not.toHaveProperty("events");
+    // events was `{} as never` above (no phonePickupCount) - the missing
+    // value is normalised to 0, not passed through as undefined/NaN.
+    expect(tripUpdate.clientReportedPhonePickupCount).toBe(0);
 
     const pointsUpdate = fsMock.batch.update.mock.calls[1][1] as Record<string, unknown>;
     expect(pointsUpdate).toEqual({ totalPoints: 420, compressedSize: 420 * 50 });
     expect(fsMock.batch.commit).toHaveBeenCalledTimes(1);
+  });
+
+  it("carries a real phonePickupCount from `events` through to clientReportedPhonePickupCount (M2-DEC-1 Option A: the submission payload actually carries the count)", async () => {
+    await endTrip(
+      "trip-10",
+      {
+        endLocation: createTripLocation(51.6, -0.1),
+        events: {
+          hardBrakingCount: 0,
+          hardAccelerationCount: 0,
+          speedingSeconds: 0,
+          sharpTurnCount: 0,
+          phonePickupCount: 3,
+        },
+        distanceMeters: 1000,
+      },
+      50
+    );
+
+    const tripUpdate = fsMock.batch.update.mock.calls[0][1] as Record<string, unknown>;
+    expect(tripUpdate.clientReportedPhonePickupCount).toBe(3);
+  });
+
+  it("normalises a negative or non-finite phonePickupCount to 0 rather than writing it as-is", async () => {
+    await endTrip(
+      "trip-11",
+      {
+        endLocation: createTripLocation(51.6, -0.1),
+        events: {
+          hardBrakingCount: 0,
+          hardAccelerationCount: 0,
+          speedingSeconds: 0,
+          sharpTurnCount: 0,
+          phonePickupCount: -5,
+        },
+        distanceMeters: 1000,
+      },
+      50
+    );
+
+    const tripUpdate = fsMock.batch.update.mock.calls[0][1] as Record<string, unknown>;
+    expect(tripUpdate.clientReportedPhonePickupCount).toBe(0);
   });
 });
 

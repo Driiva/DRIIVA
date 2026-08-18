@@ -284,10 +284,25 @@ export async function startTrip(userId: string, start: TripLocationInput): Promi
  *
  * The Cloud Function computes score, breakdown and events from the GPS points.
  * Nothing here writes them, see the note at the top of this file.
+ *
+ * The one exception is `phonePickupCount` (M2-DEC-1 Option A,
+ * docs/rebuild/m2-dec-1-phone-usage.md): an on-device accelerometer heuristic
+ * (lib/phonePickup.ts) counts phone pickups during the trip, and that count
+ * is written here as `clientReportedPhonePickupCount` - a field separate
+ * from `events`, not locked by firestore.rules the same way. It is client
+ * input the server does not independently verify; finalizeTripFromPoints
+ * sanitises and rate-caps it (see sanitizePhonePickupCount in
+ * packages/scoring/src/tripMetrics.ts) before it can move the score.
  */
 export async function submitTripForScoring(
   tripId: string,
-  input: { end: TripLocationInput; distanceMeters: number; pointsCount: number },
+  input: {
+    end: TripLocationInput;
+    distanceMeters: number;
+    pointsCount: number;
+    /** From PhonePickupDetector.stop(). Defaults to 0 if omitted. */
+    phonePickupCount?: number;
+  },
 ): Promise<void> {
   assertNativeFirebase();
 
@@ -301,12 +316,18 @@ export async function submitTripForScoring(
   const db = firestore();
   const batch = db.batch();
 
+  const rawPickupCount = input.phonePickupCount;
+  const clientReportedPhonePickupCount = Number.isFinite(rawPickupCount)
+    ? Math.max(0, Math.round(rawPickupCount as number))
+    : 0;
+
   batch.update(db.collection('trips').doc(tripId), {
     endedAt: firestore.Timestamp.now(),
     endLocation: { lat: input.end.lat, lng: input.end.lng, address: null, placeType: null },
     distanceMeters: Math.round(input.distanceMeters),
     status: 'processing',
     pointsCount: input.pointsCount,
+    clientReportedPhonePickupCount,
   });
   batch.update(db.collection('tripPoints').doc(tripId), {
     totalPoints: input.pointsCount,

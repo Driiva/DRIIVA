@@ -375,17 +375,21 @@ export async function finalizeTripFromPoints(
       functions.logger.warn('DPIA check failed (non-blocking)', { tripId, err }),
     );
     
-    // 2. Compute metrics from points
+    // 2. Compute metrics from points. clientReportedPhonePickupCount is
+    // untrusted client input (M2-DEC-1 Option A) - computeTripMetrics
+    // sanitises and rate-caps it before it can influence the score; it is
+    // passed straight through here, not trusted at this layer.
     const metrics = await Sentry.startSpan(
       { name: 'computeTripMetrics', op: 'trip.compute' },
-      async () => computeTripMetrics(points),
+      async () => computeTripMetrics(points, tripData.clientReportedPhonePickupCount),
     );
-    
+
     functions.logger.info(`Computed metrics for trip ${tripId}:`, {
       distanceMeters: metrics.distanceMeters,
       durationSeconds: metrics.durationSeconds,
       avgSpeedMph: Math.round(metrics.avgSpeedMps * 2.237 * 100) / 100,
       score: metrics.score,
+      phonePickupCount: metrics.events.phonePickupCount,
     });
     
     // 3. Detect anomalies

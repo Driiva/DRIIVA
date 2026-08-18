@@ -11,7 +11,7 @@ import { ScreenHeader } from '@/components/ui/ScreenHeader';
 
 const DATA_COLLECTED = [
   { item: 'GPS location', detail: 'During active trips only, never in the background' },
-  { item: 'Accelerometer & gyroscope', detail: 'To detect braking, acceleration, and cornering' },
+  { item: 'Accelerometer & gyroscope', detail: 'To detect braking, acceleration, cornering, and phone pickups while driving' },
   { item: 'Speed & heading', detail: 'For safety scoring and route context' },
   { item: 'Trip metadata', detail: 'Start/end time, duration, distance' },
 ];
