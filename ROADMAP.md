@@ -142,6 +142,7 @@ These are known gaps that don't have tickets yet:
 - [x] **Profile page real data** - *done: profile.tsx reads from useDashboardData hook; edit mode for name/phone/vehicle writes to Firestore via updateDoc; loading skeletons on every section; error state with retry*
 - [x] **Trip route visualisation** - TripRouteMap component + TripDetail page wired.
 - [x] **Phone pickup detection** - *done: see the "Phone pickup detection" ticket above and `docs/rebuild/m2-dec-1-phone-usage.md`.*
+- [x] **Mobile background trip capture** - *done, merged 18 Aug: `expo-task-manager` + `Location.startLocationUpdatesAsync` feed the same `TripPointWriter` the foreground watch already uses, gated behind an explicit in-app ask for "Always" location before the OS prompt appears. `tsc` clean, `expo config` parses, pure buffering logic unit tested (`tests/unit/mobile-background-location.test.ts`). UNVERIFIED: all real background execution on a physical device - no device or simulator available in the authoring environment. Existing installed binaries need a fresh native (EAS) build before this JS can run at all.*
 - [x] **Push notifications** - FCM wired end-to-end: trip complete, achievement unlock, weekly summary.
 - [x] **Leaderboard rank recalculation** - Firestore scheduled function now filters weekly/monthly by lastTripAt period bounds and uses dense ranking for tied scores. PG table remains stale (not primary).
 - [x] GDPR data export - implemented GET /api/gdpr/export/:userId; returns JSON of all user data

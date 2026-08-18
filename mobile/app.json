@@ -41,6 +41,7 @@
         "ACCESS_BACKGROUND_LOCATION",
         "ACTIVITY_RECOGNITION",
         "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION",
         "RECEIVE_BOOT_COMPLETED"
       ],
       "edgeToEdgeEnabled": true
