@@ -1,6 +1,6 @@
 # Driiva — Claude Code Configuration
 
-> Last updated: 2026-07-21. Canonical Driiva repo: `~/Documents/Driiva` (remote `mrshippers/Driiva`). Renamed from `~/Documents/DriivaMVP` (MVP dropped from the name); the old `~/Documents/Driiva` business-docs folder (deck, financials, legal, investor material) was merged into this same directory and is gitignored (see `.gitignore`), never tracked. `~/DRIIVA` (uppercase) was a stale abandoned copy - already gone. M1 identity cutover is live on prod; M2 (trips & scoring pipeline repoint, double-fire fix, refund display fixes) is merged to main. The old `feat/marketing-site-v1` marketing work has landed and is superseded by `apps/marketing/`.
+> Last updated: 2026-08-18. Canonical Driiva repo: `~/Documents/Driiva` (remote `mrshippers/Driiva`). Renamed from `~/Documents/DriivaMVP` (MVP dropped from the name); the old `~/Documents/Driiva` business-docs folder (deck, financials, legal, investor material) was merged into this same directory and is gitignored (see `.gitignore`), never tracked. `~/DRIIVA` (uppercase) was a stale abandoned copy - already gone. The full rebuild strangler sequence (M0 foundations, M1 identity, M2 trips/scoring, M4 payments/policy lifecycle) is merged to `main`. M3 (pool funding) and M8 (claims) are not started, both blocked on founder decisions (D6, D11 - see `rebuild_plan.md`). The old `feat/marketing-site-v1` marketing work has landed and is superseded by `apps/marketing/`. `com.jamal.driiva-nightly-build` (launchd, off-repo) runs nightly, branch + PR only, never touches `main` directly.
 
 ## Project Context
 
@@ -9,10 +9,10 @@ Driiva Ltd is a telematics insurtech app targeting young UK drivers. Core propos
 **Current priorities:**
 
 - Keith Cheng demo prep
-- WebAuthn UI (backend complete, frontend pending)
+- Core feature completion: pool funding pipe (D6-gated), real phone-usage detection, mobile background trip capture
 - Waitlist growth (1,000 signups = raise accelerant)
 - Pre-beta blocklist follow-through (post commit `96e2762`)
-- Mobile app (Expo SDK 54) is the canonical mobile surface — PWA path superseded
+- Mobile app (Expo SDK 54) is the canonical mobile surface - PWA path superseded
 - Q2–Q3 2026 raise (angels + seed, insurtech OR Muslim/ethical finance)
 
 **The raise story:**
@@ -51,53 +51,11 @@ The `skill-router` skill governs all dispatch in this project. On every task, ch
 | `plan-implementer` | Implementing from a spec or plan |
 | `feature-planning` | Breaking down features into tasks |
 
-### Agent Orchestration (Ruflo)
+### Quality & Review
 | Skill | Trigger |
 |---|---|
-| `sparc-methodology` | Complex reasoning tasks, structured problem solving |
-| `flow-nexus-neural` | Neural agent coordination |
-| `flow-nexus-platform` | Platform-level agent orchestration |
-| `flow-nexus-swarm` | Swarm-mode multi-agent execution |
-| `swarm-advanced` | Advanced parallel agent workflows |
-| `swarm-orchestration` | Coordinating multiple agents on one task |
-| `stream-chain` | Chained agent pipelines |
-| `pair-programming` | Structured pair-programming mode |
-| `verification-quality` | Automated output quality checking |
-
-### Memory & Reasoning (Ruflo)
-| Skill | Trigger |
-|---|---|
-| `v3-memory-unification` | Cross-session memory, persistent context |
-| `reasoningbank-agentdb` | Agent knowledge base, persistent agent memory |
-| `reasoningbank-intelligence` | Intelligence layer for reasoning tasks |
-| `agentdb-advanced` | Advanced agent database operations |
-| `agentdb-learning` | Agent learning patterns |
-| `agentdb-memory-patterns` | Memory pattern management |
-| `agentdb-optimization` | Agent performance optimisation |
-| `agentdb-vector-search` | Vector search across agent knowledge |
-
-### Architecture & Code Quality (Ruflo v3)
-| Skill | Trigger |
-|---|---|
-| `v3-core-implementation` | Core feature implementation, clean architecture |
-| `v3-ddd-architecture` | Domain-driven design — use for Root API integration layer |
-| `v3-cli-modernization` | CLI tooling |
-| `v3-integration-deep` | Deep integration work — Root Platform API, telematics data |
-| `v3-mcp-optimization` | MCP server optimisation |
-| `v3-performance-optimization` | Performance profiling — auth speed, onboarding latency |
-| `v3-security-overhaul` | Security audit — critical for insurtech regulatory compliance |
-| `v3-swarm-coordination` | Swarm coordination at architecture level |
-
-### GitHub & DevOps (Ruflo)
-| Skill | Trigger |
-|---|---|
-| `github-code-review` | PR code review |
-| `github-multi-repo` | Multi-repo operations |
-| `github-project-management` | GitHub Projects, issues, milestones |
-| `github-release-management` | Release tagging, changelogs |
-| `github-workflow-automation` | GitHub Actions, CI/CD automation — fix pipeline failures |
-| `hooks-automation` | Git hooks, pre-commit, pre-push |
-| `monitoring` | Monitoring setup, alerting — critical for demo readiness |
+| `verification-quality` | Before claiming anything done, shipped, fixed, deployed |
+| `code-review` | Reviewing a diff, PR, or branch for correctness/cleanup |
 
 ### GTM & Investor Relations
 | Skill | Trigger |
@@ -119,11 +77,9 @@ The `skill-router` skill governs all dispatch in this project. On every task, ch
 | Skill | Trigger |
 |---|---|
 | `docx` | Word documents, reports, investment memos |
-| `pdf` | PDF creation — pitch deck export, term sheets |
-| `pdf-reading` | Reading / extracting from PDFs |
+| `pdf` | PDF creation and reading - pitch deck export, term sheets |
 | `pptx` | Investor pitch deck |
 | `xlsx` | Financial models, policy projections, cap table |
-| `file-reading` | Any uploaded file not yet in context |
 
 ### Research & Intelligence
 | Skill | Trigger |
@@ -137,11 +93,11 @@ The `skill-router` skill governs all dispatch in this project. On every task, ch
 ### Specialist
 | Skill | Trigger |
 |---|---|
-| `mcp-builder` | Building MCP servers — Root API, telematics data pipeline |
+| `mcp-builder` | Building MCP servers - Root API, telematics data pipeline |
 | `skill-creator` | Creating or editing skills |
 | `prompt-engineer` | System prompt design, AI feature prompting |
 | `schedule` | Demo scheduling, raise timeline planning |
-| `sonnet-opus-prompt` | Model-specific prompting strategies |
+| `claude-api` | Model/pricing/API questions - Claude/Anthropic named or LLM-shaped task |
 
 ---
 
@@ -155,7 +111,7 @@ The `skill-router` skill governs all dispatch in this project. On every task, ch
 - **Payments:** Stripe
 - **Insurance Platform:** Root Insurance Platform API
 - **Deploy:** Vercel + Cloudflare
-- **Auth Enhancement:** WebAuthn / Passkeys (backend done, UI pending)
+- **Auth Enhancement:** WebAuthn / Passkeys (fully wired, both backend and frontend - see Known Blockers, item 3 was stale)
 - **Marketing site:** `apps/marketing/` — the live driiva.co.uk SPA (Vite + React 18 + wouter + animejs + Lenis), with its own serverless waitlist API (Firebase Admin + Resend), legal routes, and hyperframe video sections. Legacy `marketing-site/index.html` + Framer are superseded.
 - **CI Sentinel:** `claude-sentinel/` agent-driven QA harness
 - **Build:** Tailwind **v4** for the root product (CSS-first config, migrated `e90290d`); the `apps/marketing/` SPA uses **Tailwind v3.4** (`tailwind.config.js`). rolldown for bundling.
@@ -276,13 +232,15 @@ wt rm my-task --branch     # tear down when merged
 
 ## Known Blockers
 
-1. **Firebase auth latency** — fast-path + timeout messaging + Firestore dedup landed (commits `21f3d3d`, `ae0cc22`, `a4c464b`). Original "~27s signup" was Doppler pollution causing Firebase Installations 400s on every init. Re-measure before treating as a blocker.
-2. **CI pipeline failures** — Firebase org policy blocking SA key creation.
-3. **WebAuthn UI** — backend complete, frontend pending.
-4. **Waitlist** — exists but not actively driven to 1,000 target.
-5. **Marketing site** — the live driiva.co.uk is now the `apps/marketing/` Vite SPA (Vercel), which **supersedes** the old Framer + `marketing-site/index.html` split-brain. Edit `apps/marketing/`; treat `marketing-site/` and Framer as legacy.
-6. **Public GitHub repo** — `github.com/mrshippers/Driiva` is public. Reconcile against the "Private repos" rule below: either flip to private, or confirm no secrets have ever been committed + scrub history. Doppler now ensures future secrets don't land in git, but historical commits may need audit.
-7. **Working branch** - current work is on the `rebuild/m1-identity` branch (rebuild/characterisation track). M1 identity cutover is live on prod (5 Jul 2026) with `main` untouched; Phase 2 (M2+) is gated on Jamal sign-off. The earlier `feat/marketing-site-v1` work has landed (marketing now lives in `apps/marketing/`).
+1. **Firebase auth latency** - fast-path + timeout messaging + Firestore dedup landed (commits `21f3d3d`, `ae0cc22`, `a4c464b`). Original "~27s signup" was Doppler pollution causing Firebase Installations 400s on every init. Re-measure before treating as a blocker.
+2. **CI pipeline failures** - Firebase org policy blocking SA key creation.
+3. ~~WebAuthn UI - backend complete, frontend pending~~ **RESOLVED.** Frontend is fully wired (`BiometricAuth.tsx` in `signin.tsx`, `settings.tsx`, onboarding's `StepCelebration.tsx`) against the real `server/webauthn.ts` backend. This note was stale for a while before being caught 18 Aug.
+4. **Waitlist** - exists but not actively driven to 1,000 target.
+5. **Marketing site** - the live driiva.co.uk is now the `apps/marketing/` Vite SPA (Vercel), which **supersedes** the old Framer + `marketing-site/index.html` split-brain. Edit `apps/marketing/`; treat `marketing-site/` and Framer as legacy.
+6. **Public GitHub repo** - `github.com/mrshippers/Driiva` is public. Reconcile against the "Private repos" rule below: either flip to private, or confirm no secrets have ever been committed + scrub history. Doppler now ensures future secrets don't land in git, but historical commits may need audit.
+7. **Pool has no funding pipe** - the refund/distribution side of the community pool is real and running (`functions/src/scheduled/pool.ts`); the money-in side is a documented no-op (`server/lib/poolContribution.ts` logs on Stripe payment success, never credits `contributionCents`). Blocked on D6 (pool money model) - needs Jamal's call, not more code.
+8. **No sandbox creds anywhere for Root or Damoov** - checked all three Doppler `driiva` configs (dev/stg/prd) directly, 18 Aug: `ROOT_API_KEY`/`ROOT_API_URL`/`ROOT_ENVIRONMENT`/`ROOT_PRODUCT_MODULE_KEY` and `DAMOOV_INSTANCE_ID`/`DAMOOV_INSTANCE_KEY` are absent everywhere, not even placeholders. Both integrations are fully coded but cannot execute for a single real user in any environment until credentials exist.
+9. **Working branch** - current work happens on short-lived feature branches off `main`, PR'd and reviewed before merge (see the nightly build loop above). `main` is the live baseline; nothing sits stacked on old `rebuild/*` branches anymore, those are all merged.
 
 ---
 

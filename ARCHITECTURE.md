@@ -1,6 +1,6 @@
 # Driiva Architecture
 
-**Last updated:** 13 March 2025
+**Last updated:** 18 August 2026 (partial refresh - Root/Stripe status corrected; see docs/planning-core-features-gap/findings.md for the full current-state audit this refresh was based on)
 
 This document provides a technical specification of the Driiva platform. It serves as the primary technical reference for developers and auditors.
 
@@ -51,8 +51,8 @@ High‑level flow:
 | Database                 | Cloud Firestore (NoSQL, real-time)                                              |
 | Backend                  | Firebase Cloud Functions (Node.js 20) + Node server where needed                |
 | AI                       | Anthropic Claude Sonnet 4 (trip analysis); feature-flagged                      |
-| Insurance API            | Root Platform (scaffolded; needs credentials)                                   |
-| Payments                 | Stripe (deps installed, not wired)                                              |
+| Insurance API            | Root Platform (scaffolded; needs credentials - checked all 3 Doppler configs 18 Aug, none exist)   |
+| Payments                 | Stripe (webhooks, idempotency, and policy lifecycle wired and merged to main 18 Aug; pool-contribution seam it emits on is still log-only) |
 | Trip metrics (canonical) | `shared/tripProcessor.ts` — distance (m), duration (s)                          |
 | Trip classifier          | Python Stop-Go-Classifier (functions-python); HTTP from TypeScript functions    |
 
@@ -425,8 +425,8 @@ Keep this table honest. Investors and auditors screenshot this.
 | Classifier              | Production MVP                 | Python Stop‑Go; called via HTTP                          |
 | Scoring (0–100)         | Production MVP                 | Deterministic rules from GPS + events                    |
 | Refund pool             | Production MVP                 | Server logic running; cents‑only                         |
-| Root integration        | Scaffold / Not live            | Needs real creds + full wiring                           |
-| Stripe                  | Scaffold / Not live            | Deps installed; flows TBD                                |
+| Root integration        | Scaffold / Not live            | Needs real creds (none exist in Doppler as of 18 Aug) + full wiring |
+| Stripe                  | Wired, merged to main 18 Aug   | Webhooks + policy lifecycle real; pool-contribution seam still log-only, blocked on D6 |
 | Sonnet AI in app        | Feature‑flag / Experimental    | Not on critical path                                     |
 | Compliance (ICO/GDPR)   | Live processes                 | FCA sandbox work ongoing                                 |
 

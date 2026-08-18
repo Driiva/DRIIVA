@@ -1,6 +1,15 @@
 # DRIIVA Technical Roadmap
 ### MVP Beta -- February 2026
 
+> **SUPERSEDED, kept for history only.** This snapshot is from February 2026
+> and has not been updated since 29 June 2026 - most of its "not done" gaps
+> (password reset, Sentry, CI/CD, Stripe endpoints, achievements backend,
+> WebAuthn frontend) are now shipped, and mobile has since moved from Expo
+> SDK 52 to 54. Do not treat anything below as current status. The live,
+> actively-maintained ticket list is `ROADMAP.md` at the repo root; the
+> current full gap audit against the codebase is
+> `docs/planning-core-features-gap/findings.md` (18 Aug 2026).
+
 ---
 
 ## Executive Summary

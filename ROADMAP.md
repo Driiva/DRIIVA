@@ -1,6 +1,6 @@
 # Driiva - Current sprint (tickets)
 
-**Last updated:** 11 August 2026
+**Last updated:** 18 August 2026
 **Product Lead:** Keith Cheng (onboarded 27 June 2026)
 **External memory for AI sessions:** Work on the next unchecked ticket only; update this list when done.
 
@@ -19,8 +19,9 @@
 - [x] Remove dead duplicate-trap components; correct package name - *done: `f748d7c`*
 - [x] Repaint onboarding to Driiva instrument palette; eliminate re-centre jump - *done: `8fe9e29`*
 - [ ] Root Platform credentials - sandbox key needed from Root to activate insurance quote/bind/policy endpoints
-- [ ] Stripe end-to-end - webhook handlers, idempotency, and policy lifecycle state machine now wired on `rebuild/m4-payments` (not yet merged to main); still blocked on Root sandbox creds for the quote/bind step
-- [ ] WebAuthn UI - backend scaffolded, frontend not built
+- [x] Stripe end-to-end - webhook handlers, idempotency, and policy lifecycle state machine merged to main 18 Aug (`702256d`) - *done, but the pool-contribution seam it emits on is still log-only, see the Stripe wiring note below*
+- [ ] Pool funding pipe - Stripe payment success never credits `contributionCents` (`server/lib/poolContribution.ts` is a documented no-op); the refund/distribution side of the pool is real, the money-in side is not. Blocked on D6 (pool money model).
+- [x] WebAuthn UI - *done: `client/src/components/BiometricAuth.tsx` wired into `signin.tsx`, `settings.tsx` (full passkey list/add/remove), and onboarding's `StepCelebration.tsx`, all against the real `server/webauthn.ts` backend. This ticket and CLAUDE.md/CONTEXT.md's "backend complete, frontend pending" note were stale as of 18 Aug - the frontend has been live for a while, the docs just hadn't caught up.*
 - [ ] Phone pickup detection - scoring weight reserved at 10%, currently hardcoded to 100
 - [ ] Decide on the `@google-cloud/storage` major bump. The 2026-08-17 sweep (`0386e00`) took 46 vulnerabilities to 16 and cleared all three criticals, but the 16 left all trace to that package through `retry-request` and `teeny-request` and only clear on a major, so they need a deliberate call rather than another routine `npm audit fix`
 
@@ -146,7 +147,7 @@ These are known gaps that don't have tickets yet:
 - [x] GDPR data export - implemented GET /api/gdpr/export/:userId; returns JSON of all user data
 - [x] GDPR data delete - implemented DELETE /api/gdpr/delete/:userId; strictly rate-limited
 - [x] **Achievements backend** - 8 definitions, unlock logic in Cloud Functions, frontend wired to real Firestore data.
-- [ ] **WebAuthn/Passkey login** - `server/webauthn.ts` is scaffolded but not exposed as a real login flow in the frontend.
+- [x] **WebAuthn/Passkey login** - *done, see the ticket above. This line was stale.*
 - [ ] **Staging environment** - `driiva-staging` project provisioned; manual steps remain (Blaze plan, deploy functions, Vercel staging). Recommended before any production payments go live.
 - [ ] **Marketing site sync** - live site runs on Framer (no automation API); local `marketing-site/index.html` is the canonical source for editorial hero + waitlist copy. Decide path: (a) manually paste CSS changes into Framer code overrides, (b) migrate the live site off Framer to Vercel (the `marketing-site/` build is deployable as-is), or (c) keep Framer for visual, and serve `/early-access` from the Next app. Current blocker: Framer has no write MCP/API available in this session.
 - [x] **Design system canonicalized** - `design-system/` at repo root now holds `colors_and_type.css` (ink ladder, brand gradient, glass, radii, shadows, motion, type stack), `README.md` (voice/tone/visual rules), `source/` (Figma rules + Instrument philosophy), `assets/` (14 brand PNGs). Marketing site + client DriivaLogo component switched to canonical v3 white wordmark. Mobile app theme already aligned to canonical "instrument" mode. Follow-up: rename client Vite CSS variables to match canonical token names.
