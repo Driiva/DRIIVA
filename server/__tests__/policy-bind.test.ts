@@ -88,9 +88,6 @@ vi.mock("firebase-admin", () => ({
   firestore: { FieldValue: { serverTimestamp: () => "SERVER_TIMESTAMP" } },
 }));
 
-vi.mock("../lib/telematics", () => ({
-  telematicsProcessor: { processTrip: vi.fn(), calculateRefund: vi.fn(() => 42) },
-}));
 vi.mock("../lib/aiInsights", () => ({
   aiInsightsEngine: { generateInsights: vi.fn(() => ({ insights: [] })) },
 }));

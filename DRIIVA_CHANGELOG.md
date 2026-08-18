@@ -5,6 +5,17 @@
 
 ## Entries
 
+### 2026-08-18 - Removed dead Neon scoring path (POST /api/trips, TelematicsProcessor)
+
+- **Dead-code removal** (`chore/remove-dead-scoring-path`) - deleted the confirmed-orphaned Neon/Postgres scoring path: the `POST /api/trips` route in `server/routes.ts`, `server/lib/telematics.ts` (`TelematicsProcessor`/`WorkerBackedProcessor`), `server/lib/telematics-worker.ts` (its only importer), and the standalone dev script `server/test-ai-models.ts`. No live client calls this route - Firestore's `client/src/lib/tripService.ts` is the real trip-ingestion path, per an existing characterisation-test finding. Re-verified with a fresh repo-wide grep before deleting anything.
+- **Found during the sweep, not in the original brief** - `server/lib/aiRiskScoring.ts` (`AIRiskScoringEngine`) turned out to be orphaned too, its only caller anywhere in the repo being the dev script above. Removed alongside it, same commit.
+- **Not dead: refund calculation** - `TelematicsProcessor.calculateRefund` was still live, used by `GET /api/dashboard/:userId` and `POST /api/simulate-refund`. Both call sites now call `calculateRefundCents` (`packages/scoring/src/refund.ts`, the canonical `@driiva/scoring` package) directly rather than through the retired wrapper class - same formula, same inputs, no behaviour change.
+- **server/app.ts** - removed the now-orphaned `/api/trips` body-parser registration (`express.json({ limit: '5mb' })`).
+- **Tests** - removed the dead-path assertions from `server/__tests__/api-contract.characterisation.test.ts` (the API-14 POST /api/trips block) and updated its dashboard test to assert the real computed refund instead of a mocked constant. Removed the now-pointless `../lib/telematics` mocks from four other characterisation suites (`rate-limit`, `stripe-webhook-idempotency`, `pool-contribution`, `policy-bind`) since the module no longer exists. `client/src/lib/telematics.ts` (the unrelated client-side `TelematicsCollector`, DeviceMotion capture) was untouched throughout.
+- **Gates:** tsc clean, 69 test files / 716 tests passing, 1 skipped, 2 todo.
+
+**Caveat:** no MANUAL_TEST_CHECKLIST run recorded. Pure removal plus an arithmetic-equivalent refactor (the two live call sites pass the exact same five arguments to `calculateRefundCents` that the retired wrapper did); the automated suite is the coverage.
+
 ### 2026-08-17 - Dependency security sweep on main
 
 - **Vulnerability sweep** (`fix(deps)`, `0386e00`) - `npm audit fix` with non-breaking fixes only, no `--force`. 46 vulnerabilities down to 16. Clears all three criticals: protobufjs arbitrary code execution, node-tar PAX path confusion, and websocket-driver resource limit bypass, plus 16 of the 17 highs.

@@ -25,9 +25,6 @@ vi.mock("../lib/firebase-admin", () => ({
   verifyFirebaseToken: vi.fn(async () => null),
   getFirebaseAdmin: vi.fn(() => null),
 }));
-vi.mock("../lib/telematics", () => ({
-  telematicsProcessor: { processTrip: vi.fn(), calculateRefund: vi.fn() },
-}));
 vi.mock("../lib/aiInsights", () => ({
   aiInsightsEngine: { generateInsights: vi.fn() },
 }));
