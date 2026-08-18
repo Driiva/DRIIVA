@@ -8,6 +8,27 @@
       "when": 1776084381489,
       "tag": "0000_ambiguous_speed",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1785222418756,
+      "tag": "0001_flashy_virginia_dare",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1785222935863,
+      "tag": "0002_kind_thanos",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1785283200000,
+      "tag": "0003_policies_stripe_subscription_id_unique",
+      "breakpoints": true
     }
   ]
 }

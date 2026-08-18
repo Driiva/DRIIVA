@@ -103,12 +103,52 @@ export const policies = pgTable("policies", {
   effectiveDate: timestamp("effective_date").notNull(),
   expirationDate: timestamp("expiration_date").notNull(),
   renewalDate: timestamp("renewal_date"),
-  stripeSubscriptionId: text("stripe_subscription_id"),
+  // Unique (I3b, M4 review fix): without this, two concurrent first-payment
+  // webhook deliveries for the same subscription could each observe "no
+  // existing policy" and both insert - two active policy rows for one
+  // subscription, with getPolicyByStripeSubscriptionId picking one at random
+  // thereafter. Nullable columns allow multiple NULLs under a UNIQUE
+  // constraint in Postgres, so policies not yet bound to a subscription are
+  // unaffected. See migrations/0003_policies_stripe_subscription_id_unique.sql
+  // and handleStripePaymentSucceeded's 23505 handling in server/routes.ts.
+  stripeSubscriptionId: text("stripe_subscription_id").unique(),
   billingCycle: text("billing_cycle").default("annual"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   createdBy: text("created_by"),
   updatedBy: text("updated_by"),
+});
+
+/**
+ * Idempotency + audit record for inbound Stripe webhook events.
+ * `id` is Stripe's own `event.id` (primary key doubles as the UNIQUE constraint) so a
+ * redelivered event can be looked up directly - no separate surrogate key needed.
+ * status: received (row written before processing) → processed (side effects done) /
+ * failed (handler threw; Stripe will redeliver and the retry is reprocessed, not skipped).
+ */
+export const stripeEvents = pgTable("stripe_events", {
+  id: text("id").primaryKey(),
+  type: text("type").notNull(),
+  status: text("status").notNull().default("received"),
+  payload: json("payload").notNull(),
+  processedAt: timestamp("processed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+/**
+ * Policy lifecycle audit trail (M4 Task 3).
+ * Every state-machine transition (server/lib/policyLifecycle.ts) writes exactly
+ * one row here, recording who/what caused it - a Stripe event id
+ * ("stripe:evt_...") or an admin action identifier ("admin:<uid>"). fromStatus
+ * is null for the initial "create" transition (no prior state).
+ */
+export const policyAuditLog = pgTable("policy_audit_log", {
+  id: serial("id").primaryKey(),
+  policyId: integer("policy_id").references(() => policies.id, { onDelete: "cascade" }).notNull(),
+  fromStatus: text("from_status"),
+  toStatus: text("to_status").notNull(),
+  causedBy: text("caused_by").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const achievements = pgTable("achievements", {
@@ -192,6 +232,10 @@ export const tripsSummaryRelations = relations(tripsSummary, ({ one }) => ({
 
 export const policiesRelations = relations(policies, ({ one }) => ({
   user: one(users, { fields: [policies.userId], references: [users.id] }),
+}));
+
+export const policyAuditLogRelations = relations(policyAuditLog, ({ one }) => ({
+  policy: one(policies, { fields: [policyAuditLog.policyId], references: [policies.id] }),
 }));
 
 export const drivingProfilesRelations = relations(drivingProfiles, ({ one }) => ({
@@ -292,6 +336,15 @@ export const insertWebauthnCredentialSchema = createInsertSchema(webauthnCredent
   lastUsed: true,
 });
 
+export const insertStripeEventSchema = createInsertSchema(stripeEvents).omit({
+  createdAt: true,
+});
+
+export const insertPolicyAuditLogSchema = createInsertSchema(policyAuditLog).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -299,6 +352,8 @@ export type TripSummary = typeof tripsSummary.$inferSelect;
 export type InsertTripSummary = z.infer<typeof insertTripsSummarySchema>;
 export type Policy = typeof policies.$inferSelect;
 export type InsertPolicy = z.infer<typeof insertPolicySchema>;
+export type PolicyAuditLog = typeof policyAuditLog.$inferSelect;
+export type InsertPolicyAuditLog = z.infer<typeof insertPolicyAuditLogSchema>;
 export type DrivingProfile = typeof drivingProfiles.$inferSelect;
 export type InsertDrivingProfile = z.infer<typeof insertDrivingProfileSchema>;
 export type Trip = typeof trips.$inferSelect;
@@ -313,3 +368,5 @@ export type InsertIncident = z.infer<typeof insertIncidentSchema>;
 export type Leaderboard = typeof leaderboard.$inferSelect;
 export type WebauthnCredential = typeof webauthnCredentials.$inferSelect;
 export type InsertWebauthnCredential = z.infer<typeof insertWebauthnCredentialSchema>;
+export type StripeEvent = typeof stripeEvents.$inferSelect;
+export type InsertStripeEvent = z.infer<typeof insertStripeEventSchema>;

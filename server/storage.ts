@@ -1,4 +1,4 @@
-import { 
+import {
   users,
   drivingProfiles,
   trips,
@@ -7,6 +7,9 @@ import {
   userAchievements,
   incidents,
   leaderboard,
+  policies,
+  policyAuditLog,
+  stripeEvents,
   type User,
   type InsertUser,
   type DrivingProfile,
@@ -20,7 +23,11 @@ import {
   type InsertUserAchievement,
   type Incident,
   type InsertIncident,
-  type Leaderboard
+  type Leaderboard,
+  type Policy,
+  type InsertPolicy,
+  type PolicyAuditLog,
+  type StripeEvent,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, and, gte, lte, sql } from "drizzle-orm";
@@ -80,6 +87,46 @@ export interface IStorage {
   // Stripe operations
   updateStripeCustomerId(userId: number, stripeCustomerId: string): Promise<void>;
   getUserByStripeCustomerId(stripeCustomerId: string): Promise<User | undefined>;
+
+  // Stripe webhook idempotency + audit
+  getStripeEventById(eventId: string): Promise<StripeEvent | undefined>;
+  // Atomic dedupe primitive (M4 review fix I3a): the write itself - not a
+  // preceding read - is what makes this safe under concurrent delivery of the
+  // same event.id. Always returns the authoritative row (freshly inserted, or
+  // the pre-existing row on conflict) in one round trip; never throws a raw
+  // unique-violation for a duplicate id.
+  createStripeEvent(event: { id: string; type: string; payload: unknown }): Promise<StripeEvent>;
+  markStripeEventProcessed(eventId: string): Promise<void>;
+  markStripeEventFailed(eventId: string): Promise<void>;
+
+  // Policy operations
+  getPolicy(id: number): Promise<Policy | undefined>;
+  getPolicyByStripeSubscriptionId(subscriptionId: string): Promise<Policy | undefined>;
+  createPolicy(policy: InsertPolicy): Promise<Policy>;
+  updatePolicy(id: number, updates: Partial<InsertPolicy>): Promise<Policy | undefined>;
+  updatePolicyIfStatus(id: number, fromStatus: string, updates: Partial<InsertPolicy>): Promise<Policy | undefined>;
+
+  // Policy lifecycle audit trail (M4 Task 3)
+  createPolicyAuditLog(entry: {
+    policyId: number;
+    fromStatus: string | null;
+    toStatus: string;
+    causedBy: string;
+  }): Promise<PolicyAuditLog>;
+  getPolicyAuditLog(policyId: number): Promise<PolicyAuditLog[]>;
+
+  // Atomic CAS status write + audit insert (M4 review fix I4): replaces the
+  // old updatePolicyIfStatus-then-createPolicyAuditLog two-step so a failure
+  // writing the audit row rolls the status write back too, instead of
+  // silently leaving an un-audited status change. Returns undefined if the
+  // CAS guard didn't match (same "rejected transition" contract as
+  // updatePolicyIfStatus) - no audit row is written in that case.
+  transitionPolicyWithAudit(params: {
+    id: number;
+    fromStatus: string;
+    toStatus: string;
+    causedBy: string;
+  }): Promise<{ policy: Policy; audit: PolicyAuditLog } | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -386,6 +433,144 @@ export class DatabaseStorage implements IStorage {
   async getUserByStripeCustomerId(stripeCustomerId: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.stripeCustomerId, stripeCustomerId));
     return user || undefined;
+  }
+
+  // --- Stripe webhook idempotency + audit -----------------------------------
+
+  async getStripeEventById(eventId: string): Promise<StripeEvent | undefined> {
+    const [event] = await db.select().from(stripeEvents).where(eq(stripeEvents.id, eventId));
+    return event || undefined;
+  }
+
+  // I3a fix: INSERT ... ON CONFLICT DO UPDATE ... RETURNING is a single atomic
+  // statement, so two concurrent deliveries of the same event.id can no
+  // longer both observe "no existing row" and both proceed as if they were
+  // first (the old read-then-insert - getStripeEventById then a conditional
+  // createStripeEvent - had exactly that TOCTOU gap). The `set` clause
+  // rewrites `type` to its own value - a genuine no-op for a real duplicate
+  // (type never changes for a given event.id) - purely so RETURNING gives
+  // back the authoritative existing row on conflict instead of nothing,
+  // letting the caller inspect its real status in the same round trip.
+  async createStripeEvent(event: { id: string; type: string; payload: unknown }): Promise<StripeEvent> {
+    const [row] = await db.insert(stripeEvents)
+      .values({
+        id: event.id,
+        type: event.type,
+        status: "received",
+        payload: event.payload as any,
+      })
+      .onConflictDoUpdate({
+        target: stripeEvents.id,
+        set: { type: event.type },
+      })
+      .returning();
+    return row;
+  }
+
+  async markStripeEventProcessed(eventId: string): Promise<void> {
+    await db.update(stripeEvents)
+      .set({ status: "processed", processedAt: new Date() })
+      .where(eq(stripeEvents.id, eventId));
+  }
+
+  async markStripeEventFailed(eventId: string): Promise<void> {
+    await db.update(stripeEvents)
+      .set({ status: "failed" })
+      .where(eq(stripeEvents.id, eventId));
+  }
+
+  // --- Policy operations ------------------------------------------------------
+
+  async getPolicy(id: number): Promise<Policy | undefined> {
+    const [policy] = await db.select().from(policies).where(eq(policies.id, id));
+    return policy || undefined;
+  }
+
+  async getPolicyByStripeSubscriptionId(subscriptionId: string): Promise<Policy | undefined> {
+    const [policy] = await db.select().from(policies).where(eq(policies.stripeSubscriptionId, subscriptionId));
+    return policy || undefined;
+  }
+
+  async createPolicy(policy: InsertPolicy): Promise<Policy> {
+    const [row] = await db.insert(policies).values(policy).returning();
+    return row;
+  }
+
+  async updatePolicy(id: number, updates: Partial<InsertPolicy>): Promise<Policy | undefined> {
+    const [policy] = await db.update(policies)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(policies.id, id))
+      .returning();
+    return policy || undefined;
+  }
+
+  // Optimistic-concurrency write: only applies `updates` if the row's current
+  // status still matches `fromStatus` at write time. Returns undefined (zero
+  // rows affected) if another writer already moved the policy off `fromStatus`
+  // - callers (transitionPolicy) must treat that as a rejected transition, not
+  // retry or fall back to an unconditional write.
+  async updatePolicyIfStatus(id: number, fromStatus: string, updates: Partial<InsertPolicy>): Promise<Policy | undefined> {
+    const [policy] = await db.update(policies)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(and(eq(policies.id, id), eq(policies.status, fromStatus)))
+      .returning();
+    return policy || undefined;
+  }
+
+  // --- Policy lifecycle audit trail (M4 Task 3) -------------------------------
+
+  async createPolicyAuditLog(entry: {
+    policyId: number;
+    fromStatus: string | null;
+    toStatus: string;
+    causedBy: string;
+  }): Promise<PolicyAuditLog> {
+    const [row] = await db.insert(policyAuditLog).values(entry).returning();
+    return row;
+  }
+
+  async getPolicyAuditLog(policyId: number): Promise<PolicyAuditLog[]> {
+    return db.select().from(policyAuditLog)
+      .where(eq(policyAuditLog.policyId, policyId))
+      .orderBy(asc(policyAuditLog.createdAt));
+  }
+
+  // I4 fix: the CAS status update and the audit insert used to be two
+  // independent calls from policyLifecycle.ts's transitionPolicy
+  // (updatePolicyIfStatus, then createPolicyAuditLog). If the audit insert
+  // threw after the status write had already committed, the status change
+  // was permanently un-audited with no rollback - and every call site's
+  // InvalidPolicyTransitionError handling treats a retry as a benign
+  // already-in-target-state no-op, so the gap would never resurface or get
+  // retried. Wrapping both writes in one db.transaction (same pattern as
+  // recordTripAtomic above) means an audit-insert failure rolls the status
+  // write back too: a Stripe redelivery then sees the policy still in
+  // fromStatus and genuinely retries the whole transition, rather than
+  // silently losing an audit entry.
+  async transitionPolicyWithAudit(params: {
+    id: number;
+    fromStatus: string;
+    toStatus: string;
+    causedBy: string;
+  }): Promise<{ policy: Policy; audit: PolicyAuditLog } | undefined> {
+    return await db.transaction(async (tx) => {
+      const [policy] = await tx.update(policies)
+        .set({ status: params.toStatus, updatedAt: new Date() })
+        .where(and(eq(policies.id, params.id), eq(policies.status, params.fromStatus)))
+        .returning();
+      // CAS guard didn't match (another writer already moved the row off
+      // fromStatus) - zero rows changed, nothing to roll back, no audit row.
+      if (!policy) return undefined;
+
+      const [audit] = await tx.insert(policyAuditLog).values({
+        policyId: params.id,
+        fromStatus: params.fromStatus,
+        toStatus: params.toStatus,
+        causedBy: params.causedBy,
+      }).returning();
+
+      return { policy, audit };
+    });
   }
 }
 

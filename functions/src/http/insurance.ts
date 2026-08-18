@@ -16,7 +16,13 @@
  *   ROOT_ENVIRONMENT         - "sandbox" | "production"
  *   ROOT_PRODUCT_MODULE_KEY  - Product module key (required, no fallback)
  *
- * All monetary values use integer cents (Root sandbox uses ZAR cents).
+ * All monetary values use integer cents (Root sandbox uses ZAR cents against a
+ * UK GBP product - no conversion exists yet, see resolveCurrency() in
+ * rootAdapter.ts for the pinned TODO, do not guess a rate).
+ *
+ * M4 Task 4: the Root HTTP transport (quote/bind/sync/cancel) now lives behind
+ * the typed RootAdapter interface in ./rootAdapter - see that file for the
+ * seam. This file owns the callable functions and Firestore glue only.
  */
 
 import * as functions from 'firebase-functions';
@@ -25,132 +31,20 @@ import { COLLECTION_NAMES, UserDocument, PolicyDocument, CoverageType } from '..
 import { EUROPE_LONDON } from '../lib/region';
 import { mapRootPolicyStatus } from './insuranceInternal';
 import { wrapFunction } from '../lib/sentry';
+import {
+  RootHttpAdapter,
+  getRootConfig,
+  resolveCurrency,
+  type RootAdapter,
+  type RootQuoteRequest,
+  type RootApplicationResponse,
+  type RootPolicyResponse,
+} from './rootAdapter';
 
-// ============================================================================
-// CONFIG
-// ============================================================================
-
-interface RootConfig {
-  apiKey: string;
-  apiUrl: string;
-  environment: 'sandbox' | 'production';
-  productModuleKey: string;
-}
-
-function getRootConfig(): RootConfig {
-  const apiKey = process.env.ROOT_API_KEY;
-  const productModuleKey = process.env.ROOT_PRODUCT_MODULE_KEY;
-
-  if (!apiKey) {
-    throw new functions.https.HttpsError(
-      'failed-precondition',
-      'Root Platform API key is not configured. Set ROOT_API_KEY in functions environment.',
-    );
-  }
-
-  // Fail fast - no silent placeholder fallback
-  if (!productModuleKey) {
-    throw new functions.https.HttpsError(
-      'failed-precondition',
-      'Root product module key is not configured. Set ROOT_PRODUCT_MODULE_KEY in functions environment.',
-    );
-  }
-
-  return {
-    apiKey,
-    apiUrl: process.env.ROOT_API_URL || 'https://api.rootplatform.com/v1/insurance',
-    environment: (process.env.ROOT_ENVIRONMENT || 'sandbox') as 'sandbox' | 'production',
-    productModuleKey,
-  };
-}
-
-// ============================================================================
-// ROOT API HELPER
-// ============================================================================
-
-interface RootApiOptions {
-  method: 'GET' | 'POST' | 'PATCH';
-  path: string;
-  body?: Record<string, unknown>;
-}
-
-async function rootApiFetch<T>(options: RootApiOptions): Promise<T> {
-  const config = getRootConfig();
-  const url = `${config.apiUrl}${options.path}`;
-
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    'Authorization': `Basic ${Buffer.from(`${config.apiKey}:`).toString('base64')}`,
-  };
-
-  const response = await fetch(url, {
-    method: options.method,
-    headers,
-    body: options.body ? JSON.stringify(options.body) : undefined,
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.text();
-    functions.logger.error(`[Root API] ${options.method} ${options.path} failed`, {
-      status: response.status,
-      body: errorBody,
-    });
-    throw new functions.https.HttpsError(
-      'internal',
-      `Root Platform API error (${response.status}): ${errorBody}`,
-    );
-  }
-
-  return response.json() as Promise<T>;
-}
-
-// ============================================================================
-// ROOT API TYPES
-// ============================================================================
-
-interface RootQuoteRequest {
-  type: string;
-  policyholder_id?: string;
-  module: Record<string, unknown>;
-}
-
-interface RootQuoteResponse {
-  quote_package_id: string;
-  created_at: string;
-  module: { type: string; [key: string]: unknown };
-  suggested_premium: number;
-  billing_amount: number;
-  expiry_date: string;
-}
-
-interface RootPolicyholderResponse {
-  policyholder_id: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  created_at: string;
-}
-
-interface RootApplicationResponse {
-  application_id: string;
-  policy_id: string | null;
-  status: string;
-  created_at: string;
-  monthly_premium: number;
-  policy_number: string | null;
-}
-
-interface RootPolicyResponse {
-  policy_id: string;
-  policy_number: string;
-  status: string;
-  created_at: string;
-  monthly_premium: number;
-  sum_assured: number;
-  start_date: string;
-  end_date: string;
-  module: Record<string, unknown>;
-}
+// Sole concrete RootAdapter instance used by the callables below (M4 Task 4
+// seam - see rootAdapter.ts). Structural extraction only; behaviour of the
+// underlying HTTP calls is unchanged.
+const rootAdapter: RootAdapter = new RootHttpAdapter();
 
 // ============================================================================
 // COVERAGE TYPE MAPPING
@@ -238,15 +132,16 @@ async function ensurePolicyholder(
 
   const { firstName, lastName, email } = requirePolicyholderIdentity(userId, user);
 
-  const policyholder = await rootApiFetch<RootPolicyholderResponse>({
-    method: 'POST',
-    path: '/policyholders',
-    body: {
-      first_name: firstName,
-      last_name: lastName,
-      email,
-      id: userId, // Firebase UID as external reference
-    },
+  // `email` here is the value requirePolicyholderIdentity() already validated
+  // non-empty above (it throws before we reach this line otherwise) - read
+  // that, not user.email directly, so this can never fall back to a
+  // fabricated @driiva.internal address the way an earlier version of this
+  // codebase did elsewhere (see feedback_no_fabricated_fallback_data).
+  const policyholder = await rootAdapter.ensurePolicyholder({
+    userId,
+    firstName,
+    lastName,
+    email,
   });
 
   // Cache on Firestore user document (non-critical - if this fails we'll just re-create on next call)
@@ -315,18 +210,14 @@ export const getInsuranceQuote = functions
     ),
   };
 
-  const rootQuote = await rootApiFetch<RootQuoteResponse>({
-    method: 'POST',
-    path: '/quotes',
-    body: quoteRequest as unknown as Record<string, unknown>,
-  });
+  const rootQuote = await rootAdapter.quote(quoteRequest);
 
   // Store quote in Firestore so acceptInsuranceQuote can retrieve coverageType
   await db.collection('quotes').doc(rootQuote.quote_package_id).set({
     quoteId: rootQuote.quote_package_id,
     userId,
     coverageType,
-    premiumCents: rootQuote.suggested_premium,
+    premiumCents: resolveCurrency(rootQuote.suggested_premium),
     expiresAt: rootQuote.expiry_date,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
   });
@@ -338,8 +229,8 @@ export const getInsuranceQuote = functions
 
   return {
     quoteId: rootQuote.quote_package_id,
-    premiumCents: rootQuote.suggested_premium,
-    billingAmountCents: rootQuote.billing_amount,
+    premiumCents: resolveCurrency(rootQuote.suggested_premium),
+    billingAmountCents: resolveCurrency(rootQuote.billing_amount),
     expiresAt: rootQuote.expiry_date,
     coverageType,
     drivingScore: Math.round(profile.currentScore),
@@ -388,13 +279,9 @@ export const acceptInsuranceQuote = functions
   const policyholderPackageId = await ensurePolicyholder(userId, user);
 
   // Create application on Root
-  const application = await rootApiFetch<RootApplicationResponse>({
-    method: 'POST',
-    path: '/applications',
-    body: {
-      quote_package_id: quoteId,
-      policyholder_id: policyholderPackageId,
-    },
+  const application: RootApplicationResponse = await rootAdapter.bind({
+    quote_package_id: quoteId,
+    policyholder_id: policyholderPackageId,
   });
 
   if (!application.policy_id) {
@@ -405,10 +292,7 @@ export const acceptInsuranceQuote = functions
   }
 
   // Fetch full policy from Root
-  const rootPolicy = await rootApiFetch<RootPolicyResponse>({
-    method: 'GET',
-    path: `/policies/${application.policy_id}`,
-  });
+  const rootPolicy: RootPolicyResponse = await rootAdapter.getPolicy(application.policy_id);
 
   // Store in Firestore
   const policyData: Omit<PolicyDocument, 'createdAt' | 'updatedAt'> & {
@@ -506,10 +390,7 @@ export const syncInsurancePolicy = functions
     throw new functions.https.HttpsError('permission-denied', 'Not your policy');
   }
 
-  const rootPolicy = await rootApiFetch<RootPolicyResponse>({
-    method: 'GET',
-    path: `/policies/${policyId}`,
-  });
+  const rootPolicy: RootPolicyResponse = await rootAdapter.sync(policyId);
 
   const rootStatus = rootPolicy.status === 'active' ? 'active'
     : rootPolicy.status === 'cancelled' ? 'cancelled'

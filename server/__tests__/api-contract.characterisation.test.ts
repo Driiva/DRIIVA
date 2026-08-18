@@ -57,6 +57,18 @@ vi.mock("../storage", () => ({
     deleteUserData: vi.fn(),
     updateStripeCustomerId: vi.fn(),
     getUserByStripeCustomerId: vi.fn(),
+    getStripeEventById: vi.fn(),
+    createStripeEvent: vi.fn(),
+    markStripeEventProcessed: vi.fn(),
+    markStripeEventFailed: vi.fn(),
+    getPolicy: vi.fn(),
+    getPolicyByStripeSubscriptionId: vi.fn(),
+    createPolicy: vi.fn(),
+    updatePolicy: vi.fn(),
+    updatePolicyIfStatus: vi.fn(),
+    createPolicyAuditLog: vi.fn(),
+    getPolicyAuditLog: vi.fn(),
+    transitionPolicyWithAudit: vi.fn(),
   },
 }));
 
@@ -591,10 +603,14 @@ describe("API-35 Stripe webhook", () => {
   it("QUIRK: payment_succeeded with Firebase Admin uninitialised still 200s (pendingPayment write silently skipped)", async () => {
     stripeMock.webhooks.constructEvent.mockReturnValue({
       type: "invoice.payment_succeeded",
-      data: { object: { customer: "cus_1", subscription: "sub_1" } },
+      // amount_paid must be a valid positive amount (C1 fix): the webhook now
+      // refuses to bind a policy without a real charged amount.
+      data: { object: { customer: "cus_1", subscription: "sub_1", amount_paid: 4600 } },
     });
     stripeMock.subscriptions.retrieve.mockResolvedValue({ metadata: { quoteId: "q_1" } });
     vi.mocked(storage.getUserByStripeCustomerId).mockResolvedValue(NEON_USER as never);
+    vi.mocked(storage.getPolicyByStripeSubscriptionId).mockResolvedValue(undefined as never);
+    vi.mocked(storage.createPolicy).mockResolvedValue({ id: 99, status: "active" } as never);
     admin.mockReturnValue(null);
     const res = await request(app)
       .post("/api/webhooks/stripe")
@@ -607,10 +623,12 @@ describe("API-35 Stripe webhook", () => {
   it("payment_succeeded with Admin available writes users/{uid}/pendingPayments/{subId}", async () => {
     stripeMock.webhooks.constructEvent.mockReturnValue({
       type: "invoice.payment_succeeded",
-      data: { object: { customer: "cus_1", subscription: "sub_1" } },
+      data: { object: { customer: "cus_1", subscription: "sub_1", amount_paid: 4600 } },
     });
     stripeMock.subscriptions.retrieve.mockResolvedValue({ metadata: { quoteId: "q_1" } });
     vi.mocked(storage.getUserByStripeCustomerId).mockResolvedValue(NEON_USER as never);
+    vi.mocked(storage.getPolicyByStripeSubscriptionId).mockResolvedValue(undefined as never);
+    vi.mocked(storage.createPolicy).mockResolvedValue({ id: 99, status: "active" } as never);
 
     const set = vi.fn().mockResolvedValue(undefined);
     const chain = {

@@ -123,6 +123,11 @@ interface PaymentFormProps {
   onPaid: (mode: 'demo' | 'charged') => void;
   isDemoMode: boolean;
   onBillingPeriodChange: (p: BillingPeriod) => void;
+  /** True when annualPremiumGbp came from the client pricingEngine estimate
+   *  rather than an authoritative Root Platform quote - the server still
+   *  binds and charges the real price at create-subscription, but the UI
+   *  must not present an unconfirmed client-side figure as final. */
+  isEstimate: boolean;
 }
 
 /**
@@ -243,6 +248,7 @@ function PaymentForm({
   onPaid,
   isDemoMode,
   onBillingPeriodChange,
+  isEstimate,
 }: PaymentFormProps) {
   const stripe = useStripe();
   const elements = useElements();
@@ -382,7 +388,12 @@ function PaymentForm({
             </span>
           )}
         </div>
-        <p className="text-white/60 text-xs">
+        {isEstimate && (
+          <p className="text-amber-400/80 text-xs">
+            Estimated premium - confirmed at payment.
+          </p>
+        )}
+        <p className="text-white/40 text-xs">
           Quote expires {new Date(expiresAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
         </p>
       </div>
@@ -491,6 +502,10 @@ export default function Checkout() {
   const [quoteLoading, setQuoteLoading] = useState(true);
   const [coverState, setCoverState] = useState<CoverState>({ kind: 'idle' });
   const [stripeReady, setStripeReady] = useState(false);
+  // False once an authoritative Root Platform quote (with a real premiumCents)
+  // has replaced the client pricingEngine estimate. Demo mode never has a
+  // server quote, so it stays an estimate throughout.
+  const [isEstimate, setIsEstimate] = useState(true);
 
   const isDemoMode = typeof window !== 'undefined' &&
     sessionStorage.getItem('driiva-demo-mode') === 'true';
@@ -614,6 +629,7 @@ export default function Checkout() {
           if (result.data?.quoteId) setQuoteId(result.data.quoteId);
           if (typeof result.data?.premiumCents === 'number' && result.data.premiumCents > 0) {
             setAnnualPremiumGbp(result.data.premiumCents / 100);
+            setIsEstimate(false);
           }
         } catch {
           // Root not configured or unavailable — proceed with the client estimate
@@ -731,6 +747,7 @@ export default function Checkout() {
                 }
                 isDemoMode={isDemoMode}
                 onBillingPeriodChange={setBillingPeriod}
+                isEstimate={isEstimate}
               />
             </Elements>
           </motion.div>
