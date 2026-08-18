@@ -5,6 +5,71 @@
 
 ## Entries
 
+### 2026-08-18 - Phone-usage scoring wired end-to-end (M2-DEC-1 Option A)
+
+`feat/phone-usage-detection` (not merged to main). Closes the gap flagged in
+`docs/rebuild/m2-dec-1-phone-usage.md`: the phone-usage 10% of every driving
+score was permanently, silently hardcoded to a neutral 100 because
+`phonePickupCount` never reached the server. It now does.
+
+- **Scoring engine** (`packages/scoring/src/tripMetrics.ts`, the authored
+  source; `functions/src/scoring/tripMetrics.ts` is its build-time copy) -
+  `computeTripMetrics` takes an optional second parameter,
+  `clientReportedPhonePickupCount`. A new `sanitizePhonePickupCount` helper
+  rejects non-finite/negative values and rate-caps the rest at 6
+  pickups/minute before the count can reach `events.phonePickupCount` or the
+  score - there is no server-side accelerometer stream to verify it against,
+  so this is a client-reported number the server sanity-checks, not one it
+  independently confirms.
+- **Server wiring** (`functions/src/triggers/trips.ts`) -
+  `finalizeTripFromPoints` reads `tripData.clientReportedPhonePickupCount` and
+  passes it through; the sanitiser above is the actual trust boundary.
+- **Trip document** (`packages/contracts/src/trip.ts`,
+  `functions/src/types.ts`, `shared/firestore-types.ts`) - new optional
+  `clientReportedPhonePickupCount` field. Deliberately NOT added to
+  `TripPoint`/the `tripPoints` collection, which would have needed a DPIA
+  allowlist change (`DPIA_REVIEWED_DATA_TYPES`); this stays a top-level field
+  on the trip doc instead, and is not locked by firestore.rules the way
+  `events`/`score`/`scoreBreakdown` are.
+- **Web** (`client/src/lib/tripService.ts`) - `endTrip()` now writes
+  `clientReportedPhonePickupCount`, carrying through the `phonePickupCount`
+  the trip-recording screen already tracked (a `visibilitychange` proxy: the
+  app backgrounded while a trip is recording). That signal existed before
+  this change; it was captured and then discarded on every trip.
+- **Mobile** (new `mobile/lib/phonePickup.ts`, wired into
+  `mobile/app/(tabs)/record.tsx` and `mobile/lib/trips.ts`) - an on-device
+  accelerometer heuristic (`expo-sensors`): a sustained deviation in
+  accelerometer magnitude from the ~1g a mounted phone reads at rest, held
+  for at least 600ms, debounced 3s between counts. Documented as a heuristic,
+  not a claim of accurate gesture recognition - see the file's header
+  comment. `mobile/app/trust.tsx` and `client/src/pages/trust.tsx` disclosure
+  copy updated to match.
+- **Docs** - `docs/rebuild/m2-dec-1-phone-usage.md` marked RESOLVED with what
+  actually shipped; `ARCHITECTURE.md` and `ROADMAP.md` updated to stop
+  describing this as hardcoded/unimplemented.
+
+**Verified:** `npx tsc --noEmit` clean at root, in `functions/`, and in
+`packages/contracts`+`packages/scoring` (via `npm run build:packages`).
+`npx vitest run` at root: 70 files, 737 tests passing (includes new
+sanitisation/wiring tests in `packages/scoring/src/__tests__/` and
+`functions/src/__tests__/scoring/`, plus updated payload-shape pinning tests
+in `client/src/__tests__/` and `packages/contracts/src/__tests__/`). A real
+Firestore-emulator integration test
+(`tests/integration/trips.test.ts`, via `npm run test:integration`) drives
+the actual `onTripStatusChange`/`finalizeTripFromPoints` and confirms a
+reported pickup moves the stored `phoneUsageScore` away from the old
+permanent 100 (1 pickup over a 5-minute trip lands at 68, not 100) and that
+an implausible reported count (500 on a 10-second trip) is rate-capped
+rather than trusted, with the final score staying finite and in range.
+
+**Not verified:** mobile detection on a real device. `mobile/lib/phonePickup.ts`
+has not been run against a real accelerometer in a moving car - `cd mobile &&
+npx tsc --noEmit` is clean, but the thresholds are a reasoned starting point,
+not a calibrated one. Needs on-device confirmation before this is called
+shipped on mobile.
+
+---
+
 ### 2026-08-18 - Removed dead Neon scoring path (POST /api/trips, TelematicsProcessor)
 
 - **Dead-code removal** (`chore/remove-dead-scoring-path`) - deleted the confirmed-orphaned Neon/Postgres scoring path: the `POST /api/trips` route in `server/routes.ts`, `server/lib/telematics.ts` (`TelematicsProcessor`/`WorkerBackedProcessor`), `server/lib/telematics-worker.ts` (its only importer), and the standalone dev script `server/test-ai-models.ts`. No live client calls this route - Firestore's `client/src/lib/tripService.ts` is the real trip-ingestion path, per an existing characterisation-test finding. Re-verified with a fresh repo-wide grep before deleting anything.
@@ -15,6 +80,8 @@
 - **Gates:** tsc clean, 69 test files / 716 tests passing, 1 skipped, 2 todo.
 
 **Caveat:** no MANUAL_TEST_CHECKLIST run recorded. Pure removal plus an arithmetic-equivalent refactor (the two live call sites pass the exact same five arguments to `calculateRefundCents` that the retired wrapper did); the automated suite is the coverage.
+
+---
 
 ### 2026-08-17 - Dependency security sweep on main
 

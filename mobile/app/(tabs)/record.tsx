@@ -47,6 +47,7 @@ import {
   submitTripForScoring,
   type SampledLocation,
 } from '@/lib/trips';
+import { PhonePickupDetector } from '@/lib/phonePickup';
 
 type Phase = 'idle' | 'starting' | 'recording' | 'confirming' | 'submitting' | 'waiting';
 
@@ -91,6 +92,12 @@ export default function Record() {
     score: null,
     premiumCents: null,
   });
+  // Phone-pickup detection (M2-DEC-1 Option A) - runs alongside the GPS watch
+  // for the same lifetime. pickupCountRef holds the count captured at
+  // stopRecording() so confirmDriving() can still read it after the detector
+  // itself has been torn down. See lib/phonePickup.ts for what "pickup" means.
+  const pickupDetectorRef = useRef<PhonePickupDetector | null>(null);
+  const pickupCountRef = useRef(0);
 
   const teardown = useCallback(() => {
     watcherRef.current?.remove();
@@ -103,6 +110,12 @@ export default function Record() {
     // on the server), but it must not outlive the screen.
     scoreWatchRef.current?.();
     scoreWatchRef.current = null;
+    // Stop the accelerometer listener too, so an abandoned recording
+    // (unmount, cancel) does not leave a sensor subscription running against
+    // a screen nobody is looking at. Idempotent if stopRecording already
+    // called stop() to capture the final count.
+    pickupDetectorRef.current?.stop();
+    pickupDetectorRef.current = null;
   }, []);
 
   // A recording left running when the screen unmounts would keep a GPS watch,
@@ -200,11 +213,15 @@ export default function Record() {
       setPointsCount(1);
       setDistanceMeters(0);
       setElapsed(0);
+      pickupCountRef.current = 0;
 
       watcherRef.current = await Location.watchPositionAsync(LOCATION_OPTIONS, handleSample);
       tickRef.current = setInterval(() => {
         setElapsed(Math.floor((Date.now() - startMsRef.current) / 1000));
       }, 1000);
+
+      pickupDetectorRef.current = new PhonePickupDetector();
+      pickupDetectorRef.current.start();
 
       setPhase('recording');
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
@@ -218,6 +235,10 @@ export default function Record() {
   }, [user?.id, handleSample, teardown]);
 
   const stopRecording = useCallback(async () => {
+    // Captured before teardown() stops-and-clears the detector, so the count
+    // survives into confirmDriving() (which runs after the "was this you
+    // driving?" question, once teardown has already run).
+    pickupCountRef.current = pickupDetectorRef.current?.stop() ?? 0;
     teardown();
     const writer = writerRef.current;
     if (writer) {
@@ -300,6 +321,7 @@ export default function Record() {
         end,
         distanceMeters,
         pointsCount,
+        phonePickupCount: pickupCountRef.current,
       });
       waitForScore(tripId);
     } catch (err) {

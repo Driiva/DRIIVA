@@ -108,6 +108,20 @@ export interface TripDocument {
 
   // Optional: Populated by Stop-Go-Classifier
   segmentation?: TripSegmentationSummary;
+
+  /**
+   * Phone-pickup count reported by the client on the recording->processing
+   * transition (M2-DEC-1 Option A, docs/rebuild/m2-dec-1-phone-usage.md).
+   * NOT locked by firestore.rules the way `events` is - it is deliberately a
+   * separate field so a client can report it without touching the
+   * server-computed events map. `events.phonePickupCount` (server-computed,
+   * authoritative) is still the field a score is read from; this is only the
+   * raw input finalizeTripFromPoints feeds into computeTripMetrics, which
+   * sanity-checks and rate-caps it before it can move a score. Optional
+   * because older/failed trips and any client that has not shipped this yet
+   * never write it.
+   */
+  clientReportedPhonePickupCount?: number;
 }
 
 /**

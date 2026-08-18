@@ -1,8 +1,10 @@
 # M2-DEC-1: Phone-usage scoring - decision needed
 
-Status: OPEN. Awaiting Jamal's sign-off. Nothing has been changed in the
-scoring formula. M2 Task 6 only pinned today's behaviour with a test and wrote
-this up.
+Status: RESOLVED, 18 Aug 2026. Option A shipped on `feat/phone-usage-detection`
+(see "What actually shipped" at the end of this doc for the honest detail -
+wired end-to-end and tested, mobile detection unverified on a real device).
+Everything below this line is the original decision brief, kept as-written
+for the historical record of why Option A was chosen over Option B.
 
 ## TL;DR
 
@@ -104,3 +106,48 @@ can change it by accident.
 - DID NOT: change `computePhoneUsageScore`, any weight, the `TripPoint` schema,
   the DPIA allowlist, or the trip-point streaming. No formula change is in this
   task's diff.
+
+## What actually shipped (18 Aug 2026, `feat/phone-usage-detection`)
+
+Option A, with one deliberate simplification from the brief above: instead of
+adding a pickup field to `TripPoint` itself (which would have needed a DPIA
+allowlist change - see `DPIA_REVIEWED_DATA_TYPES` in
+`functions/src/triggers/trips.ts`), the pickup count is a new top-level field
+on the trip document, `clientReportedPhonePickupCount`, separate from the
+per-point GPS trace and from the locked `events` map. That sidesteps the DPIA
+touch entirely: no new field is added to `tripPoints`, so `checkDpiaCompliance`
+never sees it.
+
+- `computeTripMetrics` (packages/scoring/src/tripMetrics.ts, the authored
+  source; functions/src/scoring/tripMetrics.ts is its build-time copy) takes
+  an optional second parameter, `clientReportedPhonePickupCount`. A new
+  `sanitizePhonePickupCount` helper rejects non-finite/negative values and
+  rate-caps the rest at 6 pickups/minute before it can reach
+  `events.phonePickupCount` or the score.
+- `finalizeTripFromPoints` (functions/src/triggers/trips.ts) reads
+  `tripData.clientReportedPhonePickupCount` and passes it straight through -
+  the sanitiser is the trust boundary, not this call site.
+- Web: `client/src/lib/tripService.ts`'s `endTrip()` now writes
+  `clientReportedPhonePickupCount`, derived from the `phonePickupCount` the
+  trip-recording screen already tracked locally (a `visibilitychange` proxy -
+  the app backgrounded while a trip is recording). That count existed before
+  this change; it was just never reaching the server.
+- Mobile: `mobile/lib/phonePickup.ts` (`PhonePickupDetector`) is new - an
+  on-device accelerometer heuristic (expo-sensors), wired into
+  `mobile/app/(tabs)/record.tsx`'s recording lifecycle and submitted via
+  `mobile/lib/trips.ts`'s `submitTripForScoring`.
+
+**Honest status, not overclaimed:**
+- VERIFIED: the pipeline end-to-end - client write -> server sanitisation ->
+  score - is covered by unit tests (packages/scoring, functions/src/__tests__)
+  AND a real Firestore-emulator integration test that drives the actual
+  `finalizeTripFromPoints`/`onTripStatusChange` and confirms a reported pickup
+  changes the stored `phoneUsageScore`, and that an implausible count is
+  rate-capped rather than trusted.
+- NOT VERIFIED: the mobile accelerometer heuristic's real-world accuracy. It
+  has not been run against a real accelerometer in a moving car - the
+  thresholds in `mobile/lib/phonePickup.ts` are a reasoned starting point, not
+  a calibrated one. Neither heuristic (web's tab-visibility proxy or mobile's
+  accelerometer pattern) is a claim of accurate pickup detection - both are
+  documented, deterministic proxies, in the spirit of
+  `docs/HOW_WE_DETECT_REAL_DRIVING_VS_WALKING.md`.

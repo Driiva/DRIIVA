@@ -282,6 +282,14 @@ export interface TripDocument {
   createdAt: Timestamp;
   createdBy: string;
   pointsCount: number;              // Reference count for tripPoints
+
+  // Client-reported phone-pickup count, written on the recording->processing
+  // transition (M2-DEC-1 Option A). NOT part of `events` above and not
+  // locked by firestore.rules the same way - see functions/src/types.ts
+  // TripDocument for the full rationale (that file is the server's copy of
+  // this same shape). Optional: older trips and clients that predate this
+  // never write it.
+  clientReportedPhonePickupCount?: number;
 }
 
 /**

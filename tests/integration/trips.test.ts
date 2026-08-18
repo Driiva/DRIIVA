@@ -127,6 +127,7 @@ function seedProcessingTripDoc(
   userId: string,
   start: ReturnType<typeof location>,
   end: ReturnType<typeof location>,
+  clientReportedPhonePickupCount?: number,
 ) {
   const startedAt = admin.firestore.Timestamp.fromMillis(Date.now() - 60_000);
   const endedAt = admin.firestore.Timestamp.fromMillis(Date.now());
@@ -166,6 +167,10 @@ function seedProcessingTripDoc(
     createdAt: startedAt,
     createdBy: userId,
     pointsCount: 0,
+    // Mirrors what endTrip/submitTripForScoring actually write (M2-DEC-1
+    // Option A) - undefined is omitted rather than written, since the Admin
+    // SDK rejects an explicit `undefined` field value.
+    ...(clientReportedPhonePickupCount !== undefined ? { clientReportedPhonePickupCount } : {}),
   };
 }
 
@@ -214,9 +219,13 @@ async function seedTrip(
   start: ReturnType<typeof location>,
   end: ReturnType<typeof location>,
   points: unknown[],
+  clientReportedPhonePickupCount?: number,
 ) {
   await adminDb.collection('users').doc(userId).set(seedUserDoc(userId));
-  await adminDb.collection('trips').doc(tripId).set(seedProcessingTripDoc(tripId, userId, start, end));
+  await adminDb
+    .collection('trips')
+    .doc(tripId)
+    .set(seedProcessingTripDoc(tripId, userId, start, end, clientReportedPhonePickupCount));
   await adminDb.collection('tripPoints').doc(tripId).set(seedTripPointsDoc(tripId, userId, points));
 }
 
@@ -414,5 +423,68 @@ describe('M2 T2 scoring double-fire (Firestore emulator, real onTripStatusChange
     expect(notifyTripComplete).toHaveBeenCalledTimes(0);
     expect(classifyCompletedTrip).toHaveBeenCalledTimes(0);
     expect(analyzeTrip).toHaveBeenCalledTimes(0);
+  });
+
+  // M2-DEC-1 Option A: proves the wiring end-to-end against the REAL
+  // finalizeTripFromPoints, not just computeTripMetrics in isolation
+  // (packages/scoring/src/__tests__/tripMetrics.phoneUsage.pin.test.ts covers
+  // that). clientReportedPhonePickupCount is written to the trip doc exactly
+  // the way endTrip/submitTripForScoring do, then the real Cloud Function
+  // reads it, sanitises it and folds it into the stored score.
+  it('a client-reported phone-pickup count reaches the stored score (M2-DEC-1 Option A, real finalizeTripFromPoints)', async () => {
+    vi.clearAllMocks();
+    const userId = uniqueId('user-pickup');
+    const tripId = uniqueId('trip-pickup');
+    // Same shape as normalPoints() (straight line, ~20 km/h, no anomaly) but
+    // long enough (5 minutes) that a single reported pickup is well under the
+    // rate cap, so this demonstrates the count actually moving the score
+    // rather than being clamped away.
+    const pts = Array.from({ length: 151 }, (_, i) => ({
+      t: i * 2000,
+      lat: 51.5074 + i * 0.0001,
+      lng: -0.1278,
+      spd: 556,
+      hdg: 0,
+      acc: 5,
+    }));
+    const start = location(pts[0].lat, pts[0].lng);
+    const end = location(pts[pts.length - 1].lat, pts[pts.length - 1].lng);
+    await seedTrip(tripId, userId, start, end, pts, 1);
+
+    const processing = await getTrip(tripId);
+    expect(processing.clientReportedPhonePickupCount).toBe(1);
+    await runOnUpdate({ ...processing, status: 'recording' }, processing, tripId);
+
+    const completed = await getTrip(tripId);
+    expect(completed.status).toBe('completed');
+    expect(completed.durationSeconds).toBe(300);
+    // 1 pickup / 5-minute trip = 2 pickups per 10 min -> 100 - 2*16 = 68,
+    // per computePhoneUsageScore. Not the pre-fix permanent 100.
+    expect(completed.events.phonePickupCount).toBe(1);
+    expect(completed.scoreBreakdown.phoneUsageScore).toBe(68);
+  });
+
+  it('rate-caps an implausible client-reported count rather than trusting it (defensive: cannot tank or wrap the score)', async () => {
+    vi.clearAllMocks();
+    const userId = uniqueId('user-pickup-abuse');
+    const tripId = uniqueId('trip-pickup-abuse');
+    const pts = normalPoints(); // 10-second trip
+    const start = location(pts[0].lat, pts[0].lng);
+    const end = location(pts[pts.length - 1].lat, pts[pts.length - 1].lng);
+    // A malformed/malicious payload: 500 "pickups" in a 10-second trip.
+    await seedTrip(tripId, userId, start, end, pts, 500);
+
+    const processing = await getTrip(tripId);
+    await runOnUpdate({ ...processing, status: 'recording' }, processing, tripId);
+
+    const completed = await getTrip(tripId);
+    expect(completed.status).toBe('completed');
+    // Cap for a 10-second trip is 1 (max(1, ceil((10/60)*6))) - 500 is
+    // rejected down to that, not written through, and the score stays a
+    // real, finite number rather than being tanked or corrupted to NaN.
+    expect(completed.events.phonePickupCount).toBe(1);
+    expect(Number.isFinite(completed.score)).toBe(true);
+    expect(completed.score).toBeGreaterThanOrEqual(0);
+    expect(completed.score).toBeLessThanOrEqual(100);
   });
 });

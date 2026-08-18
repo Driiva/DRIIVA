@@ -87,5 +87,17 @@ export const TripDocumentSchema = z.object({
   createdBy: z.string(),
   pointsCount: z.number().int().min(0),
   segmentation: TripSegmentationSummarySchema.optional(),
+  /**
+   * Client-reported phone-pickup count, written on the recording->processing
+   * transition (M2-DEC-1 Option A, docs/rebuild/m2-dec-1-phone-usage.md).
+   * Deliberately separate from `events` above: firestore.rules locks
+   * `events` on a client update (Cloud-Function-only), and this field is not
+   * locked, so a client can report a pickup count without needing write
+   * access to the authoritative events map. The server treats it as
+   * untrusted input - see `sanitizePhonePickupCount` in
+   * packages/scoring/src/tripMetrics.ts - not as the score itself. Optional
+   * because older trips and any client that predates this never write it.
+   */
+  clientReportedPhonePickupCount: z.number().int().min(0).optional(),
 });
 export type TripDocument = z.infer<typeof TripDocumentSchema>;
