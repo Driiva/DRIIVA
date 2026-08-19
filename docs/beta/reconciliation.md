@@ -240,14 +240,48 @@ These are not code problems and cannot be closed by this build.
 
 ## 9. Budget table, measured
 
-| Metric | Target | Measured at System 0 |
-|---|---|---|
-| Cold start to interactive, mid-tier Android | <= 2500 ms | not measured, no build |
-| Screen transition p95 | <= 300 ms | not measured |
-| Onboarding completion in scripted run | 15/15 (corrected from 16/16) | no scripted run exists |
-| Core loop actions instrumented | 100% | **0%**, no mobile analytics |
-| Crash-free sessions across the eval run | 100% | no eval run exists |
-| Serious accessibility violations | 0 | 0 on web per existing axe gate; mobile unmeasured |
-| Founder interventions in a stranger test run | 0 | test not runnable, see section 7 |
+| Metric | Target | At System 0 | After this build |
+|---|---|---|---|
+| Cold start to interactive, mid-tier Android | <= 2500 ms | not measured | NOT REACHED, needs a device |
+| Screen transition p95 | <= 300 ms | not measured | NOT REACHED, needs a device |
+| Onboarding completion in scripted run | 15/15 (corrected from 16/16) | no scripted run | 15/15 screens in the committed flow |
+| Core loop actions instrumented | 100% | **0%** | **100%**, gated by a test |
+| Crash-free sessions across the eval run | 100% | no eval run | NOT REACHED, needs a device |
+| Serious accessibility violations | 0 | 0 on web, mobile unmeasured | unchanged |
+| Founder interventions in a stranger test run | 0 | not runnable | NOT REACHED, needs a person |
 
-`npm run verify:beta` does not exist. Confirmed absent from `package.json`.
+`npm run verify:beta` now exists and reports 9 passed, 0 failed, 5 not reached,
+exit code 1.
+
+---
+
+## 10. Found while verifying: the loop could not close for anyone
+
+Running the scripted loop against the real `firestore.rules`, rather than
+around them with the Admin SDK, surfaced a live bug that no existing test
+caught.
+
+The friendships read rule was:
+
+```
+allow read: if isAuthenticated() && request.auth.uid in resource.data.users;
+```
+
+Redeeming an invite asks "are these two already connected" by getting
+`friendships/{pairId}`, and on the happy path that document is absent. On a
+missing document `resource` is null, so `resource.data.users` raises a Null
+value error. A rules error is not a quiet deny: it reaches the client as a
+`FirebaseError`. So every first-time redemption, which is the only kind that
+matters, failed. On mobile it surfaced as "we could not connect you just now";
+on web the `getDoc` sits outside `useFriends`' try block, so it threw out of
+the hook entirely.
+
+**136 rules tests passed while this was live.** The end-to-end rules test
+models the writes the flow performs, not the read the client performs first,
+and every other friendship test seeds the document before reading it. A test
+that seeds a document cannot catch a bug that only exists when it is absent.
+
+Fixed with a `resource == null` guard, which leaks nothing because there is
+nothing there, plus two regression tests. The lesson worth keeping: **verify a
+flow by performing it in the order the client performs it, not by asserting on
+the writes it leaves behind.**

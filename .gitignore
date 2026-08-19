@@ -79,3 +79,6 @@ apps/marketing/dist-ssr/
 
 # Agent worktrees are local scratch, never repo content
 .claude/worktrees/
+
+# verify:beta writes an Expo bundle here to prove the app builds
+.beta-export/

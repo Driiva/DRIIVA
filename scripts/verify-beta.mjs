@@ -78,6 +78,19 @@ run('Mobile source laws', 'npm run design:laws:mobile');
 run('Fabrication laws', 'npm run fabrication:laws');
 
 // ---------------------------------------------------------------------------
+// The app actually bundles
+// ---------------------------------------------------------------------------
+// tsc and Metro do not resolve modules the same way, and this repo has already
+// shipped a screen that typechecked clean and then failed to bundle: sources
+// under packages/ live outside the Metro project root, so `@driiva/contracts`
+// resolved for TypeScript from the repo root and not for Metro. A bundle is
+// the closest thing to a build that runs without a device.
+run(
+  'Mobile bundles for Android',
+  'cd mobile && npx expo export --platform android --output-dir ../.beta-export',
+);
+
+// ---------------------------------------------------------------------------
 // Budget metrics that can be measured from source
 // ---------------------------------------------------------------------------
 let onboardingScreens = 0;
