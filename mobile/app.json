@@ -16,7 +16,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.driiva.app",
-      "googleServicesFile": "./GoogleService-Info.plist",
+      "googleServicesFile": "$GOOGLE_SERVICES_PLIST",
       "infoPlist": {
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Driiva uses your location to track trips and calculate your driving safety score.",
         "NSLocationWhenInUseUsageDescription": "Driiva uses your location to track trips and calculate your driving safety score.",
@@ -25,7 +25,8 @@
           "location",
           "fetch",
           "remote-notification"
-        ]
+        ],
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -42,7 +43,12 @@
         "ACTIVITY_RECOGNITION",
         "FOREGROUND_SERVICE",
         "FOREGROUND_SERVICE_LOCATION",
-        "RECEIVE_BOOT_COMPLETED"
+        "RECEIVE_BOOT_COMPLETED",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_LOCATION"
       ],
       "edgeToEdgeEnabled": true
     },
@@ -74,6 +80,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "2678b4d2-f201-4ffa-8bbf-65c89d813746"
+      }
+    },
+    "owner": "mrshippers"
   }
 }
