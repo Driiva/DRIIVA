@@ -306,7 +306,21 @@ service cloud.firestore {
             && data.friendshipId == friendshipId;
       }
 
-      allow read: if isAuthenticated() && request.auth.uid in resource.data.users;
+      /*
+       * `resource == null` is the ordinary case, not an edge case: redeeming
+       * an invite reads friendships/{pairId} to find out whether the two are
+       * already connected, and the whole point of the happy path is that the
+       * document is NOT there yet.
+       *
+       * Without the null guard, `resource.data.users` raises a Null value
+       * error on a missing document. A rules error is not a quiet deny: it
+       * surfaces to the client as a FirebaseError, so every first-time
+       * redemption, the only kind that matters, failed with "we could not
+       * connect you just now" on both web and mobile. Reading a document that
+       * does not exist leaks nothing, because there is nothing there.
+       */
+      allow read: if isAuthenticated()
+                  && (resource == null || request.auth.uid in resource.data.users);
 
       allow create: if isAuthenticated()
                     && request.auth.uid in request.resource.data.users
