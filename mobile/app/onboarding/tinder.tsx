@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
+import { ONBOARDING_TOTAL, stepNumber } from '@/lib/onboardingFlow';
+import { track } from '@/lib/analytics';
 import { SwipeCard } from '@/components/onboarding/SwipeCard';
 import { C, F, S, FS, LH, TR } from '@/components/ui/theme';
 
@@ -15,6 +17,10 @@ const STATEMENTS = [
 ];
 
 export default function TinderCards() {
+  useEffect(() => {
+    track('onboarding_step_viewed', { step: stepNumber('tinder'), name: 'tinder' });
+  }, []);
+
   const router = useRouter();
   const { addPainScore } = useOnboarding();
   const [current, setCurrent] = useState(0);
@@ -32,7 +38,7 @@ export default function TinderCards() {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.progress}>
-        <ProgressBar step={5} total={14} />
+        <ProgressBar step={stepNumber('tinder')} total={ONBOARDING_TOTAL} />
       </View>
 
       <View style={styles.content}>

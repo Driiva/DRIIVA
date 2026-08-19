@@ -94,3 +94,89 @@ export function normaliseInviteCode(raw: string): string {
 export function isValidInviteCode(raw: string): boolean {
   return CODE_PATTERN.test(normaliseInviteCode(raw));
 }
+
+/**
+ * REDEEMING AN INVITE
+ * ===================
+ * Why the decision lives here and not in each app: the rules of redemption are
+ * identical on every surface, but the Firestore SDKs are not. The web app
+ * speaks `firebase/firestore` and mobile speaks
+ * `@react-native-firebase/firestore`, so the reads and writes genuinely cannot
+ * be shared. The reasoning can, and must be, or the two surfaces drift until a
+ * code minted on one stops being redeemable on the other.
+ *
+ * Each caller does the two lookups it needs (the invite document, and whether
+ * the pair are already friends), hands the facts in, and gets back either a
+ * pairing to write or the one failure worth telling the user about.
+ */
+
+/** Why a redemption failed, in terms the UI can turn into honest copy. */
+export type RedeemFailure =
+  | 'invalid-code'
+  | 'not-found'
+  | 'expired'
+  | 'already-used'
+  | 'own-code'
+  | 'already-friends'
+  | 'write-failed';
+
+/** The facts about an invite, read by whichever SDK the caller speaks. */
+export interface InviteSnapshot {
+  exists: boolean;
+  createdBy?: string;
+  status?: InviteStatus;
+  /** Epoch milliseconds. Callers convert their own Timestamp type. */
+  expiresAtMs?: number;
+}
+
+export type RedeemDecision =
+  | { ok: true; code: string; friendUid: string; pairId: string }
+  | { ok: false; failure: RedeemFailure };
+
+export interface RedeemInputs {
+  rawCode: string;
+  userId: string;
+  invite: InviteSnapshot;
+  alreadyFriends: boolean;
+  nowMs: number;
+}
+
+/**
+ * Decides whether an invite may be redeemed.
+ *
+ * The check order is deliberate: it reports the failure that tells the user
+ * what to do next. "That is your own code" is more useful than "that code has
+ * expired" when both are true, because only one of them suggests an action.
+ */
+export function decideRedemption(inputs: RedeemInputs): RedeemDecision {
+  const { rawCode, userId, invite, alreadyFriends, nowMs } = inputs;
+
+  if (!isValidInviteCode(rawCode)) return { ok: false, failure: 'invalid-code' };
+
+  const code = normaliseInviteCode(rawCode);
+
+  if (!invite.exists) return { ok: false, failure: 'not-found' };
+
+  // An invite with no creator cannot be paired with anybody. Refusing beats
+  // writing a friendship whose other half is undefined.
+  if (!invite.createdBy) return { ok: false, failure: 'not-found' };
+
+  if (invite.createdBy === userId) return { ok: false, failure: 'own-code' };
+
+  if (invite.status !== 'pending') return { ok: false, failure: 'already-used' };
+
+  // The expiry instant itself still counts as valid: a code that says it lasts
+  // fourteen days should last fourteen days, not fourteen days minus a tick.
+  if (typeof invite.expiresAtMs === 'number' && invite.expiresAtMs < nowMs) {
+    return { ok: false, failure: 'expired' };
+  }
+
+  if (alreadyFriends) return { ok: false, failure: 'already-friends' };
+
+  return {
+    ok: true,
+    code,
+    friendUid: invite.createdBy,
+    pairId: friendshipId(userId, invite.createdBy),
+  };
+}

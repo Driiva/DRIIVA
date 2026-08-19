@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useOnboarding, DrivingFrequency, DrivingTime, DrivingRoutes } from '@/contexts/OnboardingContext';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
+import { ONBOARDING_TOTAL, stepNumber } from '@/lib/onboardingFlow';
+import { track } from '@/lib/analytics';
 import { C, F, S, R, RGB, alpha, FS, LH, TR } from '@/components/ui/theme';
 import { seedScore as calcSeed } from '@/hooks/useTripSeed';
 
@@ -27,6 +29,10 @@ const STEPS = [
 ];
 
 export default function Preferences() {
+  useEffect(() => {
+    track('onboarding_step_viewed', { step: stepNumber('preferences'), name: 'preferences' });
+  }, []);
+
   const router = useRouter();
   const { setDrivingProfile, setSeedScore, state } = useOnboarding();
   const [step, setStep] = useState(0);
@@ -57,7 +63,7 @@ export default function Preferences() {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.progress}>
-        <ProgressBar step={overallStep} total={14} />
+        <ProgressBar step={stepNumber('preferences')} total={ONBOARDING_TOTAL} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>

@@ -17,8 +17,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { firestore } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
+import { track } from '@/lib/analytics';
 import { C, T, S, R, FS, LH, TR } from '@/components/ui/theme';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -124,12 +126,20 @@ function Change({ change }: { change: number }) {
 
 export default function Leaderboard() {
   const { user } = useAuth();
+  const router = useRouter();
   const [periodType, setPeriodType] = useState<PeriodType>('weekly');
   const [scope, setScope] = useState<Scope>('global');
   const [rankings, setRankings] = useState<Ranking[]>([]);
   const [friendUids, setFriendUids] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Records which board the driver actually looks at. Scope and period are the
+  // two things that decide whether the board is worth returning to, so the
+  // retention question cannot be answered without them.
+  useEffect(() => {
+    track('leaderboard_viewed', { scope, period: periodType });
+  }, [scope, periodType]);
 
   useEffect(() => {
     setLoading(true);
@@ -200,7 +210,8 @@ export default function Leaderboard() {
           <EmptyState
             icon="person-add-outline"
             title="No friends yet"
-            subtitle="Invite someone from the web app and they will appear here, on the same board as everyone else."
+            subtitle="Share your code with someone and they will appear here, on the same board as everyone else."
+            action={{ label: 'Add a friend', onPress: () => router.push('/invite') }}
           />
         ) : visible.length === 0 ? (
           <EmptyState

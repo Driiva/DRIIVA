@@ -1,15 +1,21 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
+import { ONBOARDING_TOTAL, stepNumber } from '@/lib/onboardingFlow';
+import { track } from '@/lib/analytics';
 import { TripReplay } from '@/components/onboarding/TripReplay';
 import { ScoreRing } from '@/components/ui/ScoreRing';
 import { C, F, S, R, RGB, alpha, FS, LH, TR } from '@/components/ui/theme';
 import { ecoGrade } from '@/hooks/useTripSeed';
 
 export default function TripDemo() {
+  useEffect(() => {
+    track('onboarding_step_viewed', { step: stepNumber('trip-demo'), name: 'trip-demo' });
+  }, []);
+
   const router = useRouter();
   const { state } = useOnboarding();
   const [phase, setPhase] = useState<'replay' | 'result'>('replay');
@@ -23,7 +29,7 @@ export default function TripDemo() {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.progress}>
-        <ProgressBar step={11} total={14} />
+        <ProgressBar step={stepNumber('trip-demo')} total={ONBOARDING_TOTAL} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>

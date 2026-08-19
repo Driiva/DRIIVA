@@ -24,12 +24,13 @@ import {
 } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '@/lib/firebase';
 import {
+  decideRedemption,
   friendshipId,
   generateInviteCode,
   normaliseInviteCode,
-  isValidInviteCode,
   INVITE_TTL_DAYS,
   type FriendshipDocument,
+  type RedeemFailure,
 } from '@driiva/contracts';
 
 export interface Friend {
@@ -38,15 +39,14 @@ export interface Friend {
   since: Date | null;
 }
 
-/** Why a redemption failed, in terms the UI can turn into honest copy. */
-export type RedeemFailure =
-  | 'invalid-code'
-  | 'not-found'
-  | 'expired'
-  | 'already-used'
-  | 'own-code'
-  | 'already-friends'
-  | 'write-failed';
+/**
+ * Why a redemption failed, in terms the UI can turn into honest copy.
+ *
+ * Re-exported from @driiva/contracts rather than declared here: mobile has to
+ * agree with this exactly, and the shared decision that produces these values
+ * lives there. See decideRedemption.
+ */
+export type { RedeemFailure };
 
 export interface RedeemResult {
   ok: boolean;
@@ -141,29 +141,37 @@ export function useFriends(userId: string | null) {
       if (!isFirebaseConfigured || !db || !userId) {
         return { ok: false, failure: 'write-failed' };
       }
-      if (!isValidInviteCode(rawCode)) {
-        return { ok: false, failure: 'invalid-code' };
-      }
 
       const code = normaliseInviteCode(rawCode);
       const inviteRef = doc(db, 'invites', code);
       const snap = await getDoc(inviteRef);
-
-      if (!snap.exists()) return { ok: false, failure: 'not-found' };
-
-      const invite = snap.data();
-      if (invite.createdBy === userId) return { ok: false, failure: 'own-code' };
-      if (invite.status !== 'pending') return { ok: false, failure: 'already-used' };
-
+      const invite = snap.exists() ? snap.data() : {};
       const expiresAt = invite.expiresAt as Timestamp | undefined;
-      if (expiresAt?.toDate && expiresAt.toDate().getTime() < Date.now()) {
-        return { ok: false, failure: 'expired' };
-      }
 
-      const pairId = friendshipId(userId, invite.createdBy);
-      const pairRef = doc(db, 'friendships', pairId);
-      const alreadyFriends = await getDoc(pairRef);
-      if (alreadyFriends.exists()) return { ok: false, failure: 'already-friends' };
+      // Whether the pair are already connected is a fact the decision needs,
+      // so it is read before deciding rather than checked afterwards. With no
+      // creator there is no pair to look up and the decision refuses anyway.
+      const existingPair = invite.createdBy
+        ? await getDoc(doc(db, 'friendships', friendshipId(userId, invite.createdBy)))
+        : null;
+
+      // The rules of redemption are shared with mobile. Only the reads and
+      // writes differ between the two SDKs; which codes are acceptable must
+      // not.
+      const decision = decideRedemption({
+        rawCode,
+        userId,
+        invite: {
+          exists: snap.exists(),
+          createdBy: invite.createdBy,
+          status: invite.status,
+          expiresAtMs: expiresAt?.toDate ? expiresAt.toDate().getTime() : undefined,
+        },
+        alreadyFriends: Boolean(existingPair?.exists()),
+        nowMs: Date.now(),
+      });
+
+      if (!decision.ok) return { ok: false, failure: decision.failure };
 
       try {
         await updateDoc(inviteRef, {
@@ -172,15 +180,15 @@ export function useFriends(userId: string | null) {
           acceptedAt: serverTimestamp(),
         });
 
-        await setDoc(pairRef, {
-          friendshipId: pairId,
-          users: [userId, invite.createdBy].sort(),
-          initiatedBy: invite.createdBy,
-          viaInviteCode: code,
+        await setDoc(doc(db, 'friendships', decision.pairId), {
+          friendshipId: decision.pairId,
+          users: [userId, decision.friendUid].sort(),
+          initiatedBy: decision.friendUid,
+          viaInviteCode: decision.code,
           createdAt: serverTimestamp(),
         });
 
-        return { ok: true, friendUid: invite.createdBy };
+        return { ok: true, friendUid: decision.friendUid };
       } catch (err) {
         console.error('[useFriends] redeem failed:', err);
         return { ok: false, failure: 'write-failed' };

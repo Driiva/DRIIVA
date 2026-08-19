@@ -39,8 +39,6 @@ import {
 async function firestoreSink(envelope: AnalyticsEnvelope): Promise<void> {
   if (!envelope.userId) return;
 
-  const { firebase } = require('@react-native-firebase/firestore');
-
   await firestore()
     .collection('users')
     .doc(envelope.userId)
@@ -52,7 +50,7 @@ async function firestoreSink(envelope: AnalyticsEnvelope): Promise<void> {
       sessionId: envelope.sessionId,
       occurredAt: envelope.occurredAt,
       durable: envelope.durable,
-      recordedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      recordedAt: firestore.FieldValue.serverTimestamp(),
     });
 }
 

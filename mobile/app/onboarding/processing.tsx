@@ -8,6 +8,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
+import { ONBOARDING_TOTAL, stepNumber } from '@/lib/onboardingFlow';
+import { track } from '@/lib/analytics';
 import { ScoreRing } from '@/components/ui/ScoreRing';
 import { C, F, S, FS } from '@/components/ui/theme';
 
@@ -42,6 +44,10 @@ function CheckItem({ label, delay }: { label: string; delay: number }) {
 }
 
 export default function Processing() {
+  useEffect(() => {
+    track('onboarding_step_viewed', { step: stepNumber('processing'), name: 'processing' });
+  }, []);
+
   const router = useRouter();
   const { state, saveToFirestore } = useOnboarding();
   const [started, setStarted] = useState(false);
@@ -58,7 +64,7 @@ export default function Processing() {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.progress}>
-        <ProgressBar step={10} total={14} />
+        <ProgressBar step={stepNumber('processing')} total={ONBOARDING_TOTAL} />
       </View>
 
       <View style={styles.content}>

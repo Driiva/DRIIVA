@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,6 +6,8 @@ import { useRouter } from 'expo-router';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
+import { ONBOARDING_TOTAL, stepNumber } from '@/lib/onboardingFlow';
+import { track } from '@/lib/analytics';
 import { C, F, S, R, RGB, alpha, FS, LH, TR } from '@/components/ui/theme';
 
 const BULLETS = [
@@ -15,6 +17,10 @@ const BULLETS = [
 ];
 
 export default function LocationPriming() {
+  useEffect(() => {
+    track('onboarding_step_viewed', { step: stepNumber('location-priming'), name: 'location-priming' });
+  }, []);
+
   const router = useRouter();
   const { setPermission } = useOnboarding();
   const { requestLocation } = usePermissions();
@@ -45,7 +51,7 @@ export default function LocationPriming() {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.progress}>
-        <ProgressBar step={9} total={14} />
+        <ProgressBar step={stepNumber('location-priming')} total={ONBOARDING_TOTAL} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
