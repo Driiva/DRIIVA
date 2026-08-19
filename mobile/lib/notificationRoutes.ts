@@ -66,8 +66,12 @@ export function routeForNotification(data: NotificationData | undefined): string
       return tripId ? `/trips/${tripId}` : '/(tabs)/trips';
     }
 
+    // The achievements a driver has actually unlocked live in the Rewards
+    // tab, reading users/{uid}/achievements. The old standalone /achievements
+    // route was a "coming this week" placeholder sitting in front of the real
+    // surface, and has been deleted rather than left to rot.
     case 'achievement_unlocked':
-      return '/achievements';
+      return '/(tabs)/rewards';
 
     // "This week: N trips, M miles, average score X" is the dashboard's
     // content. The leaderboard would be a livelier return beat and a lie about

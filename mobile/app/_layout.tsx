@@ -15,6 +15,7 @@ import { C } from '@/components/ui/theme';
 import { isExpoGo } from '@/lib/firebase';
 import { resolveStartRoute } from '@/lib/routing';
 import { routeForNotification } from '@/lib/notificationRoutes';
+import { watchTokenRefresh } from '@/lib/push';
 import { track } from '@/lib/analytics';
 
 export { ErrorBoundary } from 'expo-router';
@@ -76,6 +77,22 @@ function NotificationGate({ children }: { children: React.ReactNode }) {
   const lastResponse = Notifications.useLastNotificationResponse();
 
   const ready = !loading && Boolean(user?.onboardingComplete);
+
+  /**
+   * FCM rotates tokens. watchTokenRefresh was written for exactly this and
+   * then never called from anywhere, which is the worst version of the bug it
+   * exists to prevent: the stored token goes stale, delivery stops, and
+   * nothing errors. The weekly summary would simply stop arriving for that
+   * driver and no log would say so.
+   *
+   * Bound to the signed-in user rather than to push permission: a token can
+   * refresh whether or not the app is currently asking about notifications,
+   * and storing it is harmless if they have not opted in.
+   */
+  useEffect(() => {
+    if (!user?.id) return;
+    return watchTokenRefresh(user.id);
+  }, [user?.id]);
 
   useEffect(() => {
     if (!ready || !lastResponse) return;

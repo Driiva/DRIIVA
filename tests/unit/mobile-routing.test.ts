@@ -78,7 +78,7 @@ describe('leaves a valid session where it is', () => {
     'settings',
     'vehicle',
     'policy',
-    'achievements',
+    'invite',
     'leaderboard',
     'support',
     'privacy',
@@ -91,6 +91,17 @@ describe('leaves a valid session where it is', () => {
     // group" as "stranded" would have bounced a driver out of Settings the
     // moment they opened it.
     expect(resolveStartRoute(session({ segments: [screen] }))).toBeNull();
+  });
+
+  /*
+   * The other half of the rule above, and the one that was missing. A root
+   * screen absent from ROOT_STACK_SCREENS reads as "stranded" and the driver
+   * is replaced onto the dashboard: the screen still exists, still typechecks,
+   * still bundles, and is simply unreachable. /invite shipped in exactly that
+   * state until this list was updated.
+   */
+  it('bounces a driver off a root screen nobody registered', () => {
+    expect(resolveStartRoute(session({ segments: ['not-registered'] }))).toBe(ROUTE_DASHBOARD);
   });
 
   it('does not redirect a signed-out driver already on a sign-in screen', () => {

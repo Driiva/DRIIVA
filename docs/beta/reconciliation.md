@@ -285,3 +285,78 @@ Fixed with a `resource == null` guard, which leaks nothing because there is
 nothing there, plus two regression tests. The lesson worth keeping: **verify a
 flow by performing it in the order the client performs it, not by asserting on
 the writes it leaves behind.**
+
+---
+
+## 11. Second pass, from an independent audit of `mobile/`
+
+A parallel audit of the mobile surface corroborated the findings above and
+added five more. Each was re-verified against the source before acting.
+
+### 11.1 The new invite screen was unreachable, and it was my bug
+
+`resolveStartRoute` treats any root-level screen absent from
+`ROOT_STACK_SCREENS` as "stranded" and replaces the driver onto the dashboard.
+`invite` was not in that list, so the leaderboard empty state and the
+onboarding handoff both pushed to a screen the router immediately bounced them
+out of. The screen existed, typechecked, and bundled. It simply could not be
+reached.
+
+Registered, plus the assertion the suite was missing: it enumerated the
+registered screens but never checked what happens to an unregistered one.
+Plant-checked, it fails when `invite` is removed again.
+
+### 11.2 A "coming this week" placeholder stood in front of the working screen
+
+`mobile/app/achievements.tsx` was an `EmptyState` reading "Coming this week",
+reached from the profile menu. The **real** achievements surface already exists
+and works: `mobile/app/(tabs)/rewards.tsx` reads `users/{uid}/achievements` and
+composes it through `buildAchievementViews`. So the menu item pointed at a
+placeholder while the working version sat one tab away.
+
+The brief bans "coming soon" surfaces in the shipped beta outright. Deleted
+rather than annotated, with every reader repointed at the real surface: the
+profile menu, the routing allow-list, and the `achievement_unlocked`
+notification route.
+
+### 11.3 Push delivery would have died silently
+
+`watchTokenRefresh` was written, exported, documented, and **called from
+nowhere**. Its own docstring says that without it "the stored token goes stale
+and delivery stops with no error anywhere". FCM rotates tokens, so the weekly
+summary would simply stop arriving for a driver and nothing would log it. Now
+bound to the signed-in user in `NotificationGate`.
+
+### 11.4 Correction to section 9: onboarding state does NOT survive a kill
+
+The scripted loop proves the **community** loop survives kill-and-relaunch,
+because that state is in Firestore. Onboarding answers are a different matter
+and the claim should not be read as covering them. There is no AsyncStorage in
+the project; answers live in a `useReducer` until `processing.tsx` fires
+`saveToFirestore().catch(() => {})`, fire-and-forget with the failure
+swallowed. Kill the app before that step and the answers are gone; kill it
+after and the driver still restarts at screen one, because nothing reads back
+what was saved. Not fixed here, and it is a real System 1 gap.
+
+### 11.5 Two writers disagree about the shape of the user document
+
+`OnboardingContext.tsx` calls `.set({...}, {merge:true})` with dotted string
+keys (`'onboarding.answers'`, `'onboarding.permissions'`). Firestore expands
+dotted paths in `update()`, **not** in `set()`, so under `set()` those become
+top-level fields whose names literally contain full stops.
+`AuthContext.markOnboardingComplete` uses `.update()` with
+`'onboarding.completedAt'`, which does nest. `hooks/usePermissions.ts` repeats
+the `set()` pattern.
+
+So the same document gets both a nested `onboarding` map and sibling fields
+called `onboarding.answers`. Verified by reading the code, not from a live
+write. Not fixed here: it needs a decision about which shape wins and a
+migration for any document already written the wrong way.
+
+### 11.6 Caveat to the Android build path in section 7
+
+`mobile/app.json` declares `ios.googleServicesFile`, and neither
+`GoogleService-Info.plist` nor `google-services.json` is present in a fresh
+worktree, because both are gitignored (the repo is public). They exist on
+Jamal's machine. A cloud build will need them supplied as EAS secrets or
+restored locally first, so `eas build` is not quite a one-liner.

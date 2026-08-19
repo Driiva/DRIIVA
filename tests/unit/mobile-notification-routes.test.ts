@@ -32,8 +32,10 @@ describe('routeForNotification', () => {
     expect(routeForNotification({ type: 'trip_complete' })).toBe('/(tabs)/trips');
   });
 
-  it('sends an unlocked achievement to achievements', () => {
-    expect(routeForNotification({ type: 'achievement_unlocked' })).toBe('/achievements');
+  it('sends an unlocked achievement to the surface that actually lists them', () => {
+    // Rewards, not a standalone /achievements route: that one was a "coming
+    // this week" placeholder standing in front of the working surface.
+    expect(routeForNotification({ type: 'achievement_unlocked' })).toBe('/(tabs)/rewards');
   });
 
   /**
