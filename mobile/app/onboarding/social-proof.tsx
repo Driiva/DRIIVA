@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 /**
  * Onboarding step 4 - why Driiva works this way.
  *
@@ -17,6 +18,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
+import { ONBOARDING_TOTAL, stepNumber } from '@/lib/onboardingFlow';
+import { track } from '@/lib/analytics';
 import { C, F, S, R, FS, LH, TR } from '@/components/ui/theme';
 
 const PRINCIPLES = [
@@ -35,12 +38,16 @@ const PRINCIPLES = [
 ];
 
 export default function SocialProof() {
+  useEffect(() => {
+    track('onboarding_step_viewed', { step: stepNumber('social-proof'), name: 'social-proof' });
+  }, []);
+
   const router = useRouter();
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.progress}>
-        <ProgressBar step={4} total={14} />
+        <ProgressBar step={stepNumber('social-proof')} total={ONBOARDING_TOTAL} />
       </View>
 
       <View style={styles.content}>

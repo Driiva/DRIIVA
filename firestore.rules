@@ -123,6 +123,36 @@ service cloud.firestore {
         allow write: if false;
       }
 
+      /*
+       * ANALYTICS EVENTS (beta). The client's own behavioural trail, written
+       * by mobile/lib/analytics.ts.
+       *
+       * APPEND-ONLY, DELIBERATELY. The design gate is evidenced by this trail:
+       * it is how we prove a real person completed onboarding and the core
+       * loop unaided. A client that could update or delete its own events
+       * could rewrite that evidence after the fact, which would make the gate
+       * worthless. Create is the only verb.
+       *
+       * The shape is validated here rather than trusted, so a malformed or
+       * back-dated envelope is refused at the boundary instead of quietly
+       * polluting the funnel. occurredAt is the device clock and is therefore
+       * advisory; recordedAt is the server's own timestamp and is what any
+       * ordering question should be settled on.
+       */
+      match /events/{eventId} {
+        allow read: if isOwner(userId);
+        allow update, delete: if false;
+        allow create: if isOwner(userId)
+                      && request.resource.data.userId == userId
+                      && request.resource.data.event is string
+                      && request.resource.data.event.size() > 0
+                      && request.resource.data.event.size() <= 64
+                      && request.resource.data.sessionId is string
+                      && request.resource.data.durable is bool
+                      && request.resource.data.occurredAt is number
+                      && request.resource.data.recordedAt == request.time;
+      }
+
       // Pending Stripe payments (written by webhook handler via Admin SDK; client read-only)
       // Explicit deny on write prevents a client from crafting a fake payment doc
       // that could trigger the Cloud Function to bind a Root policy without real payment.
@@ -276,7 +306,21 @@ service cloud.firestore {
             && data.friendshipId == friendshipId;
       }
 
-      allow read: if isAuthenticated() && request.auth.uid in resource.data.users;
+      /*
+       * `resource == null` is the ordinary case, not an edge case: redeeming
+       * an invite reads friendships/{pairId} to find out whether the two are
+       * already connected, and the whole point of the happy path is that the
+       * document is NOT there yet.
+       *
+       * Without the null guard, `resource.data.users` raises a Null value
+       * error on a missing document. A rules error is not a quiet deny: it
+       * surfaces to the client as a FirebaseError, so every first-time
+       * redemption, the only kind that matters, failed with "we could not
+       * connect you just now" on both web and mobile. Reading a document that
+       * does not exist leaks nothing, because there is nothing there.
+       */
+      allow read: if isAuthenticated()
+                  && (resource == null || request.auth.uid in resource.data.users);
 
       allow create: if isAuthenticated()
                     && request.auth.uid in request.resource.data.users

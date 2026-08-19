@@ -1,8 +1,11 @@
+import { useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
+import { ONBOARDING_TOTAL, stepNumber } from '@/lib/onboardingFlow';
+import { track } from '@/lib/analytics';
 import { C, F, S, R, RGB, alpha, FS, LH, TR } from '@/components/ui/theme';
 
 const ROWS = [
@@ -13,12 +16,16 @@ const ROWS = [
 ];
 
 export default function Comparison() {
+  useEffect(() => {
+    track('onboarding_step_viewed', { step: stepNumber('comparison'), name: 'comparison' });
+  }, []);
+
   const router = useRouter();
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.progress}>
-        <ProgressBar step={7} total={14} />
+        <ProgressBar step={stepNumber('comparison')} total={ONBOARDING_TOTAL} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>

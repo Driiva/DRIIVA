@@ -50,7 +50,7 @@ const SIGNED_IN_HOMES = new Set(['(tabs)', 'onboarding', 'trips']);
  * on one of them is exactly where they meant to be.
  */
 const ROOT_STACK_SCREENS = new Set([
-  'achievements',
+  'invite',
   'leaderboard',
   'notifications',
   'policy',

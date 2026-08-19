@@ -1,11 +1,13 @@
+import { useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
+import { ONBOARDING_TOTAL, stepNumber } from '@/lib/onboardingFlow';
+import { track } from '@/lib/analytics';
 import { C, F, S, R, FS } from '@/components/ui/theme';
 
-const TOTAL = 14;
 
 /**
  * The proposition, stated plainly. This card used to be a mock leaderboard
@@ -20,6 +22,12 @@ const STEPS = [
 ];
 
 export default function Welcome() {
+  useEffect(() => {
+    // Both: the funnel needs a denominator, and the first step needs a view.
+    track('onboarding_started');
+    track('onboarding_step_viewed', { step: stepNumber('index'), name: 'index' });
+  }, []);
+
   const router = useRouter();
   const { setStep } = useOnboarding();
 
@@ -31,7 +39,7 @@ export default function Welcome() {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.progress}>
-        <ProgressBar step={1} total={TOTAL} />
+        <ProgressBar step={stepNumber('index')} total={ONBOARDING_TOTAL} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>

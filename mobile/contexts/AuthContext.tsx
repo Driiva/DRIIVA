@@ -3,6 +3,7 @@
  * Uses @react-native-firebase/auth instead of the web Firebase SDK.
  */
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { setAnalyticsUser, track } from '@/lib/analytics';
 import { auth, firestore, FirebaseUser } from '@/lib/firebase';
 import * as SecureStore from 'expo-secure-store';
 
@@ -46,10 +47,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const unsubscribe = auth().onAuthStateChanged(async (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
+        // Point the analytics trail at this user before resolving the profile.
+        // Anything emitted earlier in the session, which is most of onboarding,
+        // is held unattributed and back-filled the moment this runs.
+        setAnalyticsUser(firebaseUser.uid);
         const userData = await resolveUser(firebaseUser);
         setUser(userData);
         SecureStore.setItemAsync(AUTH_CACHE_KEY, JSON.stringify(userData));
       } else {
+        // Clears the pending queue too, so one person's actions can never be
+        // written against whoever signs in next on the same handset.
+        setAnalyticsUser(null);
         setUser(null);
         SecureStore.deleteItemAsync(AUTH_CACHE_KEY);
       }
@@ -60,6 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(async (email: string, password: string) => {
     await auth().signInWithEmailAndPassword(email, password);
+    track('signed_in');
   }, []);
 
   const signup = useCallback(async (email: string, password: string, name: string) => {
@@ -74,6 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       createdAt: firestore.FieldValue.serverTimestamp(),
       createdBy: 'mobile-app',
     });
+    track('account_created');
   }, []);
 
   const logout = useCallback(async () => {
@@ -92,6 +102,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       onboardingComplete: true,
       'onboarding.completedAt': firestore.FieldValue.serverTimestamp(),
     });
+    // Emitted after the write lands, never before: an onboarding_completed
+    // event recorded ahead of the gate flipping would report a funnel the
+    // product did not actually deliver.
+    track('onboarding_completed');
     setUser(prev => {
       if (!prev) return null;
       const updated = { ...prev, onboardingComplete: true };

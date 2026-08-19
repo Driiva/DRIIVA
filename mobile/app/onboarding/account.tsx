@@ -1,13 +1,20 @@
+import { useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
+import { ONBOARDING_TOTAL, stepNumber } from '@/lib/onboardingFlow';
+import { track } from '@/lib/analytics';
 import { ScoreRing } from '@/components/ui/ScoreRing';
 import { C, F, S, R, RGB, alpha, FS } from '@/components/ui/theme';
 
 export default function Account() {
+  useEffect(() => {
+    track('onboarding_step_viewed', { step: stepNumber('account'), name: 'account' });
+  }, []);
+
   const router = useRouter();
   const { user } = useAuth();
   const { state } = useOnboarding();
@@ -17,7 +24,7 @@ export default function Account() {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.progress}>
-        <ProgressBar step={13} total={14} />
+        <ProgressBar step={stepNumber('account')} total={ONBOARDING_TOTAL} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -57,7 +64,7 @@ export default function Account() {
       <View style={styles.footer}>
         <TouchableOpacity
           style={styles.primaryBtn}
-          onPress={() => router.push('/onboarding/quote')}
+          onPress={() => router.push('/onboarding/community')}
           activeOpacity={0.8}
         >
           <Text style={styles.primaryBtnText}>Get my quote</Text>

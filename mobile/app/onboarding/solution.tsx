@@ -1,9 +1,12 @@
+import { useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
+import { ONBOARDING_TOTAL, stepNumber } from '@/lib/onboardingFlow';
+import { track } from '@/lib/analytics';
 import { C, F, S, R, FS, LH, TR } from '@/components/ui/theme';
 
 // FCA DISCLOSURE REQUIRED on financial claims before launch
@@ -27,6 +30,10 @@ const ALL_SOLUTIONS = [
 ];
 
 export default function PersonalisedSolution() {
+  useEffect(() => {
+    track('onboarding_step_viewed', { step: stepNumber('solution'), name: 'solution' });
+  }, []);
+
   const router = useRouter();
   const { state } = useOnboarding();
 
@@ -37,7 +44,7 @@ export default function PersonalisedSolution() {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.progress}>
-        <ProgressBar step={6} total={14} />
+        <ProgressBar step={stepNumber('solution')} total={ONBOARDING_TOTAL} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>

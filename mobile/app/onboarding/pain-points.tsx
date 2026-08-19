@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
+import { ONBOARDING_TOTAL, stepNumber } from '@/lib/onboardingFlow';
+import { track } from '@/lib/analytics';
 import { C, F, S, R, RGB, alpha, FS, LH, TR } from '@/components/ui/theme';
 
 const OPTIONS = [
@@ -17,6 +19,10 @@ const OPTIONS = [
 ];
 
 export default function PainPoints() {
+  useEffect(() => {
+    track('onboarding_step_viewed', { step: stepNumber('pain-points'), name: 'pain-points' });
+  }, []);
+
   const router = useRouter();
   const { setPainPoints } = useOnboarding();
   const [selected, setSelected] = useState<Set<number>>(new Set());
@@ -35,7 +41,7 @@ export default function PainPoints() {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.progress}>
-        <ProgressBar step={3} total={14} />
+        <ProgressBar step={stepNumber('pain-points')} total={ONBOARDING_TOTAL} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>

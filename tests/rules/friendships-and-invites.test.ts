@@ -292,6 +292,33 @@ describe('friendships', () => {
     await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), 'friendships', ALICE_BOB)));
   });
 
+  /**
+   * The read that happens BEFORE any friendship exists.
+   *
+   * Redeeming an invite asks "are these two already connected" by getting
+   * friendships/{pairId}, and on the happy path that document is absent. The
+   * rule used to read `resource.data.users` unguarded, which raises a Null
+   * value error on a missing document rather than denying quietly, and a rules
+   * error reaches the client as a FirebaseError. Every first-time redemption,
+   * the only kind that matters, failed with "we could not connect you just
+   * now" on both web and mobile.
+   *
+   * The suite missed it because the end-to-end test below models the WRITES
+   * the flow performs and not the read the client performs first. A test that
+   * seeds the document can never catch a bug that only exists when it is
+   * absent.
+   */
+  it('can be read when it does not exist yet, which is the redemption path', async () => {
+    const bob = env.authenticatedContext(BOB).firestore();
+    await assertSucceeds(getDoc(doc(bob, 'friendships', ALICE_BOB)));
+  });
+
+  it('still refuses a stranger reading a pair that does exist', async () => {
+    await seedFriendship();
+    const mallory = env.authenticatedContext(MALLORY).firestore();
+    await assertFails(getDoc(doc(mallory, 'friendships', ALICE_BOB)));
+  });
+
   it('cannot be edited into a different pair', async () => {
     await seedFriendship();
     const bob = env.authenticatedContext(BOB).firestore();

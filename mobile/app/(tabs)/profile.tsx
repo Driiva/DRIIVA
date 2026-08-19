@@ -38,7 +38,7 @@ export default function Profile() {
           <MenuItem icon="settings-outline" label="Settings" onPress={() => router.push('/settings')} />
           <MenuItem icon="car-outline" label="Vehicle" onPress={() => router.push('/vehicle')} />
           <MenuItem icon="shield-checkmark-outline" label="Policy" onPress={() => router.push('/policy')} />
-          <MenuItem icon="trophy-outline" label="Achievements" onPress={() => router.push('/achievements')} />
+          <MenuItem icon="trophy-outline" label="Achievements" onPress={() => router.push('/(tabs)/rewards')} />
           <MenuItem icon="bar-chart-outline" label="Leaderboard" onPress={() => router.push('/leaderboard')} />
           <MenuItem icon="help-circle-outline" label="Support" onPress={() => router.push('/support')} />
         </View>

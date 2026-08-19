@@ -26,6 +26,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { firestore } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
+import { track } from '@/lib/analytics';
 import { C, T, F, S, scoreColor, FS } from '@/components/ui/theme';
 import { ScoreRing } from '@/components/ui/ScoreRing';
 import { StatCard } from '@/components/ui/StatCard';
@@ -118,6 +119,13 @@ function isoWeekPeriod(now: Date): string {
 }
 
 export default function Dashboard() {
+  // The dashboard IS the score. Viewing it is the loop step between
+  // driving and comparing, so it needs its own event or the funnel jumps
+  // straight from trip to leaderboard with nothing in between.
+  useEffect(() => {
+    track('score_viewed');
+  }, []);
+
   const { user } = useAuth();
   const [data, setData] = useState<DashboardData | null>(null);
   const [pool, setPool] = useState<PoolState | null>(null);

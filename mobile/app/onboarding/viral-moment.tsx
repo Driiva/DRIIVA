@@ -1,14 +1,21 @@
+import { useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Share, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
+import { ONBOARDING_TOTAL, stepNumber } from '@/lib/onboardingFlow';
+import { track } from '@/lib/analytics';
 import { ScoreRing } from '@/components/ui/ScoreRing';
 import { C, F, S, R, RGB, alpha, FS, LH } from '@/components/ui/theme';
 import { refundEstimate, scorePercentile } from '@/hooks/useTripSeed';
 
 // FCA DISCLOSURE REQUIRED - refund estimates are illustrative, not guaranteed
 export default function ViralMoment() {
+  useEffect(() => {
+    track('onboarding_step_viewed', { step: stepNumber('viral-moment'), name: 'viral-moment' });
+  }, []);
+
   const router = useRouter();
   const { state } = useOnboarding();
   const { seedScore } = state;
@@ -32,7 +39,7 @@ export default function ViralMoment() {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.progress}>
-        <ProgressBar step={12} total={14} />
+        <ProgressBar step={stepNumber('viral-moment')} total={ONBOARDING_TOTAL} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
