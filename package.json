@@ -38,7 +38,8 @@
     "qa:seed": "FIRESTORE_EMULATOR_HOST=127.0.0.1:8085 FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9098 GCLOUD_PROJECT=driiva node scripts/seed-qa-emulator.mjs",
     "qa:emulators": "firebase emulators:start --only auth,firestore --config firebase.qa.json --project driiva",
     "axe": "node tests/axe-audit.mjs",
-    "gates": "./scripts/run-gates.sh"
+    "gates": "./scripts/run-gates.sh",
+    "verify:beta": "node scripts/verify-beta.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^0.10.4",
