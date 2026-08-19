@@ -29,6 +29,7 @@ import { DriivButton } from '@/components/ui/DriivButton';
 import { C, F, S, R, FS, LH, TR } from '@/components/ui/theme';
 import { ONBOARDING_TOTAL, stepNumber } from '@/lib/onboardingFlow';
 import { track } from '@/lib/analytics';
+import { getPushPermission, registerForPush, type PushPermission } from '@/lib/push';
 
 const POINTS = [
   {
@@ -47,9 +48,14 @@ const POINTS = [
 
 export default function Community() {
   const router = useRouter();
-  const { markOnboardingComplete } = useAuth();
+  const { user, markOnboardingComplete } = useAuth();
   const [finishing, setFinishing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pushState, setPushState] = useState<PushPermission | 'asking'>('undetermined');
+
+  useEffect(() => {
+    getPushPermission().then(setPushState);
+  }, []);
 
   useEffect(() => {
     track('onboarding_step_viewed', { step: stepNumber('community'), name: 'community' });
@@ -92,6 +98,45 @@ export default function Community() {
             </View>
           ))}
         </View>
+
+        {/*
+          The permission ask lives here, user-initiated, rather than firing on
+          launch. iOS gives an app exactly one system prompt, and spending it
+          before the person knows what the app does is how you earn a permanent
+          denial. By this point the weekly beat has just been explained, so the
+          notification has a reason the driver can actually judge.
+        */}
+        {pushState === 'undetermined' || pushState === 'asking' ? (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Tell me when my week closes.</Text>
+            <Text style={styles.cardBody}>
+              One notification a week with your score, trips and miles. Nothing else.
+            </Text>
+            <View style={styles.cardAction}>
+              <DriivButton
+                title="Turn on weekly summary"
+                variant="secondary"
+                loading={pushState === 'asking'}
+                disabled={pushState === 'asking'}
+                onPress={async () => {
+                  if (!user?.id) return;
+                  setPushState('asking');
+                  track('push_permission_requested');
+                  const result = await registerForPush(user.id);
+                  track('push_permission_resolved', { result });
+                  setPushState(result);
+                }}
+              />
+            </View>
+          </View>
+        ) : null}
+
+        {pushState === 'granted' ? (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Weekly summary is on.</Text>
+            <Text style={styles.cardBody}>You can turn it off in settings at any time.</Text>
+          </View>
+        ) : null}
       </ScrollView>
 
       <View style={styles.footer}>
@@ -127,7 +172,7 @@ const styles = StyleSheet.create({
     marginBottom: S.lg,
   },
 
-  list: { gap: S.sm },
+  list: { gap: S.sm, marginBottom: S.sm },
   card: {
     backgroundColor: C.surface1,
     borderRadius: R.card,
@@ -147,6 +192,7 @@ const styles = StyleSheet.create({
     fontSize: FS.md,
     lineHeight: LH.md,
   },
+  cardAction: { marginTop: S.sm },
 
   footer: {
     padding: S.lg,

@@ -26,6 +26,7 @@
  *    batch with permission-denied and strands the trip in 'recording' forever.
  */
 import { firestore, isExpoGo } from './firebase';
+import { track } from '@/lib/analytics';
 import { haversineMeters } from '@shared/tripProcessor';
 import { DEFAULT_PAGE_SIZE, decodeCursor, encodeCursor, pageLimit, splitPage } from '@shared/pagination';
 import { encodePoint, type SampledLocation, type StoredTripPoint } from '@shared/trip-capture';
@@ -276,6 +277,11 @@ export async function startTrip(userId: string, start: TripLocationInput): Promi
     throw new TripCaptureError('write_failed', 'Could not start recording. Try again.');
   }
 
+  // After the commit, never before: a trip_started recorded on an attempt that
+  // failed to write would inflate the top of the funnel with drives that never
+  // existed and make the completion rate look worse than it is.
+  track('trip_started');
+
   return tripId;
 }
 
@@ -340,6 +346,14 @@ export async function submitTripForScoring(
     console.error('[trips] submitTripForScoring failed', err);
     throw new TripCaptureError('write_failed', 'Could not save the trip. Try again.');
   }
+
+  // Distance and duration are rounded into buckets rather than reported raw:
+  // a precise distance paired with a timestamp is close to a journey, and the
+  // funnel only needs to know the shape of the drive.
+  track('trip_completed', {
+    distance_km: Math.round(input.distanceMeters / 1000),
+    points: input.pointsCount,
+  });
 }
 
 /**
