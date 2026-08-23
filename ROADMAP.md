@@ -1,6 +1,6 @@
 # Driiva - Current sprint (tickets)
 
-**Last updated:** 18 August 2026
+**Last updated:** 23 August 2026
 **Product Lead:** Keith Cheng (onboarded 27 June 2026)
 **External memory for AI sessions:** Work on the next unchecked ticket only; update this list when done.
 
@@ -58,6 +58,8 @@ Integrated on `premium-lift/main` and merged to `main` on 10 August. Full record
 - [x] Fix the iOS cold-launch crash: a non-worklet function called on the UI runtime aborted the process, which also explained the dashboard reading zeros - *done: `97d8150`, `9acad43`, `486aaf7`, `b852676`*
 - [x] First on-device captures of the mobile app, dashboard included - *done: `58ba33e`, `bd388f3`, `01987d6`*
 - [x] EAS build config added now the iOS app is registered in Firebase - *done: `175baea`*
+- [x] Get the first iOS build through EAS and onto TestFlight. Three things had to be fixed before a build could even start, none of which had been caught because the EAS build history for `@mrshippers/driiva` was empty. `app.json` is static JSON and never expands environment variables, so `"$GOOGLE_SERVICES_PLIST"` was handed to the config plugins verbatim as a filename and entitlement introspection died on ENOENT before credentials were considered; `app.config.js` now resolves it from the builder environment and falls back to the local gitignored plist. The `ascAppId` placeholder was replaced with the real App Store Connect record (6804415109), with `com.driiva.app` registered as an App ID under team `5DYUDAB2Y3`. Prebuild then died because `with-firebase-configure` required an `import FirebaseCore` that its stated upstream no longer adds on SDK 54, so the plugin inserts the import itself and no longer depends on plugin ordering; verified with a local `expo prebuild --clean --platform ios` at exit 0. Signing pinned to local credentials, and an App Store Connect App Manager API key wired into the production submit profile so `eas submit` runs non-interactively with no Apple login. Build 4 uploaded - *done: `6801653`, `e092c89`, `53d7d51`*
+- [ ] Back up `mobile/credentials/AuthKey_98J3NXKPRN.p8`. Apple allows the key to be downloaded once only, so the gitignored file in the working tree is the sole copy and wiping the tree loses non-interactive submits - *raised by `53d7d51`*
 - [x] QA gate: accessibility 80 serious/critical down to 0, banned copy removed, /rewards and /achievements reconciled - *done: `3a72b86`, `6437d4c`, `67c7c3b`*
 - [x] Wave K: integration suite green, and "nothing here" separated from "we do not know what is here" - *done: `ee0ca45`, `e7fd6c8`*
 - [x] Wave L: the design laws now reach the real product through a seeded emulator sign-in rather than demo mode, and say so when they do not - *done: `dd182ad`*
