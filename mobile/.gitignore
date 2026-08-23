@@ -43,3 +43,7 @@ yarn-error.*
 # Local-only Firebase native config (emulator placeholder, never commit)
 GoogleService-Info.plist
 google-services.json
+
+# iOS signing material (local EAS credentials)
+credentials/
+credentials.json

@@ -47,16 +47,32 @@ const withFirebaseConfigure = (config) =>
         );
       }
 
-      const contents = fs.readFileSync(appDelegate, 'utf8');
+      let contents = fs.readFileSync(appDelegate, 'utf8');
 
       // Already wired, by upstream or by a previous run of this plugin.
       if (contents.includes(CALL)) return cfg;
 
+      // The header above says the upstream plugin still adds this import even
+      // when it skips the configure call. On SDK 54 it does not: it skips the
+      // Swift AppDelegate entirely and adds nothing, so this plugin used to
+      // throw on a precondition that could never hold and no iOS build could
+      // get past prebuild. Add the import ourselves instead of failing on
+      // something we can fix, which also drops the ordering dependency on
+      // @react-native-firebase/app.
       if (!contents.includes('import FirebaseCore')) {
-        throw new Error(
-          '[with-firebase-configure] AppDelegate.swift has no `import FirebaseCore`. ' +
-            'This plugin must run after @react-native-firebase/app, which adds it.',
-        );
+        const lines = contents.split('\n');
+        let lastImport = -1;
+        for (let i = 0; i < lines.length; i++) {
+          if (/^import\s+\w/.test(lines[i])) lastImport = i;
+        }
+        if (lastImport === -1) {
+          throw new Error(
+            '[with-firebase-configure] AppDelegate.swift has no import block to ' +
+              'extend. The Expo template changed; update this plugin.',
+          );
+        }
+        lines.splice(lastImport + 1, 0, 'import FirebaseCore');
+        contents = lines.join('\n');
       }
 
       // The opening brace of didFinishLaunchingWithOptions.
