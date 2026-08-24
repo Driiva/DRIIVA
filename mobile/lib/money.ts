@@ -5,6 +5,13 @@
  * pounds" mistake (the dashboard once rendered a refund at 100x) cannot come
  * back one screen at a time. Inputs are integer pence/cents; anything that is
  * not a finite number renders as the placeholder rather than "£NaN".
+ *
+ * The placeholder carries NO digits, deliberately. An amount we do not have is
+ * not an amount of zero: a driver with no premium bound yet has an unknown
+ * refund, not a refund of nothing, and "£0.00" states the second. Absence
+ * renders as words so the empty state stays a state instead of generating a
+ * figure nobody computed. A real zero still renders as "£0.00", because that
+ * one was actually calculated.
  */
 
 const GBP = new Intl.NumberFormat('en-GB', {
@@ -21,7 +28,7 @@ const GBP_WHOLE = new Intl.NumberFormat('en-GB', {
   maximumFractionDigits: 0,
 });
 
-export const MONEY_PLACEHOLDER = '£0.00';
+export const MONEY_PLACEHOLDER = 'Not started';
 
 export function isValidCents(cents: unknown): cents is number {
   return typeof cents === 'number' && Number.isFinite(cents);
@@ -34,7 +41,7 @@ export function formatPounds(cents: unknown, placeholder: string = MONEY_PLACEHO
 }
 
 /** 123456 -> "£1,235" for headline figures where pence add noise. */
-export function formatPoundsWhole(cents: unknown, placeholder: string = '£0'): string {
+export function formatPoundsWhole(cents: unknown, placeholder: string = MONEY_PLACEHOLDER): string {
   if (!isValidCents(cents)) return placeholder;
   return GBP_WHOLE.format(Math.round(cents) / 100);
 }
