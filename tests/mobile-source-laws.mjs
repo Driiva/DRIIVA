@@ -253,6 +253,23 @@ export const badge = 'All done \u2705';
 export const Node = <Text>Nice one!</Text>;
 `;
 
+/**
+ * Run every law over ONE source string, without touching the filesystem.
+ *
+ * The suite's other entry point walks the real mobile tree, which makes it a
+ * good gate and a poor place to pin a specific shape: "the screen that used to
+ * trip this no longer does" stops being evidence the moment somebody edits
+ * that screen. This lets a test state the shape it cares about directly, in
+ * both directions, and keep proving it after the source moves on.
+ */
+export function lintSource(file, source) {
+  return LAWS.map((law) => ({
+    id: law.id,
+    title: law.title,
+    violations: law.check(file, source).map((hit) => ({ file, ...hit })),
+  }));
+}
+
 export function runMobileSourceLaws({ planted = false } = {}) {
   const files = MOBILE_DIRS.flatMap((dir) => walk(join(ROOT, dir))).map((f) =>
     relative(ROOT, f).split('\\').join('/'),
