@@ -1,47 +1,34 @@
 /**
- * Record - Driiva Mobile
+ * Drive - Driiva Mobile
  *
- * Real on-device trip capture (Wave C, C1 + C2). What was here before was a UI
- * shell over `setTimeout(() => setState('idle'), 3000)` with two TODOs where
- * the telematics should be: it showed "Recording Trip", then "Processing", then
- * returned to idle having captured, written and scored precisely nothing.
+ * The instrument for a product whose headline claim is that it notices for you.
+ * That claim is why this screen has no big button on it: a surface built around
+ * a record control teaches the driver that Driiva only works if they remember
+ * to press something, which is the opposite of what it does.
  *
- * What it does now:
- *   - watches real GPS through expo-location while the trip is running
- *   - streams those points to tripPoints/{tripId}/batches/{n}
- *   - flips the trip recording -> processing on stop, which is what the
- *     existing Cloud Function pipeline scores
- *   - asks "was this you driving?" before submitting, because GPS alone cannot
- *     tell a car from a bus, a train or a bike (Keith's Q2). A journey the
- *     driver did not drive is discarded, not scored
- *   - shows the refund moment when the scored trip lands
- *   - validates every fix at the boundary before it is written, and shows the
- *     driver what capture actually managed: live speed, elapsed, distance, a
- *     GPS quality dot read from the fix's own accuracy, and a count of any
- *     fixes that could not be recorded. Nothing is interpolated to fill a gap;
- *     see lib/telemetryGuard.ts for why the gate keeps extreme fixes and
- *     refuses only structurally invalid ones
+ * Three states, one screen:
+ *   ARMED    a live dot and a plain sentence saying detection is watching, plus
+ *            the last drive so the screen is never empty for a returning driver.
+ *            Starting by hand is a small text action, not the main event.
+ *   DRIVING  speed is the anchor. A thin 270 degree arc breathes while fixes
+ *            arrive, so "it is working" is legible from a phone in a mount at a
+ *            glance, without reading anything. Ending is a press and hold.
+ *   ENDED    hands off to RefundMoment.
  *
- * MODE CONFIRMATION IS ASKED BEFORE SUBMISSION, DELIBERATELY. The rules only
- * allow a client to move a trip recording -> processing or recording -> failed,
- * so a correction collected after scoring could not undo the score it had
- * already contributed. Asking first means the answer is always honoured.
+ * WHAT IS REAL AND WHAT IS NOT. Detection, capture, upload and scoring are
+ * proved end to end against real Firebase on the iOS simulator. Background
+ * capture on a PHYSICAL device, with the OS free to suspend the app in a real
+ * car, is NOT VERIFIED. Nothing on this screen claims otherwise.
  *
- * FOREGROUND WATCH IS PRIMARY. Location.watchPositionAsync above is the
- * confirmed, on-device path and stays the first line of capture. Since (see
- * DRIIVA_CHANGELOG.md) a background task via expo-task-manager +
- * Location.startLocationUpdatesAsync is layered on top of it, additively:
- * when a trip starts, if "Always" location is already granted it starts
- * silently; otherwise the driver is shown an explicit card asking before the
- * OS "Always" prompt ever appears (see the backgroundOffer state below, and
- * lib/backgroundLocation.ts). Declining leaves capture exactly as before -
- * foreground only, driver told to keep the app open. Background capture is
- * NOT VERIFIED ON A PHYSICAL DEVICE; see DRIIVA_CHANGELOG.md.
+ * Every number here is measured. There is no placeholder that could be mistaken
+ * for a reading: before the first fix the speed sits at zero, dimmed, with
+ * "waiting for GPS" under it, so a real stationary zero and "nothing yet" are
+ * never the same pixels.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, AppState, Alert } from 'react-native';
+import { View, Text, StyleSheet, Pressable, AppState } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import Svg, { Path } from 'react-native-svg';
 import Animated, {
   Easing,
   cancelAnimation,
@@ -54,30 +41,22 @@ import Animated, {
 import * as Haptics from 'expo-haptics';
 import * as Location from 'expo-location';
 import { projectedRefundCents } from '@driiva/scoring';
-import { C, T, S, R } from '@/components/ui/theme';
-import { SurfaceCard } from '@/components/ui/SurfaceCard';
-import { DriivButton } from '@/components/ui/DriivButton';
+import { C, T, S, R, FS, LH, alpha, RGB, scoreColor } from '@/components/ui/theme';
 import { RefundMoment } from '@/components/RefundMoment';
 import { useAuth } from '@/contexts/AuthContext';
-import { usePermissions } from '@/hooks/usePermissions';
 import { firestore, isExpoGo } from '@/lib/firebase';
-import {
-  TripCaptureError,
-  TripPointWriter,
-  discardTrip,
-  startTrip,
-  submitTripForScoring,
-  type SampledLocation,
-} from '@/lib/trips';
 import { PhonePickupDetector } from '@/lib/phonePickup';
 import {
-  hasBackgroundLocationPermission,
-  setActiveWriter,
-  startBackgroundLocationUpdates,
-  stopBackgroundLocationUpdates,
+  getBackgroundCaptureHealth,
+  subscribeBackgroundCaptureHealth,
+  type BackgroundCaptureHealth,
 } from '@/lib/backgroundLocation';
-
-type Phase = 'idle' | 'starting' | 'recording' | 'confirming' | 'submitting' | 'waiting';
+import {
+  driveMonitor,
+  isDetectionArmed,
+  setMonitorUser,
+  startWatchingForDrives,
+} from '@/lib/driveMonitorInstance';
 
 interface LandedTrip {
   tripScore: number;
@@ -87,12 +66,16 @@ interface LandedTrip {
   newProjectedPence: number | null;
 }
 
-/** One fix per second, or every 10 metres. Matches samplingRateHz: 1. */
-const LOCATION_OPTIONS: Location.LocationOptions = {
-  accuracy: Location.Accuracy.BestForNavigation,
-  timeInterval: 1000,
-  distanceInterval: 10,
-};
+interface LastDrive {
+  miles: number;
+  score: number;
+  endedAt: Date;
+}
+
+const METRES_PER_SECOND_TO_MPH = 2.23694;
+const METRES_PER_MILE = 1609.34;
+/** How long "End drive" must be held. Long enough that a pocket cannot do it. */
+const HOLD_TO_END_MS = 600;
 
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -100,31 +83,12 @@ function formatDuration(seconds: number): string {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
-const METRES_PER_SECOND_TO_MPH = 2.23694;
-
-/**
- * Speed for the live readout. A negative or absent speed is the platform
- * saying it does not know, not zero, so it renders as a placeholder rather
- * than as a number the phone never measured. A stationary car reads 0, an
- * unknown speed reads as the placeholder, and the two stay distinguishable.
- */
-const SPEED_UNKNOWN = '-';
-
-function formatSpeed(metresPerSecond: number | null): string {
-  if (metresPerSecond === null || !Number.isFinite(metresPerSecond) || metresPerSecond < 0) {
-    return SPEED_UNKNOWN;
-  }
-  return String(Math.round(metresPerSecond * METRES_PER_SECOND_TO_MPH));
+function formatDay(date: Date): string {
+  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
 
 type FixQuality = 'good' | 'fair' | 'poor' | 'unknown';
 
-/**
- * Horizontal accuracy in metres, read as a quality band. The thresholds are
- * the ordinary shape of a phone GPS fix: a clear sky lock lands inside 10 m,
- * an urban canyon or a windscreen mount drifts past 30 m. Nothing is inferred
- * when the platform reports no accuracy at all.
- */
 function fixQuality(accuracyMeters: number | null): FixQuality {
   if (accuracyMeters === null || !Number.isFinite(accuracyMeters) || accuracyMeters < 0) {
     return 'unknown';
@@ -134,373 +98,283 @@ function fixQuality(accuracyMeters: number | null): FixQuality {
   return 'poor';
 }
 
-const QUALITY_COLOUR: Record<FixQuality, string> = {
-  good: C.success,
-  fair: C.warning,
-  poor: C.error,
-  unknown: C.text.mut,
-};
-
 const QUALITY_LABEL: Record<FixQuality, string> = {
-  good: 'GPS strong',
-  fair: 'GPS fair',
-  poor: 'GPS weak',
-  unknown: 'GPS waiting',
+  good: 'strong',
+  fair: 'fair',
+  poor: 'weak',
+  unknown: 'waiting',
 };
 
-export default function Record() {
-  const { user } = useAuth();
-  const { requestBackgroundLocation, markBackgroundLocationOffered } = usePermissions();
-  const [phase, setPhase] = useState<Phase>('idle');
-  const [error, setError] = useState<string | null>(null);
-  const [elapsed, setElapsed] = useState(0);
-  const [pointsCount, setPointsCount] = useState(0);
-  const [distanceMeters, setDistanceMeters] = useState(0);
-  const [landed, setLanded] = useState<LandedTrip | null>(null);
-  /** Last reported speed in metres per second, or null when the fix has none. */
-  const [speedMps, setSpeedMps] = useState<number | null>(null);
-  /** Horizontal accuracy of the last fix, in metres. Drives the quality dot. */
-  const [accuracyMeters, setAccuracyMeters] = useState<number | null>(null);
-  /**
-   * Fixes the telemetry gate refused and points the bounded buffer evicted.
-   * Shown rather than logged: a trip that captured less than it looked like it
-   * captured is something the driver is entitled to see while it is happening.
-   */
-  const [rejectedPoints, setRejectedPoints] = useState(0);
-  const [droppedPoints, setDroppedPoints] = useState(0);
-  /** Explicit ask card for "Always" location, shown once per trip when undecided. */
-  const [backgroundOffer, setBackgroundOffer] = useState<'hidden' | 'offering' | 'requesting'>(
-    'hidden',
-  );
-  /** Whether the background task is actually running for the trip in progress. */
-  const [backgroundActive, setBackgroundActive] = useState(false);
+// ─── ─────────────────────────────────────────────────────────────
+// The arc
+// ─── ─────────────────────────────────────────────────────────────
 
-  const tripIdRef = useRef<string | null>(null);
-  const writerRef = useRef<TripPointWriter | null>(null);
-  const watcherRef = useRef<Location.LocationSubscription | null>(null);
-  const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const startMsRef = useRef(0);
-  const finalFixRef = useRef<{ lat: number; lng: number } | null>(null);
-  /** Duration of the stored trace, set at stop and read at submit. */
-  const durationSecondsRef = useRef(0);
-  const scoreWatchRef = useRef<(() => void) | null>(null);
-  const baselineRef = useRef<{ score: number | null; premiumCents: number | null }>({
+/** Same geometry as ScoreRing: a 270 degree sweep opening at the bottom. */
+const SWEEP_DEGREES = 270;
+const START_DEGREES = 135;
+const ARC_SIZE = 260;
+const ARC_STROKE = 2;
+
+function pointAt(centre: number, radius: number, degrees: number): [number, number] {
+  const radians = (degrees * Math.PI) / 180;
+  return [centre + radius * Math.cos(radians), centre + radius * Math.sin(radians)];
+}
+
+function arcPath(centre: number, radius: number): string {
+  const [x1, y1] = pointAt(centre, radius, START_DEGREES);
+  const [x2, y2] = pointAt(centre, radius, START_DEGREES + SWEEP_DEGREES);
+  return `M ${x1} ${y1} A ${radius} ${radius} 0 1 1 ${x2} ${y2}`;
+}
+
+/**
+ * The breathing arc. It is not a gauge and does not encode a value: it says
+ * capture is alive, which is the one thing a driver glancing at a mounted phone
+ * needs. Reduce-motion holds it steady rather than removing it, because it is
+ * the only thing on screen saying the trip is running.
+ */
+function LiveArc({ active }: { active: boolean }) {
+  const reduceMotion = useReducedMotion();
+  const breath = useSharedValue(0);
+
+  useEffect(() => {
+    if (active && !reduceMotion) {
+      breath.value = 0;
+      breath.value = withRepeat(
+        withTiming(1, { duration: 2000, easing: Easing.inOut(Easing.quad) }),
+        -1,
+        true,
+      );
+    } else {
+      cancelAnimation(breath);
+      breath.value = 0;
+    }
+    return () => cancelAnimation(breath);
+  }, [active, reduceMotion, breath]);
+
+  const style = useAnimatedStyle(() => ({ opacity: 0.35 + breath.value * 0.45 }));
+  const centre = ARC_SIZE / 2;
+  const radius = (ARC_SIZE - ARC_STROKE) / 2;
+
+  return (
+    <Animated.View style={[styles.arc, style]} pointerEvents="none">
+      <Svg width={ARC_SIZE} height={ARC_SIZE}>
+        <Path
+          d={arcPath(centre, radius)}
+          stroke={C.primary}
+          strokeWidth={ARC_STROKE}
+          strokeLinecap="round"
+          fill="none"
+        />
+      </Svg>
+    </Animated.View>
+  );
+}
+
+// ─── ─────────────────────────────────────────────────────────────
+// Hold to end
+// ─── ─────────────────────────────────────────────────────────────
+
+/**
+ * A press and hold rather than a tap, because ending a drive closes the trace
+ * and cannot be undone, and a phone in a mount gets brushed. The fill is the
+ * confirmation: it shows the hold being served, so nobody has to guess how long
+ * to keep their thumb down.
+ */
+function HoldToEnd({ onEnd, label }: { onEnd: () => void; label: string }) {
+  const reduceMotion = useReducedMotion();
+  const progress = useSharedValue(0);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clear = useCallback(() => {
+    if (timer.current) {
+      clearTimeout(timer.current);
+      timer.current = null;
+    }
+  }, []);
+
+  useEffect(() => clear, [clear]);
+
+  const onPressIn = useCallback(() => {
+    Haptics.selectionAsync().catch(() => {});
+    progress.value = reduceMotion ? 1 : withTiming(1, { duration: HOLD_TO_END_MS, easing: Easing.linear });
+    timer.current = setTimeout(() => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      onEnd();
+    }, HOLD_TO_END_MS);
+  }, [onEnd, progress, reduceMotion]);
+
+  const onPressOut = useCallback(() => {
+    clear();
+    progress.value = withTiming(0, { duration: 160 });
+  }, [clear, progress]);
+
+  const fill = useAnimatedStyle(() => ({ width: `${progress.value * 100}%` }));
+
+  return (
+    <Pressable
+      onPressIn={onPressIn}
+      onPressOut={onPressOut}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityHint="Press and hold to end the drive"
+      style={styles.holdWrap}
+    >
+      <Animated.View style={[styles.holdFill, fill]} pointerEvents="none" />
+      <Text style={styles.holdLabel}>{label}</Text>
+    </Pressable>
+  );
+}
+
+// ─── ─────────────────────────────────────────────────────────────
+
+export default function Drive() {
+  const { user } = useAuth();
+  const [armed, setArmed] = useState(false);
+  const [driveState, setDriveState] = useState(driveMonitor.driveState);
+  const [tripOpen, setTripOpen] = useState(false);
+  const [speedMps, setSpeedMps] = useState<number | null>(null);
+  const [accuracyMeters, setAccuracyMeters] = useState<number | null>(null);
+  const [elapsed, setElapsed] = useState(0);
+  const [distanceMeters, setDistanceMeters] = useState(0);
+  const [pickups, setPickups] = useState(0);
+  const [health, setHealth] = useState<BackgroundCaptureHealth>(getBackgroundCaptureHealth());
+  const [notice, setNotice] = useState<string | null>(null);
+  const [landed, setLanded] = useState<LandedTrip | null>(null);
+  const [lastDrive, setLastDrive] = useState<LastDrive | null>(null);
+
+  const tripStartedAt = useRef<number | null>(null);
+  const pickupDetector = useRef<PhonePickupDetector | null>(null);
+  const scoreWatch = useRef<(() => void) | null>(null);
+  const baseline = useRef<{ score: number | null; premiumCents: number | null }>({
     score: null,
     premiumCents: null,
   });
-  // Phone-pickup detection (M2-DEC-1 Option A) - runs alongside the GPS watch
-  // for the same lifetime. pickupCountRef holds the count captured at
-  // stopRecording() so confirmDriving() can still read it after the detector
-  // itself has been torn down. See lib/phonePickup.ts for what "pickup" means.
-  const pickupDetectorRef = useRef<PhonePickupDetector | null>(null);
-  const pickupCountRef = useRef(0);
-  /** Set from the same user-doc read as baselineRef; true once the driver has
-   * already seen the background-capture ask (accepted or "not now"), so it is
-   * not shown again on every trip. */
-  const backgroundOfferedRef = useRef(false);
 
-  /**
-   * Clears the live instrument back to nothing measured. Every readout goes to
-   * its own empty value rather than to zero, so a screen showing nothing and a
-   * screen showing a real zero stay distinguishable.
-   */
-  const resetLiveReadout = useCallback(() => {
-    setElapsed(0);
-    setPointsCount(0);
-    setDistanceMeters(0);
-    setSpeedMps(null);
-    setAccuracyMeters(null);
-    setRejectedPoints(0);
-    setDroppedPoints(0);
-    durationSecondsRef.current = 0;
+  // Every trip is written under the signed-in driver, and nothing is recorded
+  // when there is not one.
+  useEffect(() => {
+    setMonitorUser(user?.id ?? null);
+    return () => setMonitorUser(null);
+  }, [user?.id]);
+
+  useEffect(() => {
+    subscribeBackgroundCaptureHealth(setHealth);
+    return () => subscribeBackgroundCaptureHealth(null);
   }, []);
 
-  const teardown = useCallback(() => {
-    watcherRef.current?.remove();
-    watcherRef.current = null;
-    if (tickRef.current) {
-      clearInterval(tickRef.current);
-      tickRef.current = null;
-    }
-    // The trip-scored listener outlives the GPS watch by design (it is waiting
-    // on the server), but it must not outlive the screen.
-    scoreWatchRef.current?.();
-    scoreWatchRef.current = null;
-    // Stop the accelerometer listener too, so an abandoned recording
-    // (unmount, cancel) does not leave a sensor subscription running against
-    // a screen nobody is looking at. Idempotent if stopRecording already
-    // called stop() to capture the final count.
-    pickupDetectorRef.current?.stop();
-    pickupDetectorRef.current = null;
-    // Background capture is additive and follows the same lifecycle as the
-    // foreground watch above: started when a trip begins, stopped here on
-    // every exit path teardown() already covers (stop, cancel, unmount).
-    setActiveWriter(null);
-    stopBackgroundLocationUpdates().catch((err) =>
-      console.error('[record] background stop failed', err),
-    );
-    setBackgroundOffer('hidden');
-    setBackgroundActive(false);
-  }, []);
-
-  // A recording left running when the screen unmounts would keep a GPS watch,
-  // an interval and a Firestore listener alive against a screen nobody is
-  // looking at.
-  useEffect(() => teardown, [teardown]);
-
-  const handleSample = useCallback((fix: Location.LocationObject) => {
-    const sample: SampledLocation = {
-      latitude: fix.coords.latitude,
-      longitude: fix.coords.longitude,
-      speed: fix.coords.speed,
-      heading: fix.coords.heading,
-      accuracy: fix.coords.accuracy,
-      timestamp: fix.timestamp,
-    };
-    writerRef.current?.add(sample);
-    finalFixRef.current = { lat: sample.latitude, lng: sample.longitude };
-    setPointsCount(writerRef.current?.pointsCount ?? 0);
-    setDistanceMeters(writerRef.current?.distance ?? 0);
-    setSpeedMps(sample.speed);
-    setAccuracyMeters(sample.accuracy);
-    setRejectedPoints(writerRef.current?.rejected.rejected ?? 0);
-    setDroppedPoints(writerRef.current?.dropped ?? 0);
-  }, []);
-
-  const beginTrip = useCallback(async () => {
-    if (!user?.id) {
-      setError('Sign in before recording a trip.');
-      return;
-    }
-
-    setError(null);
-    setPhase('starting');
-
-    try {
-      // Refuse in Expo Go rather than recording into a mock that resolves
-      // without persisting. lib/trips.ts throws for this; check first so the
-      // driver gets the reason before any permission prompt.
+  // Arm on mount, from the stored preference. Expo Go cannot record at all
+  // (lib/firebase.ts hands back a mock whose writes resolve without
+  // persisting), so it is refused here rather than showing a live instrument
+  // over nothing.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
       if (isExpoGo) {
-        throw new TripCaptureError(
-          'preview_build',
-          'Trip recording needs a full build of the app. This preview cannot save trips.',
-        );
+        setNotice('Drive detection needs a full build of the app. This preview cannot record.');
+        return;
       }
-
+      if (!user?.id) return;
       const permission = await Location.requestForegroundPermissionsAsync();
       if (permission.status !== 'granted') {
-        throw new TripCaptureError(
-          'permission_denied',
-          'Driiva needs location access to record a trip. Turn it on in Settings.',
-        );
+        setNotice('Driiva needs location access to notice your drives. Turn it on in Settings.');
+        return;
       }
+      const wanted = await isDetectionArmed();
+      if (cancelled || !wanted) return;
+      await startWatchingForDrives();
+      if (!cancelled) setArmed(true);
+    })().catch(() => setNotice('Drive detection could not start. Reopen the app to try again.'));
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
 
-      const first = await Location.getCurrentPositionAsync(LOCATION_OPTIONS);
+  // One tick drives the whole readout, from the monitor rather than from any
+  // single sensor callback: once "Always" location is granted iOS delivers the
+  // trip's fixes to the background task, which never touches React state.
+  useEffect(() => {
+    const id = setInterval(() => {
+      const openId = driveMonitor.tripId;
+      const open = openId !== null;
+      setTripOpen(open);
+      setDriveState(driveMonitor.driveState);
+      setArmed(driveMonitor.isArmed);
 
-      // Read the baseline before the trip lands, so the refund moment can show
-      // a real change rather than a number with nothing to compare against.
-      try {
-        const snap = await firestore().collection('users').doc(user.id).get();
-        const data = snap.data() as
-          | {
-              drivingProfile?: { currentScore?: number };
-              activePolicy?: { premiumCents?: number };
-              permissions?: { backgroundLocationOfferedAt?: unknown };
-            }
-          | undefined;
-        baselineRef.current = {
-          score: typeof data?.drivingProfile?.currentScore === 'number'
-            ? data.drivingProfile.currentScore
-            : null,
-          premiumCents: typeof data?.activePolicy?.premiumCents === 'number'
-            ? data.activePolicy.premiumCents
-            : null,
-        };
-        backgroundOfferedRef.current = data?.permissions?.backgroundLocationOfferedAt != null;
-      } catch {
-        baselineRef.current = { score: null, premiumCents: null };
-        backgroundOfferedRef.current = false;
+      if (open && tripStartedAt.current === null) {
+        tripStartedAt.current = Date.now();
+        pickupDetector.current = new PhonePickupDetector();
+        pickupDetector.current.start();
+        void captureBaseline();
       }
-
-      const tripId = await startTrip(user.id, {
-        lat: first.coords.latitude,
-        lng: first.coords.longitude,
-      });
-
-      tripIdRef.current = tripId;
-      startMsRef.current = first.timestamp;
-      finalFixRef.current = { lat: first.coords.latitude, lng: first.coords.longitude };
-
-      const writer = new TripPointWriter(tripId, user.id, first.timestamp, (err) => {
-        console.error('[record] point write failed', err);
-      });
-      writerRef.current = writer;
-      writer.start();
-      writer.add({
-        latitude: first.coords.latitude,
-        longitude: first.coords.longitude,
-        speed: first.coords.speed,
-        heading: first.coords.heading,
-        accuracy: first.coords.accuracy,
-        timestamp: first.timestamp,
-      });
-
-      setPointsCount(writer.pointsCount);
-      setDistanceMeters(0);
-      setElapsed(0);
-      setSpeedMps(first.coords.speed);
-      setAccuracyMeters(first.coords.accuracy);
-      setRejectedPoints(writer.rejected.rejected);
-      setDroppedPoints(0);
-      pickupCountRef.current = 0;
-
-      watcherRef.current = await Location.watchPositionAsync(LOCATION_OPTIONS, handleSample);
-      // The readout is refreshed from the WRITER on a tick, not only from the
-      // foreground callback above. Once "Always" location is granted, iOS
-      // delivers the trip's fixes to the background task, which appends to the
-      // same writer and never touches this screen's state: the trip captured
-      // 301 points while the screen still said 2. The writer is the one place
-      // every path meets, so the instrument reads from there.
-      tickRef.current = setInterval(() => {
-        setElapsed(Math.floor((Date.now() - startMsRef.current) / 1000));
-        const live = writerRef.current;
-        if (!live) return;
-        setPointsCount(live.pointsCount);
-        setDistanceMeters(live.distance);
-        setRejectedPoints(live.rejected.rejected);
-        setDroppedPoints(live.dropped);
-        const last = live.lastAcceptedSample;
-        setSpeedMps(last ? last.speed : null);
-        setAccuracyMeters(last ? last.accuracy : null);
-      }, 1000);
-
-      pickupDetectorRef.current = new PhonePickupDetector();
-      pickupDetectorRef.current.start();
-
-      setPhase('recording');
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
-
-      // Background capture is additive: the foreground watch above is
-      // already running and is the trip's primary GPS source. Anything below
-      // failing must not undo it, so it gets its own try/catch rather than
-      // sharing the one around trip start.
-      try {
-        setActiveWriter(writer);
-        const alreadyGranted = await hasBackgroundLocationPermission();
-        if (alreadyGranted) {
-          await startBackgroundLocationUpdates();
-          setBackgroundActive(true);
-        } else if (!backgroundOfferedRef.current) {
-          setBackgroundOffer('offering');
-        }
-      } catch (bgErr) {
-        console.error('[record] background capture setup failed', bgErr);
+      if (!open && tripStartedAt.current !== null) {
+        const count = pickupDetector.current?.stop() ?? 0;
+        pickupDetector.current = null;
+        tripStartedAt.current = null;
+        setElapsed(0);
+        setDistanceMeters(0);
+        setPickups(count);
+        onTripClosed(openId);
       }
-    } catch (err) {
-      teardown();
-      setPhase('idle');
-      setError(
-        err instanceof TripCaptureError ? err.message : 'Could not start recording. Try again.',
-      );
-    }
-  }, [user?.id, handleSample, teardown]);
+      if (open) {
+        setElapsed(Math.floor((Date.now() - (tripStartedAt.current ?? Date.now())) / 1000));
+      }
+    }, 1000);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  /**
-   * The driver said yes to the explicit background-capture card. Triggers the
-   * OS "Always" prompt; if the OS denies it, the trip carries on exactly as
-   * it would have without this feature - foreground only, nothing lost.
-   */
-  const enableBackgroundCapture = useCallback(async () => {
-    setBackgroundOffer('requesting');
+  const captureBaseline = useCallback(async () => {
+    if (!user?.id) return;
     try {
-      const granted = await requestBackgroundLocation();
-      if (granted) {
-        await startBackgroundLocationUpdates();
-        setBackgroundActive(true);
-      } else {
-        Alert.alert(
-          'Background recording not enabled',
-          "Driiva will keep recording only while this screen is open. You can turn this on later in Settings.",
-        );
+      const snap = await firestore().collection('users').doc(user.id).get();
+      const data = snap.data() as
+        | { drivingProfile?: { currentScore?: number }; activePolicy?: { premiumCents?: number } }
+        | undefined;
+      baseline.current = {
+        score: typeof data?.drivingProfile?.currentScore === 'number' ? data.drivingProfile.currentScore : null,
+        premiumCents: typeof data?.activePolicy?.premiumCents === 'number' ? data.activePolicy.premiumCents : null,
+      };
+    } catch {
+      baseline.current = { score: null, premiumCents: null };
+    }
+  }, [user?.id]);
+
+  /** The monitor closed a trip. Say plainly what happened to it. */
+  const onTripClosed = useCallback(
+    (tripId: string | null) => {
+      const outcome = driveMonitor.lastOutcome;
+      if (outcome === 'not_a_drive') {
+        setNotice('Not counted. That did not look like a drive.');
+        return;
       }
-    } catch (err) {
-      console.error('[record] background enable failed', err);
-    } finally {
-      setBackgroundOffer('hidden');
-    }
-  }, [requestBackgroundLocation]);
+      if (outcome === 'submit_failed') {
+        setNotice('Your route was saved but could not be sent for scoring yet.');
+        return;
+      }
+      if (outcome === 'start_failed') {
+        setNotice('A drive was noticed but could not be saved. The next one will try again.');
+        return;
+      }
+      setNotice(null);
+      if (tripId) waitForScore(tripId);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
 
-  /** The driver said not now. Foreground-only capture continues unchanged. */
-  const declineBackgroundCapture = useCallback(() => {
-    setBackgroundOffer('hidden');
-    markBackgroundLocationOffered().catch(() => {});
-  }, [markBackgroundLocationOffered]);
-
-  const stopRecording = useCallback(async () => {
-    // Captured before teardown() stops-and-clears the detector, so the count
-    // survives into confirmDriving() (which runs after the "was this you
-    // driving?" question, once teardown has already run).
-    pickupCountRef.current = pickupDetectorRef.current?.stop() ?? 0;
-    teardown();
-    const writer = writerRef.current;
-    if (writer) {
-      const totals = await writer.stop().catch(() => ({
-        pointsCount: writer.pointsCount,
-        distanceMeters: writer.distance,
-        durationSeconds: writer.durationSeconds,
-        rejectedPoints: writer.rejected.rejected,
-        droppedPoints: writer.dropped,
-      }));
-      setPointsCount(totals.pointsCount);
-      setDistanceMeters(totals.distanceMeters);
-      setRejectedPoints(totals.rejectedPoints);
-      setDroppedPoints(totals.droppedPoints);
-      // The duration the stored trace covers, which is what the server will
-      // measure the trip by. Held in a ref because confirmDriving runs after
-      // the writer has been torn down.
-      durationSecondsRef.current = totals.durationSeconds;
-    }
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-    setPhase('confirming');
-  }, [teardown]);
-
-  /**
-   * Ending a trip is destructive in one direction: the GPS watch stops and the
-   * trace is closed. A mis-tap on a phone in a mount should not do that
-   * silently, so the stop is confirmed before anything is torn down.
-   */
-  const confirmStop = useCallback(() => {
-    Alert.alert(
-      'End this trip?',
-      'Recording stops now and the trip is sent for scoring after one question.',
-      [
-        { text: 'Keep recording', style: 'cancel' },
-        { text: 'End trip', style: 'destructive', onPress: () => { void stopRecording(); } },
-      ],
-    );
-  }, [stopRecording]);
-
-  /**
-   * Watches the trip until the pipeline finishes with it, then shows the refund
-   * moment. A trip flagged for review stays in 'processing' with no automatic
-   * path out, so the wait is bounded by the user dismissing it, not by a spinner
-   * that promises a result which may never arrive.
-   */
   const waitForScore = useCallback(
     (tripId: string) => {
-      setPhase('waiting');
-      const unsubscribe = firestore()
+      scoreWatch.current?.();
+      scoreWatch.current = firestore()
         .collection('trips')
         .doc(tripId)
-        .onSnapshot(async (doc: { exists: boolean; data: () => Record<string, unknown> }) => {
-          if (!doc.exists) return;
-          const data = doc.data() as { status?: string; score?: number };
+        .onSnapshot(async (docSnap: { exists: boolean; data: () => Record<string, unknown> }) => {
+          if (!docSnap.exists) return;
+          const data = docSnap.data() as { status?: string; score?: number; distanceMeters?: number };
           if (data.status !== 'completed') return;
+          scoreWatch.current?.();
+          scoreWatch.current = null;
 
-          scoreWatchRef.current?.();
-          scoreWatchRef.current = null;
-
-          const baseline = baselineRef.current;
           let newOverall: number | null = null;
           try {
             const snap = await firestore().collection('users').doc(user!.id).get();
@@ -511,272 +385,164 @@ export default function Record() {
             newOverall = null;
           }
 
-          // Money only where a real premium exists to compute it from.
-          const premium = baseline.premiumCents;
-          const previousProjected =
-            premium != null && baseline.score != null
-              ? projectedRefundCents(baseline.score, premium)
-              : null;
-          const newProjected =
-            premium != null && newOverall != null
-              ? projectedRefundCents(newOverall, premium)
-              : null;
-
+          const premium = baseline.current.premiumCents;
+          const tripScore = typeof data.score === 'number' ? data.score : 0;
+          setLastDrive({
+            miles: (data.distanceMeters ?? 0) / METRES_PER_MILE,
+            score: tripScore,
+            endedAt: new Date(),
+          });
           setLanded({
-            tripScore: typeof data.score === 'number' ? data.score : 0,
-            previousOverallScore: baseline.score,
+            tripScore,
+            previousOverallScore: baseline.current.score,
             newOverallScore: newOverall,
-            previousProjectedPence: previousProjected,
-            newProjectedPence: newProjected,
+            previousProjectedPence:
+              premium != null && baseline.current.score != null
+                ? projectedRefundCents(baseline.current.score, premium)
+                : null,
+            newProjectedPence:
+              premium != null && newOverall != null ? projectedRefundCents(newOverall, premium) : null,
           });
         });
-
-      scoreWatchRef.current = unsubscribe;
     },
     [user],
   );
 
-  const confirmDriving = useCallback(async () => {
-    const tripId = tripIdRef.current;
-    const end = finalFixRef.current;
-    if (!tripId || !end) return;
+  useEffect(() => () => scoreWatch.current?.(), []);
 
-    setPhase('submitting');
-    setError(null);
+  // Distance and speed come from the writer, whichever path delivered the fix.
+  useEffect(() => {
+    const id = setInterval(() => {
+      const last = driveMonitor.lastSample;
+      setSpeedMps(last ? last.speed : null);
+      setAccuracyMeters(last ? last.accuracy : null);
+      setDistanceMeters(driveMonitor.distanceMeters);
+      const live = pickupDetector.current;
+      if (live) setPickups(driveMonitor.pickupCount);
+    }, 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const startByHand = useCallback(async () => {
+    Haptics.selectionAsync().catch(() => {});
     try {
-      await submitTripForScoring(tripId, {
-        end,
-        distanceMeters,
-        pointsCount,
-        phonePickupCount: pickupCountRef.current,
-        durationSeconds: durationSecondsRef.current,
+      const fix = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.BestForNavigation,
       });
-      waitForScore(tripId);
-    } catch (err) {
-      setPhase('confirming');
-      setError(
-        err instanceof TripCaptureError ? err.message : 'Could not save the trip. Try again.',
-      );
-      // A trip too short to score is already dead; take the driver back to idle
-      // rather than leaving them on a confirmation they cannot complete.
-      if (err instanceof TripCaptureError && err.reason === 'too_short') {
-        await discardTrip(tripId, 'cancelled').catch(() => {});
-        tripIdRef.current = null;
-        setPhase('idle');
-      }
-    }
-  }, [distanceMeters, pointsCount, waitForScore]);
-
-  const rejectDriving = useCallback(async () => {
-    const tripId = tripIdRef.current;
-    if (!tripId) return;
-
-    setPhase('submitting');
-    setError(null);
-    try {
-      await discardTrip(tripId, 'not_driving');
-      tripIdRef.current = null;
-      setPhase('idle');
-      resetLiveReadout();
-    } catch (err) {
-      setPhase('confirming');
-      setError(
-        err instanceof TripCaptureError ? err.message : 'Could not discard the trip. Try again.',
-      );
+      await driveMonitor.startManually({
+        latitude: fix.coords.latitude,
+        longitude: fix.coords.longitude,
+        speed: fix.coords.speed,
+        heading: fix.coords.heading,
+        accuracy: fix.coords.accuracy,
+        timestamp: fix.timestamp,
+      });
+      setNotice(null);
+    } catch {
+      setNotice('Could not start a drive. Check location access and try again.');
     }
   }, []);
 
-  const dismissRefundMoment = useCallback(() => {
-    setLanded(null);
-    tripIdRef.current = null;
-    setPhase('idle');
-    resetLiveReadout();
-  }, [resetLiveReadout]);
+  const endByHand = useCallback(() => {
+    void driveMonitor.stopManually();
+  }, []);
 
-  // Losing the foreground stops the GPS watch on iOS without telling us, so the
-  // trace would silently gap. Say so rather than recording a hole.
+  const dismissRefund = useCallback(() => setLanded(null), []);
+
+  // Losing the foreground stops a plain foreground watch on iOS, and only the
+  // background task keeps capture running. Say which is true rather than
+  // guessing.
   const [wasBackgrounded, setWasBackgrounded] = useState(false);
   useEffect(() => {
     const sub = AppState.addEventListener('change', (state) => {
-      if (state !== 'active' && phase === 'recording') setWasBackgrounded(true);
+      if (state !== 'active' && tripOpen) setWasBackgrounded(true);
     });
     return () => sub.remove();
-  }, [phase]);
+  }, [tripOpen]);
 
-  // The ring breathes while a trip is running, so a phone in a mount reads as
-  // live at a glance without the driver reading anything. Reduce-motion keeps
-  // the ring and drops the movement, rather than removing the indicator: it is
-  // the only thing on screen saying capture is running.
-  const reduceMotion = useReducedMotion();
-  const pulse = useSharedValue(0);
-  useEffect(() => {
-    if (phase === 'recording' && !reduceMotion) {
-      pulse.value = 0;
-      pulse.value = withRepeat(
-        withTiming(1, { duration: 1800, easing: Easing.out(Easing.quad) }),
-        -1,
-        false,
-      );
-    } else {
-      cancelAnimation(pulse);
-      pulse.value = 0;
-    }
-    return () => cancelAnimation(pulse);
-  }, [phase, reduceMotion, pulse]);
-
-  const pulseStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: 1 + pulse.value * 0.35 }],
-    opacity: (1 - pulse.value) * 0.45,
-  }));
-
-  const miles = distanceMeters / 1609.34;
+  const miles = distanceMeters / METRES_PER_MILE;
   const quality = fixQuality(accuracyMeters);
-  const discardedPoints = rejectedPoints + droppedPoints;
+  const hasFix = speedMps !== null && Number.isFinite(speedMps) && speedMps >= 0;
+  const mph = hasFix ? Math.round((speedMps as number) * METRES_PER_SECOND_TO_MPH) : 0;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <Text style={styles.title}>
-          {phase === 'recording'
-            ? 'Recording your journey'
-            : phase === 'confirming'
-              ? 'One question'
-              : phase === 'waiting'
-                ? 'Scoring your trip'
-                : 'Ready to drive'}
-        </Text>
+      <Text style={styles.header}>Drive</Text>
 
-        <Text style={styles.subtitle}>
-          {phase === 'recording'
-            ? 'Keep Driiva open while you drive. Your route is being recorded on this device.'
-            : phase === 'confirming'
-              ? 'Your phone cannot tell driving from a bus or a bike, so we ask.'
-              : phase === 'waiting'
-                ? 'Your points are with the scoring pipeline. This usually takes a few seconds.'
-                : 'Start a journey when you set off. Driiva records while the app is open.'}
-        </Text>
-
-        {phase === 'recording' && (
-          <SurfaceCard padding="lg" style={styles.liveCard}>
+      {tripOpen ? (
+        <View style={styles.live}>
+          <View style={styles.arcWrap}>
+            <LiveArc active={driveState !== 'paused'} />
             <View style={styles.speedBlock}>
-              <Text style={styles.speedValue}>{formatSpeed(speedMps)}</Text>
+              <Text style={[styles.speed, !hasFix && styles.speedWaiting]}>{mph}</Text>
               <Text style={styles.speedUnit}>mph</Text>
+              {!hasFix && <Text style={styles.speedNote}>waiting for GPS</Text>}
             </View>
-            <View style={styles.liveRow}>
-              <LiveStat label="Time" value={formatDuration(elapsed)} />
-              <LiveStat label="Distance" value={`${miles.toFixed(1)} mi`} />
-              <LiveStat label="Points" value={String(pointsCount)} />
-            </View>
-            <View style={styles.qualityRow}>
-              <View style={[styles.qualityDot, { backgroundColor: QUALITY_COLOUR[quality] }]} />
-              <Text style={styles.qualityLabel}>{QUALITY_LABEL[quality]}</Text>
-              {accuracyMeters !== null && quality !== 'unknown' && (
-                <Text style={styles.qualityMeta}>{Math.round(accuracyMeters)} m</Text>
-              )}
-            </View>
-            {discardedPoints > 0 && (
-              <Text style={styles.warning}>
-                {discardedPoints} {discardedPoints === 1 ? 'fix' : 'fixes'} could not be
-                recorded, so this trip covers slightly less than the full route.
-              </Text>
-            )}
-            {wasBackgrounded && (
-              <Text style={backgroundActive ? styles.info : styles.warning}>
-                {backgroundActive
-                  ? 'Driiva kept recording in the background.'
-                  : 'Driiva was in the background for part of this trip, so some of the route may be missing.'}
-              </Text>
-            )}
-          </SurfaceCard>
-        )}
-
-        {phase === 'recording' && backgroundOffer !== 'hidden' && (
-          <SurfaceCard padding="lg" style={styles.liveCard}>
-            <Text style={styles.question}>Keep recording if you switch apps?</Text>
-            <Text style={styles.questionMeta}>
-              Right now Driiva only records this trip while this screen stays
-              open. Turning this on lets your phone keep recording your
-              location in the background for this trip, so a call or a locked
-              screen does not cut it short. You can turn it off again in
-              Settings at any time.
-            </Text>
-            <DriivButton
-              title="Enable background recording"
-              onPress={enableBackgroundCapture}
-              loading={backgroundOffer === 'requesting'}
-              style={{ marginTop: S.md }}
-            />
-            <DriivButton
-              title="Not now"
-              variant="secondary"
-              onPress={declineBackgroundCapture}
-              disabled={backgroundOffer === 'requesting'}
-              style={{ marginTop: S.sm }}
-            />
-          </SurfaceCard>
-        )}
-
-        {phase === 'confirming' && (
-          <SurfaceCard padding="lg" style={styles.liveCard}>
-            <Text style={styles.question}>Was this you driving?</Text>
-            <Text style={styles.questionMeta}>
-              {miles.toFixed(1)} mi over {formatDuration(elapsed)}, {pointsCount} GPS points.
-            </Text>
-            <DriivButton
-              title="Yes, I was driving"
-              onPress={confirmDriving}
-              style={{ marginTop: S.md }}
-            />
-            <DriivButton
-              title="No, I was a passenger"
-              variant="secondary"
-              onPress={rejectDriving}
-              style={{ marginTop: S.sm }}
-            />
-            <Text style={styles.questionFootnote}>
-              A journey you did not drive is discarded and never scored.
-            </Text>
-          </SurfaceCard>
-        )}
-
-        {phase !== 'confirming' && (
-          <View style={styles.recordCluster}>
-            {phase === 'recording' && (
-              <Animated.View pointerEvents="none" style={[styles.pulseRing, pulseStyle]} />
-            )}
-            <TouchableOpacity
-              style={[
-                styles.recordButton,
-                phase === 'recording' && styles.recordButtonActive,
-                (phase === 'starting' || phase === 'submitting' || phase === 'waiting') &&
-                  styles.recordButtonBusy,
-              ]}
-              onPress={phase === 'recording' ? confirmStop : beginTrip}
-              disabled={phase === 'starting' || phase === 'submitting' || phase === 'waiting'}
-              activeOpacity={0.85}
-              accessibilityRole="button"
-              accessibilityLabel={phase === 'recording' ? 'End trip' : 'Start recording'}
-            >
-              <Ionicons
-                name={
-                  phase === 'recording'
-                    ? 'stop'
-                    : phase === 'starting' || phase === 'submitting' || phase === 'waiting'
-                      ? 'hourglass-outline'
-                      : 'play'
-                }
-                size={48}
-                color={C.text.hero}
-              />
-            </TouchableOpacity>
           </View>
-        )}
 
-        {phase === 'idle' && <Text style={styles.hint}>Tap to start recording</Text>}
-        {phase === 'recording' && <Text style={styles.hint}>Tap to end the trip</Text>}
+          <View style={styles.readout}>
+            <Text style={styles.readoutItem}>{formatDuration(elapsed)}</Text>
+            <Text style={styles.readoutDivider}>/</Text>
+            <Text style={styles.readoutItem}>{miles.toFixed(1)} mi</Text>
+            <Text style={styles.readoutDivider}>/</Text>
+            <Text style={styles.readoutItem}>GPS {QUALITY_LABEL[quality]}</Text>
+          </View>
 
-        {error && <Text style={styles.error}>{error}</Text>}
-      </ScrollView>
+          {pickups > 0 && (
+            <Text style={styles.handling}>
+              {pickups} phone {pickups === 1 ? 'pickup' : 'pickups'}
+            </Text>
+          )}
+
+          {driveState === 'paused' && <Text style={styles.quiet}>Stopped. Still recording.</Text>}
+          {wasBackgrounded && health === 'unavailable' && (
+            <Text style={styles.quiet}>
+              Background tracking unavailable, keep Driiva open.
+            </Text>
+          )}
+
+          <HoldToEnd onEnd={endByHand} label="Hold to end drive" />
+        </View>
+      ) : (
+        <View style={styles.armedView}>
+          <View style={styles.watchRow}>
+            <View style={[styles.dot, armed ? styles.dotLive : styles.dotOff]} />
+            <Text style={styles.watchLabel}>
+              {armed ? 'Watching for your next drive' : 'Not watching'}
+            </Text>
+          </View>
+
+          <Text style={styles.watchBody}>
+            {armed
+              ? 'Driiva notices when you set off and records the drive on its own. You do not need to open the app.'
+              : 'Drive detection is off, so drives will not be recorded unless you start one.'}
+          </Text>
+
+          {lastDrive && (
+            <View style={styles.lastDrive}>
+              <Text style={styles.lastDriveLabel}>Last drive</Text>
+              <View style={styles.lastDriveRow}>
+                <Text style={styles.lastDriveDate}>{formatDay(lastDrive.endedAt)}</Text>
+                <Text style={styles.lastDriveMiles}>{lastDrive.miles.toFixed(1)} mi</Text>
+                <Text style={[styles.lastDriveScore, { color: scoreColor(lastDrive.score) }]}>
+                  {lastDrive.score}
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {notice && <Text style={styles.notice}>{notice}</Text>}
+
+          <Pressable
+            onPress={startByHand}
+            accessibilityRole="button"
+            accessibilityLabel="Start a drive now"
+            style={styles.textAction}
+          >
+            <Text style={styles.textActionLabel}>Start a drive now</Text>
+          </Pressable>
+        </View>
+      )}
 
       <RefundMoment
         visible={landed !== null}
@@ -785,84 +551,81 @@ export default function Record() {
         newOverallScore={landed?.newOverallScore ?? null}
         previousProjectedPence={landed?.previousProjectedPence ?? null}
         newProjectedPence={landed?.newProjectedPence ?? null}
-        onDismiss={dismissRefundMoment}
+        onDismiss={dismissRefund}
       />
     </SafeAreaView>
   );
 }
 
-function LiveStat({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.liveStat}>
-      <Text style={styles.liveValue}>{value}</Text>
-      <Text style={styles.liveLabel}>{label}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: C.bg },
-  scroll: {
-    flexGrow: 1,
-    justifyContent: 'center',
+  container: { flex: 1, backgroundColor: C.bg, paddingHorizontal: S.md },
+  header: { ...T.h1, color: C.text.hero, marginTop: S.md, marginBottom: S.xl },
+
+  live: { flex: 1, alignItems: 'center' },
+  arcWrap: {
+    width: ARC_SIZE,
+    height: ARC_SIZE,
     alignItems: 'center',
-    paddingHorizontal: S.md,
-    paddingBottom: 100,
-  },
-  title: { ...T.h1, color: C.text.hero, textAlign: 'center' },
-  subtitle: {
-    ...T.body,
-    color: C.text.sec,
-    textAlign: 'center',
-    marginTop: S.sm,
-    maxWidth: 320,
-  },
-  liveCard: { alignSelf: 'stretch', marginTop: S.lg },
-  speedBlock: { flexDirection: 'row', alignItems: 'baseline', marginBottom: S.md },
-  speedValue: { ...T.heroLg, color: C.text.hero },
-  speedUnit: { ...T.caption, color: C.text.sec, marginLeft: S.sm },
-  liveRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  liveStat: { flex: 1 },
-  liveValue: { ...T.stat, color: C.text.hero },
-  liveLabel: { ...T.caption, color: C.text.sec, marginTop: 2 },
-  qualityRow: { flexDirection: 'row', alignItems: 'center', marginTop: S.md },
-  qualityDot: { width: 8, height: 8, borderRadius: R.full },
-  qualityLabel: { ...T.caption, color: C.text.sec, marginLeft: S.sm },
-  qualityMeta: { ...T.numberSm, color: C.text.mut, marginLeft: S.sm },
-  warning: { ...T.caption, color: C.warning, marginTop: S.md },
-  info: { ...T.caption, color: C.success, marginTop: S.md },
-  question: { ...T.h2, color: C.text.pri },
-  questionMeta: { ...T.caption, color: C.text.sec, marginTop: S.xs },
-  questionFootnote: { ...T.caption, color: C.text.mut, marginTop: S.md },
-  recordCluster: {
     justifyContent: 'center',
-    alignItems: 'center',
-    marginVertical: S.xxl,
+    marginTop: S.lg,
   },
-  pulseRing: {
+  arc: { position: 'absolute' },
+  speedBlock: { alignItems: 'center' },
+  speed: {
+    fontFamily: 'InterTight-Bold',
+    fontSize: FS.mega,
+    lineHeight: LH.mega,
+    color: C.text.hero,
+    fontVariant: ['tabular-nums'],
+  },
+  speedWaiting: { color: C.text.mut },
+  speedUnit: { ...T.label, color: C.text.sec, marginTop: -S.xs },
+  speedNote: { ...T.numberSm, color: C.text.mut, marginTop: S.xs },
+
+  readout: { flexDirection: 'row', alignItems: 'center', marginTop: S.xl },
+  readoutItem: { ...T.number, color: C.text.pri },
+  readoutDivider: { ...T.number, color: C.text.mut, marginHorizontal: S.sm },
+  handling: { ...T.numberSm, color: C.text.sec, marginTop: S.md },
+  quiet: { ...T.caption, color: C.text.sec, marginTop: S.md, textAlign: 'center' },
+
+  holdWrap: {
+    marginTop: 'auto',
+    marginBottom: S.xxl,
+    alignSelf: 'stretch',
+    height: 48,
+    borderRadius: R.card,
+    borderWidth: 1,
+    borderColor: C.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  holdFill: {
     position: 'absolute',
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    borderWidth: 2,
-    borderColor: C.error,
+    left: 0,
+    top: 0,
+    bottom: 0,
+    backgroundColor: alpha(RGB.error, 0.22),
   },
-  recordButton: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: C.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  recordButtonActive: { backgroundColor: C.error },
-  recordButtonBusy: { backgroundColor: C.surface3 },
-  hint: { ...T.caption, color: C.text.mut },
-  error: {
-    ...T.body,
-    color: C.error,
-    textAlign: 'center',
-    marginTop: S.md,
-    maxWidth: 320,
-  },
+  holdLabel: { ...T.label, color: C.text.pri },
+
+  armedView: { flex: 1 },
+  watchRow: { flexDirection: 'row', alignItems: 'center' },
+  dot: { width: 8, height: 8, borderRadius: R.full },
+  dotLive: { backgroundColor: C.success },
+  dotOff: { backgroundColor: C.text.mut },
+  watchLabel: { ...T.h2, color: C.text.pri, marginLeft: S.sm },
+  watchBody: { ...T.body, color: C.text.sec, marginTop: S.sm, maxWidth: 340 },
+
+  lastDrive: { marginTop: S.xl },
+  lastDriveLabel: { ...T.eyebrow, color: C.text.mut },
+  lastDriveRow: { flexDirection: 'row', alignItems: 'baseline', marginTop: S.sm },
+  lastDriveDate: { ...T.body, color: C.text.pri },
+  lastDriveMiles: { ...T.number, color: C.text.sec, marginLeft: S.md },
+  lastDriveScore: { ...T.stat, marginLeft: 'auto' },
+
+  notice: { ...T.caption, color: C.text.sec, marginTop: S.lg, maxWidth: 340 },
+
+  textAction: { marginTop: 'auto', marginBottom: S.xxl, alignSelf: 'flex-start' },
+  textActionLabel: { ...T.label, color: C.primary },
 });

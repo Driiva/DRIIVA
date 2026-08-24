@@ -109,6 +109,30 @@ export class DriveMonitor {
     return this.detector.state;
   }
 
+  /**
+   * The readout the Drive screen renders, taken from the WRITER rather than
+   * from any one sensor callback. Once "Always" location is granted, iOS
+   * delivers a trip's fixes to the background task, which never touches React
+   * state; a screen reading its own callback froze on the first fix while
+   * capture carried on correctly underneath it.
+   */
+  get lastSample(): SampledLocation | null {
+    return this.writer?.lastAcceptedSample ?? null;
+  }
+
+  get distanceMeters(): number {
+    return this.writer?.distance ?? 0;
+  }
+
+  get pointsCount(): number {
+    return this.writer?.pointsCount ?? 0;
+  }
+
+  /** Phone pickups counted for the trip in progress. */
+  get pickupCount(): number {
+    return this.phonePickupCount;
+  }
+
   arm(): void {
     this.armed = true;
   }

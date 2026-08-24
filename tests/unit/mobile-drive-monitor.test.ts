@@ -361,3 +361,39 @@ describe('DriveMonitor: as the background task sink', () => {
     await expect(monitor.drained()).resolves.toBeUndefined();
   });
 });
+
+describe('DriveMonitor: the readout the screen renders', () => {
+  it('reads nothing before a trip is open, rather than a stale or invented number', () => {
+    expect(monitor.lastSample).toBeNull();
+    expect(monitor.distanceMeters).toBe(0);
+    expect(monitor.pointsCount).toBe(0);
+  });
+
+  it('reads through to the writer once a trip is open, whichever path delivered the fix', async () => {
+    monitor.arm();
+    await feed(monitor, T0, 25, 20);
+
+    expect(monitor.lastSample?.timestamp).toBe(T0 + 24_000);
+    expect(monitor.distanceMeters).toBe(1234);
+    expect(monitor.pointsCount).toBe(25);
+  });
+
+  it('returns to nothing after the trip closes', async () => {
+    monitor.arm();
+    await feed(monitor, T0, 25, 20);
+    await feed(monitor, T0 + 25_000, 190, 0);
+
+    expect(monitor.lastSample).toBeNull();
+    expect(monitor.distanceMeters).toBe(0);
+  });
+
+  it('carries the phone pickup count through to submission', async () => {
+    monitor.arm();
+    await feed(monitor, T0, 25, 20);
+    monitor.onPhonePickupCount(3);
+    expect(monitor.pickupCount).toBe(3);
+    await feed(monitor, T0 + 25_000, 190, 0);
+
+    expect(port.submit).toHaveBeenCalledWith('trip-1', expect.objectContaining({ phonePickupCount: 3 }));
+  });
+});
