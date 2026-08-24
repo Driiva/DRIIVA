@@ -337,10 +337,9 @@ export async function endTrip(
   assertFirestore();
 
   const tripRef = doc(db!, COLLECTION_NAMES.TRIPS, tripId);
-  const tripPointsRef = doc(db!, COLLECTION_NAMES.TRIP_POINTS, tripId);
   const now = Timestamp.now();
 
-  // Use batch write for atomicity
+  // A batch of one, kept as a batch so this stays the shape it was.
   const batch = writeBatch(db!);
 
   // Update trip document.
@@ -372,12 +371,28 @@ export async function endTrip(
     clientReportedPhonePickupCount,
   });
 
-  // Update trip points metadata
-  batch.update(tripPointsRef, {
-    totalPoints: pointsCount,
-    compressedSize: pointsCount * 50, // Rough estimate
-  });
-
+  // NO tripPoints WRITE HERE, and there cannot be one.
+  //
+  // firestore.rules says `allow update: if false` on /tripPoints/{tripId},
+  // with no exception for the owner. This function used to add a second
+  // update to that document in this same batch, setting totalPoints and a
+  // compressedSize estimate. A writeBatch is atomic, so the denied write took
+  // the trip update down with it: the status flip to 'processing' never
+  // committed, the trip sat in 'recording' forever, and onTripStatusChange
+  // never fired to score it. Every ended trip on the web app, silently.
+  //
+  // The comment above this one already explained that a client write to a
+  // rule-locked field gets the whole batch rejected. The batch then did it
+  // anyway, one collection along.
+  //
+  // Nothing is lost. pointsCount is written on the trip document above, which
+  // is where every reader already looks, and the GDPR export
+  // (functions/src/http/gdpr.ts) falls back to counting the real points rather
+  // than trusting totalPoints. The compressedSize it used to write was
+  // pointsCount * 50, an estimate of a size nobody measured.
+  //
+  // The mobile twin had the identical batch, fixed on feat/fable-trip, where
+  // tests/rules/trip-points.test.ts proves the denial against the emulator.
   await batch.commit();
 }
 
