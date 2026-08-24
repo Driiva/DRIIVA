@@ -82,6 +82,7 @@ export class DriveMonitor {
   private accelVariance: number | null = null;
   private outcome: MonitorOutcome = null;
   private phonePickupCount = 0;
+  private openedAt: number | null = null;
   private queue: Promise<void> = Promise.resolve();
 
   constructor(port: TripPort) {
@@ -131,6 +132,18 @@ export class DriveMonitor {
   /** Phone pickups counted for the trip in progress. */
   get pickupCount(): number {
     return this.phonePickupCount;
+  }
+
+  /**
+   * When the OPEN trip actually began, in epoch ms, which for an automatic
+   * trip is when the candidate started rather than when detection became sure.
+   *
+   * The screen must read elapsed from here. Timing from the moment a screen
+   * happened to mount showed "0:05 / 0.9 mi" on a trip that had been running a
+   * minute: two real numbers side by side saying something impossible.
+   */
+  get tripStartedAt(): number | null {
+    return this.openedAt;
   }
 
   arm(): void {
@@ -257,6 +270,7 @@ export class DriveMonitor {
     try {
       const tripId = await this.port.startTrip({ lat: at.latitude, lng: at.longitude });
       this.openTripId = tripId;
+      this.openedAt = tripStartMs;
       this.startedBy = startedBy;
       this.outcome = null;
       this.phonePickupCount = 0;
@@ -329,6 +343,7 @@ export class DriveMonitor {
 
   private resetForNextDrive(): void {
     this.openTripId = null;
+    this.openedAt = null;
     this.writer = null;
     this.buffer = [];
     this.startedBy = 'auto';

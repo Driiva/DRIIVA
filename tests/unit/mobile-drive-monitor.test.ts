@@ -397,3 +397,34 @@ describe('DriveMonitor: the readout the screen renders', () => {
     expect(port.submit).toHaveBeenCalledWith('trip-1', expect.objectContaining({ phonePickupCount: 3 }));
   });
 });
+
+describe('DriveMonitor: elapsed is measured from the drive, not from the screen', () => {
+  it('reports nothing before a trip opens', () => {
+    expect(monitor.tripStartedAt).toBeNull();
+  });
+
+  it('reports when the drive actually began, not when detection became sure', async () => {
+    monitor.arm();
+    await feed(monitor, T0, 25, 20);
+
+    // Detection is confident at T0+20s, but the driver set off at T0 and the
+    // backfilled points prove it. Timing from the decision would under-report
+    // every automatic trip by the length of the start hold.
+    expect(monitor.tripStartedAt).toBe(T0);
+  });
+
+  it('reports the moment of the press for a manual trip', async () => {
+    monitor.arm();
+    await monitor.startManually(fix(T0 + 5_000, 0));
+
+    expect(monitor.tripStartedAt).toBe(T0 + 5_000);
+  });
+
+  it('clears when the trip closes', async () => {
+    monitor.arm();
+    await feed(monitor, T0, 25, 20);
+    await feed(monitor, T0 + 25_000, 190, 0);
+
+    expect(monitor.tripStartedAt).toBeNull();
+  });
+});

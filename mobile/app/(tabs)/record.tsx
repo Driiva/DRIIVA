@@ -279,7 +279,10 @@ export default function Drive() {
       setArmed(driveMonitor.isArmed);
 
       if (open && tripStartedAt.current === null) {
-        tripStartedAt.current = Date.now();
+        // From the monitor, which knows when the DRIVE began. For an automatic
+        // trip that is when the driver set off, not when detection became sure
+        // and not when this screen happened to mount.
+        tripStartedAt.current = driveMonitor.tripStartedAt ?? Date.now();
         pickupDetector.current = new PhonePickupDetector();
         pickupDetector.current.start();
         void captureBaseline();
