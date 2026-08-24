@@ -25,7 +25,7 @@
  */
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import Svg, { Circle, Path } from 'react-native-svg';
+import Svg, { Circle, Path, Polygon, Rect } from 'react-native-svg';
 import Animated, { useAnimatedProps } from 'react-native-reanimated';
 
 import { C, T, S, R, RGB, alpha } from './theme';
@@ -42,10 +42,21 @@ export type { TracePoint };
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 
+/**
+ * Marker shapes, NOT marker colours.
+ *
+ * Four event types need four distinguishable marks, and four different hues on
+ * a near-monochrome instrument is a rainbow. Colour here is earned once and
+ * means one thing: amber, and amber warns. What separates a hard stop from a
+ * sharp turn is the shape of the mark, which also survives being read by
+ * somebody who cannot separate the hues.
+ */
+export type MarkerShape = 'circle' | 'triangle' | 'diamond' | 'bar';
+
 export interface TraceMarker {
   /** Index into the ORIGINAL points array, before any thinning. */
   index: number;
-  colour: string;
+  shape: MarkerShape;
   label: string;
 }
 
@@ -108,41 +119,72 @@ export function RouteTrace({ points, markers = [], duration = 1400 }: RouteTrace
           />
 
           {markers.map((marker) => {
-            const at = projected.xy[Math.min(Math.floor(marker.index / step), projected.xy.length - 1)];
+            // The marker index is into the array BEFORE thinning, so it has to
+            // be divided by the step. Without that every marker past the
+            // thinning threshold piles up on the final point.
+            const at =
+              projected.xy[Math.min(Math.floor(marker.index / step), projected.xy.length - 1)];
             if (!at) return null;
             return (
-              <Circle
-                key={`${marker.label}-${marker.index}`}
-                cx={at[0]}
-                cy={at[1]}
-                r={4}
-                fill={marker.colour}
-                stroke={C.bg}
-                strokeWidth={1.5}
+              <Mark
+                key={`${marker.shape}-${marker.index}`}
+                shape={marker.shape}
+                x={at[0]}
+                y={at[1]}
               />
             );
           })}
 
-          <Circle cx={start[0]} cy={start[1]} r={5} fill={C.success} />
-          <Circle cx={end[0]} cy={end[1]} r={5} fill={C.primaryLight} />
+          <Circle cx={start[0]} cy={start[1]} r={4} fill={C.success} />
+          <Circle cx={end[0]} cy={end[1]} r={4} fill={C.text.hero} />
         </Svg>
       </View>
 
       <View style={styles.legend}>
-        <LegendItem colour={C.success} label="Start" />
-        <LegendItem colour={C.primaryLight} label="End" />
-        {[...new Map(markers.map((m) => [m.label, m])).values()].map((m) => (
-          <LegendItem key={m.label} colour={m.colour} label={m.label} />
+        <LegendItem label="Start" colour={C.success} />
+        <LegendItem label="End" colour={C.text.hero} />
+        {[...new Map(markers.map((m) => [m.shape, m])).values()].map((m) => (
+          <LegendItem key={m.shape} label={m.label} shape={m.shape} />
         ))}
       </View>
     </View>
   );
 }
 
-function LegendItem({ colour, label }: { colour: string; label: string }) {
+/** One event mark, drawn in the single earned colour at a fixed weight. */
+function Mark({ shape, x, y }: { shape: MarkerShape; x: number; y: number }) {
+  const common = { fill: C.warning, stroke: C.bg, strokeWidth: 1.25 };
+  if (shape === 'circle') return <Circle cx={x} cy={y} r={3.6} {...common} />;
+  if (shape === 'triangle') {
+    const r = 4.2;
+    return <Polygon points={`${x},${y - r} ${x + r},${y + r} ${x - r},${y + r}`} {...common} />;
+  }
+  if (shape === 'diamond') {
+    const r = 4.2;
+    return <Polygon points={`${x},${y - r} ${x + r},${y} ${x},${y + r} ${x - r},${y}`} {...common} />;
+  }
+  return <Rect x={x - 1.4} y={y - 5} width={2.8} height={10} rx={1.2} {...common} />;
+}
+
+/** The legend swatch is the mark itself, at the size it is drawn on the trace. */
+function LegendItem({
+  label,
+  colour,
+  shape,
+}: {
+  label: string;
+  colour?: string;
+  shape?: MarkerShape;
+}) {
   return (
     <View style={styles.legendItem}>
-      <View style={[styles.dot, { backgroundColor: colour }]} />
+      {shape ? (
+        <Svg width={12} height={12} viewBox="0 0 12 12">
+          <Mark shape={shape} x={6} y={6} />
+        </Svg>
+      ) : (
+        <View style={[styles.dot, { backgroundColor: colour }]} />
+      )}
       <Text style={styles.legendLabel}>{label}</Text>
     </View>
   );

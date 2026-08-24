@@ -7,7 +7,8 @@ import { useOnboarding } from '@/contexts/OnboardingContext';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
 import { ScoreRing } from '@/components/ui/ScoreRing';
 import { C, F, S, R, RGB, alpha, FS, LH, TR, T } from '@/components/ui/theme';
-import { refundEstimate } from '@/hooks/useTripSeed';
+import { refundEstimateRange, DEMO_REFUND_DISCLOSURE } from '@/hooks/useTripSeed';
+import { formatPoundsWhole } from '@/lib/money';
 import { joinWaitlist, WaitlistError } from '@/lib/waitlist';
 
 // FCA DISCLOSURE REQUIRED - all financial figures are illustrative before product launch
@@ -21,9 +22,12 @@ export default function Quote() {
   const [joined, setJoined] = useState(false);
   const [waitlistError, setWaitlistError] = useState<string | null>(null);
 
-  const refund = refundEstimate(state.seedScore); // ESTIMATE - subject to actuarial review
-  const minRefund = Math.round(refund * 0.8);
-  const maxRefund = Math.round(refund * 1.2);
+  // One range calculation, shared with viral-moment.tsx, delegating to the
+  // real projectedRefundCents. The hand-rolled `refund * 0.8` and `* 1.2` that
+  // used to live here widened a figure already scaled to the 15% ceiling, so
+  // the top of the displayed range sat ABOVE the cap. A cap applied before the
+  // spread is not a cap.
+  const { min: minRefund, max: maxRefund } = refundEstimateRange(state.seedScore);
 
   const handleGetQuote = async () => {
     // TODO: Root Platform API - Sprint 5. Launch quote journey here.
@@ -73,8 +77,10 @@ export default function Quote() {
           <ScoreRing score={state.seedScore} size={120} label="Your score" animated={false} />
           <View style={styles.refundEstimate}>
             <Text style={styles.refundLabel}>Drive like today, earn back</Text>
-            {/* ESTIMATE - subject to actuarial review */}
-            <Text style={styles.refundRange}>£{minRefund} to £{maxRefund} this year</Text>
+            <Text style={styles.refundRange}>
+              {formatPoundsWhole(minRefund * 100)} to {formatPoundsWhole(maxRefund * 100)} this year
+            </Text>
+            <Text style={styles.refundBasis}>{DEMO_REFUND_DISCLOSURE}</Text>
           </View>
         </View>
 
@@ -83,8 +89,8 @@ export default function Quote() {
           <Text style={styles.quoteStubEyebrow}>Quote</Text>
           <Text style={styles.quoteStubTitle}>Launching soon.</Text>
           <Text style={styles.quoteStubSub}>
-            Our insurance product is working towards the FCA regulatory sandbox and is not authorised. Join the waitlist
-            and you'll be first to get a live quote.
+            Driiva Ltd is not authorised by the FCA and our insurance product is pending FCA
+            authorisation. Join the waitlist and you will be first to get a live quote.
           </Text>
         </View>
 
@@ -134,7 +140,7 @@ export default function Quote() {
         <View style={styles.disclaimer}>
           <Text style={styles.disclaimerText}>
             {/* FCA DISCLOSURE REQUIRED */}
-            Driiva is operated by Driiva Ltd. Our insurance product is working towards the FCA regulatory sandbox and is not authorised.
+            Driiva is operated by Driiva Ltd, which is not authorised by the FCA. Our insurance product is pending FCA authorisation.
             Refund estimates are illustrative and do not constitute a binding offer. Terms apply.
           </Text>
         </View>
@@ -172,6 +178,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   refundEstimate: { flex: 1 },
+  refundBasis: { ...T.caption, color: C.text.mut, marginTop: S.sm },
   refundLabel: { color: C.text.sec, fontFamily: F.body, fontSize: FS.sm, lineHeight: LH.sm, letterSpacing: TR.sm, marginBottom: 6 },
   refundRange: { ...T.stat, color: C.success },
   quoteStub: {

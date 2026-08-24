@@ -315,15 +315,23 @@ const styles = StyleSheet.create({
   card: { marginBottom: S.md },
 
   identity: { flexDirection: 'row', alignItems: 'center', gap: S.sm },
+  /**
+   * Outlined, not filled. A solid accent disc was the loudest thing on the
+   * screen, and the accent is reserved for the act of interaction: an initial
+   * in a circle is not one. The score beside it is the figure that earned its
+   * colour, and nothing should out-shout it.
+   */
   avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: C.primary,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: C.border,
+    backgroundColor: C.surface2,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  avatarText: { ...T.stat, color: C.text.hero },
+  avatarText: { ...T.number, color: C.text.sec },
   identityBody: { flex: 1, minWidth: 0 },
   name: { ...T.h1, color: C.text.hero },
   email: { ...T.caption, color: C.text.sec, marginTop: 2 },

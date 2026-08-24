@@ -55,7 +55,7 @@ export default function Account() {
 
         <View style={styles.shariahBadge}>
           <Text style={styles.shariahText}>
-            Our insurance product is working towards the FCA regulatory sandbox and is not authorised. Driiva is structured as a
+            Driiva Ltd is not authorised by the FCA and our insurance product is pending FCA authorisation. Driiva is structured as a
             Shariah-compliant mutual benefit pool. No interest, no speculation.
           </Text>
         </View>

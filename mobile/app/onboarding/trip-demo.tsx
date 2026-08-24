@@ -9,7 +9,7 @@ import { track } from '@/lib/analytics';
 import { TripReplay } from '@/components/onboarding/TripReplay';
 import { ScoreRing } from '@/components/ui/ScoreRing';
 import { C, F, S, R, RGB, alpha, FS, LH, TR, T } from '@/components/ui/theme';
-import { ecoGrade } from '@/hooks/useTripSeed';
+import { ecoGrade, DEMO_SCORE_DELTAS } from '@/hooks/useTripSeed';
 
 export default function TripDemo() {
   useEffect(() => {
@@ -59,10 +59,14 @@ export default function TripDemo() {
             </View>
 
             <View style={styles.breakdown}>
-              <BreakdownRow label="Smooth braking" value="+8 pts" />
-              <BreakdownRow label="Speed limit observed" value="+5 pts" />
-              <BreakdownRow label="Eco-efficient acceleration" value="+4 pts" />
-              <BreakdownRow label="Night Owl detected (11 pm)" value="+2 pts" special />
+              {DEMO_SCORE_DELTAS.map((row) => (
+                <BreakdownRow
+                  key={row.id}
+                  label={row.label}
+                  value={`+${row.delta} pts`}
+                  special={row.id === 'nightOwl'}
+                />
+              ))}
             </View>
 
             <Text style={styles.simNote}>

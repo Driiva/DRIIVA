@@ -8,7 +8,8 @@ import { ONBOARDING_TOTAL, stepNumber } from '@/lib/onboardingFlow';
 import { track } from '@/lib/analytics';
 import { ScoreRing } from '@/components/ui/ScoreRing';
 import { C, F, S, R, RGB, alpha, FS, LH, T, TR } from '@/components/ui/theme';
-import { refundEstimate, scorePercentile } from '@/hooks/useTripSeed';
+import { scorePercentile, refundEstimateRange, DEMO_REFUND_DISCLOSURE } from '@/hooks/useTripSeed';
+import { formatPoundsWhole } from '@/lib/money';
 
 // FCA DISCLOSURE REQUIRED - refund estimates are illustrative, not guaranteed
 export default function ViralMoment() {
@@ -21,9 +22,10 @@ export default function ViralMoment() {
   const { seedScore } = state;
 
   const percentile = scorePercentile(seedScore);
-  const refund = refundEstimate(seedScore); // ESTIMATE - subject to actuarial review
-  const minRefund = Math.round(refund * 0.8);
-  const maxRefund = Math.round(refund * 1.2);
+  // Same range calculation as quote.tsx, delegating to the real
+  // projectedRefundCents. See refundEstimateRange for why the 15% cap has to
+  // be applied after the spread rather than before it.
+  const { min: minRefund, max: maxRefund } = refundEstimateRange(seedScore);
 
   const handleShare = async () => {
     try {
@@ -54,8 +56,9 @@ export default function ViralMoment() {
 
           <View style={styles.refundRow}>
             <Text style={styles.refundLabel}>Estimated annual refund at this score</Text>
-            {/* ESTIMATE - subject to actuarial review */}
-            <Text style={styles.refundValue}>£{minRefund} to £{maxRefund}</Text>
+            <Text style={styles.refundValue}>
+              {formatPoundsWhole(minRefund * 100)} to {formatPoundsWhole(maxRefund * 100)}
+            </Text>
           </View>
 
           <View style={styles.poolRow}>
@@ -74,9 +77,7 @@ export default function ViralMoment() {
 
         <View style={styles.disclaimer}>
           <Text style={styles.disclaimerText}>
-            {/* FCA DISCLOSURE REQUIRED before public launch */}
-            Refund estimates are illustrative and based on typical premium of £1,200/year.
-            Actual refunds depend on your policy, claim history, and pool performance.
+            {DEMO_REFUND_DISCLOSURE}
           </Text>
         </View>
       </ScrollView>

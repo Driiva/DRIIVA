@@ -20,9 +20,34 @@
  * children is a one line diff no type would reject.
  */
 import { Tabs } from 'expo-router';
-import { View, StyleSheet, Platform } from 'react-native';
+import { StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Svg, { Circle } from 'react-native-svg';
 import { C, F, S, FS, LH, TR } from '@/components/ui/theme';
+
+/**
+ * The Drive tab mark: a thin ring, with a filled centre only while the tab is
+ * the one you are on.
+ *
+ * It was a filled purple puck with a record glyph in it, which read as a
+ * console button rather than an instrument and was the first thing rejected in
+ * review. An aperture is the right metaphor for a tab that opens the capture
+ * screen, and drawn rather than picked from an icon set so the stroke weight
+ * can match the hairline weight the rest of the bar is set in.
+ *
+ * It takes the same tint as every other tab, so the bar has one active colour
+ * and no tab is shouting at the other four.
+ */
+function DriveMark({ color, size, focused }: { color: string; size: number; focused: boolean }) {
+  const d = size + 3;
+  const c = d / 2;
+  return (
+    <Svg width={d} height={d} viewBox={`0 0 ${d} ${d}`}>
+      <Circle cx={c} cy={c} r={c - 1.5} stroke={color} strokeWidth={1.5} fill="none" />
+      {focused && <Circle cx={c} cy={c} r={c / 2.6} fill={color} />}
+    </Svg>
+  );
+}
 
 export default function TabLayout() {
   return (
@@ -57,15 +82,8 @@ export default function TabLayout() {
         name="record"
         options={{
           title: 'Drive',
-          // The centre action is the only FILLED icon in the bar, which is what
-          // marks it as the primary one. It is deliberately not much larger:
-          // a 46px puck at this bar height sat on top of its own label, and a
-          // control whose label is covered by the control is worse than a
-          // control that is merely the same size as its neighbours.
-          tabBarIcon: ({ focused }) => (
-            <View style={[styles.recordButton, focused && styles.recordButtonActive]}>
-              <Ionicons name="radio-button-on" size={20} color={C.text.hero} />
-            </View>
+          tabBarIcon: ({ color, size, focused }) => (
+            <DriveMark color={color} size={size} focused={focused} />
           ),
         }}
       />
@@ -106,21 +124,5 @@ const styles = StyleSheet.create({
     fontFamily: F.bodySemiBold,
     lineHeight: LH.xs,
     letterSpacing: TR.label,
-  },
-  recordButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: C.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: C.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  recordButtonActive: {
-    backgroundColor: C.primaryLight,
   },
 });

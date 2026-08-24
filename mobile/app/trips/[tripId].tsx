@@ -30,7 +30,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { SCORE_WEIGHTS } from '@driiva/scoring';
+import { SCORE_WEIGHTS, locateDrivingEvents, type DrivingEventType } from '@driiva/scoring';
 import { firestore } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { C, T, S, R, scoreColor, FS, LH, TR } from '@/components/ui/theme';
@@ -39,9 +39,29 @@ import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import { ScoreBreakdownBar } from '@/components/ui/ScoreBreakdownBar';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader';
-import { RouteTrace } from '@/components/ui/RouteTrace';
+import { RouteTrace, type MarkerShape, type TraceMarker } from '@/components/ui/RouteTrace';
 import { Enter } from '@/components/ui/motion';
 import { getTripPoints, type StoredTripPoint } from '@/lib/trips';
+
+/**
+ * Shape per event type, not colour per event type. Four hues on a
+ * near-monochrome instrument is a rainbow; one earned colour and four shapes
+ * says the same thing and survives being read by somebody who cannot separate
+ * the hues. See RouteTrace.
+ */
+const MARKER_SHAPES: Record<DrivingEventType, MarkerShape> = {
+  braking: 'circle',
+  acceleration: 'triangle',
+  cornering: 'diamond',
+  speeding: 'bar',
+};
+
+const MARKER_LABELS: Record<DrivingEventType, string> = {
+  braking: 'Hard braking',
+  acceleration: 'Hard acceleration',
+  cornering: 'Sharp turn',
+  speeding: 'Over the limit',
+};
 
 interface ScoreBreakdown {
   speedScore: number;
@@ -173,10 +193,38 @@ export default function TripDetail() {
     });
   }, [trip, profileTrips]);
 
-  const route = useMemo(
-    () => (points ?? []).map((p) => ({ lat: p.lat, lng: p.lng })),
-    [points],
-  );
+  /**
+   * Sorted by t BEFORE anything else reads it, and the same sorted array feeds
+   * both the polyline and the event locator.
+   *
+   * locateDrivingEvents deliberately does not sort, because sorting inside it
+   * would return indices into an array the caller does not hold. computeTripMetrics
+   * sorts by t before scoring, so sorting here is what makes the markers line up
+   * with the pass that produced the score.
+   */
+  const ordered = useMemo(() => [...(points ?? [])].sort((a, b) => a.t - b.t), [points]);
+
+  const route = useMemo(() => ordered.map((p) => ({ lat: p.lat, lng: p.lng })), [ordered]);
+
+  /**
+   * Event marks, from the same detector and the same thresholds the score was
+   * computed with. Never re-derived here: the marketing site shipped
+   * transposed weights once because someone retyped five numbers, and a marker
+   * placed by a second copy of the rules would disagree with the count beside
+   * it for reasons nobody could see.
+   *
+   * Four types, not five. Phone handling is a client-reported count with no
+   * position attached, so there is nowhere honest to put it on a map and it is
+   * absent from the legend rather than guessed at.
+   */
+  const markers = useMemo<TraceMarker[]>(() => {
+    if (ordered.length < 2) return [];
+    return locateDrivingEvents(ordered).map((event) => ({
+      index: event.index,
+      shape: MARKER_SHAPES[event.type],
+      label: MARKER_LABELS[event.type],
+    }));
+  }, [ordered]);
 
   const formatDate = (ts: Trip['startedAt']) => {
     const date = typeof ts === 'string' ? new Date(ts) : ts?.toDate?.();
@@ -281,7 +329,7 @@ export default function TripDetail() {
             {points === undefined ? (
               <SkeletonLoader width="100%" height={190} borderRadius={R.card} />
             ) : (
-              <RouteTrace points={route} />
+              <RouteTrace points={route} markers={markers} />
             )}
             {(startLabel || endLabel) && (
               <Text style={styles.routeEnds}>

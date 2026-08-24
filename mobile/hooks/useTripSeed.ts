@@ -23,6 +23,27 @@ export function seedScore(profile: DrivingProfile): number {
  */
 export const DEMO_PREMIUM_POUNDS = 1200;
 
+/**
+ * The disclosure that must accompany every demo pound figure.
+ *
+ * Three things have to be on the page every single time, and the compliance
+ * rule is not satisfied by two of them: the figure is PROJECTED, it is capped
+ * at 15% of premium, and the premium it was projected from is named. viral
+ * -moment.tsx stated the basis and quote.tsx showed the same range with none,
+ * which is the version that reads as a promise.
+ *
+ * It is one exported string rather than two hand-typed paragraphs because the
+ * premium is interpolated from DEMO_PREMIUM_POUNDS. Retuning the demo premium
+ * without this would leave a sentence naming a premium the numbers above it no
+ * longer came from, and nothing would notice.
+ *
+ * tests/unit/mobile-refund-disclosure.test.ts fails if either screen drops it.
+ */
+export const DEMO_REFUND_DISCLOSURE =
+  `Projected, not guaranteed, and capped at 15% of premium. Based on a typical premium of ` +
+  `£${DEMO_PREMIUM_POUNDS.toLocaleString('en-GB')} a year. What comes back depends on your ` +
+  `policy, your claims and how the pool performs.`;
+
 /** How far either side of the estimate the displayed range reaches. */
 const RANGE_SPREAD = 0.2;
 
@@ -99,6 +120,13 @@ export function ecoGrade(score: number): string {
 export interface DemoScoreDelta {
   /** Stable key for the factor the demo attributes the points to. */
   id: 'braking' | 'speed' | 'acceleration' | 'nightOwl';
+  /**
+   * What the driver reads. Here rather than in each screen because the replay
+   * and the summary card described the same four events in different words,
+   * so the animation and the card it animates into disagreed about what had
+   * just happened.
+   */
+  label: string;
   /** Points the simulated trip awards. Whole points, always positive. */
   delta: number;
   /** Milliseconds after the replay starts before this row appears. */
@@ -106,8 +134,8 @@ export interface DemoScoreDelta {
 }
 
 export const DEMO_SCORE_DELTAS: readonly DemoScoreDelta[] = [
-  { id: 'braking', delta: 8, delay: 1200 },
-  { id: 'speed', delta: 5, delay: 2000 },
-  { id: 'acceleration', delta: 4, delay: 2800 },
-  { id: 'nightOwl', delta: 2, delay: 3600 },
+  { id: 'braking', label: 'Smooth braking', delta: 8, delay: 1200 },
+  { id: 'speed', label: 'Speed limit observed', delta: 5, delay: 2000 },
+  { id: 'acceleration', label: 'Efficient acceleration', delta: 4, delay: 2800 },
+  { id: 'nightOwl', label: 'Late drive detected', delta: 2, delay: 3600 },
 ];
