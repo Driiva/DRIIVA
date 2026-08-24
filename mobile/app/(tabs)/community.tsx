@@ -33,7 +33,7 @@ import { firestore } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { track } from '@/lib/analytics';
 import { periodIdFor } from '@/lib/isoWeek';
-import { C, T, S, R, FS, LH, TR, scoreColor, alpha, RGB } from '@/components/ui/theme';
+import { C, T, F, S, R, FS, LH, TR, scoreColor, alpha, RGB } from '@/components/ui/theme';
 import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import { CountUp } from '@/components/ui/CountUp';
 import { PoolMeter } from '@/components/ui/PoolMeter';
@@ -620,7 +620,19 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: C.hairline,
   },
-  linkText: { ...T.label, color: C.primary },
+  /**
+   * The body face, not the mono label face.
+   *
+   * Mono names a STATE: an eyebrow, a segment, a figure. "Bring someone in" is
+   * an ACTION, and set in JetBrains Mono it reads like a terminal command
+   * rather than a control. The segmented Everyone / Your circle above it stays
+   * mono because those are mode labels, which is the distinction worth holding.
+   */
+  linkText: {
+    ...T.bodySm,
+    fontFamily: F.bodySemiBold,
+    color: C.primary,
+  },
 
   earnedHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   earnedCount: { ...T.numberSm, color: C.text.sec, marginBottom: S.sm },

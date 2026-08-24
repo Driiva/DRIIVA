@@ -118,17 +118,32 @@ const styles = StyleSheet.create({
     color: C.text.sec, fontFamily: F.body, fontSize: FS.sm, lineHeight: LH.sm, letterSpacing: TR.sm,
     textAlign: 'center', marginBottom: 4,
   },
+  /**
+   * The hero face, NOT success green.
+   *
+   * C.success is a SCORE colour. Painting a projected, uncapped-by-nothing,
+   * not-guaranteed pound range in the same green the app uses for "you drove
+   * well" tells the reader the money is earned and safe, which is the one
+   * thing this figure is not. It also out-shouted the score ring beside it,
+   * inverting the hierarchy on a screen whose whole argument is that the score
+   * is what produces the number.
+   */
   refundValue: {
-    ...T.statLg,
-    color: C.success,
+    ...T.stat,
+    color: C.text.hero,
   },
   poolRow: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     paddingTop: 16, borderTopWidth: 1, borderTopColor: C.hairline,
     alignSelf: 'stretch', justifyContent: 'center',
   },
+  /**
+   * Muted, not green. A green status dot means "live", and the sentence
+   * beside it says the pool is NOT open yet. The dot was contradicting the
+   * only sentence it was there to accompany.
+   */
   liveDot: {
-    width: 6, height: 6, borderRadius: 3, backgroundColor: C.success,
+    width: 6, height: 6, borderRadius: 3, backgroundColor: C.text.mut,
   },
   poolText: { color: C.text.sec, fontFamily: F.body, fontSize: FS.sm, lineHeight: LH.sm, letterSpacing: TR.sm },
   shareBtn: {

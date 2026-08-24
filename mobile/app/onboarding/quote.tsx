@@ -180,7 +180,17 @@ const styles = StyleSheet.create({
   refundEstimate: { flex: 1 },
   refundBasis: { ...T.caption, color: C.text.mut, marginTop: S.sm },
   refundLabel: { color: C.text.sec, fontFamily: F.body, fontSize: FS.sm, lineHeight: LH.sm, letterSpacing: TR.sm, marginBottom: 6 },
-  refundRange: { ...T.stat, color: C.success },
+  /**
+   * The hero face, NOT success green.
+   *
+   * C.success is a SCORE colour. Painting a projected, uncapped-by-nothing,
+   * not-guaranteed pound range in the same green the app uses for "you drove
+   * well" tells the reader the money is earned and safe, which is the one
+   * thing this figure is not. It also out-shouted the score ring beside it,
+   * inverting the hierarchy on a screen whose whole argument is that the score
+   * is what produces the number.
+   */
+  refundRange: { ...T.stat, color: C.text.hero },
   quoteStub: {
     backgroundColor: alpha(RGB.primary, 0.08),
     borderRadius: R.card,

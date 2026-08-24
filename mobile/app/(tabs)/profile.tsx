@@ -29,7 +29,7 @@ import Constants from 'expo-constants';
 import { firestore } from '@/lib/firebase';
 import { formatPounds } from '@/lib/money';
 import { useAuth } from '@/contexts/AuthContext';
-import { C, T, S, R, scoreColor } from '@/components/ui/theme';
+import { C, T, S, R, LH, scoreColor } from '@/components/ui/theme';
 import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import { Enter, PressableCard, tick } from '@/components/ui/motion';
 
@@ -162,6 +162,7 @@ export default function Profile() {
                     : 'Not known'
                 }
                 label="member since"
+                absent={account.memberSince === null}
               />
             </View>
           </SurfaceCard>
@@ -264,10 +265,18 @@ export default function Profile() {
   );
 }
 
-function Figure({ value, label }: { value: string; label: string }) {
+/**
+ * `absent` drops the figure out of the mono tabular face.
+ *
+ * Tabular mono is the typeface of a reading. "Not known" set in it has the
+ * optical weight of data and, being the longest string in the row, ended up
+ * louder than the two figures beside it that are real. An absence should be
+ * quieter than a number, not the loudest thing on the card.
+ */
+function Figure({ value, label, absent = false }: { value: string; label: string; absent?: boolean }) {
   return (
     <View style={styles.figure}>
-      <Text style={styles.figureValue} numberOfLines={1}>
+      <Text style={[styles.figureValue, absent && styles.figureAbsent]} numberOfLines={1}>
         {value}
       </Text>
       <Text style={styles.figureLabel}>{label}</Text>
@@ -351,6 +360,9 @@ const styles = StyleSheet.create({
   },
   figure: { flex: 1, minWidth: 0 },
   figureValue: { ...T.number, color: C.text.pri },
+  // Same leading as the figure it replaces, or the label under an absence sits
+  // two pixels lower than the labels under the real numbers beside it.
+  figureAbsent: { ...T.bodySm, lineHeight: LH.base, color: C.text.mut },
   figureLabel: { ...T.caption, color: C.text.sec, marginTop: 2 },
 
   menuItem: {

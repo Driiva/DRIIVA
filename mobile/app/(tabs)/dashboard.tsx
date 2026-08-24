@@ -265,7 +265,7 @@ export default function Dashboard() {
         {/* 1. SCORE, on the canonical 270-degree gauge. */}
         <Enter index={1} count={7}>
           <View style={styles.scoreCard}>
-            <ScoreRing score={score} size="lg" />
+            <ScoreRing score={score} size={172} />
             <Text style={styles.scoreCaption}>Safety score</Text>
           </View>
         </Enter>
@@ -441,10 +441,20 @@ const styles = StyleSheet.create({
   subtitle: { ...T.body, color: C.text.sec, marginTop: 2 },
 
   scoreCard: { alignItems: 'center', marginBottom: S.lg },
+  /**
+   * Pulled UP into the gauge, not stacked under it.
+   *
+   * The gauge is a 270 degree arc that opens at the bottom, and the caption
+   * belongs in that opening: it is the label on the dial, not a line of body
+   * copy that happens to follow it. Laid out normally it sits below the full
+   * square bounding box of the ring, which leaves the better part of an inch
+   * of nothing between the arc and its own label and makes the anchor of the
+   * screen look like it is floating.
+   */
   scoreCaption: {
     ...T.eyebrow,
     color: C.text.sec,
-    marginTop: S.sm,
+    marginTop: -34,
   },
 
   flex: { flex: 1 },

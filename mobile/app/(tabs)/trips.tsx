@@ -181,8 +181,16 @@ export default function Trips() {
           <EmptyState
             icon="car-outline"
             title="No trips yet"
-            subtitle="Record a drive and it appears here once it has been scored."
-            action={{ label: 'Record a drive', onPress: () => router.push('/(tabs)/record') }}
+            /*
+             * Deliberately does not say "record". Automatic drive detection is
+             * the headline feature being built alongside this, and an empty
+             * state that instructs the driver to press a button contradicts a
+             * product whose whole claim is that it notices for you. This
+             * sentence is true whether the drive was captured automatically or
+             * started by hand.
+             */
+            subtitle="Your first scored drive appears here."
+            action={{ label: 'Open Drive', onPress: () => router.push('/(tabs)/record') }}
           />
         }
         ListFooterComponent={
