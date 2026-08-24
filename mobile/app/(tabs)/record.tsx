@@ -15,6 +15,12 @@
  *     tell a car from a bus, a train or a bike (Keith's Q2). A journey the
  *     driver did not drive is discarded, not scored
  *   - shows the refund moment when the scored trip lands
+ *   - validates every fix at the boundary before it is written, and shows the
+ *     driver what capture actually managed: live speed, elapsed, distance, a
+ *     GPS quality dot read from the fix's own accuracy, and a count of any
+ *     fixes that could not be recorded. Nothing is interpolated to fill a gap;
+ *     see lib/telemetryGuard.ts for why the gate keeps extreme fixes and
+ *     refuses only structurally invalid ones
  *
  * MODE CONFIRMATION IS ASKED BEFORE SUBMISSION, DELIBERATELY. The rules only
  * allow a client to move a trip recording -> processing or recording -> failed,
@@ -36,6 +42,15 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, AppState, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, {
+  Easing,
+  cancelAnimation,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import * as Location from 'expo-location';
 import { projectedRefundCents } from '@driiva/scoring';
@@ -85,6 +100,54 @@ function formatDuration(seconds: number): string {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
+const METRES_PER_SECOND_TO_MPH = 2.23694;
+
+/**
+ * Speed for the live readout. A negative or absent speed is the platform
+ * saying it does not know, not zero, so it renders as a placeholder rather
+ * than as a number the phone never measured. A stationary car reads 0, an
+ * unknown speed reads as the placeholder, and the two stay distinguishable.
+ */
+const SPEED_UNKNOWN = '-';
+
+function formatSpeed(metresPerSecond: number | null): string {
+  if (metresPerSecond === null || !Number.isFinite(metresPerSecond) || metresPerSecond < 0) {
+    return SPEED_UNKNOWN;
+  }
+  return String(Math.round(metresPerSecond * METRES_PER_SECOND_TO_MPH));
+}
+
+type FixQuality = 'good' | 'fair' | 'poor' | 'unknown';
+
+/**
+ * Horizontal accuracy in metres, read as a quality band. The thresholds are
+ * the ordinary shape of a phone GPS fix: a clear sky lock lands inside 10 m,
+ * an urban canyon or a windscreen mount drifts past 30 m. Nothing is inferred
+ * when the platform reports no accuracy at all.
+ */
+function fixQuality(accuracyMeters: number | null): FixQuality {
+  if (accuracyMeters === null || !Number.isFinite(accuracyMeters) || accuracyMeters < 0) {
+    return 'unknown';
+  }
+  if (accuracyMeters <= 10) return 'good';
+  if (accuracyMeters <= 30) return 'fair';
+  return 'poor';
+}
+
+const QUALITY_COLOUR: Record<FixQuality, string> = {
+  good: C.success,
+  fair: C.warning,
+  poor: C.error,
+  unknown: C.text.mut,
+};
+
+const QUALITY_LABEL: Record<FixQuality, string> = {
+  good: 'GPS strong',
+  fair: 'GPS fair',
+  poor: 'GPS weak',
+  unknown: 'GPS waiting',
+};
+
 export default function Record() {
   const { user } = useAuth();
   const { requestBackgroundLocation, markBackgroundLocationOffered } = usePermissions();
@@ -94,6 +157,17 @@ export default function Record() {
   const [pointsCount, setPointsCount] = useState(0);
   const [distanceMeters, setDistanceMeters] = useState(0);
   const [landed, setLanded] = useState<LandedTrip | null>(null);
+  /** Last reported speed in metres per second, or null when the fix has none. */
+  const [speedMps, setSpeedMps] = useState<number | null>(null);
+  /** Horizontal accuracy of the last fix, in metres. Drives the quality dot. */
+  const [accuracyMeters, setAccuracyMeters] = useState<number | null>(null);
+  /**
+   * Fixes the telemetry gate refused and points the bounded buffer evicted.
+   * Shown rather than logged: a trip that captured less than it looked like it
+   * captured is something the driver is entitled to see while it is happening.
+   */
+  const [rejectedPoints, setRejectedPoints] = useState(0);
+  const [droppedPoints, setDroppedPoints] = useState(0);
   /** Explicit ask card for "Always" location, shown once per trip when undecided. */
   const [backgroundOffer, setBackgroundOffer] = useState<'hidden' | 'offering' | 'requesting'>(
     'hidden',
@@ -107,6 +181,8 @@ export default function Record() {
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startMsRef = useRef(0);
   const finalFixRef = useRef<{ lat: number; lng: number } | null>(null);
+  /** Duration of the stored trace, set at stop and read at submit. */
+  const durationSecondsRef = useRef(0);
   const scoreWatchRef = useRef<(() => void) | null>(null);
   const baselineRef = useRef<{ score: number | null; premiumCents: number | null }>({
     score: null,
@@ -122,6 +198,22 @@ export default function Record() {
    * already seen the background-capture ask (accepted or "not now"), so it is
    * not shown again on every trip. */
   const backgroundOfferedRef = useRef(false);
+
+  /**
+   * Clears the live instrument back to nothing measured. Every readout goes to
+   * its own empty value rather than to zero, so a screen showing nothing and a
+   * screen showing a real zero stay distinguishable.
+   */
+  const resetLiveReadout = useCallback(() => {
+    setElapsed(0);
+    setPointsCount(0);
+    setDistanceMeters(0);
+    setSpeedMps(null);
+    setAccuracyMeters(null);
+    setRejectedPoints(0);
+    setDroppedPoints(0);
+    durationSecondsRef.current = 0;
+  }, []);
 
   const teardown = useCallback(() => {
     watcherRef.current?.remove();
@@ -169,6 +261,10 @@ export default function Record() {
     finalFixRef.current = { lat: sample.latitude, lng: sample.longitude };
     setPointsCount(writerRef.current?.pointsCount ?? 0);
     setDistanceMeters(writerRef.current?.distance ?? 0);
+    setSpeedMps(sample.speed);
+    setAccuracyMeters(sample.accuracy);
+    setRejectedPoints(writerRef.current?.rejected.rejected ?? 0);
+    setDroppedPoints(writerRef.current?.dropped ?? 0);
   }, []);
 
   const beginTrip = useCallback(async () => {
@@ -249,14 +345,33 @@ export default function Record() {
         timestamp: first.timestamp,
       });
 
-      setPointsCount(1);
+      setPointsCount(writer.pointsCount);
       setDistanceMeters(0);
       setElapsed(0);
+      setSpeedMps(first.coords.speed);
+      setAccuracyMeters(first.coords.accuracy);
+      setRejectedPoints(writer.rejected.rejected);
+      setDroppedPoints(0);
       pickupCountRef.current = 0;
 
       watcherRef.current = await Location.watchPositionAsync(LOCATION_OPTIONS, handleSample);
+      // The readout is refreshed from the WRITER on a tick, not only from the
+      // foreground callback above. Once "Always" location is granted, iOS
+      // delivers the trip's fixes to the background task, which appends to the
+      // same writer and never touches this screen's state: the trip captured
+      // 301 points while the screen still said 2. The writer is the one place
+      // every path meets, so the instrument reads from there.
       tickRef.current = setInterval(() => {
         setElapsed(Math.floor((Date.now() - startMsRef.current) / 1000));
+        const live = writerRef.current;
+        if (!live) return;
+        setPointsCount(live.pointsCount);
+        setDistanceMeters(live.distance);
+        setRejectedPoints(live.rejected.rejected);
+        setDroppedPoints(live.dropped);
+        const last = live.lastAcceptedSample;
+        setSpeedMps(last ? last.speed : null);
+        setAccuracyMeters(last ? last.accuracy : null);
       }, 1000);
 
       pickupDetectorRef.current = new PhonePickupDetector();
@@ -332,13 +447,38 @@ export default function Record() {
       const totals = await writer.stop().catch(() => ({
         pointsCount: writer.pointsCount,
         distanceMeters: writer.distance,
+        durationSeconds: writer.durationSeconds,
+        rejectedPoints: writer.rejected.rejected,
+        droppedPoints: writer.dropped,
       }));
       setPointsCount(totals.pointsCount);
       setDistanceMeters(totals.distanceMeters);
+      setRejectedPoints(totals.rejectedPoints);
+      setDroppedPoints(totals.droppedPoints);
+      // The duration the stored trace covers, which is what the server will
+      // measure the trip by. Held in a ref because confirmDriving runs after
+      // the writer has been torn down.
+      durationSecondsRef.current = totals.durationSeconds;
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     setPhase('confirming');
   }, [teardown]);
+
+  /**
+   * Ending a trip is destructive in one direction: the GPS watch stops and the
+   * trace is closed. A mis-tap on a phone in a mount should not do that
+   * silently, so the stop is confirmed before anything is torn down.
+   */
+  const confirmStop = useCallback(() => {
+    Alert.alert(
+      'End this trip?',
+      'Recording stops now and the trip is sent for scoring after one question.',
+      [
+        { text: 'Keep recording', style: 'cancel' },
+        { text: 'End trip', style: 'destructive', onPress: () => { void stopRecording(); } },
+      ],
+    );
+  }, [stopRecording]);
 
   /**
    * Watches the trip until the pipeline finishes with it, then shows the refund
@@ -409,6 +549,7 @@ export default function Record() {
         distanceMeters,
         pointsCount,
         phonePickupCount: pickupCountRef.current,
+        durationSeconds: durationSecondsRef.current,
       });
       waitForScore(tripId);
     } catch (err) {
@@ -436,9 +577,7 @@ export default function Record() {
       await discardTrip(tripId, 'not_driving');
       tripIdRef.current = null;
       setPhase('idle');
-      setElapsed(0);
-      setPointsCount(0);
-      setDistanceMeters(0);
+      resetLiveReadout();
     } catch (err) {
       setPhase('confirming');
       setError(
@@ -451,10 +590,8 @@ export default function Record() {
     setLanded(null);
     tripIdRef.current = null;
     setPhase('idle');
-    setElapsed(0);
-    setPointsCount(0);
-    setDistanceMeters(0);
-  }, []);
+    resetLiveReadout();
+  }, [resetLiveReadout]);
 
   // Losing the foreground stops the GPS watch on iOS without telling us, so the
   // trace would silently gap. Say so rather than recording a hole.
@@ -466,7 +603,35 @@ export default function Record() {
     return () => sub.remove();
   }, [phase]);
 
+  // The ring breathes while a trip is running, so a phone in a mount reads as
+  // live at a glance without the driver reading anything. Reduce-motion keeps
+  // the ring and drops the movement, rather than removing the indicator: it is
+  // the only thing on screen saying capture is running.
+  const reduceMotion = useReducedMotion();
+  const pulse = useSharedValue(0);
+  useEffect(() => {
+    if (phase === 'recording' && !reduceMotion) {
+      pulse.value = 0;
+      pulse.value = withRepeat(
+        withTiming(1, { duration: 1800, easing: Easing.out(Easing.quad) }),
+        -1,
+        false,
+      );
+    } else {
+      cancelAnimation(pulse);
+      pulse.value = 0;
+    }
+    return () => cancelAnimation(pulse);
+  }, [phase, reduceMotion, pulse]);
+
+  const pulseStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: 1 + pulse.value * 0.35 }],
+    opacity: (1 - pulse.value) * 0.45,
+  }));
+
   const miles = distanceMeters / 1609.34;
+  const quality = fixQuality(accuracyMeters);
+  const discardedPoints = rejectedPoints + droppedPoints;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -493,11 +658,28 @@ export default function Record() {
 
         {phase === 'recording' && (
           <SurfaceCard padding="lg" style={styles.liveCard}>
+            <View style={styles.speedBlock}>
+              <Text style={styles.speedValue}>{formatSpeed(speedMps)}</Text>
+              <Text style={styles.speedUnit}>mph</Text>
+            </View>
             <View style={styles.liveRow}>
               <LiveStat label="Time" value={formatDuration(elapsed)} />
               <LiveStat label="Distance" value={`${miles.toFixed(1)} mi`} />
               <LiveStat label="Points" value={String(pointsCount)} />
             </View>
+            <View style={styles.qualityRow}>
+              <View style={[styles.qualityDot, { backgroundColor: QUALITY_COLOUR[quality] }]} />
+              <Text style={styles.qualityLabel}>{QUALITY_LABEL[quality]}</Text>
+              {accuracyMeters !== null && quality !== 'unknown' && (
+                <Text style={styles.qualityMeta}>{Math.round(accuracyMeters)} m</Text>
+              )}
+            </View>
+            {discardedPoints > 0 && (
+              <Text style={styles.warning}>
+                {discardedPoints} {discardedPoints === 1 ? 'fix' : 'fixes'} could not be
+                recorded, so this trip covers slightly less than the full route.
+              </Text>
+            )}
             {wasBackgrounded && (
               <Text style={backgroundActive ? styles.info : styles.warning}>
                 {backgroundActive
@@ -558,37 +740,40 @@ export default function Record() {
         )}
 
         {phase !== 'confirming' && (
-          <TouchableOpacity
-            style={[
-              styles.recordButton,
-              phase === 'recording' && styles.recordButtonActive,
-              (phase === 'starting' || phase === 'submitting' || phase === 'waiting') &&
-                styles.recordButtonBusy,
-            ]}
-            onPress={phase === 'recording' ? stopRecording : beginTrip}
-            disabled={phase === 'starting' || phase === 'submitting' || phase === 'waiting'}
-            activeOpacity={0.85}
-            accessibilityRole="button"
-            accessibilityLabel={phase === 'recording' ? 'End journey' : 'Start my journey'}
-          >
-            <Ionicons
-              name={
-                phase === 'recording'
-                  ? 'stop'
-                  : phase === 'starting' || phase === 'submitting' || phase === 'waiting'
-                    ? 'hourglass-outline'
-                    : 'play'
-              }
-              size={48}
-              color={C.text.hero}
-            />
-          </TouchableOpacity>
+          <View style={styles.recordCluster}>
+            {phase === 'recording' && (
+              <Animated.View pointerEvents="none" style={[styles.pulseRing, pulseStyle]} />
+            )}
+            <TouchableOpacity
+              style={[
+                styles.recordButton,
+                phase === 'recording' && styles.recordButtonActive,
+                (phase === 'starting' || phase === 'submitting' || phase === 'waiting') &&
+                  styles.recordButtonBusy,
+              ]}
+              onPress={phase === 'recording' ? confirmStop : beginTrip}
+              disabled={phase === 'starting' || phase === 'submitting' || phase === 'waiting'}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel={phase === 'recording' ? 'End trip' : 'Start recording'}
+            >
+              <Ionicons
+                name={
+                  phase === 'recording'
+                    ? 'stop'
+                    : phase === 'starting' || phase === 'submitting' || phase === 'waiting'
+                      ? 'hourglass-outline'
+                      : 'play'
+                }
+                size={48}
+                color={C.text.hero}
+              />
+            </TouchableOpacity>
+          </View>
         )}
 
-        {phase === 'idle' && (
-          <Text style={styles.hint}>Tap to start my journey</Text>
-        )}
-        {phase === 'recording' && <Text style={styles.hint}>Tap to end the journey</Text>}
+        {phase === 'idle' && <Text style={styles.hint}>Tap to start recording</Text>}
+        {phase === 'recording' && <Text style={styles.hint}>Tap to end the trip</Text>}
 
         {error && <Text style={styles.error}>{error}</Text>}
       </ScrollView>
@@ -633,15 +818,35 @@ const styles = StyleSheet.create({
     maxWidth: 320,
   },
   liveCard: { alignSelf: 'stretch', marginTop: S.lg },
+  speedBlock: { flexDirection: 'row', alignItems: 'baseline', marginBottom: S.md },
+  speedValue: { ...T.heroLg, color: C.text.hero },
+  speedUnit: { ...T.caption, color: C.text.sec, marginLeft: S.sm },
   liveRow: { flexDirection: 'row', justifyContent: 'space-between' },
   liveStat: { flex: 1 },
   liveValue: { ...T.stat, color: C.text.hero },
   liveLabel: { ...T.caption, color: C.text.sec, marginTop: 2 },
+  qualityRow: { flexDirection: 'row', alignItems: 'center', marginTop: S.md },
+  qualityDot: { width: 8, height: 8, borderRadius: R.full },
+  qualityLabel: { ...T.caption, color: C.text.sec, marginLeft: S.sm },
+  qualityMeta: { ...T.numberSm, color: C.text.mut, marginLeft: S.sm },
   warning: { ...T.caption, color: C.warning, marginTop: S.md },
   info: { ...T.caption, color: C.success, marginTop: S.md },
   question: { ...T.h2, color: C.text.pri },
   questionMeta: { ...T.caption, color: C.text.sec, marginTop: S.xs },
   questionFootnote: { ...T.caption, color: C.text.mut, marginTop: S.md },
+  recordCluster: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginVertical: S.xxl,
+  },
+  pulseRing: {
+    position: 'absolute',
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    borderWidth: 2,
+    borderColor: C.error,
+  },
   recordButton: {
     width: 140,
     height: 140,
@@ -649,7 +854,6 @@ const styles = StyleSheet.create({
     backgroundColor: C.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginVertical: S.xxl,
   },
   recordButtonActive: { backgroundColor: C.error },
   recordButtonBusy: { backgroundColor: C.surface3 },

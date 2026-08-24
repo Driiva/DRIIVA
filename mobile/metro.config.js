@@ -17,6 +17,7 @@
  * codec for exactly this reason: Hermes has neither Buffer nor btoa.
  */
 const { getDefaultConfig } = require('expo/metro-config');
+const fs = require('fs');
 const path = require('path');
 
 const projectRoot = __dirname;
@@ -29,6 +30,65 @@ config.watchFolders = [
   path.resolve(repoRoot, 'shared'),
   path.resolve(repoRoot, 'packages'),
 ];
+
+/**
+ * SYMLINKED DEPENDENCIES, WHICH IS HOW EVERY WORKTREE IN THIS REPO IS SET UP.
+ *
+ * CLAUDE.md mandates one git worktree per task, and the worktrees symlink
+ * node_modules back to the shared checkout rather than installing a second
+ * copy of a 1 GB Expo tree per branch. That breaks the dev client, and the
+ * error it produces points at the wrong thing entirely:
+ *
+ *   Unable to resolve module ./mobile/node_modules/expo-router/entry
+ *   from <worktree>/mobile/. : None of these files exist
+ *
+ * The named file exists. What happens is that Metro resolves the entry point
+ * through the symlink to its REAL path in the shared checkout, then
+ * @expo/metro-config's request rewriter takes `path.relative(serverRoot,
+ * entry)` to build the bundle URL. The real entry sits outside the worktree,
+ * so that relative path starts with `../../..`, and normalising it into a URL
+ * silently eats those segments and leaves a path that resolves nowhere.
+ *
+ * The fix is to give Metro a server root that actually contains both the
+ * project and the real dependency tree, and to watch the real tree. Both are
+ * derived, not hardcoded, and both are skipped entirely when node_modules is a
+ * real directory, so an ordinary checkout is untouched by any of this.
+ */
+function symlinkTarget(dir) {
+  try {
+    if (!fs.lstatSync(dir).isSymbolicLink()) return null;
+    const real = fs.realpathSync(dir);
+    return real === dir ? null : real;
+  } catch {
+    return null;
+  }
+}
+
+/** Deepest directory containing every one of the given absolute paths. */
+function commonAncestor(dirs) {
+  const split = dirs.map((d) => d.split(path.sep));
+  const shortest = Math.min(...split.map((parts) => parts.length));
+  const shared = [];
+  for (let i = 0; i < shortest; i++) {
+    const segment = split[0][i];
+    if (!split.every((parts) => parts[i] === segment)) break;
+    shared.push(segment);
+  }
+  return shared.join(path.sep) || path.sep;
+}
+
+const symlinkedModuleRoots = [
+  symlinkTarget(path.resolve(projectRoot, 'node_modules')),
+  symlinkTarget(path.resolve(repoRoot, 'node_modules')),
+].filter(Boolean);
+
+if (symlinkedModuleRoots.length > 0) {
+  config.watchFolders = [...config.watchFolders, ...symlinkedModuleRoots];
+  config.server = {
+    ...(config.server ?? {}),
+    unstable_serverRoot: commonAncestor([projectRoot, ...symlinkedModuleRoots]),
+  };
+}
 
 // Sources under packages/ are watched but live outside the Metro project root,
 // so Metro walks up from THEIR directory looking for node_modules and never

@@ -30,6 +30,12 @@ import { track } from '@/lib/analytics';
 import { haversineMeters } from '@shared/tripProcessor';
 import { DEFAULT_PAGE_SIZE, decodeCursor, encodeCursor, pageLimit, splitPage } from '@shared/pagination';
 import { encodePoint, type SampledLocation, type StoredTripPoint } from '@shared/trip-capture';
+import {
+  TelemetryGate,
+  retainAfterFailedFlush,
+  sanitizeClientPickupCount,
+  type TelemetryGateStats,
+} from './telemetryGuard';
 
 // Re-exported so screens import capture types from one place. The encoding
 // itself lives in shared/ so it can be tested against the scoring pipeline
@@ -88,6 +94,12 @@ function assertNativeFirebase(): void {
  * and the interval flush can capture the same index, and the second write
  * silently overwrites a full window of the driver's GPS trace. That exact bug
  * was found in the web streamer during the logic-gap sweep.
+ *
+ * Every fix passes lib/telemetryGuard.ts's TelemetryGate before it is encoded.
+ * A malformed fix is counted by reason and dropped, never repaired, and never
+ * counted toward pointsCount, so the number written to the trip document is
+ * the number of points that actually exist to score. See that file for why the
+ * gate refuses only structurally invalid fixes and keeps the extreme ones.
  */
 export class TripPointWriter {
   private readonly tripId: string;
@@ -101,6 +113,8 @@ export class TripPointWriter {
   private timer: ReturnType<typeof setInterval> | null = null;
   private active = false;
   private flushInFlight: Promise<void> = Promise.resolve();
+  private readonly gate = new TelemetryGate();
+  private droppedPoints = 0;
   private readonly onError?: (error: Error) => void;
 
   constructor(tripId: string, userId: string, tripStartMs: number, onError?: (error: Error) => void) {
@@ -120,6 +134,11 @@ export class TripPointWriter {
 
   add(sample: SampledLocation): void {
     if (!this.active) return;
+    // Validate before encoding, not after: encodePoint's Math.round and
+    // subtraction would turn a NaN coordinate into a NaN point that then
+    // poisons the running haversine total below and every distance the
+    // scoring pipeline derives from the trace.
+    if (!this.gate.admit(sample)) return;
     const point = encodePoint(sample, this.tripStartMs);
 
     if (this.lastPoint) {
@@ -140,9 +159,14 @@ export class TripPointWriter {
     }
   }
 
-  /** Total points handed to the writer, including any still buffered. */
+  /**
+   * Points the writer accepted and still holds or has written. Excludes fixes
+   * the gate rejected and points the buffer cap evicted, both of which are
+   * reported separately: a pointsCount that counted them would tell the
+   * scoring pipeline the trip has points that were never stored.
+   */
   get pointsCount(): number {
-    return this.totalPoints;
+    return this.totalPoints - this.droppedPoints;
   }
 
   /** Haversine distance over accepted points, in metres. */
@@ -150,18 +174,62 @@ export class TripPointWriter {
     return this.distanceMeters;
   }
 
+  /**
+   * Trip length as the SCORING PIPELINE will measure it: the last stored
+   * offset, in seconds. Wall-clock elapsed time on the record screen can
+   * differ (a permission prompt, a late first fix), and the phone-pickup cap
+   * has to be derived from the same duration the server derives it from or
+   * the client and the server cap at different numbers.
+   */
+  get durationSeconds(): number {
+    return this.lastPoint ? Math.round(this.lastPoint.t / 1000) : 0;
+  }
+
+  /** Fixes refused at the boundary, per reason. Never repaired, never faked. */
+  get rejected(): TelemetryGateStats {
+    return this.gate.stats;
+  }
+
+  /**
+   * The last fix accepted by ANY capture path, raw as the platform reported
+   * it. The record screen's live readout reads this rather than its own
+   * foreground callback, because once "Always" location is granted iOS
+   * delivers a trip's fixes to the background task, which appends here and
+   * never touches the screen's state.
+   */
+  get lastAcceptedSample(): SampledLocation | null {
+    return this.gate.lastAccepted;
+  }
+
+  /** Points the bounded retry buffer evicted after repeated failed writes. */
+  get dropped(): number {
+    return this.droppedPoints;
+  }
+
   get lastKnownPoint(): StoredTripPoint | null {
     return this.lastPoint;
   }
 
-  async stop(): Promise<{ pointsCount: number; distanceMeters: number }> {
+  async stop(): Promise<{
+    pointsCount: number;
+    distanceMeters: number;
+    durationSeconds: number;
+    rejectedPoints: number;
+    droppedPoints: number;
+  }> {
     this.active = false;
     if (this.timer) {
       clearInterval(this.timer);
       this.timer = null;
     }
     await this.flush();
-    return { pointsCount: this.totalPoints, distanceMeters: this.distanceMeters };
+    return {
+      pointsCount: this.pointsCount,
+      distanceMeters: this.distanceMeters,
+      durationSeconds: this.durationSeconds,
+      rejectedPoints: this.gate.stats.rejected,
+      droppedPoints: this.droppedPoints,
+    };
   }
 
   private flush(): Promise<void> {
@@ -199,8 +267,14 @@ export class TripPointWriter {
         });
     } catch (err) {
       // Put the points back so the next flush retries them rather than dropping
-      // a window of the trace on a transient network failure.
-      this.buffer = [...pending, ...this.buffer];
+      // a window of the trace on a transient network failure. Bounded: a long
+      // signal blackspot would otherwise grow this buffer for the length of
+      // the outage on a phone already running the GPS radio. What the cap
+      // evicts is counted and kept out of pointsCount rather than lost
+      // quietly, so the trip never claims points it does not have.
+      const retained = retainAfterFailedFlush(pending, this.buffer);
+      this.buffer = retained.buffer;
+      this.droppedPoints += retained.dropped;
       throw err;
     }
   }
@@ -308,6 +382,12 @@ export async function submitTripForScoring(
     pointsCount: number;
     /** From PhonePickupDetector.stop(). Defaults to 0 if omitted. */
     phonePickupCount?: number;
+    /**
+     * Trip length as the stored trace measures it (TripPointWriter's
+     * durationSeconds), used to apply the server's per-minute pickup cap
+     * against the same duration the server will.
+     */
+    durationSeconds: number;
   },
 ): Promise<void> {
   assertNativeFirebase();
@@ -320,28 +400,43 @@ export async function submitTripForScoring(
   }
 
   const db = firestore();
-  const batch = db.batch();
 
-  const rawPickupCount = input.phonePickupCount;
-  const clientReportedPhonePickupCount = Number.isFinite(rawPickupCount)
-    ? Math.max(0, Math.round(rawPickupCount as number))
-    : 0;
+  // Capped here with the server's own cap (see lib/telemetryGuard.ts). Writing
+  // an uncapped count and letting sanitizePhonePickupCount shrink it during
+  // scoring would leave the stored number and the number that moved the score
+  // as two different values, with nothing on the document saying so.
+  const clientReportedPhonePickupCount = sanitizeClientPickupCount(
+    input.phonePickupCount,
+    input.durationSeconds,
+  );
 
-  batch.update(db.collection('trips').doc(tripId), {
-    endedAt: firestore.Timestamp.now(),
-    endLocation: { lat: input.end.lat, lng: input.end.lng, address: null, placeType: null },
-    distanceMeters: Math.round(input.distanceMeters),
-    status: 'processing',
-    pointsCount: input.pointsCount,
-    clientReportedPhonePickupCount,
-  });
-  batch.update(db.collection('tripPoints').doc(tripId), {
-    totalPoints: input.pointsCount,
-    compressedSize: input.pointsCount * 50,
-  });
-
+  // ONE WRITE, AND IT MUST STAY ONE WRITE. This was a writeBatch that also set
+  // { totalPoints, compressedSize } on tripPoints/{tripId}. firestore.rules
+  // denies EVERY client update to that document (points are append-only once
+  // written, and tests/rules/trip-points.test.ts has always pinned the
+  // denial), and a batch is atomic, so the tripPoints half killed the trips
+  // half with it: the trip never left 'recording', onTripStatusChange never
+  // fired, no trip was ever scored, and the driver got "Could not save the
+  // trip. Try again." on every single attempt. Confirmed against the real
+  // rules in the emulator, see the submit-batch tests in that same file.
+  //
+  // Nothing is lost by dropping it. The point count already lives on the trip
+  // document as pointsCount, which is what every reader uses, and the one
+  // reader of the parent's totalPoints (functions/src/http/gdpr.ts) already
+  // falls back to the actual length of the stored points.
+  //
+  // The same doomed batch is in the web twin, client/src/lib/tripService.ts
+  // endTrip (its characterisation test pins the broken shape against a mocked
+  // Firestore that has no rules to refuse it). Flagged for the web owner.
   try {
-    await batch.commit();
+    await db.collection('trips').doc(tripId).update({
+      endedAt: firestore.Timestamp.now(),
+      endLocation: { lat: input.end.lat, lng: input.end.lng, address: null, placeType: null },
+      distanceMeters: Math.round(input.distanceMeters),
+      status: 'processing',
+      pointsCount: input.pointsCount,
+      clientReportedPhonePickupCount,
+    });
   } catch (err) {
     console.error('[trips] submitTripForScoring failed', err);
     throw new TripCaptureError('write_failed', 'Could not save the trip. Try again.');
