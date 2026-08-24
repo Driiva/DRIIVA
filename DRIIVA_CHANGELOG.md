@@ -5,6 +5,68 @@
 
 ## Entries
 
+### 2026-08-24 - Fable day: Drive becomes an instrument, and two fabricated score inputs die
+
+`feat/fable-algo` and `feat/fable-trip` merged through `feat/fable-day` to main (`5c12303`). Mobile,
+plus the two server-side faults that had been stopping any trip from ever being scored.
+
+- **Drive rebuilt** (`d0732e9`, `05de6c5`, `3dd72be`, `418e76b`) - the big record control is gone
+  rather than restyled, because a screen built around one teaches the driver that Driiva only works
+  if they remember to press something. Detection is armed for the session by
+  `components/DriveDetectionHost`, mounted once from the tabs layout, so a pocketed phone still
+  notices a drive. The Drive screen only reports now, and says plainly when location access or an
+  Expo Go preview is the reason nothing can be recorded.
+- **A drive ends without being told** (`dd2a96a`, `15b2549`, `5ec52a6`, `dad3b55`) - a non-zero
+  `distanceInterval` meant a parked car stopped producing fixes, so the state machine never received
+  the stationary samples it reasons from and the trip stayed open, at speed, indefinitely. Both
+  watches use `kCLDistanceFilterNone`, the stationary clock runs from the last time anything actually
+  moved, and `tick(now)` advances wall-clock time with no sample: it invents no speed, guesses no
+  position, and can only ever end a drive. Elapsed is measured from the drive rather than from the
+  moment a screen observed it.
+- **Phone pickups were always zero** (`cd35366`) - `onPhonePickupCount` existed, had a unit test, and
+  was never called by any app code. Every trip therefore submitted a pickup count of 0, and phone
+  usage, 10% of the driving score, silently contributed a perfect 100 to every score Driiva has ever
+  produced. The counter now lives beside the accelerometer in `driveMonitorInstance` and the monitor
+  pulls from a source rather than waiting to be handed a number, so its absence is visible instead of
+  indistinguishable from a real zero. It hid twice: the detector was owned by the Drive SCREEN, which
+  is exactly what is not mounted on an automatically detected drive, and the simulator has no
+  accelerometer, so a real zero there looked like the right answer.
+- **`closeTrip` invents nothing** (`f79c263`) - a trip with no accepted fix was writing an end
+  position of 0,0, a real coordinate in the Gulf of Guinea that the server could not tell from a
+  genuine ending; it is discarded as cancelled now. A failed writer flush no longer reports duration 0
+  beside a real distance.
+- **One drive is one trip** (`48803af`, `2ae8a00`) - a manual tap racing a queued fix could open two
+  trips for one drive, only one of which can ever be closed; and `stopWatchingForDrives` cleared the
+  heartbeat with a trip still open, keeping the battery cost and discarding the only mechanism that
+  ends a drive. Two orphans of that shape were cleaned out of Firestore by hand during the proof.
+- **Trips can be submitted at all** (`9526f1c`, `ef1fb63`) - `submitTripForScoring` batched an update
+  to `trips/{id}` together with one to `tripPoints/{id}`, which `firestore.rules` denies outright, so
+  the whole batch failed and every trip stranded. Fixed on mobile and on the web twin. First trip
+  proved on the iOS simulator with a native dev build against real Firebase.
+- **Functions could not deploy** (`6950127`) - `functions/src` had imported `@driiva/contracts` since
+  `db3dcd8` with nothing declaring the dependency, so every deploy failed source analysis with
+  MODULE_NOT_FOUND and prod kept running the 5 Jul build. The scorer had never seen the phone-usage
+  weight or the refund cap, and a submitted trip sat in processing forever. Prebuild now compiles the
+  contracts to CommonJS into `functions/vendor/contracts`.
+- **Money and the refund cap** (`7d11cc0`, `c32f0a3`, `8eb389b`, `5cd76b2`, `a738b55`, `bbd73d0`) - a
+  property test found four defects the example tests could not see, including a hard cap that rounded
+  a limit upward; onboarding's estimate no longer widens an already-capped figure by hand;
+  `MONEY_PLACEHOLDER` is no longer a literal "£0.00" rendering every absent amount as a calculated
+  zero; and `totalMiles` is miles, not miles times one hundred.
+- **The rest of the surface** (`86563b1`, `fef920b`, `54d956e`, `cb96a16`, `8ef2489`, `0fb1817`,
+  `29eb329`, `cf1d634`, `de6ff2f`, `e45c2e3`, `60c97ab`, `a40173e`, `2fdaea8`, `7f458fc`, `5e42eac`,
+  `5c12303`) - Home, Trips, trip detail and You rebuilt as instruments; Community supersedes Friends
+  and Rewards leaves the tab bar; motion primitives with a testable reduced-motion guard; onboarding
+  validated at the boundary; every screen on the Instrument Glass type ramp; account creation fixed;
+  the Expo Go preview reaches the app it is previewing again; and Metro only watches directories that
+  exist, so the EAS bundle step survives.
+
+**Not verified:** everything above was proved on the iOS simulator. Automatic drive detection and the
+phone-pickup count still need a physical-device run, and the simulator is structurally unable to give
+one. Two review findings are deferred and recorded next to the code they concern (`e7febe2`): the
+accelerometer's all-day 5 Hz duty cycle, and a resume threshold of 4.5 m/s against a stationary clock
+that clears at 1.0 m/s, which lets the screen say "Stopped. Still recording." while the car crawls.
+
 ### 2026-08-18 - Phone-usage scoring wired end-to-end (M2-DEC-1 Option A)
 
 `feat/phone-usage-detection`, merged to main 18 Aug (`f520505`). Closes the gap flagged in
