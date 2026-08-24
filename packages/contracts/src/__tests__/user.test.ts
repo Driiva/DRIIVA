@@ -103,4 +103,46 @@ describe('UserDocumentSchema', () => {
       DrivingProfileDataSchema.parse({ ...validFixture.drivingProfile, currentScore: 150 }),
     ).toThrow();
   });
+
+describe('DrivingProfileDataSchema: totalMiles is miles, not miles times one hundred', () => {
+  /*
+   * The schema said `z.number().int()`, and it said so on the authority of a
+   * comment in shared/firestore-types.ts claiming totalMiles was "stored as
+   * integer (miles * 100 for precision)". The comment was quoted directly above
+   * the rule, which is how a wrong comment becomes a wrong contract.
+   *
+   * The only writer, functions/src/triggers/trips.ts, has always written
+   * `Math.round(newTotalMiles * 100) / 100`: plain miles to two decimal places.
+   * shared/schema.ts declares the SQL column decimal(10, 2), which says the
+   * same thing independently of any comment. Every reader in the app renders
+   * `Math.round(profile.totalMiles)` and the road-warrior achievement fires at
+   * `totalMiles >= 500`, so nothing anywhere divides by a hundred.
+   *
+   * Nothing caught it because every fixture in this suite used totalMiles: 0,
+   * an integer that satisfies the wrong rule, and the schema is not parsed
+   * against a real document anywhere in production. This test uses a value a
+   * real driver actually produces.
+   */
+  it('accepts the two decimal places the writer actually writes', () => {
+    const parsed = DrivingProfileDataSchema.parse({
+      ...validFixture.drivingProfile,
+      totalMiles: 1107.7,
+    });
+    expect(parsed.totalMiles).toBe(1107.7);
+  });
+
+  it('accepts a single fractional mile, which is the first trip', () => {
+    expect(
+      DrivingProfileDataSchema.parse({ ...validFixture.drivingProfile, totalMiles: 0.42 })
+        .totalMiles,
+    ).toBe(0.42);
+  });
+
+  it('still refuses a negative total', () => {
+    expect(
+      DrivingProfileDataSchema.safeParse({ ...validFixture.drivingProfile, totalMiles: -1 })
+        .success,
+    ).toBe(false);
+  });
+});
 });

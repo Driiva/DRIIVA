@@ -75,9 +75,15 @@ function CoverageTypeSection({ currentScore, coverageType, premiumAmount, loadin
   const [isExpanded, setIsExpanded] = useState(false);
   // WEB-17: use the canonical @driiva/scoring refund (blended score, 50-100
   // scale) instead of a divergent hand-rolled 5-15%/70-100 formula.
-  const projectedRefund = currentScore >= 70 && premiumAmount > 0
-    ? projectedRefundCents(currentScore, Math.round(premiumAmount * 100)) / 100
-    : 0;
+  // projectedRefundCents returns null when there is no premium to project
+  // against, so the "could reduce your premium by" line below has nothing to
+  // state. It used to promise a saving of nothing at renewal to any driver
+  // scoring 70 or better with no policy bound, which is a figure nobody
+  // calculated. The block is now gated on there being a refund to name.
+  const projectedRefundCentsValue = currentScore >= 70
+    ? projectedRefundCents(currentScore, Math.round(premiumAmount * 100))
+    : null;
+  const projectedRefund = projectedRefundCentsValue === null ? 0 : projectedRefundCentsValue / 100;
 
   if (loading) {
     return (
@@ -162,7 +168,7 @@ function CoverageTypeSection({ currentScore, coverageType, premiumAmount, loadin
                 </div>
               </div>
 
-              {currentScore >= 70 && (
+              {currentScore >= 70 && projectedRefund > 0 && (
                 <div className="mt-4 flex items-start gap-2 p-3 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
                   <span className="text-base">ℹ️</span>
                   <div>

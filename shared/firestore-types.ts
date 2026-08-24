@@ -68,7 +68,7 @@ export interface DrivingProfileData {
   currentScore: number;           // 0-100, weighted composite
   scoreBreakdown: ScoreBreakdown;
   totalTrips: number;
-  totalMiles: number;             // stored as integer (miles * 100 for precision)
+  totalMiles: number;             // miles, to 2 decimal places (see trips.ts)
   totalDrivingMinutes: number;
   lastTripAt: Timestamp | null;
   streakDays: number;             // consecutive safe driving days
