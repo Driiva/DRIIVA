@@ -1,48 +1,36 @@
 {
-  // These compilerOptions are Expo's own tsconfig.base, inlined rather than
-  // reached for with `extends: "expo/tsconfig.base"`.
-  //
-  // WHY, and please do not put the extends back: `extends` on a bare package
-  // specifier resolves through mobile/node_modules, and CI never installs
-  // mobile's dependencies (ci.yml runs npm ci at the root and in functions/,
-  // nowhere else). The root vitest suite deliberately imports four mobile
-  // modules - routing, waitlist, review-gate and the theme - so vite looked up
-  // the nearest tsconfig, found this one, could not resolve the extends, and
-  // failed the transform before a single assertion ran:
-  //
-  //   [TSCONFIG_ERROR] Failed to load tsconfig for 'mobile/lib/routing.ts'
-  //
-  // That took out five test files on every run. Tests, Lint and E2E have been
-  // red on main because of it, which means no PR in this repo could go green
-  // and the CI signal stopped saying anything at all. Installing the whole
-  // Expo dependency tree in CI to read one 500-byte JSON file is the wrong
-  // trade, so the file is self-sufficient instead.
-  //
-  // The cost of inlining is drift: if Expo changes its base, this no longer
-  // matches. tests/unit/mobile-tsconfig.test.ts guards exactly that - it
-  // compares these values against the real expo/tsconfig.base whenever mobile
-  // dependencies are present, and fails if they diverge.
   "compilerOptions": {
     "allowJs": true,
     "esModuleInterop": true,
     "jsx": "react-native",
-    "lib": ["DOM", "ESNext"],
+    "lib": [
+      "DOM",
+      "ESNext"
+    ],
     "module": "preserve",
     "moduleDetection": "force",
     "moduleResolution": "bundler",
-    "customConditions": ["react-native"],
+    "customConditions": [
+      "react-native"
+    ],
     "noEmit": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "target": "ESNext",
-
-    // mobile's own settings, unchanged
     "strict": true,
     "paths": {
-      "@/*": ["./*"],
-      "@shared/*": ["../shared/*"],
-      "@driiva/scoring": ["../packages/scoring/src/index.ts"],
-      "@driiva/contracts": ["../packages/contracts/src/index.ts"]
+      "@/*": [
+        "./*"
+      ],
+      "@shared/*": [
+        "../shared/*"
+      ],
+      "@driiva/scoring": [
+        "../packages/scoring/src/index.ts"
+      ],
+      "@driiva/contracts": [
+        "../packages/contracts/src/index.ts"
+      ]
     }
   },
   "include": [
@@ -51,8 +39,6 @@
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
   ],
-  // Also Expo's, and ${configDir} still resolves to mobile/ here exactly as it
-  // did when this arrived via extends.
   "exclude": [
     "${configDir}/node_modules",
     "${configDir}/babel.config.js",
@@ -60,5 +46,6 @@
     "${configDir}/jest.config.js",
     "${configDir}/android",
     "${configDir}/ios"
-  ]
+  ],
+  "extends": "expo/tsconfig.base"
 }
