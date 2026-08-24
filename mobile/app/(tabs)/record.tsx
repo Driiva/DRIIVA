@@ -51,12 +51,7 @@ import {
   subscribeBackgroundCaptureHealth,
   type BackgroundCaptureHealth,
 } from '@/lib/backgroundLocation';
-import {
-  driveMonitor,
-  isDetectionArmed,
-  setMonitorUser,
-  startWatchingForDrives,
-} from '@/lib/driveMonitorInstance';
+import { driveMonitor } from '@/lib/driveMonitorInstance';
 
 interface LandedTrip {
   tripScore: number;
@@ -250,44 +245,27 @@ export default function Drive() {
     premiumCents: null,
   });
 
-  // Every trip is written under the signed-in driver, and nothing is recorded
-  // when there is not one.
-  useEffect(() => {
-    setMonitorUser(user?.id ?? null);
-    return () => setMonitorUser(null);
-  }, [user?.id]);
-
   useEffect(() => {
     subscribeBackgroundCaptureHealth(setHealth);
     return () => subscribeBackgroundCaptureHealth(null);
   }, []);
 
-  // Arm on mount, from the stored preference. Expo Go cannot record at all
-  // (lib/firebase.ts hands back a mock whose writes resolve without
-  // persisting), so it is refused here rather than showing a live instrument
-  // over nothing.
+  // Detection is armed app-wide by components/DriveDetectionHost, so it runs
+  // whichever tab the driver is on. This screen only reports what it finds, and
+  // says plainly when there is a reason recording could not start.
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      if (isExpoGo) {
-        setNotice('Drive detection needs a full build of the app. This preview cannot record.');
-        return;
-      }
-      if (!user?.id) return;
-      const permission = await Location.requestForegroundPermissionsAsync();
-      if (permission.status !== 'granted') {
-        setNotice('Driiva needs location access to notice your drives. Turn it on in Settings.');
-        return;
-      }
-      const wanted = await isDetectionArmed();
-      if (cancelled || !wanted) return;
-      await startWatchingForDrives();
-      if (!cancelled) setArmed(true);
-    })().catch(() => setNotice('Drive detection could not start. Reopen the app to try again.'));
-    return () => {
-      cancelled = true;
-    };
-  }, [user?.id]);
+    if (isExpoGo) {
+      setNotice('Drive detection needs a full build of the app. This preview cannot record.');
+      return;
+    }
+    Location.getForegroundPermissionsAsync()
+      .then(({ status }) => {
+        if (status !== 'granted') {
+          setNotice('Driiva needs location access to notice your drives. Turn it on in Settings.');
+        }
+      })
+      .catch(() => undefined);
+  }, []);
 
   // One tick drives the whole readout, from the monitor rather than from any
   // single sensor callback: once "Always" location is granted iOS delivers the

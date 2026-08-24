@@ -7,9 +7,14 @@ import { Tabs } from 'expo-router';
 import { View, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { C, F, S, FS, LH, TR } from '@/components/ui/theme';
+// Wave C: arms automatic drive detection for the whole signed-in session, not
+// just while the Drive screen is mounted. Renders nothing.
+import { DriveDetectionHost } from '@/components/DriveDetectionHost';
 
 export default function TabLayout() {
   return (
+    <>
+    <DriveDetectionHost />
     <Tabs
       screenOptions={{
         headerShown: false,
@@ -67,6 +72,7 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
+    </>
   );
 }
 
