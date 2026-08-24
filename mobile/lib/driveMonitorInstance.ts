@@ -159,6 +159,12 @@ const WATCH_OPTIONS: Location.LocationOptions = {
   accuracy: Location.Accuracy.BestForNavigation,
   timeInterval: 1000,
   distanceInterval: 0,
+  // NOTE: expo-location's LocationOptions has no activityType or
+  // pausesUpdatesAutomatically; those exist only on LocationTaskOptions, which
+  // the background task in lib/backgroundLocation.ts sets. So the foreground
+  // watch cannot be told "this is vehicle navigation" and iOS may still pause
+  // it on its own. The background task is what actually keeps a drive alive,
+  // and it is started alongside this watch for exactly that reason.
 };
 
 /**

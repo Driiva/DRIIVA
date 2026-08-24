@@ -112,6 +112,15 @@ const BACKGROUND_LOCATION_OPTIONS: Location.LocationTaskOptions = {
   accuracy: Location.Accuracy.BestForNavigation,
   timeInterval: 1000,
   distanceInterval: 0,
+  // WITHOUT THESE TWO, iOS STOPS SENDING FIXES MID-DRIVE. CLLocationManager
+  // defaults pausesLocationUpdatesAutomatically to true, and with no activity
+  // type it guesses badly: on a simulated 15 m/s run it suspended updates 37
+  // seconds in, and the trip captured 32 points of a 133 second drive while
+  // reporting no error at all. Telling it this is vehicle navigation, and that
+  // it may not decide on the driver's behalf when the journey is over, is what
+  // keeps the fixes coming.
+  activityType: Location.ActivityType.AutomotiveNavigation,
+  pausesUpdatesAutomatically: false,
   // iOS: keeps delivering fixes instead of pausing once backgrounded, at the
   // cost of the blue background-location status bar - the honest trade for
   // an app that says it is still recording.

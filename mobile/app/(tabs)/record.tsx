@@ -443,8 +443,15 @@ export default function Drive() {
 
   const miles = distanceMeters / METRES_PER_MILE;
   const quality = fixQuality(accuracyMeters);
-  const hasFix = speedMps !== null && Number.isFinite(speedMps) && speedMps >= 0;
-  const mph = hasFix ? Math.round((speedMps as number) * METRES_PER_SECOND_TO_MPH) : 0;
+  // Three different states, three different truths, and the screen must not
+  // blur them. No fix at all is "waiting for GPS". A fix whose speed the
+  // platform will not vouch for is "speed unavailable", which is what a parked
+  // car reports and is NOT the same as the GPS being lost. A known speed,
+  // including a real zero, is just the number.
+  const hasSample = accuracyMeters !== null || speedMps !== null;
+  const hasSpeed = speedMps !== null && Number.isFinite(speedMps) && speedMps >= 0;
+  const speedNote = !hasSample ? 'waiting for GPS' : !hasSpeed ? 'speed unavailable' : null;
+  const mph = hasSpeed ? Math.round((speedMps as number) * METRES_PER_SECOND_TO_MPH) : 0;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -455,9 +462,9 @@ export default function Drive() {
           <View style={styles.arcWrap}>
             <LiveArc active={driveState !== 'paused'} />
             <View style={styles.speedBlock}>
-              <Text style={[styles.speed, !hasFix && styles.speedWaiting]}>{mph}</Text>
+              <Text style={[styles.speed, !hasSpeed && styles.speedWaiting]}>{mph}</Text>
               <Text style={styles.speedUnit}>mph</Text>
-              {!hasFix && <Text style={styles.speedNote}>waiting for GPS</Text>}
+              {speedNote && <Text style={styles.speedNote}>{speedNote}</Text>}
             </View>
           </View>
 
