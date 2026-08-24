@@ -12,6 +12,7 @@
 import { describe, it, expect } from 'vitest';
 
 import { getIsoWeekPeriod } from '../../functions/src/utils/helpers';
+import { isoWeekPeriod as mobileWeekPeriod, periodIdFor } from '../../mobile/lib/isoWeek';
 
 /**
  * Byte-for-byte the client's getCurrentWeekPeriod in
@@ -43,6 +44,22 @@ describe('weekly leaderboard period ID', () => {
   it.each(BOUNDARY_DATES)('client and server agree on %s', (iso) => {
     const date = new Date(`${iso}T12:00:00Z`);
     expect(getIsoWeekPeriod(date)).toBe(clientWeekPeriod(date));
+  });
+
+  /**
+   * The mobile derivation was hand-copied into app/leaderboard.tsx and
+   * app/(tabs)/dashboard.tsx, and the Community screen would have made three
+   * copies of it. It is one module now (mobile/lib/isoWeek.ts) and, unlike the
+   * two copies it replaced, it is actually held to the server's answer.
+   */
+  it.each(BOUNDARY_DATES)('mobile and server agree on %s', (iso) => {
+    const date = new Date(`${iso}T12:00:00Z`);
+    expect(mobileWeekPeriod(date)).toBe(getIsoWeekPeriod(date));
+  });
+
+  it('builds the document ID the scheduled function writes', () => {
+    const date = new Date('2026-06-15T12:00:00Z');
+    expect(periodIdFor('weekly', date)).toBe(`${getIsoWeekPeriod(date)}_weekly`);
   });
 
   it('uses the ISO week-year, not the calendar year, across New Year', () => {

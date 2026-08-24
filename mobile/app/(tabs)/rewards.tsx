@@ -1,5 +1,11 @@
 /**
- * Rewards - Driiva Mobile
+ * Earned - Driiva Mobile
+ *
+ * Reached from the Community tab and from an achievement_unlocked push
+ * notification. It is no longer a tab of its own: collecting badges is not one
+ * of the five things a driver does, and recognition belongs beside the
+ * standing it is recognition of. The ROUTE stays registered (href: null in
+ * app/(tabs)/_layout.tsx) so the notification still lands somewhere.
  *
  * Two things live here and they are deliberately not mixed up.
  *
@@ -20,6 +26,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { firestore } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { C, T, S, R, RGB, alpha } from '@/components/ui/theme';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { buildAchievementViews, type AchievementView } from '@driiva/contracts';
 
 /** Lucide names in the shared catalogue, drawn as Ionicons here. Never emoji. */
@@ -134,6 +141,10 @@ export default function Rewards() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      <ScreenHeader
+        title="Earned"
+        subtitle="Recognition for how you drive. No cash value, no partner brand."
+      />
       <ScrollView
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
@@ -148,9 +159,6 @@ export default function Rewards() {
           />
         }
       >
-        <Text style={styles.title}>Rewards</Text>
-        <Text style={styles.subtitle}>Your safety score is what earns you money back.</Text>
-
         <View style={styles.sectionHead}>
           <Text style={styles.sectionTitle}>Recognition</Text>
           <Text style={styles.sectionCount}>
@@ -190,9 +198,6 @@ export default function Rewards() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
   scroll: { padding: S.md, paddingBottom: S.xxl },
-
-  title: { ...T.h1, color: C.text.hero, marginBottom: S.xs },
-  subtitle: { ...T.body, color: C.text.sec, marginBottom: S.lg },
 
   sectionHead: {
     flexDirection: 'row',

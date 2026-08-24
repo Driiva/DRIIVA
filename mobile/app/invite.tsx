@@ -1,13 +1,13 @@
 /**
  * INVITE
  * ======
- * The one social act the product asks for: give a friend your code, or enter
+ * The one social act the product asks for: give someone your code, or enter
  * theirs. This is the screen that closes the community loop on mobile.
  *
- * Until now the friends leaderboard was readable but unreachable: mobile could
- * subscribe to friendships and offered a friends scope, but nothing on mobile
- * could create one. The empty state said "invite someone from the web app",
- * which is not an answer for a beta that ships as an app.
+ * Until now the circle board was readable but unreachable: mobile could
+ * subscribe to friendships and offered the scope, but nothing on mobile could
+ * create one. The empty state said "invite someone from the web app", which is
+ * not an answer for a beta that ships as an app.
  *
  * All the behaviour is in mobile/lib/community.ts. This file is the surface.
  */
@@ -101,8 +101,8 @@ export default function Invite() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScreenHeader
-        title="Add a friend"
-        subtitle="Friends appear on your leaderboard, on the same board as everyone else."
+        title="Bring someone in"
+        subtitle="They appear in your circle and on the same board as everyone else."
       />
 
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
@@ -135,7 +135,7 @@ export default function Invite() {
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Got a code?</Text>
-          <Text style={styles.cardSub}>Enter your friend's code to connect.</Text>
+          <Text style={styles.cardSub}>Enter their code to connect.</Text>
 
           <TextInput
             style={styles.input}
@@ -152,7 +152,7 @@ export default function Invite() {
             autoCapitalize="characters"
             autoCorrect={false}
             maxLength={INVITE_CODE_LENGTH}
-            accessibilityLabel="Friend's invite code"
+            accessibilityLabel="Their invite code"
             accessibilityHint={`${INVITE_CODE_LENGTH} characters, letters and numbers`}
           />
 
@@ -169,13 +169,13 @@ export default function Invite() {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>
             {friends.length === 0
-              ? 'No friends yet'
-              : `${friends.length} ${friends.length === 1 ? 'friend' : 'friends'}`}
+              ? 'Your circle is empty'
+              : `${friends.length} in your circle`}
           </Text>
           <Text style={styles.cardSub}>
             {friends.length === 0
-              ? 'Once someone accepts your code they show up on your friends board.'
-              : 'They appear on the friends scope of your leaderboard.'}
+              ? 'Once someone accepts your code they show up in your circle.'
+              : 'They appear under Your circle on the Community tab.'}
           </Text>
         </View>
       </ScrollView>

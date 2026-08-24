@@ -42,7 +42,7 @@ const POINTS = [
   },
   {
     title: 'Bring someone you know.',
-    body: 'A board of strangers is a scoreboard. A board of friends is a reason to come back.',
+    body: 'A board of strangers is a scoreboard. A board of people you know is a reason to come back.',
   },
 ];
 
@@ -147,7 +147,7 @@ export default function Community() {
           disabled={finishing}
         />
         <DriivButton
-          title="Add a friend first"
+          title="Bring someone in first"
           onPress={() => finish('/invite')}
           variant="secondary"
           disabled={finishing}

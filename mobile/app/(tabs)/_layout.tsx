@@ -1,7 +1,23 @@
 /**
  * Tab Navigation - Driiva Mobile
- * 5 tabs matching the web app's BottomNav:
- * Dashboard | Trips | Record (center, prominent) | Rewards | Profile
+ *
+ * Home | Trips | Drive (centre) | Community | You
+ *
+ * WHY REWARDS IS NOT A TAB ANY MORE
+ * A five tab bar has room for the five things a driver does, and collecting
+ * badges is not one of them. Recognition belongs next to the standing it is
+ * recognition of, so achievements live inside Community under "Earned" and the
+ * full screen is one tap from there and from You.
+ *
+ * The ROUTE stays. An achievement_unlocked push notification routes to
+ * '/(tabs)/rewards' (mobile/lib/notificationRoutes.ts), so deleting the screen
+ * rather than hiding the tab would turn that notification into a tap that goes
+ * nowhere. href: null is expo-router's own way of saying "in the group, off
+ * the bar", which keeps the deep link and the tab bar both correct.
+ *
+ * Order is declaration order in this file and nothing else, which is why
+ * tests/unit/mobile-community-surface.test.ts asserts it: reordering two JSX
+ * children is a one line diff no type would reject.
  */
 import { Tabs } from 'expo-router';
 import { View, StyleSheet, Platform } from 'react-native';
@@ -40,32 +56,37 @@ export default function TabLayout() {
       <Tabs.Screen
         name="record"
         options={{
-          title: '',
-          tabBarIcon: () => (
-            <View style={styles.recordButton}>
-              <Ionicons name="radio-button-on" size={32} color={C.text.pri} />
+          title: 'Drive',
+          // The centre action carries its own affordance rather than an icon at
+          // the shared size. The label still renders under it, because an
+          // unlabelled control in a labelled bar is a guess for anyone using
+          // the app for the first time.
+          tabBarIcon: ({ focused }) => (
+            <View style={[styles.recordButton, focused && styles.recordButtonActive]}>
+              <Ionicons name="radio-button-on" size={26} color={C.text.hero} />
             </View>
           ),
         }}
       />
       <Tabs.Screen
-        name="rewards"
+        name="community"
         options={{
-          title: 'Rewards',
+          title: 'Community',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="gift-outline" size={size} color={color} />
+            <Ionicons name="people-outline" size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
+          title: 'You',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person-outline" size={size} color={color} />
           ),
         }}
       />
+      <Tabs.Screen name="rewards" options={{ href: null, title: 'Earned' }} />
     </Tabs>
   );
 }
@@ -86,17 +107,19 @@ const styles = StyleSheet.create({
     letterSpacing: TR.label,
   },
   recordButton: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     backgroundColor: C.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: Platform.OS === 'ios' ? 20 : 10,
     shadowColor: C.primary,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.35,
     shadowRadius: 12,
     elevation: 8,
+  },
+  recordButtonActive: {
+    backgroundColor: C.primaryLight,
   },
 });

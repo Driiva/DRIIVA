@@ -25,6 +25,7 @@ import { View, Text, ScrollView, RefreshControl, StyleSheet } from 'react-native
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { firestore } from '@/lib/firebase';
+import { periodIdFor } from '@/lib/isoWeek';
 import { useAuth } from '@/contexts/AuthContext';
 import { track } from '@/lib/analytics';
 import { C, T, F, S, scoreColor, FS } from '@/components/ui/theme';
@@ -101,22 +102,6 @@ const EMPTY_BREAKDOWN: ScoreBreakdown = {
   corneringScore: 0,
   phoneUsageScore: 100,
 };
-
-/**
- * ISO week period, e.g. "2026-W06". Mirrors getIsoWeekPeriod in
- * functions/src/utils/helpers.ts and the copy in app/leaderboard.tsx. The week
- * YEAR is the year of the week's Thursday, not the calendar year of the date;
- * around New Year those disagree and the two sides then read and write
- * different documents with no error anywhere. Change all of them or none.
- */
-function isoWeekPeriod(now: Date): string {
-  const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
-  const dayNum = d.getUTCDay() || 7;
-  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  const weekNum = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
-  return `${d.getUTCFullYear()}-W${String(weekNum).padStart(2, '0')}`;
-}
 
 export default function Dashboard() {
   // The dashboard IS the score. Viewing it is the loop step between
@@ -200,7 +185,7 @@ export default function Dashboard() {
     if (!user?.id) return;
     const unsubscribe = firestore()
       .collection('leaderboard')
-      .doc(`${isoWeekPeriod(new Date())}_weekly`)
+      .doc(periodIdFor('weekly'))
       .onSnapshot(
         (snap: {
           data: () => { rankings?: Array<{ rank: number; userId: string }> } | undefined;
