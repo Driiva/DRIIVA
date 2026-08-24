@@ -102,11 +102,16 @@ try {
   console.warn('[backgroundLocation] could not register task', err);
 }
 
-/** Mirrors record.tsx's LOCATION_OPTIONS: one fix per second, or every 10 metres. */
+/**
+ * One fix per second, and NO distance filter, matching the foreground watch in
+ * lib/driveMonitorInstance.ts. distanceInterval is iOS's distanceFilter: with a
+ * non-zero value a parked car stops producing fixes, so the drive-detection
+ * state machine never sees it stop and the trip never ends by itself.
+ */
 const BACKGROUND_LOCATION_OPTIONS: Location.LocationTaskOptions = {
   accuracy: Location.Accuracy.BestForNavigation,
   timeInterval: 1000,
-  distanceInterval: 10,
+  distanceInterval: 0,
   // iOS: keeps delivering fixes instead of pausing once backgrounded, at the
   // cost of the blue background-location status bar - the honest trade for
   // an app that says it is still recording.

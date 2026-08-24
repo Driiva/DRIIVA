@@ -131,11 +131,25 @@ function toSample(fix: Location.LocationObject): SampledLocation {
   };
 }
 
-/** One fix per second, or every 10 metres. Matches the trip capture rate. */
+/**
+ * One fix per second, and NO distance filter.
+ *
+ * distanceInterval maps to CLLocationManager.distanceFilter on iOS, so a
+ * non-zero value means "tell me only when the phone has moved that far". That
+ * is fine for drawing a route and wrong for detecting one: a car that parks
+ * stops moving, so it stops producing fixes, so the state machine never
+ * receives the stationary samples it needs and the trip never ends by itself.
+ * The drive would stay open until the driver noticed.
+ *
+ * Zero is kCLDistanceFilterNone: report every update the hardware produces.
+ * The cost is more fixes while parked, which the writer's gate discards as
+ * non-advancing anyway; the alternative was inventing stationary samples to
+ * feed the machine, and no number in this app is allowed to be invented.
+ */
 const WATCH_OPTIONS: Location.LocationOptions = {
   accuracy: Location.Accuracy.BestForNavigation,
   timeInterval: 1000,
-  distanceInterval: 10,
+  distanceInterval: 0,
 };
 
 /**
