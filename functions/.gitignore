@@ -27,3 +27,5 @@ firebase-debug.*.log
 # OS
 .DS_Store
 Thumbs.db
+vendor/contracts/*
+!vendor/contracts/package.json

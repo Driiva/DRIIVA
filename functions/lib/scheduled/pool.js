@@ -55,8 +55,11 @@ const db = admin.firestore();
 exports.finalizePoolPeriod = functions
     .region(region_1.EUROPE_LONDON)
     .pubsub
-    .schedule('0 0 1 * *') // 1st of each month at midnight UTC
-    .timeZone('America/New_York')
+    // Wave 0 (0h): was .timeZone('America/New_York') under a comment claiming
+    // midnight UTC, so a UK product finalised its monthly pool at 04:00/05:00 UK
+    // time and trips driven in those hours landed in the wrong period.
+    .schedule('0 0 1 * *') // 1st of each month, midnight UK time
+    .timeZone('Europe/London')
     .onRun((0, sentry_1.wrapTrigger)(async (_context) => {
     const previousPeriod = (0, helpers_1.getPreviousPoolPeriod)();
     functions.logger.info(`Finalizing pool period: ${previousPeriod}`);
@@ -129,6 +132,35 @@ exports.finalizePoolPeriod = functions
                 averageScore: share.averageScore,
             });
         }
+        /*
+         * Wave B: archive the period that just closed before the pool document
+         * is rolled forward.
+         *
+         * `communityPool/current` is a single mutable snapshot, so finalising a
+         * period previously destroyed every trace of it. There was no history
+         * anywhere in the product, which is why the pool could only ever be
+         * drawn as a single instant. This writes what the period ACTUALLY ended
+         * at, copied from the live document; it invents nothing and adds no
+         * funding path.
+         */
+        const historyRef = db
+            .collection(types_1.COLLECTION_NAMES.COMMUNITY_POOL)
+            .doc('current')
+            .collection('history')
+            .doc(previousPeriod);
+        batch.set(historyRef, {
+            period: previousPeriod,
+            periodType: pool.periodType,
+            totalPoolCents: pool.totalPoolCents,
+            totalContributionsCents: pool.totalContributionsCents,
+            totalPayoutsCents: pool.totalPayoutsCents,
+            activeParticipants: pool.activeParticipants,
+            averagePoolScore: pool.averagePoolScore,
+            safetyFactor: pool.safetyFactor,
+            claimsThisPeriod: pool.claimsThisPeriod,
+            sharesFinalized: shares.length,
+            archivedAt: now,
+        });
         // Update pool document for new period
         const { start, end } = getPoolPeriodDates('monthly');
         batch.update(poolRef, {
@@ -156,8 +188,8 @@ exports.finalizePoolPeriod = functions
 exports.recalculatePoolShares = functions
     .region(region_1.EUROPE_LONDON)
     .pubsub
-    .schedule('0 6 * * *') // Daily at 6 AM UTC
-    .timeZone('America/New_York')
+    .schedule('0 6 * * *') // Daily at 06:00 UK time
+    .timeZone('Europe/London')
     .onRun((0, sentry_1.wrapTrigger)(async (_context) => {
     const currentPeriod = (0, helpers_1.getCurrentPoolPeriod)();
     functions.logger.info(`Recalculating pool shares for period: ${currentPeriod}`);

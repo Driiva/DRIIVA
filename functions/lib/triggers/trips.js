@@ -54,6 +54,7 @@ const tripAnalysis_1 = require("../ai/tripAnalysis");
 const region_1 = require("../lib/region");
 const sentry_1 = require("../lib/sentry");
 const Sentry = __importStar(require("@sentry/node"));
+const contracts_1 = require("@driiva/contracts");
 const db = admin.firestore();
 // ─── DPIA SAFEGUARD ─────────────────────────────────────────────────────────
 // Approved data fields for trip point processing. Any new field types added to
@@ -337,13 +338,17 @@ async function finalizeTripFromPoints(tripId, tripData) {
         functions.logger.info(`Processing ${points.length} GPS points for trip ${tripId}`);
         // 1b. DPIA compliance check (non-blocking)
         checkDpiaCompliance(tripId, points).catch((err) => functions.logger.warn('DPIA check failed (non-blocking)', { tripId, err }));
-        // 2. Compute metrics from points
-        const metrics = await Sentry.startSpan({ name: 'computeTripMetrics', op: 'trip.compute' }, async () => (0, tripMetrics_1.computeTripMetrics)(points));
+        // 2. Compute metrics from points. clientReportedPhonePickupCount is
+        // untrusted client input (M2-DEC-1 Option A) - computeTripMetrics
+        // sanitises and rate-caps it before it can influence the score; it is
+        // passed straight through here, not trusted at this layer.
+        const metrics = await Sentry.startSpan({ name: 'computeTripMetrics', op: 'trip.compute' }, async () => (0, tripMetrics_1.computeTripMetrics)(points, tripData.clientReportedPhonePickupCount));
         functions.logger.info(`Computed metrics for trip ${tripId}:`, {
             distanceMeters: metrics.distanceMeters,
             durationSeconds: metrics.durationSeconds,
             avgSpeedMph: Math.round(metrics.avgSpeedMps * 2.237 * 100) / 100,
             score: metrics.score,
+            phonePickupCount: metrics.events.phonePickupCount,
         });
         // 3. Detect anomalies
         const anomalies = (0, helpers_1.detectAnomalies)({
@@ -481,11 +486,14 @@ async function updateDriverProfileAndPoolShare(trip, tripId) {
         const newTotalTrips = user.drivingProfile.totalTrips + 1;
         const newTotalMiles = user.drivingProfile.totalMiles + distanceMiles;
         const newTotalMinutes = user.drivingProfile.totalDrivingMinutes + durationMinutes;
-        // Recalculate weighted average score
-        const oldWeight = user.drivingProfile.totalTrips;
-        const newScore = oldWeight === 0
-            ? trip.score
-            : (user.drivingProfile.currentScore * oldWeight + trip.score) / newTotalTrips;
+        // Recalculate weighted average score.
+        // The weight is scoreWeight(), not totalTrips: the starting score carries
+        // the weight of a notional trip, so a driver's first real trip is averaged
+        // WITH their starting position rather than replacing it. Using totalTrips
+        // here would silently discard the starting score on trip one, which is the
+        // behaviour that made a new profile only ever able to move downwards.
+        const oldWeight = (0, contracts_1.scoreWeight)(user.drivingProfile.totalTrips);
+        const newScore = (user.drivingProfile.currentScore * oldWeight + trip.score) / (oldWeight + 1);
         // Update score breakdown (weighted average)
         const newScoreBreakdown = {
             speedScore: (0, helpers_1.weightedAverage)(user.drivingProfile.scoreBreakdown.speedScore, trip.scoreBreakdown.speedScore, oldWeight),
@@ -501,8 +509,10 @@ async function updateDriverProfileAndPoolShare(trip, tripId) {
             tripId,
             startedAt: trip.startedAt,
             endedAt: trip.endedAt,
-            distanceMiles: Math.round(distanceMiles * 100) / 100,
-            durationMinutes: Math.round(durationMinutes),
+            // Metres and seconds, straight off the trip document. See the unit
+            // convention on RecentTripSummary in ../types.ts.
+            distanceMeters: Math.round(trip.distanceMeters),
+            durationSeconds: Math.round(trip.durationSeconds),
             score: trip.score,
             routeSummary: (0, helpers_1.buildRouteSummary)(trip.startLocation, trip.endLocation),
         };

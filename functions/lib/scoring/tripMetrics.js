@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.SCORE_WEIGHTS = void 0;
 exports.haversineMeters = haversineMeters;
 exports.computeTripMetrics = computeTripMetrics;
+exports.locateDrivingEvents = locateDrivingEvents;
 /**
  * Composite score weights. Single source of truth for both the algorithm
  * (computeDrivingScore, below) and any UI that shows the weighting to a user
@@ -46,9 +47,19 @@ const calculateDistance = haversineMeters;
 /**
  * Compute trip metrics from raw GPS points.
  * This is the core algorithm that processes GPS data to derive metrics and
- * scores. Frozen signature (M0 Task 2 brief).
+ * scores. Frozen signature for everything except `clientReportedPhonePickupCount`
+ * (M0 Task 2 brief; M2-DEC-1 Option A added the second parameter - see the
+ * file header).
+ *
+ * `clientReportedPhonePickupCount` is the client's own count of phone
+ * pickups during the trip (web: visibilitychange while recording; mobile: an
+ * on-device accelerometer heuristic - see the call sites in
+ * functions/src/triggers/trips.ts and each client for what "pickup" means on
+ * that platform). It is sanitised via `sanitizePhonePickupCount` before it
+ * can influence `events.phonePickupCount` or the score, because it is client
+ * input the server has no independent way to verify.
  */
-function computeTripMetrics(points) {
+function computeTripMetrics(points, clientReportedPhonePickupCount) {
     if (points.length < 2) {
         return getDefaultMetrics();
     }
@@ -68,8 +79,13 @@ function computeTripMetrics(points) {
     const durationSeconds = Math.max(1, Math.round(durationMs / 1000)); // At least 1 second
     // 3. Compute speed statistics
     const { avgSpeedMps, maxSpeedMps, speedVariance } = computeSpeedStats(sortedPoints);
-    // 4. Detect driving events
+    // 4. Detect driving events from the GPS trace itself (braking, acceleration,
+    // speeding, cornering). Phone pickups cannot be detected from GPS alone, so
+    // detectDrivingEvents still always initialises phonePickupCount to 0 here -
+    // it is overlaid with the sanitised client-reported count immediately
+    // below, once durationSeconds (needed for the rate cap) is known.
     const events = detectDrivingEvents(sortedPoints);
+    events.phonePickupCount = sanitizePhonePickupCount(clientReportedPhonePickupCount, durationSeconds);
     // 5. Compute driving score
     const { score, scoreBreakdown } = computeDrivingScore(sortedPoints, events, speedVariance, avgSpeedMps, totalDistanceMeters, durationSeconds);
     return {
@@ -133,25 +149,27 @@ function computeSpeedStats(points) {
         speedVariance: Math.round(speedVariance * 100) / 100,
     };
 }
+// Event thresholds. These used to be locals inside detectDrivingEvents, which
+// meant the only way for a screen to draw an event marker was to retype them.
+// This repo has already shipped transposed SCORE_WEIGHTS to the marketing site
+// once by retyping a constant, so the numbers stay here and the RESULT is what
+// gets exported, via locateDrivingEvents below.
+const HARD_BRAKING_THRESHOLD = -3.5; // m/s² (deceleration)
+const HARD_ACCEL_THRESHOLD = 3.0; // m/s² (acceleration)
+const SHARP_TURN_THRESHOLD = 30; // degrees per second
+const SPEED_LIMIT_MPS = 31.3; // ~70 mph in m/s
 /**
- * Detect driving events from GPS points
+ * Every driving event in a trace, with where it happened.
+ *
+ * detectDrivingEvents tallies exactly this list, so a marker drawn from here
+ * and a count read off the trip document cannot disagree. That identity is
+ * asserted in tripMetrics.eventLocator.test.ts rather than assumed.
  */
-function detectDrivingEvents(points) {
-    const events = {
-        hardBrakingCount: 0,
-        hardAccelerationCount: 0,
-        speedingSeconds: 0,
-        sharpTurnCount: 0,
-        phonePickupCount: 0,
-    };
+function locateDrivingEvents(points) {
+    const located = [];
     if (points.length < 2) {
-        return events;
+        return located;
     }
-    // Thresholds
-    const HARD_BRAKING_THRESHOLD = -3.5; // m/s² (deceleration)
-    const HARD_ACCEL_THRESHOLD = 3.0; // m/s² (acceleration)
-    const SHARP_TURN_THRESHOLD = 30; // degrees per second
-    const SPEED_LIMIT_MPS = 31.3; // ~70 mph in m/s
     for (let i = 1; i < points.length; i++) {
         const prev = points[i - 1];
         const curr = points[i];
@@ -166,21 +184,54 @@ function detectDrivingEvents(points) {
         const acceleration = (currSpeed - prevSpeed) / dt;
         // Hard braking detection
         if (acceleration < HARD_BRAKING_THRESHOLD) {
-            events.hardBrakingCount++;
+            located.push({ type: 'braking', index: i, t: curr.t });
         }
         // Hard acceleration detection
         if (acceleration > HARD_ACCEL_THRESHOLD) {
-            events.hardAccelerationCount++;
+            located.push({ type: 'acceleration', index: i, t: curr.t });
         }
         // Speeding detection
         if (currSpeed > SPEED_LIMIT_MPS) {
-            events.speedingSeconds += Math.round(dt);
+            located.push({ type: 'speeding', index: i, t: curr.t, seconds: Math.round(dt) });
         }
         // Sharp turn detection (heading change rate)
         const headingDelta = Math.abs(normalizeHeadingDelta(curr.hdg - prev.hdg));
         const headingRate = headingDelta / dt;
         if (headingRate > SHARP_TURN_THRESHOLD && currSpeed > 5) {
-            events.sharpTurnCount++;
+            located.push({ type: 'cornering', index: i, t: curr.t });
+        }
+    }
+    return located;
+}
+/**
+ * Detect driving events from GPS points.
+ *
+ * A tally over locateDrivingEvents, so there is one pass and one definition of
+ * what an event is. phonePickupCount is always 0 here; computeTripMetrics
+ * overlays the sanitised client-reported count once the duration is known.
+ */
+function detectDrivingEvents(points) {
+    const events = {
+        hardBrakingCount: 0,
+        hardAccelerationCount: 0,
+        speedingSeconds: 0,
+        sharpTurnCount: 0,
+        phonePickupCount: 0,
+    };
+    for (const event of locateDrivingEvents(points)) {
+        switch (event.type) {
+            case 'braking':
+                events.hardBrakingCount++;
+                break;
+            case 'acceleration':
+                events.hardAccelerationCount++;
+                break;
+            case 'cornering':
+                events.sharpTurnCount++;
+                break;
+            case 'speeding':
+                events.speedingSeconds += event.seconds ?? 0;
+                break;
         }
     }
     return events;
@@ -195,6 +246,36 @@ function computePhoneUsageScore(phonePickupCount, durationSeconds) {
         return 100;
     const pickupsPerTenMin = (phonePickupCount / durationSeconds) * 600;
     return Math.max(20, Math.round(100 - pickupsPerTenMin * 16));
+}
+/**
+ * Maximum realistic phone-pickup rate. There is no server-side accelerometer
+ * stream to verify a client-reported pickup count against - unlike every
+ * other event in this file, which is derived entirely from the GPS trace the
+ * server already trusts, phone pickups are (for now) a client-reported
+ * number the server has to take on faith. This cap is the defence against
+ * that: no legitimate use of a phone while driving produces a pickup faster
+ * than roughly once every 10 seconds sustained, so 6/minute is generous
+ * headroom, not a tuned estimate of normal behaviour.
+ */
+const MAX_PICKUPS_PER_MINUTE = 6;
+/**
+ * Sanitise a client-reported phone-pickup count before it can reach
+ * `events.phonePickupCount` or the score. Rejects anything that is not a
+ * finite, positive number (guards against NaN/Infinity/negative values
+ * corrupting `computePhoneUsageScore`'s arithmetic - `Math.max(20, NaN)` is
+ * `NaN`, which would otherwise poison the whole composite score, not just
+ * the phone-usage component), floors to a whole pickup, then caps the rate
+ * at MAX_PICKUPS_PER_MINUTE so a malformed or malicious payload cannot
+ * distort a driver's score.
+ */
+function sanitizePhonePickupCount(rawCount, durationSeconds) {
+    if (rawCount === undefined || !Number.isFinite(rawCount) || rawCount <= 0) {
+        return 0;
+    }
+    const count = Math.floor(rawCount);
+    const durationMinutes = Math.max(1, durationSeconds) / 60;
+    const cap = Math.max(1, Math.ceil(durationMinutes * MAX_PICKUPS_PER_MINUTE));
+    return Math.min(count, cap);
 }
 /**
  * Normalize heading delta to -180 to 180 range
@@ -214,7 +295,9 @@ function normalizeHeadingDelta(delta) {
  * - Braking Score (25%): Penalizes hard braking events
  * - Acceleration Score (20%): Penalizes aggressive acceleration
  * - Cornering Score (20%): Penalizes sharp turns
- * - Phone Usage Score (10%): Placeholder (no phone detection yet)
+ * - Phone Usage Score (10%): Rate-based on a sanitised, client-reported
+ *   pickup count (M2-DEC-1 Option A) - not GPS-derived like the other four,
+ *   see sanitizePhonePickupCount and computeTripMetrics's header comment
  */
 function computeDrivingScore(points, events, speedVariance, avgSpeedMps, distanceMeters, durationSeconds) {
     // Normalize metrics per mile for fair comparison

@@ -10,6 +10,7 @@ exports.getCurrentPoolPeriod = getCurrentPoolPeriod;
 exports.getPreviousPoolPeriod = getPreviousPoolPeriod;
 exports.getShareId = getShareId;
 exports.getWeekNumber = getWeekNumber;
+exports.getIsoWeekPeriod = getIsoWeekPeriod;
 exports.getCurrentPeriodForType = getCurrentPeriodForType;
 exports.weightedAverage = weightedAverage;
 exports.buildRouteSummary = buildRouteSummary;
@@ -53,14 +54,34 @@ function getWeekNumber(date) {
     return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
 }
 /**
+ * ISO week period ID, e.g. "2026-W06".
+ *
+ * Uses the ISO week-year (the calendar year of the week's Thursday), NOT the
+ * calendar year of the date itself. 31 Dec 2026 belongs to 2026-W53; 1 Jan
+ * 2027 also belongs to 2026-W53. Mirrored by getCurrentWeekPeriod in
+ * client/src/hooks/useCommunityData.ts - change both or neither.
+ */
+function getIsoWeekPeriod(date) {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    const weekNum = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+    return `${d.getUTCFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+}
+/**
  * Get period string for leaderboard type
  */
 function getCurrentPeriodForType(periodType) {
     const now = new Date();
     switch (periodType) {
         case 'weekly':
-            const weekNum = getWeekNumber(now);
-            return `${now.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+            // Wave 0 (0h): this used now.getFullYear() (calendar year) with an ISO
+            // week number, while the client subscribes using the ISO week-YEAR (the
+            // year of the week's Thursday). Around New Year the two disagree, so the
+            // scheduled function wrote one document and the client read another,
+            // emptying the leaderboard. Both sides now derive the same ID.
+            return getIsoWeekPeriod(now);
         case 'monthly':
             return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
         case 'all_time':

@@ -16,7 +16,13 @@
  *   ROOT_ENVIRONMENT         - "sandbox" | "production"
  *   ROOT_PRODUCT_MODULE_KEY  - Product module key (required, no fallback)
  *
- * All monetary values use integer cents (Root sandbox uses ZAR cents).
+ * All monetary values use integer cents (Root sandbox uses ZAR cents against a
+ * UK GBP product - no conversion exists yet, see resolveCurrency() in
+ * rootAdapter.ts for the pinned TODO, do not guess a rate).
+ *
+ * M4 Task 4: the Root HTTP transport (quote/bind/sync/cancel) now lives behind
+ * the typed RootAdapter interface in ./rootAdapter - see that file for the
+ * seam. This file owns the callable functions and Firestore glue only.
  */
 import * as functions from 'firebase-functions';
 /**

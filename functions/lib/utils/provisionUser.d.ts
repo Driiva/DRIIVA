@@ -23,12 +23,7 @@ export interface BuildProvisionedUserDocInput {
     displayName?: string | null;
     /** True when `email` is in the ADMIN_EMAILS allowlist. */
     isAdmin?: boolean;
-    /** The default policy's id, e.g. `policy_{uid}` - resolved by the caller. */
-    policyId: string;
-    /** The default policy's sequential number, e.g. `DRV-001` - resolved by the caller. */
-    policyNumber: string;
     now: FirestoreTimestampLike;
-    renewalDate: FirestoreTimestampLike;
 }
 /**
  * A provisioned user document plus the `isAdmin` flag. `isAdmin` is written
