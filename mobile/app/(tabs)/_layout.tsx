@@ -24,6 +24,9 @@ import { StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle } from 'react-native-svg';
 import { C, F, S, FS, LH, TR } from '@/components/ui/theme';
+// Wave C: arms automatic drive detection for the whole signed-in session, not
+// just while the Drive screen is mounted. Renders nothing.
+import { DriveDetectionHost } from '@/components/DriveDetectionHost';
 
 /**
  * The Drive tab mark: a thin ring, with a filled centre only while the tab is
@@ -51,6 +54,8 @@ function DriveMark({ color, size, focused }: { color: string; size: number; focu
 
 export default function TabLayout() {
   return (
+    <>
+    <DriveDetectionHost />
     <Tabs
       screenOptions={{
         headerShown: false,
@@ -107,6 +112,7 @@ export default function TabLayout() {
       />
       <Tabs.Screen name="rewards" options={{ href: null, title: 'Earned' }} />
     </Tabs>
+    </>
   );
 }
 

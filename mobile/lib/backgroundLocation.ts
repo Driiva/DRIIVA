@@ -41,26 +41,86 @@ export type { PointBuffer };
 
 export const BACKGROUND_LOCATION_TASK = 'driiva-background-location';
 
-try {
-  TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }) => {
-    if (error) {
-      console.error('[backgroundLocation] task error', error);
-      return;
-    }
-    handleBackgroundLocationData(
-      { data: data as { locations?: Location.LocationObject[] } | null },
-      getActiveWriter(),
-    );
-  });
-} catch (err) {
-  console.error('[backgroundLocation] could not register task', err);
+/**
+ * Whether background capture is currently able to run.
+ *
+ * A driver never sees an error object. The record screen subscribes to this
+ * and renders at most one calm line. Held as a module-level value rather than
+ * passed around because the OS can deliver into the task while no screen is
+ * mounted at all.
+ */
+export type BackgroundCaptureHealth = 'ok' | 'unavailable';
+
+let health: BackgroundCaptureHealth = 'ok';
+let healthListener: ((next: BackgroundCaptureHealth) => void) | null = null;
+
+export function getBackgroundCaptureHealth(): BackgroundCaptureHealth {
+  return health;
 }
 
-/** Mirrors record.tsx's LOCATION_OPTIONS: one fix per second, or every 10 metres. */
+export function subscribeBackgroundCaptureHealth(
+  listener: ((next: BackgroundCaptureHealth) => void) | null,
+): void {
+  healthListener = listener;
+}
+
+/** Reset at the start of a trip, so one bad trip does not condemn the next. */
+export function resetBackgroundCaptureHealth(): void {
+  health = 'ok';
+  healthListener?.('ok');
+}
+
+function reportUnavailable(code: number | null, message: string): void {
+  // Deduped: a real fault repeats on every delivery, and the old code turned
+  // that into a stream of identical red toasts.
+  if (health === 'unavailable') return;
+  health = 'unavailable';
+  // console.warn, never console.error: this is a degraded capability the
+  // driver is told about calmly on screen, not a crash. The code and message
+  // are kept for diagnosis rather than shown to anyone.
+  console.warn('[backgroundLocation] background capture unavailable', { code, message });
+  healthListener?.('unavailable');
+}
+
+try {
+  TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }) => {
+    const outcome = handleBackgroundLocationData(
+      {
+        data: data as { locations?: Location.LocationObject[] } | null,
+        error: error ?? undefined,
+      },
+      getActiveWriter(),
+    );
+    // 'transient_fault' is kCLErrorLocationUnknown, which is Core Location
+    // still looking. It is deliberately silent: it was the entire content of
+    // the red toast a driver saw over a trip that was recording perfectly.
+    if (outcome.kind === 'capture_unavailable') {
+      reportUnavailable(outcome.code, outcome.message);
+    }
+  });
+} catch (err) {
+  console.warn('[backgroundLocation] could not register task', err);
+}
+
+/**
+ * One fix per second, and NO distance filter, matching the foreground watch in
+ * lib/driveMonitorInstance.ts. distanceInterval is iOS's distanceFilter: with a
+ * non-zero value a parked car stops producing fixes, so the drive-detection
+ * state machine never sees it stop and the trip never ends by itself.
+ */
 const BACKGROUND_LOCATION_OPTIONS: Location.LocationTaskOptions = {
   accuracy: Location.Accuracy.BestForNavigation,
   timeInterval: 1000,
-  distanceInterval: 10,
+  distanceInterval: 0,
+  // WITHOUT THESE TWO, iOS STOPS SENDING FIXES MID-DRIVE. CLLocationManager
+  // defaults pausesLocationUpdatesAutomatically to true, and with no activity
+  // type it guesses badly: on a simulated 15 m/s run it suspended updates 37
+  // seconds in, and the trip captured 32 points of a 133 second drive while
+  // reporting no error at all. Telling it this is vehicle navigation, and that
+  // it may not decide on the driver's behalf when the journey is over, is what
+  // keeps the fixes coming.
+  activityType: Location.ActivityType.AutomotiveNavigation,
+  pausesUpdatesAutomatically: false,
   // iOS: keeps delivering fixes instead of pausing once backgrounded, at the
   // cost of the blue background-location status bar - the honest trade for
   // an app that says it is still recording.
