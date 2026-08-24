@@ -28,7 +28,15 @@ const SIZES = {
 } as const;
 
 interface ScoreRingProps {
-  score: number;
+  /**
+   * The score, or null when the driver has no scored trip yet.
+   *
+   * Null rather than zero, deliberately. A zero renders in the red tier, so a
+   * driver who has simply not driven yet would be shown the gauge of somebody
+   * who drives badly. "Not scored" is a state; a plausible zero is a lie the
+   * gauge tells on the app's behalf.
+   */
+  score: number | null;
   /** A named step, or an explicit diameter in px for one-off hero layouts. */
   size?: 'sm' | 'md' | 'lg' | number;
   animated?: boolean;
@@ -85,11 +93,13 @@ function arcPath(centre: number, radius: number): string {
 }
 
 export const ScoreRing: React.FC<ScoreRingProps> = ({
-  score,
+  score: rawScore,
   size = 'lg',
   animated = true,
   label = '/ 100',
 }) => {
+  const pending = rawScore == null;
+  const score = rawScore ?? 0;
   const cfg = configFor(size);
   const radius = (cfg.diameter - cfg.stroke) / 2;
   const centre = cfg.diameter / 2;
@@ -118,6 +128,11 @@ export const ScoreRing: React.FC<ScoreRingProps> = ({
   useEffect(() => {
     // A driver who has asked the system to stop animating gets the figure
     // straight away. The score is information, never withheld for an effect.
+    if (pending) {
+      fillAnim.setValue(arcLength);
+      return;
+    }
+
     if (!animated || reduceMotion) {
       fillAnim.setValue(arcLength * (1 - pct));
       setDisplayScore(score);
@@ -144,7 +159,7 @@ export const ScoreRing: React.FC<ScoreRingProps> = ({
     });
 
     return () => counterAnim.removeListener(listener);
-  }, [score, animated, reduceMotion, arcLength, pct]);
+  }, [score, pending, animated, reduceMotion, arcLength, pct]);
 
   const track = arcPath(centre, radius);
 
@@ -152,7 +167,9 @@ export const ScoreRing: React.FC<ScoreRingProps> = ({
     <View
       style={{ width: cfg.diameter, height: cfg.diameter, alignSelf: 'center' }}
       accessibilityRole="image"
-      accessibilityLabel={`Safety score ${Math.round(score)} out of 100`}
+      accessibilityLabel={
+        pending ? 'Safety score not available yet' : `Safety score ${Math.round(score)} out of 100`
+      }
     >
       <Svg width={cfg.diameter} height={cfg.diameter}>
         <Defs>
@@ -184,15 +201,21 @@ export const ScoreRing: React.FC<ScoreRingProps> = ({
 
       <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
         <View style={styles.centre}>
-          <Text
-            style={[
-              styles.scoreText,
-              { fontSize: cfg.fontSize, lineHeight: cfg.lineHeight, letterSpacing: cfg.letterSpacing },
-            ]}
-          >
-            {displayScore}
-          </Text>
-          {cfg.showLabel && <Text style={styles.subtitleText}>{label}</Text>}
+          {pending ? (
+            <Text style={styles.pendingText}>Not scored</Text>
+          ) : (
+            <Text
+              style={[
+                styles.scoreText,
+                { fontSize: cfg.fontSize, lineHeight: cfg.lineHeight, letterSpacing: cfg.letterSpacing },
+              ]}
+            >
+              {displayScore}
+            </Text>
+          )}
+          {cfg.showLabel && (
+            <Text style={styles.subtitleText}>{pending ? 'no trips yet' : label}</Text>
+          )}
         </View>
       </View>
     </View>
@@ -209,6 +232,10 @@ const styles = StyleSheet.create({
     fontFamily: F.monoSemiBold,
     color: C.text.hero,
     fontVariant: ['tabular-nums'],
+  },
+  pendingText: {
+    ...T.label,
+    color: C.text.sec,
   },
   subtitleText: {
     ...T.caption,

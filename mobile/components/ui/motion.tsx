@@ -153,7 +153,14 @@ interface PressableCardProps {
   disabled?: boolean;
   /** Which haptic the press fires. 'select' for a list row, 'press' for a card. */
   haptic?: 'select' | 'press' | 'none';
+  /** Style for the animated surface itself. */
   style?: StyleProp<ViewStyle>;
+  /**
+   * Layout style for the touch target around it. A pressable that has to take
+   * part in a flex row needs the flex on the target, not on the thing that
+   * scales, or the row collapses the moment a card becomes tappable.
+   */
+  outerStyle?: StyleProp<ViewStyle>;
   accessibilityLabel?: string;
   accessibilityHint?: string;
 }
@@ -171,6 +178,7 @@ export function PressableCard({
   disabled = false,
   haptic = 'press',
   style,
+  outerStyle,
   accessibilityLabel,
   accessibilityHint,
 }: PressableCardProps) {
@@ -184,11 +192,12 @@ export function PressableCard({
   }));
 
   if (!onPress || disabled) {
-    return <View style={style}>{children}</View>;
+    return <View style={[outerStyle, style]}>{children}</View>;
   }
 
   return (
     <Pressable
+      style={outerStyle}
       onPressIn={() => {
         held.value = withSpring(1, MOTION.spring.press);
       }}

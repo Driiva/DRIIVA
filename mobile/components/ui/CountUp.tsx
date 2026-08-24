@@ -28,6 +28,13 @@ const EASE_FAST = Easing.bezier(0.22, 1, 0.36, 1);
 
 interface CountUpProps {
   value: number;
+  /**
+   * Renders the running value. Supplied by any caller whose figure has a unit,
+   * so a pound amount counts in PENCE and is formatted by lib/money.ts at the
+   * point of drawing rather than being divided by 100 at the call site. That
+   * division is the mistake this app has already shipped once.
+   */
+  format?: (n: number) => string;
   /** Duration in ms. Kept inside the 150-450ms motion band by default. */
   duration?: number;
   decimals?: number;
@@ -44,7 +51,9 @@ export function formatCountValue(
   prefix: string,
   suffix: string,
   signed: boolean,
+  format?: (value: number) => string,
 ): string {
+  if (format) return format(n);
   const rounded = decimals > 0 ? n.toFixed(decimals) : Math.round(n).toString();
   // Guard the -0 that toFixed produces for tiny negatives.
   const normalised = Number(rounded) === 0 ? (decimals > 0 ? (0).toFixed(decimals) : '0') : rounded;
@@ -54,6 +63,7 @@ export function formatCountValue(
 
 export function CountUp({
   value,
+  format,
   duration = 900,
   decimals = 0,
   prefix = '',
@@ -64,7 +74,7 @@ export function CountUp({
   const progress = useSharedValue(value);
   const previous = useRef(value);
   const [display, setDisplay] = useState(() =>
-    formatCountValue(value, decimals, prefix, suffix, signed),
+    formatCountValue(value, decimals, prefix, suffix, signed, format),
   );
   const [reduceMotion, setReduceMotion] = useState(false);
 
@@ -89,9 +99,9 @@ export function CountUp({
   // the JS thread, where the formatter already lives.
   const setDisplayFromValue = useCallback(
     (current: number) => {
-      setDisplay(formatCountValue(current, decimals, prefix, suffix, signed));
+      setDisplay(formatCountValue(current, decimals, prefix, suffix, signed, format));
     },
-    [decimals, prefix, suffix, signed],
+    [decimals, prefix, suffix, signed, format],
   );
 
   useAnimatedReaction(
@@ -109,7 +119,7 @@ export function CountUp({
     if (from === value || reduceMotion) {
       cancelAnimation(progress);
       progress.value = value;
-      setDisplay(formatCountValue(value, decimals, prefix, suffix, signed));
+      setDisplay(formatCountValue(value, decimals, prefix, suffix, signed, format));
       return;
     }
 
@@ -117,12 +127,12 @@ export function CountUp({
     progress.value = withTiming(value, { duration, easing: EASE_FAST });
 
     return () => cancelAnimation(progress);
-  }, [value, duration, decimals, prefix, suffix, signed, reduceMotion, progress]);
+  }, [value, duration, decimals, prefix, suffix, signed, format, reduceMotion, progress]);
 
   return (
     <Text
       style={[{ fontVariant: ['tabular-nums'] }, style]}
-      accessibilityLabel={formatCountValue(value, decimals, prefix, suffix, signed)}
+      accessibilityLabel={formatCountValue(value, decimals, prefix, suffix, signed, format)}
     >
       {display}
     </Text>
