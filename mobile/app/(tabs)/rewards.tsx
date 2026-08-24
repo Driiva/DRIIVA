@@ -256,5 +256,5 @@ const styles = StyleSheet.create({
   cardTitle: { ...T.h2, color: C.text.pri },
   cardBody: { ...T.body, color: C.text.sec },
 
-  disclaimer: { ...T.caption, color: C.text.mut, lineHeight: 16 },
+  disclaimer: { ...T.caption, color: C.text.mut },
 });

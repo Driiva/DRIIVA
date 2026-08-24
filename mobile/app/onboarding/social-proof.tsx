@@ -20,7 +20,7 @@ import { useRouter } from 'expo-router';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
 import { ONBOARDING_TOTAL, stepNumber } from '@/lib/onboardingFlow';
 import { track } from '@/lib/analytics';
-import { C, F, S, R, FS, LH, TR } from '@/components/ui/theme';
+import { C, F, S, R, FS, LH, TR, T } from '@/components/ui/theme';
 
 const PRINCIPLES = [
   {
@@ -92,10 +92,10 @@ const styles = StyleSheet.create({
   content: { flex: 1, paddingTop: S.md, paddingHorizontal: S.lg },
   back: { marginBottom: S.lg },
   headline: {
-    color: C.text.hero, fontSize: FS.xxl, fontFamily: F.bodySemiBold,
-    letterSpacing: TR.xxl, lineHeight: LH.xxl, marginBottom: 8,
+    ...T.h0,
+    color: C.text.hero, marginBottom: 8,
   },
-  sub: { color: C.text.sec, fontFamily: F.body, fontSize: FS.md, marginBottom: 24 },
+  sub: { color: C.text.sec, fontFamily: F.body, fontSize: FS.md, lineHeight: LH.md, letterSpacing: TR.md, marginBottom: 24 },
 
   list: { gap: 12 },
   card: {
@@ -105,12 +105,12 @@ const styles = StyleSheet.create({
     borderColor: C.border,
     padding: 18,
   },
-  cardTitle: { color: C.text.hero, fontSize: FS.md, fontFamily: F.bodySemiBold, marginBottom: 6 },
-  cardBody: { color: C.text.sec, fontFamily: F.body, fontSize: FS.md, lineHeight: LH.md },
+  cardTitle: { color: C.text.hero, fontSize: FS.md, fontFamily: F.bodySemiBold, lineHeight: LH.md, letterSpacing: TR.md, marginBottom: 6 },
+  cardBody: { color: C.text.sec, fontFamily: F.body, fontSize: FS.md, lineHeight: LH.md, letterSpacing: TR.md },
 
   disclaimer: {
     color: C.text.mut, fontFamily: F.body, fontSize: FS.sm,
-    lineHeight: 18, marginTop: S.lg,
+    lineHeight: LH.sm, letterSpacing: TR.sm, marginTop: S.lg,
   },
 
   footer: { paddingHorizontal: S.lg, paddingBottom: S.lg },
@@ -118,5 +118,5 @@ const styles = StyleSheet.create({
     backgroundColor: C.primary, borderRadius: R.card,
     paddingVertical: 16, alignItems: 'center',
   },
-  primaryBtnText: { color: C.text.hero, fontSize: FS.md, fontFamily: F.bodySemiBold, letterSpacing: -0.005 },
+  primaryBtnText: { color: C.text.hero, fontSize: FS.md, fontFamily: F.bodySemiBold, lineHeight: LH.md, letterSpacing: TR.md },
 });

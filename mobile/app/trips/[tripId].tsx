@@ -399,11 +399,11 @@ const styles = StyleSheet.create({
   stat: { flex: 1 },
   statValue: { ...T.number, color: C.text.pri },
   statLabel: { ...T.caption, color: C.text.sec, marginTop: 2, textTransform: 'capitalize' },
-  sectionTitle: { ...T.label, color: C.text.sec, marginBottom: S.sm, textTransform: 'uppercase', letterSpacing: 0.5 },
+  sectionTitle: { ...T.eyebrow, color: C.text.sec, marginBottom: S.sm },
   emptyLine: { ...T.body, color: C.text.mut },
   mapWrap: { height: 200, borderRadius: R.card, overflow: 'hidden' },
   map: { flex: 1 },
-  breakdownFootnote: { ...T.caption, color: C.text.mut, marginTop: S.sm, lineHeight: 16 },
+  breakdownFootnote: { ...T.caption, color: C.text.mut, marginTop: S.sm },
   eventsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: S.md },
   eventStat: { width: '45%' },
   // Same: T.number is base, so lg needs lg's leading, not base's.

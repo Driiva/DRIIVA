@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/contexts/AuthContext';
-import { C, F, FS, S, R } from '@/components/ui/theme';
+import { C, F, FS, S, R, LH, TR, T } from '@/components/ui/theme';
 
 export default function Profile() {
   const { user, logout } = useAuth();
@@ -75,7 +75,7 @@ function MenuItem({ icon, label, onPress }: { icon: string; label: string; onPre
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
   scroll: { paddingHorizontal: S.md, paddingBottom: 100 },
-  title: { fontSize: FS.xxl, fontFamily: F.bodyBold, color: C.text.pri, marginTop: S.md, marginBottom: S.md },
+  title: { fontSize: FS.xxl, fontFamily: F.bodyBold, lineHeight: LH.xxl, letterSpacing: TR.xxl, color: C.text.pri, marginTop: S.md, marginBottom: S.md },
 
   card: {
     backgroundColor: C.surface1, borderRadius: R.card, borderWidth: 1,
@@ -85,21 +85,21 @@ const styles = StyleSheet.create({
     width: 64, height: 64, borderRadius: 32, backgroundColor: C.primary,
     justifyContent: 'center', alignItems: 'center', alignSelf: 'center', marginBottom: S.sm,
   },
-  avatarText: { fontSize: FS.xxl, fontFamily: F.bodyBold, color: C.text.pri },
-  name: { fontSize: FS.xl, fontFamily: F.bodyBold, color: C.text.pri, textAlign: 'center' },
-  email: { fontFamily: F.body, fontSize: FS.sm, color: C.text.sec, textAlign: 'center', marginTop: 2 },
+  avatarText: { fontSize: FS.xxl, fontFamily: F.bodyBold, lineHeight: LH.xxl, letterSpacing: TR.xxl, color: C.text.pri },
+  name: { fontSize: FS.xl, fontFamily: F.bodyBold, lineHeight: LH.xl, letterSpacing: TR.xl, color: C.text.pri, textAlign: 'center' },
+  email: { ...T.caption, color: C.text.sec, textAlign: 'center', marginTop: 2 },
 
   menuItem: {
     flexDirection: 'row', alignItems: 'center', paddingVertical: 14,
     borderBottomWidth: 1, borderBottomColor: C.border,
   },
-  menuLabel: { flex: 1, fontFamily: F.body, fontSize: FS.md, color: C.text.pri, marginLeft: S.sm },
+  menuLabel: { flex: 1, fontFamily: F.body, fontSize: FS.md, lineHeight: LH.md, letterSpacing: TR.md, color: C.text.pri, marginLeft: S.sm },
 
   logoutButton: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     paddingVertical: 16, gap: S.sm,
   },
-  logoutText: { fontSize: FS.md, color: C.error, fontFamily: F.bodySemiBold },
+  logoutText: { fontSize: FS.md, lineHeight: LH.md, letterSpacing: TR.md, color: C.error, fontFamily: F.bodySemiBold },
 
-  version: { fontFamily: F.body, fontSize: FS.xs, color: C.text.mut, textAlign: 'center', marginTop: S.sm },
+  version: { fontFamily: F.body, fontSize: FS.xs, lineHeight: LH.xs, letterSpacing: TR.label, color: C.text.mut, textAlign: 'center', marginTop: S.sm },
 });

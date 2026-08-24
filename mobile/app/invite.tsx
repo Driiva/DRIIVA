@@ -27,7 +27,7 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { DriivButton } from '@/components/ui/DriivButton';
-import { C, F, S, R, FS, LH } from '@/components/ui/theme';
+import { C, F, S, R, FS, LH, TR } from '@/components/ui/theme';
 import { INVITE_CODE_LENGTH, INVITE_TTL_DAYS } from '@driiva/contracts';
 import {
   createInvite,
@@ -199,12 +199,15 @@ const styles = StyleSheet.create({
     color: C.text.hero,
     fontFamily: F.bodySemiBold,
     fontSize: FS.base,
+    lineHeight: LH.base,
+    letterSpacing: TR.base,
   },
   cardSub: {
     color: C.text.mut,
     fontFamily: F.body,
     fontSize: FS.sm,
     lineHeight: LH.sm,
+    letterSpacing: TR.sm,
     marginBottom: S.xs,
   },
 
@@ -221,6 +224,7 @@ const styles = StyleSheet.create({
     color: C.text.hero,
     fontFamily: F.mono,
     fontSize: FS.xxl,
+    lineHeight: LH.xxl,
     // Tracking: the code gets read aloud and retyped, so the characters need
     // to be separable at a glance.
     letterSpacing: 4,
@@ -235,6 +239,7 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
     fontFamily: F.mono,
     fontSize: FS.lg,
+    lineHeight: LH.lg,
     letterSpacing: 3,
     color: C.text.hero,
     marginBottom: S.sm,
@@ -245,6 +250,7 @@ const styles = StyleSheet.create({
     fontFamily: F.body,
     fontSize: FS.sm,
     lineHeight: LH.sm,
+    letterSpacing: TR.sm,
     marginTop: S.xs,
   },
 });

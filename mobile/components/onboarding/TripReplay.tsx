@@ -5,7 +5,7 @@ import Animated, {
   useSharedValue, useAnimatedProps, withTiming, withDelay,
   useAnimatedStyle, withSequence,
 } from 'react-native-reanimated';
-import { C, F, R, RGB, alpha, FS } from '@/components/ui/theme';
+import { C, F, R, RGB, alpha, FS, LH, TR, T } from '@/components/ui/theme';
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 const TRIP_PATH = 'M 20 200 C 40 185 55 175 70 160 S 95 145 115 130 S 140 115 160 105 S 185 90 205 80 S 230 68 255 58 S 272 48 285 42';
@@ -125,10 +125,8 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   badgeText: {
+    ...T.eyebrow,
     color: C.text.sec,
-    fontSize: FS.xs,
-    fontFamily: F.bodySemiBold,
-    letterSpacing: 0.04,
   },
   events: { gap: 8 },
   eventRow: {
@@ -142,6 +140,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: C.border,
   },
-  eventLabel: { color: C.text.pri, fontFamily: F.body, fontSize: FS.sm },
-  eventDelta: { color: C.success, fontSize: FS.sm, fontFamily: F.bodyBold },
+  eventLabel: { color: C.text.pri, fontFamily: F.body, fontSize: FS.sm, lineHeight: LH.sm, letterSpacing: TR.sm },
+  eventDelta: { ...T.numberSm, color: C.success },
 });

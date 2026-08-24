@@ -13,7 +13,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, View, Text, StyleSheet, Animated as A, Platform } from 'react-native';
 import Svg, { Defs, LinearGradient, Stop, Path } from 'react-native-svg';
 
-import { C, T, F, FS } from './theme';
+import { C, T, F, FS, LH, TR } from './theme';
 
 const AnimatedPath = A.createAnimatedComponent(Path);
 
@@ -22,9 +22,9 @@ const SWEEP_DEGREES = 270;
 const START_DEGREES = 225;
 
 const SIZES = {
-  sm: { diameter: 44, stroke: 3, showLabel: false, fontSize: FS.sm },
-  md: { diameter: 80, stroke: 5, showLabel: true, fontSize: FS.xxl },
-  lg: { diameter: 150, stroke: 8, showLabel: true, fontSize: FS.xxxl },
+  sm: { diameter: 44, stroke: 3, showLabel: false, fontSize: FS.sm, lineHeight: LH.sm, letterSpacing: TR.sm },
+  md: { diameter: 80, stroke: 5, showLabel: true, fontSize: FS.xxl, lineHeight: LH.xxl, letterSpacing: TR.xxl },
+  lg: { diameter: 150, stroke: 8, showLabel: true, fontSize: FS.xxxl, lineHeight: LH.xxxl, letterSpacing: TR.xxxl },
 } as const;
 
 interface ScoreRingProps {
@@ -36,14 +36,38 @@ interface ScoreRingProps {
   label?: string;
 }
 
+/**
+ * The figure on a one-off diameter snaps to the nearest ramp step rather than
+ * computing a size, so the leading and tracking stay paired with it.
+ */
+const FIGURE_STEPS = [
+  { fontSize: FS.sm, lineHeight: LH.sm, letterSpacing: TR.sm },
+  { fontSize: FS.md, lineHeight: LH.md, letterSpacing: TR.md },
+  { fontSize: FS.base, lineHeight: LH.base, letterSpacing: TR.base },
+  { fontSize: FS.lg, lineHeight: LH.lg, letterSpacing: TR.lg },
+  { fontSize: FS.xl, lineHeight: LH.xl, letterSpacing: TR.xl },
+  { fontSize: FS.xxl, lineHeight: LH.xxl, letterSpacing: TR.xxl },
+  { fontSize: FS.xxxl, lineHeight: LH.xxxl, letterSpacing: TR.xxxl },
+  { fontSize: FS.display, lineHeight: LH.display, letterSpacing: TR.display },
+] as const;
+
+function nearestFigureStep(target: number) {
+  return FIGURE_STEPS.reduce((best, step) =>
+    Math.abs(step.fontSize - target) < Math.abs(best.fontSize - target) ? step : best,
+  );
+}
+
 /** A one-off diameter still gets proportional stroke and figure sizes. */
 function configFor(size: 'sm' | 'md' | 'lg' | number) {
   if (typeof size !== 'number') return SIZES[size];
+  const figure = nearestFigureStep(size * 0.26);
   return {
     diameter: size,
     stroke: Math.max(3, Math.round(size * 0.053)),
     showLabel: size >= 80,
-    fontSize: Math.round(size * 0.26),
+    fontSize: figure.fontSize,
+    lineHeight: figure.lineHeight,
+    letterSpacing: figure.letterSpacing,
   };
 }
 
@@ -160,7 +184,14 @@ export const ScoreRing: React.FC<ScoreRingProps> = ({
 
       <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
         <View style={styles.centre}>
-          <Text style={[styles.scoreText, { fontSize: cfg.fontSize }]}>{displayScore}</Text>
+          <Text
+            style={[
+              styles.scoreText,
+              { fontSize: cfg.fontSize, lineHeight: cfg.lineHeight, letterSpacing: cfg.letterSpacing },
+            ]}
+          >
+            {displayScore}
+          </Text>
           {cfg.showLabel && <Text style={styles.subtitleText}>{label}</Text>}
         </View>
       </View>
@@ -177,7 +208,6 @@ const styles = StyleSheet.create({
   scoreText: {
     fontFamily: F.monoSemiBold,
     color: C.text.hero,
-    letterSpacing: -1.5,
     fontVariant: ['tabular-nums'],
   },
   subtitleText: {

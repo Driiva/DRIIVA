@@ -139,7 +139,7 @@ export default function Settings() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
   scroll: { padding: S.md, paddingBottom: S.xxl },
-  sectionTitle: { ...T.label, color: C.text.sec, marginBottom: S.sm, textTransform: 'uppercase', letterSpacing: 0.5 },
+  sectionTitle: { ...T.eyebrow, color: C.text.sec, marginBottom: S.sm },
   row: {
     flexDirection: 'row', alignItems: 'center', gap: S.sm,
     paddingVertical: 14, paddingHorizontal: S.md,
@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
   },
   rowLast: { borderBottomWidth: 0 },
   rowLabel: { ...T.body, color: C.text.pri, flex: 1 },
-  permissionNote: { ...T.caption, color: C.text.mut, marginTop: -S.md, marginBottom: S.lg, lineHeight: 16 },
+  permissionNote: { ...T.caption, color: C.text.mut, marginTop: -S.md, marginBottom: S.lg },
   rowValue: { ...T.body, color: C.text.sec },
   logoutButton: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: S.sm,

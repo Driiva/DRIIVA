@@ -202,6 +202,7 @@ export const T = {
   number:   { fontFamily: F.monoSemiBold, fontSize: FS.base, lineHeight: LH.base, letterSpacing: TR.base, fontVariant: tabular },
   numberSm: { fontFamily: F.monoSemiBold, fontSize: FS.sm, lineHeight: LH.sm, letterSpacing: TR.sm, fontVariant: tabular },
 
+  h0:       { fontFamily: F.display, fontSize: FS.xxl, lineHeight: LH.xxl, letterSpacing: TR.xxl },
   h1:       { fontFamily: F.display, fontSize: FS.xl, lineHeight: LH.xl, letterSpacing: TR.xl },
   h2:       { fontFamily: F.bodySemiBold, fontSize: FS.lg, lineHeight: LH.lg, letterSpacing: TR.lg },
 

@@ -38,11 +38,9 @@ const styles = StyleSheet.create({
     color: C.text.hero,
   },
   label: {
-    ...T.caption,
+    ...T.eyebrow,
     color: C.text.mut,
     marginTop: 2,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
 });
 

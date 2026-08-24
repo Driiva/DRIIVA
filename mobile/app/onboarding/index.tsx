@@ -6,7 +6,7 @@ import { useOnboarding } from '@/contexts/OnboardingContext';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
 import { ONBOARDING_TOTAL, stepNumber } from '@/lib/onboardingFlow';
 import { track } from '@/lib/analytics';
-import { C, F, S, R, FS } from '@/components/ui/theme';
+import { C, F, S, R, FS, T, LH, TR } from '@/components/ui/theme';
 
 
 /**
@@ -90,27 +90,21 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: S.lg, paddingTop: S.xl, paddingBottom: S.lg },
   top: { marginBottom: 28 },
   eyebrow: {
+    ...T.eyebrow,
     color: C.primary,
-    fontSize: FS.xs,
-    fontFamily: F.bodySemiBold,
-    letterSpacing: 0.1,
-    textTransform: 'uppercase',
     marginBottom: 12,
   },
   headline: {
+    ...T.h0,
     color: C.text.hero,
-    fontSize: FS.xxl,
-    fontFamily: F.bodySemiBold,
-    letterSpacing: -0.025,
-    lineHeight: 34,
     marginBottom: 12,
   },
   sub: {
     color: C.text.sec,
     fontFamily: F.body,
     fontSize: FS.md,
-    lineHeight: 23,
-    letterSpacing: -0.005,
+    lineHeight: LH.md,
+    letterSpacing: TR.md,
   },
   previewCard: {
     backgroundColor: C.surface1,
@@ -124,11 +118,8 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   leaderboardTitle: {
+    ...T.eyebrow,
     color: C.text.sec,
-    fontSize: FS.xs,
-    fontFamily: F.bodySemiBold,
-    letterSpacing: 0.08,
-    textTransform: 'uppercase',
   },
   stepRow: {
     flexDirection: 'row',
@@ -141,19 +132,19 @@ const styles = StyleSheet.create({
   },
   stepRowLast: { paddingBottom: 0, marginBottom: 0, borderBottomWidth: 0 },
   stepIndex: {
+    ...T.numberSm,
     color: C.text.mut,
-    fontFamily: F.monoSemiBold,
-    fontSize: FS.sm,
     width: 14,
-    fontVariant: ['tabular-nums'],
   },
   stepBody: { flex: 1, minWidth: 0 },
-  stepTitle: { color: C.text.hero, fontFamily: F.bodySemiBold, fontSize: FS.md },
-  stepText: { color: C.text.sec, fontFamily: F.body, fontSize: FS.sm, lineHeight: 19, marginTop: 2 },
+  stepTitle: { color: C.text.hero, fontFamily: F.bodySemiBold, fontSize: FS.md, lineHeight: LH.md, letterSpacing: TR.md },
+  stepText: { color: C.text.sec, fontFamily: F.body, fontSize: FS.sm, lineHeight: LH.sm, letterSpacing: TR.sm, marginTop: 2 },
   caveat: {
     color: C.text.mut,
     fontFamily: F.body,
     fontSize: FS.sm,
+    lineHeight: LH.sm,
+    letterSpacing: TR.sm,
     textAlign: 'center',
   },
   footer: {
@@ -167,11 +158,13 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
   },
-  primaryBtnText: { color: C.text.hero, fontSize: FS.md, fontFamily: F.bodySemiBold, letterSpacing: -0.005 },
+  primaryBtnText: { color: C.text.hero, fontSize: FS.md, fontFamily: F.bodySemiBold, lineHeight: LH.md, letterSpacing: TR.md },
   secondaryLink: {
     color: C.text.mut,
     fontFamily: F.body,
     fontSize: FS.md,
+    lineHeight: LH.md,
+    letterSpacing: TR.md,
     textAlign: 'center',
   },
 });

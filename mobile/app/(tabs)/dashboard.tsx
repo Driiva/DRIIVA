@@ -370,24 +370,20 @@ const styles = StyleSheet.create({
 
   scoreCard: { alignItems: 'center', marginBottom: S.lg },
   scoreCaption: {
-    ...T.label,
+    ...T.eyebrow,
     color: C.text.sec,
     marginTop: S.sm,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
 
   target: { marginBottom: S.md },
   targetHead: { flexDirection: 'row', alignItems: 'center', gap: S.xs, marginBottom: S.sm },
-  targetLabel: { ...T.label, color: C.text.sec, textTransform: 'uppercase', letterSpacing: 0.5 },
+  targetLabel: { ...T.eyebrow, color: C.text.sec },
   targetValue: {
-    fontFamily: F.monoSemiBold,
-    fontSize: FS.xxl,
+    ...T.statLg,
     color: C.text.hero,
-    fontVariant: ['tabular-nums'],
   },
   targetPending: { ...T.h2, color: C.text.sec },
-  targetNote: { ...T.caption, color: C.text.mut, lineHeight: 16, marginTop: S.sm },
+  targetNote: { ...T.caption, color: C.text.mut, marginTop: S.sm },
 
   poolRow: { flexDirection: 'row', gap: S.lg },
   poolFigure: { flex: 1, minWidth: 0 },

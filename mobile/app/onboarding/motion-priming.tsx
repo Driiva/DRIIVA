@@ -8,7 +8,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
 import { ONBOARDING_TOTAL, stepNumber } from '@/lib/onboardingFlow';
 import { track } from '@/lib/analytics';
-import { C, F, S, R, RGB, alpha, FS, LH, TR } from '@/components/ui/theme';
+import { C, F, S, R, RGB, alpha, FS, LH, TR, T } from '@/components/ui/theme';
 
 const BULLETS = [
   'Powers your Stop-Go Classifier score.',
@@ -110,19 +110,19 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   headline: {
-    color: C.text.hero, fontSize: FS.xxl, fontFamily: F.bodySemiBold,
-    letterSpacing: TR.xxl, lineHeight: LH.xxl, marginBottom: 12,
+    ...T.h0,
+    color: C.text.hero, marginBottom: 12,
   },
-  sub: { color: C.text.sec, fontFamily: F.body, fontSize: FS.md, lineHeight: 23, marginBottom: 28 },
+  sub: { color: C.text.sec, fontFamily: F.body, fontSize: FS.md, lineHeight: LH.md, letterSpacing: TR.md, marginBottom: 28 },
   bullets: { gap: 14, marginBottom: 24 },
   bullet: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  bulletText: { color: C.text.pri, fontFamily: F.body, fontSize: FS.md, flex: 1, lineHeight: 22 },
+  bulletText: { color: C.text.pri, fontFamily: F.body, fontSize: FS.md, flex: 1, lineHeight: LH.md, letterSpacing: TR.md },
   footer: { paddingHorizontal: S.lg, paddingBottom: S.lg, gap: 12 },
   primaryBtn: {
     backgroundColor: C.primary, borderRadius: R.card,
     paddingVertical: 16, alignItems: 'center',
   },
   primaryBtnLoading: { opacity: 0.6 },
-  primaryBtnText: { color: C.text.hero, fontSize: FS.md, fontFamily: F.bodySemiBold, letterSpacing: -0.005 },
-  skipText: { color: C.text.mut, fontFamily: F.body, fontSize: FS.sm, textAlign: 'center' },
+  primaryBtnText: { color: C.text.hero, fontSize: FS.md, fontFamily: F.bodySemiBold, lineHeight: LH.md, letterSpacing: TR.md },
+  skipText: { color: C.text.mut, fontFamily: F.body, fontSize: FS.sm, lineHeight: LH.sm, letterSpacing: TR.sm, textAlign: 'center' },
 });

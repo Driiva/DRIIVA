@@ -103,7 +103,7 @@ export default function Support() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
   scroll: { padding: S.md, paddingBottom: S.xxl },
-  sectionTitle: { ...T.label, color: C.text.sec, marginBottom: S.sm, textTransform: 'uppercase', letterSpacing: 0.5 },
+  sectionTitle: { ...T.eyebrow, color: C.text.sec, marginBottom: S.sm },
   optionRow: { flexDirection: 'row', alignItems: 'center', gap: S.sm },
   optionIcon: { width: 40, height: 40, borderRadius: R.card, justifyContent: 'center', alignItems: 'center' },
   optionTitle: { ...T.h2, color: C.text.pri },

@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { Link } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
-import { C, F, FS, S, R } from '@/components/ui/theme';
+import { C, F, FS, S, R, LH, TR } from '@/components/ui/theme';
 import * as Haptics from 'expo-haptics';
 
 export default function SignUp() {
@@ -124,16 +124,16 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
   content: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: S.lg },
   logoContainer: { alignItems: 'center', marginBottom: S.xxl },
-  logoText: { fontSize: FS.display, fontFamily: F.display, color: C.text.pri, letterSpacing: -1 },
-  tagline: { fontFamily: F.body, fontSize: FS.md, color: C.text.sec, marginTop: S.xs },
+  logoText: { fontSize: FS.display, fontFamily: F.display, color: C.text.pri, lineHeight: LH.display, letterSpacing: TR.display },
+  tagline: { fontFamily: F.body, fontSize: FS.md, lineHeight: LH.md, letterSpacing: TR.md, color: C.text.sec, marginTop: S.xs },
   card: { backgroundColor: C.surface1, borderRadius: R.sheet, borderWidth: 1, borderColor: C.border, padding: S.lg },
-  title: { fontSize: FS.xl, fontFamily: F.bodyBold, color: C.text.pri, marginBottom: S.lg },
-  input: { backgroundColor: C.surface3, borderRadius: R.card, paddingHorizontal: S.md, paddingVertical: 14, fontFamily: F.body, fontSize: FS.md, color: C.text.pri, marginBottom: S.sm, borderWidth: 1, borderColor: C.border },
+  title: { fontSize: FS.xl, fontFamily: F.bodyBold, lineHeight: LH.xl, letterSpacing: TR.xl, color: C.text.pri, marginBottom: S.lg },
+  input: { backgroundColor: C.surface3, borderRadius: R.card, paddingHorizontal: S.md, paddingVertical: 14, fontFamily: F.body, fontSize: FS.md, lineHeight: LH.md, letterSpacing: TR.md, color: C.text.pri, marginBottom: S.sm, borderWidth: 1, borderColor: C.border },
   button: { backgroundColor: C.primary, borderRadius: R.card, paddingVertical: 16, alignItems: 'center', marginTop: S.md },
   buttonDisabled: { opacity: 0.6 },
-  buttonText: { color: C.text.pri, fontSize: FS.lg, fontFamily: F.bodyBold },
-  terms: { color: C.text.mut, fontFamily: F.body, fontSize: FS.xs, textAlign: 'center', marginTop: S.md, lineHeight: 16 },
+  buttonText: { color: C.text.pri, fontSize: FS.lg, fontFamily: F.bodyBold, lineHeight: LH.lg, letterSpacing: TR.lg },
+  terms: { color: C.text.mut, fontFamily: F.body, fontSize: FS.xs, textAlign: 'center', marginTop: S.md, lineHeight: LH.xs, letterSpacing: TR.label },
   footer: { flexDirection: 'row', justifyContent: 'center', marginTop: S.lg, paddingBottom: S.xxl },
-  footerText: { color: C.text.sec, fontFamily: F.body, fontSize: FS.md },
-  footerLink: { color: C.primaryLight, fontSize: FS.md, fontFamily: F.bodySemiBold },
+  footerText: { color: C.text.sec, fontFamily: F.body, fontSize: FS.md, lineHeight: LH.md, letterSpacing: TR.md },
+  footerLink: { color: C.primaryLight, fontSize: FS.md, fontFamily: F.bodySemiBold, lineHeight: LH.md, letterSpacing: TR.md },
 });

@@ -152,9 +152,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   eyebrow: {
-    ...T.label,
+    ...T.eyebrow,
     color: C.text.sec,
-    letterSpacing: 1,
   },
   score: {
     ...T.heroLg,
@@ -182,7 +181,6 @@ const styles = StyleSheet.create({
   footnote: {
     ...T.caption,
     color: C.text.mut,
-    lineHeight: 16,
     marginTop: S.sm,
     alignSelf: 'stretch',
   },

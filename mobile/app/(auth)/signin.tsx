@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { Link } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
-import { C, F, FS, S, R } from '@/components/ui/theme';
+import { C, F, FS, S, R, LH, TR } from '@/components/ui/theme';
 import * as Haptics from 'expo-haptics';
 
 export default function SignIn() {
@@ -133,11 +133,14 @@ const styles = StyleSheet.create({
     fontSize: FS.display,
     fontFamily: F.display,
     color: C.text.pri,
-    letterSpacing: -1,
+    lineHeight: LH.display,
+    letterSpacing: TR.display,
   },
   tagline: {
     fontFamily: F.body,
     fontSize: FS.md,
+    lineHeight: LH.md,
+    letterSpacing: TR.md,
     color: C.text.sec,
     marginTop: S.xs,
   },
@@ -151,6 +154,8 @@ const styles = StyleSheet.create({
   title: {
     fontSize: FS.xl,
     fontFamily: F.bodyBold,
+    lineHeight: LH.xl,
+    letterSpacing: TR.xl,
     color: C.text.pri,
     marginBottom: S.lg,
   },
@@ -161,6 +166,8 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     fontFamily: F.body,
     fontSize: FS.md,
+    lineHeight: LH.md,
+    letterSpacing: TR.md,
     color: C.text.pri,
     marginBottom: S.sm,
     borderWidth: 1,
@@ -180,6 +187,8 @@ const styles = StyleSheet.create({
     color: C.text.pri,
     fontSize: FS.lg,
     fontFamily: F.bodyBold,
+    lineHeight: LH.lg,
+    letterSpacing: TR.lg,
   },
   link: {
     alignItems: 'center',
@@ -189,6 +198,8 @@ const styles = StyleSheet.create({
     color: C.primaryLight,
     fontFamily: F.body,
     fontSize: FS.sm,
+    lineHeight: LH.sm,
+    letterSpacing: TR.sm,
   },
   footer: {
     flexDirection: 'row',
@@ -199,10 +210,14 @@ const styles = StyleSheet.create({
     color: C.text.sec,
     fontFamily: F.body,
     fontSize: FS.md,
+    lineHeight: LH.md,
+    letterSpacing: TR.md,
   },
   footerLink: {
     color: C.primaryLight,
     fontSize: FS.md,
     fontFamily: F.bodySemiBold,
+    lineHeight: LH.md,
+    letterSpacing: TR.md,
   },
 });

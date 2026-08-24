@@ -7,7 +7,7 @@ import { ProgressBar } from '@/components/onboarding/ProgressBar';
 import { ONBOARDING_TOTAL, stepNumber } from '@/lib/onboardingFlow';
 import { track } from '@/lib/analytics';
 import { ScoreRing } from '@/components/ui/ScoreRing';
-import { C, F, S, R, RGB, alpha, FS, LH } from '@/components/ui/theme';
+import { C, F, S, R, RGB, alpha, FS, LH, T, TR } from '@/components/ui/theme';
 import { refundEstimate, scorePercentile } from '@/hooks/useTripSeed';
 
 // FCA DISCLOSURE REQUIRED - refund estimates are illustrative, not guaranteed
@@ -99,8 +99,8 @@ const styles = StyleSheet.create({
   progress: { paddingHorizontal: S.lg, paddingTop: S.sm },
   content: { paddingHorizontal: S.lg, paddingTop: S.md, paddingBottom: 100 },
   headline: {
-    color: C.text.hero, fontSize: FS.xl, fontFamily: F.bodySemiBold,
-    letterSpacing: -0.025, lineHeight: 30, marginBottom: 24,
+    ...T.h1,
+    color: C.text.hero, marginBottom: 24,
   },
   heroCard: {
     backgroundColor: C.surface1,
@@ -114,12 +114,12 @@ const styles = StyleSheet.create({
   ringWrap: { marginBottom: 24 },
   refundRow: { alignItems: 'center', marginBottom: 16 },
   refundLabel: {
-    color: C.text.sec, fontFamily: F.body, fontSize: FS.sm,
+    color: C.text.sec, fontFamily: F.body, fontSize: FS.sm, lineHeight: LH.sm, letterSpacing: TR.sm,
     textAlign: 'center', marginBottom: 4,
   },
   refundValue: {
-    color: C.success, fontSize: FS.xxl, fontFamily: F.bodyBold,
-    letterSpacing: -0.03,
+    ...T.statLg,
+    color: C.success,
   },
   poolRow: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
   liveDot: {
     width: 6, height: 6, borderRadius: 3, backgroundColor: C.success,
   },
-  poolText: { color: C.text.sec, fontFamily: F.body, fontSize: FS.sm },
+  poolText: { color: C.text.sec, fontFamily: F.body, fontSize: FS.sm, lineHeight: LH.sm, letterSpacing: TR.sm },
   shareBtn: {
     backgroundColor: alpha(RGB.primary, 0.15),
     borderRadius: R.card,
@@ -139,21 +139,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 10,
   },
-  shareBtnText: { color: C.primaryLight, fontSize: FS.md, fontFamily: F.bodySemiBold },
+  shareBtnText: { color: C.primaryLight, fontSize: FS.md, fontFamily: F.bodySemiBold, lineHeight: LH.md, letterSpacing: TR.md },
   shareHint: {
     color: C.text.mut, fontFamily: F.body, fontSize: FS.sm, textAlign: 'center',
-    lineHeight: 19, marginBottom: 20,
+    lineHeight: LH.sm, letterSpacing: TR.sm, marginBottom: 20,
   },
   disclaimer: {
     backgroundColor: C.surface1,
     borderRadius: R.card,
     padding: 14,
   },
-  disclaimerText: { color: C.text.mut, fontFamily: F.body, fontSize: FS.sm, lineHeight: LH.sm },
+  disclaimerText: { color: C.text.mut, fontFamily: F.body, fontSize: FS.sm, lineHeight: LH.sm, letterSpacing: TR.sm },
   footer: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: S.lg },
   primaryBtn: {
     backgroundColor: C.primary, borderRadius: R.card,
     paddingVertical: 16, alignItems: 'center',
   },
-  primaryBtnText: { color: C.text.hero, fontSize: FS.md, fontFamily: F.bodySemiBold, letterSpacing: -0.005 },
+  primaryBtnText: { color: C.text.hero, fontSize: FS.md, fontFamily: F.bodySemiBold, lineHeight: LH.md, letterSpacing: TR.md },
 });
