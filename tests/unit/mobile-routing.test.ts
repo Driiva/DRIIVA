@@ -29,7 +29,6 @@ const newDriver = { onboardingComplete: false };
 
 function session(overrides: Partial<RoutingSession> = {}): RoutingSession {
   return {
-    isExpoGo: false,
     loading: false,
     user: onboarded,
     segments: ['(tabs)', 'dashboard'],
@@ -136,10 +135,33 @@ describe('holds still while auth is resolving', () => {
 });
 
 describe('Expo Go preview', () => {
-  it('keeps the preview in onboarding, since it has no real Firebase to sign into', () => {
-    expect(resolveStartRoute(session({ isExpoGo: true, user: null, segments: ['+not-found'] }))).toBe(
-      ROUTE_ONBOARDING,
+  /**
+   * This branch used to pin the preview to onboarding and nothing else:
+   *
+   *   if (isExpoGo) return segments[0] === 'onboarding' ? null : ROUTE_ONBOARDING;
+   *
+   * The reason given was that Expo Go has no real Firebase to sign into. True,
+   * and beside the point: the shim in lib/firebase.ts hands back a signed-in
+   * preview user, so there was a session all along. What there was not, until
+   * now, was a mock that could survive a .where() query, which is why the
+   * preview was walled into the one screen that makes no queries.
+   *
+   * The cost of that wall was not small. Expo Go is the build a reviewer, a
+   * designer or a founder actually opens, and it could not reach Home, Trips,
+   * Community or You. Eleven of the twelve screens in the app were invisible
+   * in the only build most people ever run.
+   *
+   * The preview now follows exactly the same rules as any other session, so
+   * there is no second routing behaviour to keep in step with the first.
+   */
+  it('routes a preview session by the same rules as any other', () => {
+    expect(resolveStartRoute(session({ user: onboarded, segments: ['+not-found'] }))).toBe(
+      ROUTE_DASHBOARD,
     );
-    expect(resolveStartRoute(session({ isExpoGo: true, user: null, segments: ['onboarding'] }))).toBeNull();
+    expect(resolveStartRoute(session({ user: onboarded, segments: ['(tabs)', 'community'] }))).toBeNull();
+  });
+
+  it('still sends a preview that has not finished onboarding to onboarding', () => {
+    expect(resolveStartRoute(session({ user: newDriver, segments: [] }))).toBe(ROUTE_ONBOARDING);
   });
 });

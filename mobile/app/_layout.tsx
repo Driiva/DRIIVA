@@ -12,7 +12,6 @@ import { useFonts } from 'expo-font';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { C } from '@/components/ui/theme';
-import { isExpoGo } from '@/lib/firebase';
 import { resolveStartRoute } from '@/lib/routing';
 import { routeForNotification } from '@/lib/notificationRoutes';
 import { watchTokenRefresh } from '@/lib/push';
@@ -39,7 +38,6 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     // valid, which keeps this effect from fighting the driver's own
     // navigation on every segment change.
     const destination = resolveStartRoute({
-      isExpoGo,
       loading,
       user,
       segments: segments as unknown as string[],

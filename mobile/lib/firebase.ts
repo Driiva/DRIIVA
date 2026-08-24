@@ -16,6 +16,31 @@ export const isExpoGo = Constants.appOwnership === 'expo';
 
 // --- Mocks --------------------------------------------------------------
 
+/**
+ * WHAT THE PREVIEW MOCK IS FOR, AND WHAT IT MUST NEVER DO
+ *
+ * Expo Go cannot load @react-native-firebase, so this shim stands in for it so
+ * the UI can be looked at. Two rules follow from that, and the second one is
+ * the one that matters.
+ *
+ * 1. It has to be SHAPED like Firestore. It was not: mockCollection offered
+ *    doc() and add() and nothing else, so the first screen to call
+ *    .where(...) or .orderBy(...) took the preview down with a red box. Every
+ *    social and history screen does exactly that, which meant most of the app
+ *    was unreachable in the only build most people ever open. The query object
+ *    below is chainable and terminates in an empty result.
+ *
+ * 2. It must return NOTHING it does not have. No score, no premium, no trips,
+ *    no participants. An empty preview shows the app's empty states, which is
+ *    the honest thing for a preview to show and is also the state that is
+ *    hardest to get right and therefore most worth looking at. A mock that
+ *    invents a score of 82 makes the preview a screenshot of a product that
+ *    does not exist, and it is exactly how a fabricated figure ends up in a
+ *    deck.
+ *
+ * The one field it does assert is onboardingComplete, because a preview that
+ * cannot get past onboarding cannot preview anything.
+ */
 const mockUser = {
   uid: 'preview-user',
   email: 'preview@driiva.local',
@@ -24,25 +49,52 @@ const mockUser = {
   updateProfile: async () => {},
 };
 
-const mockDocRef = {
-  set: async () => {},
-  update: async () => {},
-  get: async () => ({
-    exists: true,
-    data: () => ({
-      displayName: 'Preview Driver',
-      fullName: 'Preview Driver',
-      onboardingComplete: false,
-      isAdmin: false,
-    }),
-  }),
-  onSnapshot: (cb: (snap: { data: () => any }) => void) => {
-    setTimeout(() => cb({ data: () => ({}) }), 0);
+const PREVIEW_USER_DOC = {
+  uid: 'preview-user',
+  displayName: 'Preview Driver',
+  fullName: 'Preview Driver',
+  email: 'preview@driiva.local',
+  onboardingComplete: true,
+  isAdmin: false,
+};
+
+const emptySnapshot = { empty: true, size: 0, docs: [] as never[] };
+
+/** A chainable query that always resolves to nothing. */
+const mockQuery: any = {
+  where: () => mockQuery,
+  orderBy: () => mockQuery,
+  limit: () => mockQuery,
+  startAfter: () => mockQuery,
+  endBefore: () => mockQuery,
+  get: async () => emptySnapshot,
+  onSnapshot: (cb: (snap: typeof emptySnapshot) => void) => {
+    setTimeout(() => cb(emptySnapshot), 0);
     return () => {};
   },
 };
 
-const mockCollection = {
+const mockDocSnapshot = {
+  exists: true,
+  id: 'preview',
+  data: () => PREVIEW_USER_DOC,
+};
+
+const mockDocRef: any = {
+  id: 'preview',
+  set: async () => {},
+  update: async () => {},
+  delete: async () => {},
+  get: async () => mockDocSnapshot,
+  onSnapshot: (cb: (snap: typeof mockDocSnapshot) => void) => {
+    setTimeout(() => cb(mockDocSnapshot), 0);
+    return () => {};
+  },
+  collection: () => mockCollection,
+};
+
+const mockCollection: any = {
+  ...mockQuery,
   doc: (_id?: string) => mockDocRef,
   add: async () => mockDocRef,
 };
@@ -61,10 +113,14 @@ const mockAuth: any = () => ({
 
 const mockFirestore: any = () => ({
   collection: (_name: string) => mockCollection,
+  batch: () => ({ set: () => {}, update: () => {}, delete: () => {}, commit: async () => {} }),
   settings: () => {},
 });
 mockFirestore.FieldValue = {
   serverTimestamp: () => new Date(),
+  increment: (n: number) => n,
+  arrayUnion: (...items: unknown[]) => items,
+  arrayRemove: (...items: unknown[]) => items,
 };
 mockFirestore.CACHE_SIZE_UNLIMITED = 0;
 

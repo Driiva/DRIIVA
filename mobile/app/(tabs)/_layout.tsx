@@ -57,13 +57,14 @@ export default function TabLayout() {
         name="record"
         options={{
           title: 'Drive',
-          // The centre action carries its own affordance rather than an icon at
-          // the shared size. The label still renders under it, because an
-          // unlabelled control in a labelled bar is a guess for anyone using
-          // the app for the first time.
+          // The centre action is the only FILLED icon in the bar, which is what
+          // marks it as the primary one. It is deliberately not much larger:
+          // a 46px puck at this bar height sat on top of its own label, and a
+          // control whose label is covered by the control is worse than a
+          // control that is merely the same size as its neighbours.
           tabBarIcon: ({ focused }) => (
             <View style={[styles.recordButton, focused && styles.recordButtonActive]}>
-              <Ionicons name="radio-button-on" size={26} color={C.text.hero} />
+              <Ionicons name="radio-button-on" size={20} color={C.text.hero} />
             </View>
           ),
         }}
@@ -107,9 +108,9 @@ const styles = StyleSheet.create({
     letterSpacing: TR.label,
   },
   recordButton: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: C.primary,
     justifyContent: 'center',
     alignItems: 'center',

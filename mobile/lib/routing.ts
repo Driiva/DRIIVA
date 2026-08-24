@@ -22,10 +22,22 @@
  * obvious.
  */
 
-/** The subset of the session the routing decision depends on. */
+/**
+ * The subset of the session the routing decision depends on.
+ *
+ * `isExpoGo` used to be part of it, and Expo Go had a branch of its own that
+ * pinned the preview to onboarding "since it has no real Firebase to sign
+ * into". The premise was wrong: the shim in lib/firebase.ts hands back a
+ * signed-in preview user, so there was always a session. What there was not
+ * was a mock that survived a .where() query, which is why the preview was
+ * walled into the one screen that makes no queries.
+ *
+ * The wall cost more than it saved. Expo Go is the build a reviewer, a
+ * designer or a founder actually opens, and it could not reach Home, Trips,
+ * Community or You. The preview follows the same rules as every other session
+ * now, so there is one routing behaviour to keep correct rather than two.
+ */
 export interface RoutingSession {
-  /** Expo Go swaps in a mock Firebase, so it gets the preview path. */
-  isExpoGo: boolean;
   /** Auth is still resolving; hold still rather than routing on a guess. */
   loading: boolean;
   /** Null when signed out. */
@@ -71,15 +83,9 @@ const ROOT_STACK_SCREENS = new Set([
  * somewhere valid would fight the user's own navigation.
  */
 export function resolveStartRoute(session: RoutingSession): string | null {
-  const { isExpoGo, loading, user, segments } = session;
+  const { loading, user, segments } = session;
 
   if (loading) return null;
-
-  // Expo Go cannot reach real Firebase, so it previews onboarding and nothing
-  // that needs an account.
-  if (isExpoGo) {
-    return segments[0] === 'onboarding' ? null : ROUTE_ONBOARDING;
-  }
 
   const top = segments[0];
   const inAuthGroup = top === '(auth)';

@@ -17,6 +17,7 @@
  * codec for exactly this reason: Hermes has neither Buffer nor btoa.
  */
 const { getDefaultConfig } = require('expo/metro-config');
+const fs = require('fs');
 const path = require('path');
 
 const projectRoot = __dirname;
@@ -24,10 +25,39 @@ const repoRoot = path.resolve(projectRoot, '..');
 
 const config = getDefaultConfig(projectRoot);
 
+/**
+ * Where a path really is, following symlinks, or the path itself if it is not
+ * one. Git worktrees in this repo symlink node_modules to the shared checkout
+ * rather than installing a second copy (they are created that way on purpose;
+ * a full Expo dependency tree per worktree is gigabytes). Metro follows the
+ * symlink, lands on a directory OUTSIDE the project root, and then refuses to
+ * read it because it is not watched, so the bundle dies at the first import:
+ *
+ *   Unable to resolve module ./mobile/node_modules/expo-router/entry
+ *   None of these files exist: mobile/node_modules/expo-router/entry(.ios.ts|...)
+ *
+ * with entry.js sitting right there through the link. Watching the real
+ * directories fixes it, and is a no-op in a normal checkout where the real
+ * path and the path are the same.
+ */
+function real(p) {
+  try {
+    return fs.realpathSync(p);
+  } catch {
+    return p;
+  }
+}
+
 config.watchFolders = [
-  ...(config.watchFolders ?? []),
-  path.resolve(repoRoot, 'shared'),
-  path.resolve(repoRoot, 'packages'),
+  ...new Set([
+    ...(config.watchFolders ?? []),
+    path.resolve(repoRoot, 'shared'),
+    path.resolve(repoRoot, 'packages'),
+    real(path.resolve(repoRoot, 'shared')),
+    real(path.resolve(repoRoot, 'packages')),
+    real(path.resolve(projectRoot, 'node_modules')),
+    real(path.resolve(repoRoot, 'node_modules')),
+  ]),
 ];
 
 // Sources under packages/ are watched but live outside the Metro project root,
