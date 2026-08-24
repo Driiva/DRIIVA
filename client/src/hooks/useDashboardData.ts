@@ -157,7 +157,14 @@ function truncateAddress(address: string | null): string {
 
 function calculateProjectedRefund(score: number, premiumCents: number): number {
   // Pounds for display, consistent with the other money fields on DashboardData.
-  return projectedRefundCents(score, premiumCents) / 100;
+  // projectedRefundCents returns null when there is no premium to project a
+  // refund against, which is a different thing from a refund of zero. This
+  // surface reads the two the same way: every consumer downstream already
+  // gates on "> 0" before it renders a figure, so null collapses to 0 here and
+  // the existing empty states carry it. The mobile app reads the null itself
+  // and renders "Not started".
+  const cents = projectedRefundCents(score, premiumCents);
+  return cents === null ? 0 : cents / 100;
 }
 
 function parseMemberSince(rawCreatedAt: unknown): string | null {

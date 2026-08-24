@@ -184,7 +184,14 @@ function calculateSurplus(score: number, premiumPounds: number): number {
   // Pounds for display (WEB-13): projectedRefundCents returns pence, and every
   // downstream render site (the refund figure, the pounds-denominated bar-width
   // calc, the "on track for" copy) treats surplusProjection as pounds.
-  return projectedRefundCents(score, Math.round(premiumPounds * 100)) / 100;
+  // projectedRefundCents returns null when there is no premium to project a
+  // refund against, which is a different thing from a refund of zero. This
+  // surface reads the two the same way: every consumer downstream already
+  // gates on "> 0" before it renders a figure, so null collapses to 0 here and
+  // the existing empty states carry it. The mobile app reads the null itself
+  // and renders "Not started".
+  const cents = projectedRefundCents(score, Math.round(premiumPounds * 100));
+  return cents === null ? 0 : cents / 100;
 }
 
 // ============================================================================
