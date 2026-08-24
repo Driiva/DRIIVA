@@ -389,11 +389,15 @@ export default function TripDetail() {
                     value={`${trip.events.speedingSeconds}s`}
                     rate={shareOfDrive(trip.events.speedingSeconds, trip.durationSeconds)}
                   />
-                  <EventStat
-                    label="Phone handling"
-                    value={trip.events.phonePickupCount ?? 0}
-                    rate={perTenMinutes(trip.events.phonePickupCount ?? 0, trip.durationSeconds)}
-                  />
+                  {typeof trip.events.phonePickupCount === 'number' ? (
+                    <EventStat
+                      label="Phone handling"
+                      value={trip.events.phonePickupCount}
+                      rate={perTenMinutes(trip.events.phonePickupCount, trip.durationSeconds)}
+                    />
+                  ) : (
+                    <EventStat label="Phone handling" value="Not measured" rate="scored before phone handling was tracked" />
+                  )}
                 </View>
                 <Text style={styles.breakdownFootnote}>
                   The rate is what the score is computed from, not the count. Four hard stops

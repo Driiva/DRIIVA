@@ -124,7 +124,7 @@ export function RefundMoment({
               <Text style={styles.footnote}>
                 {penceDelta === 0
                   ? 'This trip did not move your projection.'
-                  : `${penceDelta > 0 ? 'Up' : 'Down'} ${formatPence(penceDelta)} on this trip. A projection from your current score and premium, not a guaranteed payout.`}
+                  : `${penceDelta > 0 ? 'Up' : 'Down'} ${formatPence(penceDelta)} on this trip. A projection from your current score and premium, capped at 15% of the premium, not a guaranteed payout.`}
               </Text>
             </>
           ) : (
