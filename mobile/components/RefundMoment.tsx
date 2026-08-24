@@ -19,6 +19,7 @@
 import { useEffect } from 'react';
 import { Modal, Platform, StyleSheet, Text, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { formatPounds } from '@/lib/money';
 import { C, T, S, R, scoreColor } from './ui/theme';
 import { CountUp } from './ui/CountUp';
 import { DriivButton } from './ui/DriivButton';
@@ -40,10 +41,15 @@ export interface RefundMomentProps {
   onDismiss: () => void;
 }
 
+/**
+ * A delta, which is the one figure that reads better in pence below a pound:
+ * "up 40p on this trip" is a truer sentence than "up GBP 0.40". Anything a
+ * pound or over goes through lib/money.ts like every other figure in the app.
+ */
 export function formatPence(pence: number): string {
   const abs = Math.abs(pence);
   if (abs < 100) return `${abs}p`;
-  return `£${(abs / 100).toFixed(2)}`;
+  return formatPounds(abs);
 }
 
 export function RefundMoment({
@@ -109,9 +115,8 @@ export function RefundMoment({
               <View style={styles.row}>
                 <Text style={styles.rowLabel}>Projected cashback</Text>
                 <CountUp
-                  value={newProjectedPence / 100}
-                  decimals={2}
-                  prefix="£"
+                  value={newProjectedPence}
+                  format={(pence) => formatPounds(pence)}
                   duration={900}
                   style={[styles.rowValue, { color: C.text.hero }]}
                 />

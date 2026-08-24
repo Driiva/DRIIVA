@@ -8,6 +8,7 @@ import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { firestore } from '@/lib/firebase';
+import { formatPounds } from '@/lib/money';
 import { useAuth } from '@/contexts/AuthContext';
 import { C, T, S, R } from '@/components/ui/theme';
 import { SurfaceCard } from '@/components/ui/SurfaceCard';
@@ -41,9 +42,13 @@ export default function Policy() {
   const renewalLabel = policy?.renewalDate?.toDate?.()?.toLocaleDateString('en-GB', {
     day: 'numeric', month: 'long', year: 'numeric',
   });
-  const premiumLabel = typeof policy?.premiumCents === 'number'
-    ? `£${(policy.premiumCents / 100).toFixed(2)}/mo`
-    : null;
+  // Through lib/money.ts, not an inline divide: the pence to pounds
+  // conversion belongs in one place, and this app has already shipped a
+  // hundredfold refund once.
+  const premiumLabel =
+    typeof policy?.premiumCents === 'number'
+      ? `${formatPounds(policy.premiumCents)} a month`
+      : null;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
