@@ -22,8 +22,21 @@
  */
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
-import messaging from '@react-native-firebase/messaging';
-import { firestore } from '@/lib/firebase';
+import { firestore, isExpoGo } from '@/lib/firebase';
+
+/**
+ * Loaded the same way lib/firebase.ts loads auth/firestore: a top-level import
+ * of @react-native-firebase/messaging touches NativeModules at module-load
+ * time and crashes Expo Go before a single screen renders. The mock keeps the
+ * preview path alive; a real build takes the native module.
+ */
+const messaging: any = isExpoGo
+  ? () => ({
+      registerDeviceForRemoteMessages: async () => {},
+      getToken: async () => 'expo-go-preview-token',
+      onTokenRefresh: (_cb: (token: string) => void) => () => {},
+    })
+  : require('@react-native-firebase/messaging').default;
 
 export type PushPermission = 'granted' | 'denied' | 'undetermined';
 

@@ -17,7 +17,26 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import MapView, { Marker, Polyline, PROVIDER_DEFAULT } from 'react-native-maps';
+import { isExpoGo } from '@/lib/firebase';
+
+/**
+ * Loaded the way lib/firebase.ts loads its native modules: Expo Go under SDK
+ * 54 does not ship react-native-maps, and a top-level import registers the
+ * native module at load time and crashes the whole preview before any screen
+ * renders. A real build takes the native module; the preview renders the
+ * no-route fallback copy instead of a map.
+ */
+let MapView: any = null;
+let Marker: any = null;
+let Polyline: any = null;
+let PROVIDER_DEFAULT: any = null;
+if (!isExpoGo) {
+  const maps = require('react-native-maps');
+  MapView = maps.default;
+  Marker = maps.Marker;
+  Polyline = maps.Polyline;
+  PROVIDER_DEFAULT = maps.PROVIDER_DEFAULT;
+}
 import { SCORE_WEIGHTS } from '@driiva/scoring';
 import { firestore } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -276,7 +295,7 @@ export default function TripDetail() {
           <Text style={styles.sectionTitle}>Route</Text>
           {points === undefined ? (
             <SkeletonLoader width="100%" height={200} borderRadius={R.card} />
-          ) : route.length >= 2 && region ? (
+          ) : route.length >= 2 && region && MapView !== null ? (
             <View style={styles.mapWrap}>
               <MapView
                 provider={PROVIDER_DEFAULT}
