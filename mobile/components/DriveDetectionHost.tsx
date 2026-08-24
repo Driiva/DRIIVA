@@ -20,10 +20,10 @@ import * as Location from 'expo-location';
 import { useAuth } from '@/contexts/AuthContext';
 import { isExpoGo } from '@/lib/firebase';
 import {
+  finishAnyOpenDriveAndStop,
   isDetectionArmed,
   setMonitorUser,
   startWatchingForDrives,
-  stopWatchingForDrives,
 } from '@/lib/driveMonitorInstance';
 
 export function DriveDetectionHost() {
@@ -50,8 +50,10 @@ export function DriveDetectionHost() {
 
     return () => {
       cancelled = true;
-      void stopWatchingForDrives();
-      setMonitorUser(null);
+      // Sign-out, or this driver going away. An open trip must be finished
+      // before the monitor loses the user it writes under, or it is stranded
+      // in 'recording' with nothing able to close it.
+      void finishAnyOpenDriveAndStop().finally(() => setMonitorUser(null));
     };
   }, [user?.id]);
 

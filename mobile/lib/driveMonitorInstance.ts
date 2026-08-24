@@ -32,6 +32,8 @@ import {
 } from './trips';
 import {
   BACKGROUND_LOCATION_TASK,
+  hasBackgroundLocationPermission,
+  reportBackgroundCaptureUnavailable,
   resetBackgroundCaptureHealth,
   setActiveWriter,
   startBackgroundLocationUpdates,
@@ -193,9 +195,18 @@ export async function startWatchingForDrives(): Promise<void> {
     });
   }
 
-  await startBackgroundLocationUpdates().catch((err) =>
-    console.warn('[driveMonitor] background updates unavailable', err),
-  );
+  // Background capture is what keeps a drive alive once the app is not in the
+  // foreground. If it cannot run, the driver has to be told, because the
+  // alternative is a screen saying "Watching for your next drive" over a phone
+  // that will notice nothing the moment it locks. A console.warn told nobody.
+  if (!(await hasBackgroundLocationPermission().catch(() => false))) {
+    reportBackgroundCaptureUnavailable('Always location permission not granted');
+  } else {
+    await startBackgroundLocationUpdates().catch((err) => {
+      console.warn('[driveMonitor] background updates unavailable', err);
+      reportBackgroundCaptureUnavailable(String(err));
+    });
+  }
 
   if (!heartbeat) {
     // Without this a drive never ends once the fixes dry up, which is what a
@@ -226,11 +237,26 @@ export async function startWatchingForDrives(): Promise<void> {
   }
 }
 
-/** Stops watching. A trip already open is left to finish on its own terms. */
+/**
+ * Stops watching for NEW drives.
+ *
+ * A trip already open is NOT abandoned. The heartbeat is what ends a drive when
+ * the fixes dry up, so tearing it down while a trip was open left that trip in
+ * 'recording' with nothing able to close it, which is the orphan shape that had
+ * to be cleaned up by hand twice during the simulator proof. The sink, the
+ * background updates and the heartbeat all stay until the trip is finished.
+ */
 export async function stopWatchingForDrives(): Promise<void> {
   driveMonitor.disarm();
   foregroundWatch?.remove();
   foregroundWatch = null;
+
+  if (driveMonitor.tripId !== null) {
+    // Leave the machinery that can still close this trip running. The monitor
+    // is disarmed, so no NEW drive can open behind it.
+    return;
+  }
+
   if (heartbeat) {
     clearInterval(heartbeat);
     heartbeat = null;
@@ -242,10 +268,21 @@ export async function stopWatchingForDrives(): Promise<void> {
   driveMonitor.setPickupSource(null);
   magnitudes = [];
   driveMonitor.onAccelVariance(null);
-  if (driveMonitor.tripId === null) {
-    setActiveWriter(null);
-    await stopBackgroundLocationUpdates().catch(() => undefined);
+  setActiveWriter(null);
+  await stopBackgroundLocationUpdates().catch(() => undefined);
+}
+
+/**
+ * Sign-out, or the app going away for good. An open trip cannot be left to a
+ * monitor that is about to lose its user: end it first so it is submitted or
+ * discarded honestly, rather than stranded in 'recording'.
+ */
+export async function finishAnyOpenDriveAndStop(): Promise<void> {
+  if (driveMonitor.tripId !== null) {
+    await driveMonitor.stopManually().catch(() => undefined);
   }
+  driveMonitor.disarm();
+  await stopWatchingForDrives();
 }
 
 export { BACKGROUND_LOCATION_TASK };

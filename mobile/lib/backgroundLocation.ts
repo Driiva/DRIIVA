@@ -70,6 +70,17 @@ export function resetBackgroundCaptureHealth(): void {
   healthListener?.('ok');
 }
 
+/**
+ * Mark background capture as unavailable from OUTSIDE the task, for the cases
+ * the task itself never sees: the "Always" permission was never granted, or
+ * startLocationUpdatesAsync refused. Without this the app told a
+ * WhenInUse-only driver it was "Watching for your next drive" while background
+ * capture could not run at all.
+ */
+export function reportBackgroundCaptureUnavailable(reason: string): void {
+  reportUnavailable(null, reason);
+}
+
 function reportUnavailable(code: number | null, message: string): void {
   // Deduped: a real fault repeats on every delivery, and the old code turned
   // that into a stream of identical red toasts.
