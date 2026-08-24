@@ -547,3 +547,59 @@ describe('DriveMonitor: phone pickups reach the trip', () => {
     expect(monitor.pickupCount).toBe(0);
   });
 });
+
+/**
+ * TWO TRIPS FOR ONE DRIVE
+ * ========================
+ * Review finding. startManually checked openTripId and then awaited
+ * port.startTrip, but it did not go through the same serialisation queue that
+ * add() uses. So a driver tapping "start a drive now" at the moment a queued
+ * fix was already inside openTrip's awaited startTrip saw both pass the
+ * openTripId === null check, and two trips opened for one drive. The loser is
+ * stranded in 'recording' forever, because only one of them can ever be
+ * closed.
+ *
+ * The same window exists between two queued fixes, which is why open() also
+ * carries a synchronous flag: the queue orders the work, the flag closes the
+ * await gap inside it.
+ */
+describe('DriveMonitor: one drive is one trip', () => {
+  it('does not open a second trip when a manual start races a queued fix', async () => {
+    let resolveStart: ((id: string) => void) | null = null;
+    port.startTrip = vi.fn(() => new Promise<string>((resolve) => { resolveStart = resolve; }));
+    monitor.arm();
+
+    for (let i = 0; i < 25; i++) monitor.add(fix(T0 + i * 1000, 20));
+    while (resolveStart === null) await new Promise((r) => setTimeout(r, 1));
+
+    // The tap lands while the automatic open is still awaiting the network.
+    const tap = monitor.startManually(fix(T0 + 25_000, 0));
+    (resolveStart as (id: string) => void)('trip-1');
+    await tap;
+    await monitor.drained();
+
+    expect(port.startTrip).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not open a second trip when two manual starts race each other', async () => {
+    let resolveStart: ((id: string) => void) | null = null;
+    port.startTrip = vi.fn(() => new Promise<string>((resolve) => { resolveStart = resolve; }));
+    monitor.arm();
+
+    const first = monitor.startManually(fix(T0, 0));
+    const second = monitor.startManually(fix(T0 + 500, 0));
+    while (resolveStart === null) await new Promise((r) => setTimeout(r, 1));
+    (resolveStart as (id: string) => void)('trip-1');
+    await Promise.all([first, second]);
+
+    expect(port.startTrip).toHaveBeenCalledTimes(1);
+  });
+
+  it('still opens a manual trip normally when nothing is racing it', async () => {
+    monitor.arm();
+    await monitor.startManually(fix(T0, 0));
+
+    expect(port.startTrip).toHaveBeenCalledTimes(1);
+    expect(monitor.tripId).toBe('trip-1');
+  });
+});

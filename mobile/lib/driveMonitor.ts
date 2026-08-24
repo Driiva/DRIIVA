@@ -84,6 +84,13 @@ export class DriveMonitor {
   private readPickups: (() => number) | null = null;
   /** Source reading at the moment the open trip began, so counts do not carry over. */
   private pickupBaseline = 0;
+  /**
+   * Set synchronously the instant an open begins, and cleared only when it
+   * finishes. The queue orders the work; this closes the await gap INSIDE it,
+   * where two callers could otherwise both see openTripId still null while
+   * port.startTrip was in flight and open two trips for one drive.
+   */
+  private opening = false;
   private openedAt: number | null = null;
   private queue: Promise<void> = Promise.resolve();
 
@@ -250,9 +257,22 @@ export class DriveMonitor {
     }
   }
 
-  /** The driver pressed start. Opens a trip now, without waiting for detection. */
+  /**
+   * The driver pressed start. Opens a trip now, without waiting for detection.
+   *
+   * Routed through the SAME queue as add(), so a tap cannot interleave with a
+   * queued fix that is already partway through opening a trip. Without this a
+   * driver who tapped at the wrong moment got two trips for one drive, and the
+   * loser was stranded in 'recording' with nothing able to close it.
+   */
   async startManually(at: SampledLocation): Promise<void> {
-    if (this.openTripId !== null) return;
+    const work = this.queue.then(() => this.doStartManually(at)).catch(() => undefined);
+    this.queue = work;
+    await work;
+  }
+
+  private async doStartManually(at: SampledLocation): Promise<void> {
+    if (this.openTripId !== null || this.opening) return;
     const opened = await this.open(at, 'manual', at.timestamp);
     if (opened) this.writer?.add(at);
   }
@@ -281,8 +301,8 @@ export class DriveMonitor {
   }
 
   private async openTrip(since: number): Promise<void> {
-    // Never a second trip over an open one.
-    if (this.openTripId !== null) return;
+    // Never a second trip over an open one, or over one being opened.
+    if (this.openTripId !== null || this.opening) return;
 
     const backfill = this.buffer.filter((s) => s.timestamp >= since);
     const first = backfill[0] ?? this.buffer[this.buffer.length - 1];
@@ -302,6 +322,7 @@ export class DriveMonitor {
     startedBy: 'auto' | 'manual',
     tripStartMs: number,
   ): Promise<boolean> {
+    this.opening = true;
     try {
       const tripId = await this.port.startTrip({ lat: at.latitude, lng: at.longitude });
       this.openTripId = tripId;
@@ -320,6 +341,8 @@ export class DriveMonitor {
       this.outcome = 'start_failed';
       this.resetForNextDrive();
       return false;
+    } finally {
+      this.opening = false;
     }
   }
 
