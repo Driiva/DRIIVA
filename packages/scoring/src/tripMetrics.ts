@@ -237,27 +237,60 @@ function computeSpeedStats(points: TripPoint[]): {
   };
 }
 
+// Event thresholds. These used to be locals inside detectDrivingEvents, which
+// meant the only way for a screen to draw an event marker was to retype them.
+// This repo has already shipped transposed SCORE_WEIGHTS to the marketing site
+// once by retyping a constant, so the numbers stay here and the RESULT is what
+// gets exported, via locateDrivingEvents below.
+const HARD_BRAKING_THRESHOLD = -3.5; // m/s² (deceleration)
+const HARD_ACCEL_THRESHOLD = 3.0;    // m/s² (acceleration)
+const SHARP_TURN_THRESHOLD = 30;     // degrees per second
+const SPEED_LIMIT_MPS = 31.3;        // ~70 mph in m/s
+
+/** The four event types that can be derived from the GPS trace alone. */
+export type DrivingEventType = 'braking' | 'acceleration' | 'cornering' | 'speeding';
+
 /**
- * Detect driving events from GPS points
+ * One detected event, with the point it happened at.
+ *
+ * Phone pickups are deliberately absent. They are a client-reported number
+ * with no position attached, not something derived from the trace, so there is
+ * no honest place to draw one.
  */
-function detectDrivingEvents(points: TripPoint[]): TripEvents {
-  const events: TripEvents = {
-    hardBrakingCount: 0,
-    hardAccelerationCount: 0,
-    speedingSeconds: 0,
-    sharpTurnCount: 0,
-    phonePickupCount: 0,
-  };
+export interface LocatedDrivingEvent {
+  type: DrivingEventType;
+  /**
+   * Index of the CURRENT point of the interval, in the array passed in.
+   *
+   * This function does not sort. Sorting internally would return indices into
+   * an array the caller does not hold, which is a trap. computeTripMetrics
+   * sorts by `t` before scoring, so pass points sorted by `t` if you want the
+   * indices to line up with the server's scoring pass.
+   */
+  index: number;
+  /** That point's `t`. */
+  t: number;
+  /**
+   * Seconds attributed to this event. Only 'speeding' carries one, because the
+   * score counts speeding as a DURATION rather than as occurrences. The other
+   * three are instants and leave this undefined.
+   */
+  seconds?: number;
+}
+
+/**
+ * Every driving event in a trace, with where it happened.
+ *
+ * detectDrivingEvents tallies exactly this list, so a marker drawn from here
+ * and a count read off the trip document cannot disagree. That identity is
+ * asserted in tripMetrics.eventLocator.test.ts rather than assumed.
+ */
+export function locateDrivingEvents(points: TripPoint[]): LocatedDrivingEvent[] {
+  const located: LocatedDrivingEvent[] = [];
 
   if (points.length < 2) {
-    return events;
+    return located;
   }
-
-  // Thresholds
-  const HARD_BRAKING_THRESHOLD = -3.5; // m/s² (deceleration)
-  const HARD_ACCEL_THRESHOLD = 3.0;    // m/s² (acceleration)
-  const SHARP_TURN_THRESHOLD = 30;     // degrees per second
-  const SPEED_LIMIT_MPS = 31.3;        // ~70 mph in m/s
 
   for (let i = 1; i < points.length; i++) {
     const prev = points[i - 1];
@@ -276,24 +309,60 @@ function detectDrivingEvents(points: TripPoint[]): TripEvents {
 
     // Hard braking detection
     if (acceleration < HARD_BRAKING_THRESHOLD) {
-      events.hardBrakingCount++;
+      located.push({ type: 'braking', index: i, t: curr.t });
     }
 
     // Hard acceleration detection
     if (acceleration > HARD_ACCEL_THRESHOLD) {
-      events.hardAccelerationCount++;
+      located.push({ type: 'acceleration', index: i, t: curr.t });
     }
 
     // Speeding detection
     if (currSpeed > SPEED_LIMIT_MPS) {
-      events.speedingSeconds += Math.round(dt);
+      located.push({ type: 'speeding', index: i, t: curr.t, seconds: Math.round(dt) });
     }
 
     // Sharp turn detection (heading change rate)
     const headingDelta = Math.abs(normalizeHeadingDelta(curr.hdg - prev.hdg));
     const headingRate = headingDelta / dt;
     if (headingRate > SHARP_TURN_THRESHOLD && currSpeed > 5) {
-      events.sharpTurnCount++;
+      located.push({ type: 'cornering', index: i, t: curr.t });
+    }
+  }
+
+  return located;
+}
+
+/**
+ * Detect driving events from GPS points.
+ *
+ * A tally over locateDrivingEvents, so there is one pass and one definition of
+ * what an event is. phonePickupCount is always 0 here; computeTripMetrics
+ * overlays the sanitised client-reported count once the duration is known.
+ */
+function detectDrivingEvents(points: TripPoint[]): TripEvents {
+  const events: TripEvents = {
+    hardBrakingCount: 0,
+    hardAccelerationCount: 0,
+    speedingSeconds: 0,
+    sharpTurnCount: 0,
+    phonePickupCount: 0,
+  };
+
+  for (const event of locateDrivingEvents(points)) {
+    switch (event.type) {
+      case 'braking':
+        events.hardBrakingCount++;
+        break;
+      case 'acceleration':
+        events.hardAccelerationCount++;
+        break;
+      case 'cornering':
+        events.sharpTurnCount++;
+        break;
+      case 'speeding':
+        events.speedingSeconds += event.seconds ?? 0;
+        break;
     }
   }
 
