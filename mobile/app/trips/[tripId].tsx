@@ -349,7 +349,7 @@ export default function TripDetail() {
                 </View>
                 <Text style={styles.breakdownFootnote}>
                   The rate is what the score is computed from, not the count. Four hard stops
-                  over ninety miles and four over two miles are not the same drive.
+                  over ninety miles is not the same drive as four over two.
                 </Text>
               </>
             ) : (

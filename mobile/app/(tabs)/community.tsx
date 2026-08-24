@@ -397,8 +397,8 @@ export default function Community() {
               <Text style={styles.note}>Loading your circle.</Text>
             ) : circle.length === 0 ? (
               <Text style={styles.note}>
-                Nobody yet. A board of strangers is a scoreboard. A board of people you know is
-                a reason to come back.
+                Nobody yet. Share your code and they appear here, on the same board as everyone
+                else.
               </Text>
             ) : (
               <View style={styles.rows}>

@@ -67,6 +67,8 @@ interface ScoreBreakdown {
 }
 
 interface DashboardData {
+  /** When the last trip finished scoring. Null before the first one. */
+  lastTripAt: Date | null;
   /** Null until a trip has actually been scored. Never a placeholder zero. */
   overallScore: number | null;
   totalTrips: number;
@@ -100,6 +102,24 @@ const FACTORS: ReadonlyArray<{ key: keyof ScoreBreakdown; label: string; weight:
   { key: 'phoneUsageScore', label: 'Phone', weight: SCORE_WEIGHTS.phoneUsage },
 ];
 
+/**
+ * The header line. It used to read "Your driving dashboard", which named the
+ * screen the driver was already looking at. A date is worth more than a label:
+ * it answers whether the score below is current, which is the only reason to
+ * doubt it.
+ */
+function lastTripLabel(lastTripAt: Date | null): string {
+  if (!lastTripAt) return 'No scored trips yet.';
+  const days = Math.floor((Date.now() - lastTripAt.getTime()) / 86_400_000);
+  if (days <= 0) return 'Last scored trip today.';
+  if (days === 1) return 'Last scored trip yesterday.';
+  if (days < 14) return `Last scored trip ${days} days ago.`;
+  return `Last scored trip ${lastTripAt.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'long',
+  })}.`;
+}
+
 export default function Dashboard() {
   // The dashboard IS the score. Viewing it is the loop step between
   // driving and comparing, so it needs its own event or the funnel jumps
@@ -128,6 +148,7 @@ export default function Dashboard() {
         const profile = (userData.drivingProfile ?? {}) as Partial<DashboardData> & {
           currentScore?: number;
           scoreBreakdown?: ScoreBreakdown;
+          lastTripAt?: { toDate?: () => Date } | null;
         };
         const policy = (userData.activePolicy ?? null) as { premiumCents?: number } | null;
         const share = (userData.poolShare ?? null) as { sharePercentage?: number } | null;
@@ -146,6 +167,7 @@ export default function Dashboard() {
           overallScore: typeof profile.currentScore === 'number' ? profile.currentScore : null,
           totalTrips: profile.totalTrips ?? 0,
           totalMiles: profile.totalMiles ?? 0,
+          lastTripAt: profile.lastTripAt?.toDate ? profile.lastTripAt.toDate() : null,
           premiumCents: typeof policy?.premiumCents === 'number' ? policy.premiumCents : null,
           sharePercentage:
             typeof share?.sharePercentage === 'number' ? share.sharePercentage : null,
@@ -236,7 +258,7 @@ export default function Dashboard() {
         <Enter index={0} count={7}>
           <View style={styles.header}>
             <Text style={styles.greeting}>Hey, {user?.name?.split(' ')[0] ?? 'Driver'}</Text>
-            <Text style={styles.subtitle}>Every trip you record moves the number below.</Text>
+            <Text style={styles.subtitle}>{lastTripLabel(data?.lastTripAt ?? null)}</Text>
           </View>
         </Enter>
 

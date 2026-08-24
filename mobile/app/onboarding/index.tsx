@@ -47,7 +47,7 @@ export default function Welcome() {
           <Text style={styles.eyebrow}>Driiva</Text>
           <Text style={styles.headline}>Your driving is worth more than you're being paid for.</Text>
           <Text style={styles.sub}>
-            Join the community where safe drivers get rewarded, not just insured.
+            Safe drivers subsidise risky ones. Driiva is built the other way round.
           </Text>
         </View>
 
@@ -68,7 +68,7 @@ export default function Welcome() {
 
         <Text style={styles.caveat}>
           Refunds depend on your policy, your claims and how the pool performs. Driiva Ltd is
-          working towards the FCA regulatory sandbox and is not authorised.
+          not authorised by the FCA and our insurance product is pending FCA authorisation.
         </Text>
       </ScrollView>
 
