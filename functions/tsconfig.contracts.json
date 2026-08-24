@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "target": "ES2020",
+    "lib": ["es2020"],
+    "types": ["node"],
+    "declaration": true,
+    "noEmit": false,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "rootDir": "../packages/contracts/src",
+    "outDir": "vendor/contracts",
+    "incremental": false
+  },
+  "include": ["../packages/contracts/src/**/*"],
+  "exclude": ["../packages/contracts/src/__tests__/**"]
+}

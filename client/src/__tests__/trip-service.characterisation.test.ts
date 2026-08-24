@@ -200,7 +200,9 @@ describe("endTrip - the rule-lock contract", () => {
       420
     );
 
-    expect(fsMock.batch.update).toHaveBeenCalledTimes(2);
+    // ONE update, on the trip document only. See the tripPoints assertion at
+    // the end of this test for why the second one had to go.
+    expect(fsMock.batch.update).toHaveBeenCalledTimes(1);
     const tripUpdate = fsMock.batch.update.mock.calls[0][1] as Record<string, unknown>;
     expect(Object.keys(tripUpdate).sort()).toEqual([
       "clientReportedPhonePickupCount",
@@ -221,8 +223,23 @@ describe("endTrip - the rule-lock contract", () => {
     // value is normalised to 0, not passed through as undefined/NaN.
     expect(tripUpdate.clientReportedPhonePickupCount).toBe(0);
 
-    const pointsUpdate = fsMock.batch.update.mock.calls[1][1] as Record<string, unknown>;
-    expect(pointsUpdate).toEqual({ totalPoints: 420, compressedSize: 420 * 50 });
+    // THE LOAD-BEARING ONE. endTrip used to add a second update to
+    // tripPoints/{tripId} in this same batch, and firestore.rules says
+    // `allow update: if false` on that collection without exception. A
+    // writeBatch is atomic, so the denied write took the trip update down with
+    // it and the trip never left 'recording' or reached the scoring function.
+    //
+    // This suite could not see it: the Firestore mock above refuses nothing, so
+    // the old expectation pinned a shape that always failed against real rules.
+    // The mobile twin had the identical batch and is fixed on feat/fable-trip,
+    // where tests/rules/trip-points.test.ts proves the denial against the
+    // emulator. That rules test is the authority for this claim, not this file.
+    const updatedPaths = fsMock.batch.update.mock.calls.map(
+      (call) => (call[0] as { __path?: string }).__path
+    );
+    expect(updatedPaths).toEqual(["trips/trip-9"]);
+    expect(updatedPaths.some((path) => String(path).startsWith("tripPoints/"))).toBe(false);
+
     expect(fsMock.batch.commit).toHaveBeenCalledTimes(1);
   });
 
