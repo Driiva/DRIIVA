@@ -185,6 +185,23 @@ export class DriveMonitor {
     await this.queue;
   }
 
+  /**
+   * Advance wall-clock time without a fix, so a drive can end when the fixes
+   * stop arriving at all. A parked car stops moving, and a location service
+   * with nothing new to say eventually says nothing; without this the trip
+   * stays open until somebody notices. Invents no sample and can only end a
+   * drive, never open one.
+   */
+  async tick(now: number): Promise<void> {
+    if (this.openTripId === null) return;
+    // A manual trip is the driver's to end.
+    if (this.startedBy === 'manual') return;
+
+    const event = this.detector.tick(now);
+    if (event.type === 'drive_ended') await this.closeTrip();
+    else if (event.type === 'drive_discarded') await this.discardTrip();
+  }
+
   async onLocation(sample: SampledLocation): Promise<void> {
     // A trip in progress always gets the fix, whether detection opened it or
     // the driver did. The writer's own gate decides whether to keep it.

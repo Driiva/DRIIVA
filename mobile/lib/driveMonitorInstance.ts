@@ -118,7 +118,16 @@ export async function setDetectionArmed(armed: boolean): Promise<void> {
 
 let foregroundWatch: Location.LocationSubscription | null = null;
 let accelSubscription: { remove: () => void } | null = null;
+let heartbeat: ReturnType<typeof setInterval> | null = null;
 let magnitudes: number[] = [];
+
+/**
+ * How often the monitor is asked to reconsider a drive with no new fix.
+ *
+ * Ten seconds is far finer than the one and three minute holds it serves, and
+ * costs nothing: the tick does no IO unless a drive actually needs ending.
+ */
+const HEARTBEAT_MS = 10_000;
 
 function toSample(fix: Location.LocationObject): SampledLocation {
   return {
@@ -173,6 +182,16 @@ export async function startWatchingForDrives(): Promise<void> {
     console.warn('[driveMonitor] background updates unavailable', err),
   );
 
+  if (!heartbeat) {
+    // Without this a drive never ends once the fixes dry up, which is what a
+    // parked car does. Proved on the simulator: the location stopped changing,
+    // no further updates were delivered at all, and the trip stayed open at
+    // speed indefinitely.
+    heartbeat = setInterval(() => {
+      void driveMonitor.tick(Date.now());
+    }, HEARTBEAT_MS);
+  }
+
   if (!accelSubscription) {
     magnitudes = [];
     Accelerometer.setUpdateInterval(Math.round(1000 / ACCEL_HZ));
@@ -189,6 +208,10 @@ export async function stopWatchingForDrives(): Promise<void> {
   driveMonitor.disarm();
   foregroundWatch?.remove();
   foregroundWatch = null;
+  if (heartbeat) {
+    clearInterval(heartbeat);
+    heartbeat = null;
+  }
   accelSubscription?.remove();
   accelSubscription = null;
   magnitudes = [];

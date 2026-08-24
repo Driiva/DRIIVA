@@ -428,3 +428,33 @@ describe('DriveMonitor: elapsed is measured from the drive, not from the screen'
     expect(monitor.tripStartedAt).toBeNull();
   });
 });
+
+describe('DriveMonitor: ending when the fixes stop', () => {
+  it('submits the trip when nothing has moved for the stop hold, with no further fixes', async () => {
+    monitor.arm();
+    await feed(monitor, T0, 25, 20);
+
+    await monitor.tick(T0 + 24_000 + DETECTION.PAUSE_HOLD_MS);
+    await monitor.tick(T0 + 24_000 + DETECTION.STOP_HOLD_MS);
+
+    expect(port.submit).toHaveBeenCalledTimes(1);
+    expect(monitor.tripId).toBeNull();
+  });
+
+  it('does nothing when no trip is open', async () => {
+    monitor.arm();
+    await monitor.tick(T0 + 10_000_000);
+
+    expect(port.submit).not.toHaveBeenCalled();
+    expect(port.startTrip).not.toHaveBeenCalled();
+  });
+
+  it('never ends a manually started trip on a tick, because that is the driver decision', async () => {
+    monitor.arm();
+    await monitor.startManually(fix(T0, 0));
+    await monitor.tick(T0 + 999_000_000);
+
+    expect(port.submit).not.toHaveBeenCalled();
+    expect(monitor.tripId).toBe('trip-1');
+  });
+});

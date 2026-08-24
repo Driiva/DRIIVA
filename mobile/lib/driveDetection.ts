@@ -130,8 +130,16 @@ export class DriveDetector {
   private current: DriveState = 'idle';
   /** When the present run of at-or-above-start-speed samples began. */
   private candidateSince: number | null = null;
-  /** When the present stationary run began. */
-  private stationarySince: number | null = null;
+  /**
+   * When anything last actually MOVED, at or above PAUSE_SPEED_MPS.
+   *
+   * The stationary clock runs from here rather than from "when stationary
+   * samples started arriving", because a parked car eventually stops producing
+   * fixes at all. Timing from the last sample RECEIVED means a trip stays open
+   * forever once the fixes dry up; timing from the last MOVEMENT is true
+   * whether the samples keep coming or not.
+   */
+  private lastMovingAt: number | null = null;
   /** When the drive was declared, for the peak-speed window. */
   private drivingSince: number | null = null;
   private peak = 0;
@@ -150,7 +158,7 @@ export class DriveDetector {
   reset(): void {
     this.current = 'idle';
     this.candidateSince = null;
-    this.stationarySince = null;
+    this.lastMovingAt = null;
     this.drivingSince = null;
     this.peak = 0;
     this.peakJudged = false;
@@ -169,13 +177,11 @@ export class DriveDetector {
       this.peak = Math.max(this.peak, speed);
     }
 
-    // Stationary bookkeeping is shared by pause and end: one clock, started
-    // when the vehicle stops and cleared the moment it moves at all, so
-    // creeping in traffic can never accumulate toward ending the drive.
+    // One clock for both pause and end, and it measures time since the last
+    // real movement. Creeping in traffic keeps resetting it, so a slow crawl
+    // can never accumulate toward ending the drive.
     if (speed >= DETECTION.PAUSE_SPEED_MPS) {
-      this.stationarySince = null;
-    } else if (this.stationarySince === null) {
-      this.stationarySince = sample.t;
+      this.lastMovingAt = sample.t;
     }
 
     switch (this.current) {
@@ -190,6 +196,36 @@ export class DriveDetector {
       default:
         return NOTHING;
     }
+  }
+
+  /**
+   * Advance wall-clock time WITHOUT a sample.
+   *
+   * A parked car stops moving, and a location service with nothing new to say
+   * eventually says nothing, so a machine that only reasons about samples it
+   * receives can never notice a drive has finished. The absence of movement is
+   * real information and this is how it is acted on.
+   *
+   * It invents nothing. No speed is assumed, no position is guessed, no sample
+   * is synthesised. It asks only how long it has been since something moved,
+   * and it can only ever END a drive, never begin one.
+   */
+  tick(now: number): DriveEvent {
+    if (this.current !== 'driving' && this.current !== 'paused') return NOTHING;
+
+    const discarded = this.judgePeak({ t: now, speedMps: null, accuracyM: null, accelVariance: null });
+    if (discarded) return discarded;
+
+    const stationary = this.stationaryFor(now);
+    if (this.current === 'driving' && stationary >= DETECTION.PAUSE_HOLD_MS) {
+      this.current = 'paused';
+      return { type: 'drive_paused' };
+    }
+    if (this.current === 'paused' && stationary >= DETECTION.STOP_HOLD_MS) {
+      this.current = 'ended';
+      return { type: 'drive_ended', reason: 'stopped' };
+    }
+    return NOTHING;
   }
 
   /** A fix is usable when it carries a real speed and the phone trusts it. */
@@ -240,6 +276,7 @@ export class DriveDetector {
       const since = this.candidateSince;
       this.current = 'driving';
       this.drivingSince = sample.t;
+      this.lastMovingAt = sample.t;
       this.peak = speed;
       // The points from `since` onward are already driving and were captured
       // before anyone knew it. The monitor backfills them.
@@ -252,10 +289,7 @@ export class DriveDetector {
     const discarded = this.judgePeak(sample);
     if (discarded) return discarded;
 
-    if (
-      this.stationarySince !== null &&
-      sample.t - this.stationarySince >= DETECTION.PAUSE_HOLD_MS
-    ) {
+    if (this.stationaryFor(sample.t) >= DETECTION.PAUSE_HOLD_MS) {
       this.current = 'paused';
       return { type: 'drive_paused' };
     }
@@ -271,14 +305,17 @@ export class DriveDetector {
       return { type: 'drive_resumed' };
     }
 
-    if (
-      this.stationarySince !== null &&
-      sample.t - this.stationarySince >= DETECTION.STOP_HOLD_MS
-    ) {
+    if (this.stationaryFor(sample.t) >= DETECTION.STOP_HOLD_MS) {
       this.current = 'ended';
       return { type: 'drive_ended', reason: 'stopped' };
     }
     return NOTHING;
+  }
+
+  /** How long since anything moved. Zero when nothing has ever moved. */
+  private stationaryFor(now: number): number {
+    if (this.lastMovingAt === null) return 0;
+    return now - this.lastMovingAt;
   }
 
   /**
