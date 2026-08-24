@@ -30,3 +30,36 @@ export function ecoGrade(score: number): string {
   if (score >= 74) return 'B';
   return 'C+';
 }
+
+/**
+ * THE ONBOARDING TRIP DEMO, IN ONE PLACE
+ * ======================================
+ * The simulated first trip awards four score deltas. They used to be written
+ * out by hand twice: once as the animated event rows in
+ * mobile/components/onboarding/TripReplay.tsx, once as the summary breakdown
+ * in mobile/app/onboarding/trip-demo.tsx. Same four numbers, different labels,
+ * no connection between them, so retuning the demo in one file left the replay
+ * and the summary disagreeing about what the same trip scored.
+ *
+ * These are demo figures. They describe a scripted drive shown before the
+ * driver has taken a real one, and both screens say so on the page. Nothing
+ * here reaches @driiva/scoring or any real trip.
+ *
+ * tests/unit/mobile-trip-demo-deltas.test.ts fails if either screen's numbers
+ * stop matching this list.
+ */
+export interface DemoScoreDelta {
+  /** Stable key for the factor the demo attributes the points to. */
+  id: 'braking' | 'speed' | 'acceleration' | 'nightOwl';
+  /** Points the simulated trip awards. Whole points, always positive. */
+  delta: number;
+  /** Milliseconds after the replay starts before this row appears. */
+  delay: number;
+}
+
+export const DEMO_SCORE_DELTAS: readonly DemoScoreDelta[] = [
+  { id: 'braking', delta: 8, delay: 1200 },
+  { id: 'speed', delta: 5, delay: 2000 },
+  { id: 'acceleration', delta: 4, delay: 2800 },
+  { id: 'nightOwl', delta: 2, delay: 3600 },
+];
