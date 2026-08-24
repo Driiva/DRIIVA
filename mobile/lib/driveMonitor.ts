@@ -58,6 +58,8 @@ export interface PointWriterPort {
   }>;
   readonly pointsCount: number;
   readonly distance: number;
+  /** Duration of the stored trace, still known when the final flush fails. */
+  readonly durationSeconds: number;
   readonly lastAcceptedSample: SampledLocation | null;
 }
 
@@ -69,7 +71,14 @@ export interface TripPort {
 }
 
 /** What happened to the last journey, for the screen to state plainly. */
-export type MonitorOutcome = null | 'submitted' | 'not_a_drive' | 'submit_failed' | 'start_failed';
+export type MonitorOutcome =
+  | null
+  | 'submitted'
+  | 'not_a_drive'
+  | 'submit_failed'
+  | 'start_failed'
+  /** A trip opened but no fix was ever accepted, so there is nothing to score. */
+  | 'nothing_captured';
 
 export class DriveMonitor {
   private readonly port: TripPort;
@@ -361,18 +370,31 @@ export class DriveMonitor {
     try {
       totals = await writer.stop();
     } catch {
+      // The flush failed, not the measurement. The writer still knows how long
+      // its trace covers, and filling in a zero here would describe a trip that
+      // covered real ground in no time at all.
       totals = {
         pointsCount: writer.pointsCount,
         distanceMeters: writer.distance,
-        durationSeconds: 0,
+        durationSeconds: writer.durationSeconds,
         rejectedPoints: 0,
         droppedPoints: 0,
       };
     }
 
+    // No accepted fix means no end position and nothing to score. The previous
+    // code wrote 0,0, which is a real place in the Gulf of Guinea and which the
+    // server cannot tell apart from a measurement.
+    if (!last) {
+      await this.port.discard(tripId, 'cancelled').catch(() => undefined);
+      this.outcome = 'nothing_captured';
+      this.resetForNextDrive();
+      return;
+    }
+
     try {
       await this.port.submit(tripId, {
-        end: { lat: last?.latitude ?? 0, lng: last?.longitude ?? 0 },
+        end: { lat: last.latitude, lng: last.longitude },
         distanceMeters: totals.distanceMeters,
         pointsCount: totals.pointsCount,
         durationSeconds: totals.durationSeconds,

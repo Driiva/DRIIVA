@@ -322,6 +322,10 @@ export default function Drive() {
         setNotice('Not counted. That did not look like a drive.');
         return;
       }
+      if (outcome === 'nothing_captured') {
+        setNotice('That drive could not be recorded. No location fixes came through.');
+        return;
+      }
       if (outcome === 'submit_failed') {
         setNotice('Your route was saved but could not be sent for scoring yet.');
         return;

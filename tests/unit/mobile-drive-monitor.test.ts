@@ -54,6 +54,7 @@ function makeWriter(): PointWriterPort & { added: SampledLocation[] } {
     })),
     get pointsCount() { return added.length; },
     get distance() { return 1234; },
+    get durationSeconds() { return 120; },
     get lastAcceptedSample() { return added[added.length - 1] ?? null; },
   };
 }
@@ -601,5 +602,88 @@ describe('DriveMonitor: one drive is one trip', () => {
 
     expect(port.startTrip).toHaveBeenCalledTimes(1);
     expect(monitor.tripId).toBe('trip-1');
+  });
+});
+
+/**
+ * TWO MORE FABRICATED NUMBERS IN closeTrip
+ * =========================================
+ * Both review findings, both the same sin as the pickup count.
+ *
+ * `end: { lat: last?.latitude ?? 0, lng: last?.longitude ?? 0 }` wrote 0,0 as
+ * a MEASURED end position when no fix had ever been accepted. Null Island is a
+ * real coordinate in the Gulf of Guinea, and a trip claiming to end there is
+ * worse than one that admits it does not know: the server cannot tell the
+ * difference. A trip with no accepted points has nothing to score anyway, so
+ * it is discarded rather than submitted with an invented ending.
+ *
+ * And the writer.stop() failure path filled in durationSeconds 0 while passing
+ * a real distanceMeters through beside it, which describes a trip that covered
+ * ground in no time at all. The writer still knows its own duration when the
+ * flush fails, so the fallback asks it.
+ */
+describe('DriveMonitor: closeTrip invents nothing', () => {
+  it('discards rather than submitting a trip that never accepted a fix', async () => {
+    const emptyWriter = makeWriter();
+    emptyWriter.stop = vi.fn(async () => ({
+      pointsCount: 0, distanceMeters: 0, durationSeconds: 0, rejectedPoints: 0, droppedPoints: 0,
+    }));
+    Object.defineProperty(emptyWriter, 'lastAcceptedSample', { get: () => null });
+    port.createWriter = vi.fn(() => emptyWriter);
+
+    monitor.arm();
+    await monitor.startManually(fix(T0, 0));
+    await monitor.stopManually();
+
+    expect(port.submit).not.toHaveBeenCalled();
+    expect(port.discard).toHaveBeenCalledWith('trip-1', 'cancelled');
+  });
+
+  it('says plainly that nothing was captured, rather than claiming success', async () => {
+    const emptyWriter = makeWriter();
+    Object.defineProperty(emptyWriter, 'lastAcceptedSample', { get: () => null });
+    port.createWriter = vi.fn(() => emptyWriter);
+
+    monitor.arm();
+    await monitor.startManually(fix(T0, 0));
+    await monitor.stopManually();
+
+    expect(monitor.lastOutcome).toBe('nothing_captured');
+  });
+
+  it('never writes 0,0 as a measured end position', async () => {
+    const emptyWriter = makeWriter();
+    Object.defineProperty(emptyWriter, 'lastAcceptedSample', { get: () => null });
+    port.createWriter = vi.fn(() => emptyWriter);
+
+    monitor.arm();
+    await monitor.startManually(fix(T0, 0));
+    await monitor.stopManually();
+
+    const submitted = (port.submit as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(submitted).toBeUndefined();
+  });
+
+  it('uses the writer own duration when the final flush fails, not zero', async () => {
+    const failing = makeWriter();
+    failing.stop = vi.fn(async () => { throw new Error('offline'); });
+    Object.defineProperty(failing, 'durationSeconds', { get: () => 174 });
+    port.createWriter = vi.fn(() => failing);
+
+    monitor.arm();
+    await feed(monitor, T0, 25, 20);
+    await feed(monitor, T0 + 25_000, 190, 0);
+
+    expect(port.submit).toHaveBeenCalledWith('trip-1', expect.objectContaining({ durationSeconds: 174 }));
+  });
+
+  it('still submits a real end position when there is one', async () => {
+    monitor.arm();
+    await feed(monitor, T0, 25, 20);
+    await feed(monitor, T0 + 25_000, 190, 0);
+
+    const [, input] = (port.submit as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(input.end.lat).not.toBe(0);
+    expect(input.end.lng).not.toBe(0);
   });
 });
