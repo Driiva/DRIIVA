@@ -66,6 +66,15 @@ export const DETECTION = {
   /** Below this the vehicle is treated as stationary rather than moving. */
   PAUSE_SPEED_MPS: 1.0,
 
+  // TODO (reviewer finding 8, deferred): resuming from PAUSED requires
+  // START_SPEED_MPS (4.5) while the stationary clock clears at
+  // PAUSE_SPEED_MPS (1.0). Between the two a vehicle is moving, is not
+  // accumulating toward the end of the trip, and still reads as paused. It
+  // records correctly throughout, so this is a labelling mismatch rather than
+  // lost data, but the screen can sit on "Stopped. Still recording." while the
+  // car crawls. Decide one threshold for both, with a hysteresis band if
+  // flapping at junctions turns out to be the reason for two.
+
   /** Stationary this long pauses the drive. Recording continues throughout. */
   PAUSE_HOLD_MS: 60_000,
 

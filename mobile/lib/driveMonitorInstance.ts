@@ -51,6 +51,13 @@ const ARMED_KEY = 'driiva.drive-detection.armed';
 const ACCEL_HZ = 5;
 const ACCEL_WINDOW = ACCEL_HZ * 5;
 
+// TODO (reviewer finding 7, deferred): the accelerometer runs at 5 Hz for as
+// long as detection is armed, which is all day, and its only job while IDLE is
+// to shorten the start hold from 20 s to 10 s. That is a poor trade for a
+// battery. Drop to a low duty cycle (or off) while IDLE and raise it once the
+// detector reaches CANDIDATE.
+
+
 /** Variance of accelerometer magnitude over the window, in g squared. */
 function variance(values: readonly number[]): number | null {
   if (values.length < ACCEL_WINDOW) return null;
