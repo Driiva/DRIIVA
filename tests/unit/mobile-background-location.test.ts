@@ -130,3 +130,103 @@ describe('handleBackgroundLocationData', () => {
     expect(writer.add).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * WHAT THE TASK CALLBACK IS ALLOWED TO DO WITH AN ERROR
+ * =====================================================
+ * Jamal saw this on the record screen during a real simulator drive:
+ *
+ *   [backgroundLocation] task error {"code": 0, "message":
+ *   "Error Domain=kCLErrorDomain Code=0 \"(null)\""}
+ *
+ * as a red LogBox toast, repeatedly, over a trip that was recording perfectly.
+ * Two separate faults.
+ *
+ * FIRST, THE CLASSIFICATION. kCLErrorDomain code 0 is kCLErrorLocationUnknown:
+ * Core Location saying "no fix at this instant, I am still trying". Apple's own
+ * guidance is to keep waiting, because it clears itself. It is the single most
+ * common thing an iOS location task ever reports, and on a simulator it fires
+ * every time the simulated location is changed or cleared. Treating it as an
+ * error at all was the bug; every fix after it arrived normally.
+ *
+ * SECOND, THE CHANNEL. Even a real fault must never reach a driver as a raw
+ * error object. `console.error` in a dev build is a red stack-trace toast, and
+ * in a release build it is silence, so the old code managed to be both alarming
+ * and useless depending on who was looking.
+ *
+ * So the pure layer now RETURNS what happened and lets the caller decide, with
+ * no logging of its own. A transient is not an error and produces no user-
+ * visible anything.
+ */
+describe('handleBackgroundLocationData: outcomes', () => {
+  it('reports how many fixes it appended', () => {
+    const writer: PointBuffer = { add: vi.fn() };
+
+    const outcome = handleBackgroundLocationData(
+      { data: { locations: [fix({ timestamp: 1_000 }), fix({ timestamp: 2_000 })] } },
+      writer,
+    );
+
+    expect(outcome).toEqual({ kind: 'appended', count: 2 });
+  });
+
+  it('classifies kCLErrorLocationUnknown as transient, which is not a fault at all', () => {
+    const writer: PointBuffer = { add: vi.fn() };
+
+    const outcome = handleBackgroundLocationData(
+      { error: { code: 0, message: 'Error Domain=kCLErrorDomain Code=0 "(null)"' } },
+      writer,
+    );
+
+    expect(outcome).toEqual({ kind: 'transient_fault' });
+  });
+
+  it('classifies a denied-permission error as capture being unavailable', () => {
+    const outcome = handleBackgroundLocationData(
+      { error: { code: 1, message: 'Error Domain=kCLErrorDomain Code=1 "Denied"' } },
+      null,
+    );
+
+    expect(outcome).toMatchObject({ kind: 'capture_unavailable', code: 1 });
+  });
+
+  it('treats an error of an unrecognised shape as unavailable rather than swallowing it', () => {
+    const outcome = handleBackgroundLocationData({ error: new Error('kaboom') }, null);
+
+    expect(outcome).toMatchObject({ kind: 'capture_unavailable' });
+  });
+
+  it('carries the real message through so a fault can be diagnosed later', () => {
+    const outcome = handleBackgroundLocationData(
+      { error: { code: 2, message: 'Error Domain=kCLErrorDomain Code=2 "Network"' } },
+      null,
+    );
+
+    expect(outcome).toMatchObject({ kind: 'capture_unavailable', message: expect.stringContaining('Network') });
+  });
+
+  it('reports ignored when there is no writer, which is not a fault either', () => {
+    expect(handleBackgroundLocationData({ data: { locations: [fix()] } }, null)).toEqual({
+      kind: 'ignored',
+    });
+  });
+
+  it('reports ignored for a payload carrying no locations', () => {
+    const writer: PointBuffer = { add: vi.fn() };
+
+    expect(handleBackgroundLocationData({ data: {} }, writer)).toEqual({ kind: 'ignored' });
+    expect(handleBackgroundLocationData({}, writer)).toEqual({ kind: 'ignored' });
+  });
+
+  it('prefers the error branch over the data branch when a payload somehow carries both', () => {
+    const writer: PointBuffer = { add: vi.fn() };
+
+    const outcome = handleBackgroundLocationData(
+      { error: { code: 0, message: 'unknown' }, data: { locations: [fix()] } },
+      writer,
+    );
+
+    expect(outcome).toEqual({ kind: 'transient_fault' });
+    expect(writer.add).not.toHaveBeenCalled();
+  });
+});

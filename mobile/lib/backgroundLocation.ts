@@ -41,19 +41,65 @@ export type { PointBuffer };
 
 export const BACKGROUND_LOCATION_TASK = 'driiva-background-location';
 
+/**
+ * Whether background capture is currently able to run.
+ *
+ * A driver never sees an error object. The record screen subscribes to this
+ * and renders at most one calm line. Held as a module-level value rather than
+ * passed around because the OS can deliver into the task while no screen is
+ * mounted at all.
+ */
+export type BackgroundCaptureHealth = 'ok' | 'unavailable';
+
+let health: BackgroundCaptureHealth = 'ok';
+let healthListener: ((next: BackgroundCaptureHealth) => void) | null = null;
+
+export function getBackgroundCaptureHealth(): BackgroundCaptureHealth {
+  return health;
+}
+
+export function subscribeBackgroundCaptureHealth(
+  listener: ((next: BackgroundCaptureHealth) => void) | null,
+): void {
+  healthListener = listener;
+}
+
+/** Reset at the start of a trip, so one bad trip does not condemn the next. */
+export function resetBackgroundCaptureHealth(): void {
+  health = 'ok';
+  healthListener?.('ok');
+}
+
+function reportUnavailable(code: number | null, message: string): void {
+  // Deduped: a real fault repeats on every delivery, and the old code turned
+  // that into a stream of identical red toasts.
+  if (health === 'unavailable') return;
+  health = 'unavailable';
+  // console.warn, never console.error: this is a degraded capability the
+  // driver is told about calmly on screen, not a crash. The code and message
+  // are kept for diagnosis rather than shown to anyone.
+  console.warn('[backgroundLocation] background capture unavailable', { code, message });
+  healthListener?.('unavailable');
+}
+
 try {
   TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }) => {
-    if (error) {
-      console.error('[backgroundLocation] task error', error);
-      return;
-    }
-    handleBackgroundLocationData(
-      { data: data as { locations?: Location.LocationObject[] } | null },
+    const outcome = handleBackgroundLocationData(
+      {
+        data: data as { locations?: Location.LocationObject[] } | null,
+        error: error ?? undefined,
+      },
       getActiveWriter(),
     );
+    // 'transient_fault' is kCLErrorLocationUnknown, which is Core Location
+    // still looking. It is deliberately silent: it was the entire content of
+    // the red toast a driver saw over a trip that was recording perfectly.
+    if (outcome.kind === 'capture_unavailable') {
+      reportUnavailable(outcome.code, outcome.message);
+    }
   });
 } catch (err) {
-  console.error('[backgroundLocation] could not register task', err);
+  console.warn('[backgroundLocation] could not register task', err);
 }
 
 /** Mirrors record.tsx's LOCATION_OPTIONS: one fix per second, or every 10 metres. */

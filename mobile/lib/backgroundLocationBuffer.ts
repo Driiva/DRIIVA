@@ -70,26 +70,74 @@ export function toSampledLocations(fixes: readonly RawLocationFix[]): SampledLoc
 }
 
 /**
+ * Core Location's "I have no fix at this instant, still trying".
+ *
+ * kCLErrorDomain code 0 is kCLErrorLocationUnknown, and Apple's guidance is to
+ * keep waiting because it clears itself. It is the most common thing an iOS
+ * location task ever reports, and on a simulator it fires every time the
+ * simulated location is changed or cleared. It is not a fault and it must
+ * produce nothing a driver can see.
+ */
+const CL_ERROR_LOCATION_UNKNOWN = 0;
+
+/** What one delivery of the background task actually did. */
+export type BackgroundTaskOutcome =
+  | { kind: 'appended'; count: number }
+  | { kind: 'ignored' }
+  | { kind: 'transient_fault' }
+  | { kind: 'capture_unavailable'; code: number | null; message: string };
+
+function readErrorCode(error: unknown): number | null {
+  if (typeof error === 'object' && error !== null && 'code' in error) {
+    const code = (error as { code?: unknown }).code;
+    if (typeof code === 'number' && Number.isFinite(code)) return code;
+  }
+  return null;
+}
+
+function readErrorMessage(error: unknown): string {
+  if (typeof error === 'object' && error !== null && 'message' in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === 'string') return message;
+  }
+  return String(error);
+}
+
+/**
  * The body of the TaskManager.defineTask callback, extracted so it is
  * testable without expo-task-manager's native module.
  *
- * No-ops rather than throwing when there is nothing to do - an error on the
- * payload, or no writer registered because the trip already ended or the OS
- * relaunched the app headless with no trip in progress to append to. A
- * background task error is not visible to the driver, so silently dropping
- * the fix is the honest failure mode here, not a crash.
+ * RETURNS what happened and logs NOTHING. The old version called
+ * console.error with the raw error object, which in a dev build is a red
+ * stack-trace toast in the driver's face and in a release build is silence:
+ * alarming and useless depending on who is looking. Deciding what a fault
+ * means to a person is the caller's job, not this function's, and a transient
+ * means nothing at all.
+ *
+ * Never throws. The OS can relaunch the app headless with no trip in progress
+ * and deliver into a task with no writer registered; that is ordinary, not an
+ * error.
  */
 export function handleBackgroundLocationData(
   payload: { data?: { locations?: RawLocationFix[] } | null; error?: unknown },
   writer: PointBuffer | null,
-): void {
-  if (payload.error) return;
-  if (!writer) return;
+): BackgroundTaskOutcome {
+  // Error first: a payload carrying both is reporting a problem, and appending
+  // points from it would be trusting a delivery the OS just disowned.
+  if (payload.error) {
+    const code = readErrorCode(payload.error);
+    if (code === CL_ERROR_LOCATION_UNKNOWN) return { kind: 'transient_fault' };
+    return { kind: 'capture_unavailable', code, message: readErrorMessage(payload.error) };
+  }
+
+  if (!writer) return { kind: 'ignored' };
 
   const locations = payload.data?.locations;
-  if (!locations || locations.length === 0) return;
+  if (!locations || locations.length === 0) return { kind: 'ignored' };
 
-  for (const sample of toSampledLocations(locations)) {
+  const samples = toSampledLocations(locations);
+  for (const sample of samples) {
     writer.add(sample);
   }
+  return { kind: 'appended', count: samples.length };
 }

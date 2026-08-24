@@ -388,6 +388,13 @@ export async function submitTripForScoring(
      * against the same duration the server will.
      */
     durationSeconds: number;
+    /**
+     * Whether automatic detection opened this trip or the driver did. Written
+     * so a scored trip can always be traced back to how it began, which
+     * matters the first time a driver disputes one. Not a scoring input; the
+     * rules leave it writable by the client for the same reason distance is.
+     */
+    startedBy?: 'auto' | 'manual';
   },
 ): Promise<void> {
   assertNativeFirebase();
@@ -436,6 +443,7 @@ export async function submitTripForScoring(
       status: 'processing',
       pointsCount: input.pointsCount,
       clientReportedPhonePickupCount,
+      startedBy: input.startedBy ?? 'manual',
     });
   } catch (err) {
     console.error('[trips] submitTripForScoring failed', err);
@@ -453,7 +461,11 @@ export async function submitTripForScoring(
 
 /**
  * Discards a recorded trip: recording -> failed. Used when the driver says the
- * journey was not them driving, and when a recording is cancelled outright.
+ * journey was not them driving, when a recording is cancelled outright, and
+ * when automatic detection opened a trip that never reached a real road speed
+ * ('not_a_drive'). That last one is the important one: a cycle or a bus ride
+ * that tripped the detector is discarded rather than scored, so it can never
+ * reach the driver's profile or a premium.
  *
  * The trip's GPS batches stay behind. The rules forbid client deletes on
  * tripPoints and batches, and mobile has no callable-functions client, so the
@@ -464,7 +476,7 @@ export async function submitTripForScoring(
  */
 export async function discardTrip(
   tripId: string,
-  reason: 'not_driving' | 'cancelled',
+  reason: 'not_driving' | 'cancelled' | 'not_a_drive',
 ): Promise<void> {
   assertNativeFirebase();
   try {

@@ -199,3 +199,97 @@ describe('firestore.rules: the recording to processing submit batch', () => {
     });
   });
 });
+
+/**
+ * THE FIELDS AUTOMATIC DETECTION ADDS
+ * ====================================
+ * Detection writes two new things on a trip: `startedBy`, so a scored trip can
+ * always be traced back to whether a machine or a person opened it, and
+ * `discardReason: 'not_a_drive'` when a journey it opened never reached a real
+ * road speed and is thrown away rather than scored.
+ *
+ * Neither is a scoring input, so neither is locked. What these tests exist for
+ * is the opposite direction: to prove that adding them did not open a door.
+ * The rules are a denylist over score fields plus a valid status transition, so
+ * the failure mode to guard is a client smuggling a score in ALONGSIDE a field
+ * that is legitimately writable. A driver who can set their own score can set
+ * their own premium.
+ */
+describe('firestore.rules: fields written by automatic drive detection', () => {
+  let testEnv: RulesTestEnvironment;
+
+  beforeAll(async () => {
+    testEnv = await createTestEnv('driiva-rules-drive-detection');
+  });
+
+  afterAll(async () => {
+    await testEnv.cleanup();
+  });
+
+  beforeEach(async () => {
+    await testEnv.clearFirestore();
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), 'trips/t9'), {
+        tripId: 't9',
+        userId: ALICE,
+        createdBy: ALICE,
+        status: 'recording',
+        score: 0,
+        pointsCount: 0,
+      });
+    });
+  });
+
+  it('lets the owner record that detection opened the trip', async () => {
+    const alice = testEnv.authenticatedContext(ALICE);
+    await assertSucceeds(
+      updateDoc(doc(alice.firestore(), 'trips/t9'), { status: 'processing', startedBy: 'auto' }),
+    );
+  });
+
+  it('lets the owner record that they opened the trip by hand', async () => {
+    const alice = testEnv.authenticatedContext(ALICE);
+    await assertSucceeds(
+      updateDoc(doc(alice.firestore(), 'trips/t9'), { status: 'processing', startedBy: 'manual' }),
+    );
+  });
+
+  it('lets the owner discard a journey that was not a drive', async () => {
+    const alice = testEnv.authenticatedContext(ALICE);
+    await assertSucceeds(
+      updateDoc(doc(alice.firestore(), 'trips/t9'), {
+        status: 'failed',
+        discardReason: 'not_a_drive',
+      }),
+    );
+  });
+
+  it('still refuses a score smuggled in beside startedBy', async () => {
+    const alice = testEnv.authenticatedContext(ALICE);
+    await assertFails(
+      updateDoc(doc(alice.firestore(), 'trips/t9'), {
+        status: 'processing',
+        startedBy: 'auto',
+        score: 100,
+      }),
+    );
+  });
+
+  it('still refuses a breakdown smuggled in beside a discard', async () => {
+    const alice = testEnv.authenticatedContext(ALICE);
+    await assertFails(
+      updateDoc(doc(alice.firestore(), 'trips/t9'), {
+        status: 'failed',
+        discardReason: 'not_a_drive',
+        scoreBreakdown: { speedScore: 100 },
+      }),
+    );
+  });
+
+  it("refuses a non-owner marking someone else's trip as auto-started", async () => {
+    const bob = testEnv.authenticatedContext(BOB);
+    await assertFails(
+      updateDoc(doc(bob.firestore(), 'trips/t9'), { status: 'processing', startedBy: 'auto' }),
+    );
+  });
+});
