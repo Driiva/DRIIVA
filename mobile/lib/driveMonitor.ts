@@ -81,7 +81,9 @@ export class DriveMonitor {
   private startedBy: 'auto' | 'manual' = 'auto';
   private accelVariance: number | null = null;
   private outcome: MonitorOutcome = null;
-  private phonePickupCount = 0;
+  private readPickups: (() => number) | null = null;
+  /** Source reading at the moment the open trip began, so counts do not carry over. */
+  private pickupBaseline = 0;
   private openedAt: number | null = null;
   private queue: Promise<void> = Promise.resolve();
 
@@ -129,9 +131,12 @@ export class DriveMonitor {
     return this.writer?.pointsCount ?? 0;
   }
 
-  /** Phone pickups counted for the trip in progress. */
+  /** Phone pickups during the OPEN trip. Zero when nothing is open. */
   get pickupCount(): number {
-    return this.phonePickupCount;
+    if (this.openTripId === null || this.readPickups === null) return 0;
+    // Clamped: a source reset underneath us must never read as a negative
+    // count, which would flatter the driver rather than merely be wrong.
+    return Math.max(0, this.readPickups() - this.pickupBaseline);
   }
 
   /**
@@ -162,9 +167,22 @@ export class DriveMonitor {
     this.accelVariance = variance;
   }
 
-  /** Phone pickups counted for the trip in progress. */
-  onPhonePickupCount(count: number): void {
-    this.phonePickupCount = count;
+  /**
+   * Where the running phone-pickup count comes from.
+   *
+   * A SOURCE rather than a pushed number, because the previous shape
+   * (onPhonePickupCount) was never called by any app code: every trip Driiva
+   * has ever submitted carried a fabricated zero, and phone usage, which is
+   * 10% of the driving score, silently scored a perfect 100 every time. A
+   * source the monitor pulls from cannot be forgotten by a caller, and the
+   * absence of one is visible here rather than indistinguishable from a real
+   * zero.
+   *
+   * The detector runs for as long as detection is armed, not for as long as a
+   * screen is mounted, so the count is rebased when a trip opens.
+   */
+  setPickupSource(read: (() => number) | null): void {
+    this.readPickups = read;
   }
 
   /**
@@ -290,7 +308,7 @@ export class DriveMonitor {
       this.openedAt = tripStartMs;
       this.startedBy = startedBy;
       this.outcome = null;
-      this.phonePickupCount = 0;
+      this.pickupBaseline = this.readPickups?.() ?? 0;
       const writer = this.port.createWriter(tripId, tripStartMs);
       writer.start();
       this.writer = writer;
@@ -309,7 +327,7 @@ export class DriveMonitor {
     const tripId = this.openTripId;
     const writer = this.writer;
     const startedBy = this.startedBy;
-    const pickups = this.phonePickupCount;
+    const pickups = this.pickupCount;
     if (!tripId || !writer) {
       this.resetForNextDrive();
       return;
@@ -364,7 +382,7 @@ export class DriveMonitor {
     this.writer = null;
     this.buffer = [];
     this.startedBy = 'auto';
-    this.phonePickupCount = 0;
+    this.pickupBaseline = 0;
     this.detector.reset();
   }
 }

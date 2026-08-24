@@ -20,6 +20,7 @@
 import * as Location from 'expo-location';
 import * as SecureStore from 'expo-secure-store';
 import { Accelerometer } from 'expo-sensors';
+import { PhonePickupDetector } from './phonePickup';
 import type { SampledLocation } from '@shared/trip-capture';
 
 import { DriveMonitor, type TripPort } from './driveMonitor';
@@ -118,6 +119,14 @@ export async function setDetectionArmed(armed: boolean): Promise<void> {
 
 let foregroundWatch: Location.LocationSubscription | null = null;
 let accelSubscription: { remove: () => void } | null = null;
+/**
+ * Runs for as long as detection is armed, NOT for as long as a screen is
+ * mounted. The previous version was owned by the Drive screen, which for an
+ * automatically detected drive is precisely the screen nobody is looking at,
+ * so every trip submitted a pickup count of zero and phone usage scored a
+ * perfect 100 on every trip Driiva has ever produced.
+ */
+let pickupDetector: PhonePickupDetector | null = null;
 let heartbeat: ReturnType<typeof setInterval> | null = null;
 let magnitudes: number[] = [];
 
@@ -198,6 +207,14 @@ export async function startWatchingForDrives(): Promise<void> {
     }, HEARTBEAT_MS);
   }
 
+  if (!pickupDetector) {
+    pickupDetector = new PhonePickupDetector();
+    pickupDetector.start();
+    // A SOURCE the monitor pulls from, so it cannot be forgotten by a caller
+    // the way the old pushed count was. The monitor rebases it per trip.
+    driveMonitor.setPickupSource(() => pickupDetector?.count ?? 0);
+  }
+
   if (!accelSubscription) {
     magnitudes = [];
     Accelerometer.setUpdateInterval(Math.round(1000 / ACCEL_HZ));
@@ -220,6 +237,9 @@ export async function stopWatchingForDrives(): Promise<void> {
   }
   accelSubscription?.remove();
   accelSubscription = null;
+  pickupDetector?.stop();
+  pickupDetector = null;
+  driveMonitor.setPickupSource(null);
   magnitudes = [];
   driveMonitor.onAccelVariance(null);
   if (driveMonitor.tripId === null) {

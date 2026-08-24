@@ -388,9 +388,11 @@ describe('DriveMonitor: the readout the screen renders', () => {
   });
 
   it('carries the phone pickup count through to submission', async () => {
+    let counted = 0;
+    monitor.setPickupSource(() => counted);
     monitor.arm();
     await feed(monitor, T0, 25, 20);
-    monitor.onPhonePickupCount(3);
+    counted = 3;
     expect(monitor.pickupCount).toBe(3);
     await feed(monitor, T0 + 25_000, 190, 0);
 
@@ -456,5 +458,92 @@ describe('DriveMonitor: ending when the fixes stop', () => {
 
     expect(port.submit).not.toHaveBeenCalled();
     expect(monitor.tripId).toBe('trip-1');
+  });
+});
+
+/**
+ * PHONE PICKUPS WERE ALWAYS ZERO
+ * ===============================
+ * Caught in review, and it is the worst kind of bug this codebase has a name
+ * for: a FABRICATED INPUT. onPhonePickupCount existed, was covered by a test,
+ * and was never called by any app code. Every trip therefore submitted
+ * clientReportedPhonePickupCount 0, the server sanitised that honest-looking
+ * zero, and phone usage (10% of the driving score, SCORE_WEIGHTS.phoneUsage)
+ * silently contributed a perfect 100 to every score Driiva has ever produced.
+ *
+ * It hid because the detector was owned by the Drive SCREEN, and an
+ * automatically detected drive is exactly the case where that screen is not
+ * mounted. It hid a second time because the simulator has no accelerometer, so
+ * a real zero on the simulator looked like the right answer and I reported it
+ * as one.
+ *
+ * The fix moves the counter to where the trip lives. The monitor takes a
+ * pickup SOURCE, reads it live, and rebases at the start of each trip so one
+ * drive never inherits the previous drive's pickups.
+ */
+describe('DriveMonitor: phone pickups reach the trip', () => {
+  it('submits zero when there is no pickup source at all, rather than pretending', async () => {
+    monitor.arm();
+    await feed(monitor, T0, 25, 20);
+    await feed(monitor, T0 + 25_000, 190, 0);
+
+    expect(port.submit).toHaveBeenCalledWith('trip-1', expect.objectContaining({ phonePickupCount: 0 }));
+  });
+
+  it('submits what the source actually counted during the trip', async () => {
+    let counted = 0;
+    monitor.setPickupSource(() => counted);
+    monitor.arm();
+    await feed(monitor, T0, 25, 20);
+    counted = 4;
+    await feed(monitor, T0 + 25_000, 190, 0);
+
+    expect(port.submit).toHaveBeenCalledWith('trip-1', expect.objectContaining({ phonePickupCount: 4 }));
+  });
+
+  it('submits zero when the source ran and genuinely saw nothing', async () => {
+    monitor.setPickupSource(() => 0);
+    monitor.arm();
+    await feed(monitor, T0, 25, 20);
+    await feed(monitor, T0 + 25_000, 190, 0);
+
+    expect(port.submit).toHaveBeenCalledWith('trip-1', expect.objectContaining({ phonePickupCount: 0 }));
+  });
+
+  it('rebases at the start of a trip so one drive never inherits the last one', async () => {
+    let counted = 7; // the source has been running all day
+    monitor.setPickupSource(() => counted);
+    monitor.arm();
+    await feed(monitor, T0, 25, 20);
+    counted = 9; // two pickups during THIS drive
+    await feed(monitor, T0 + 25_000, 190, 0);
+
+    expect(port.submit).toHaveBeenCalledWith('trip-1', expect.objectContaining({ phonePickupCount: 2 }));
+  });
+
+  it('reads the live count while the trip is open, for the screen', async () => {
+    let counted = 3;
+    monitor.setPickupSource(() => counted);
+    monitor.arm();
+    await feed(monitor, T0, 25, 20);
+    counted = 6;
+
+    expect(monitor.pickupCount).toBe(3);
+  });
+
+  it('never reports a negative count if the source is reset under it', async () => {
+    let counted = 5;
+    monitor.setPickupSource(() => counted);
+    monitor.arm();
+    await feed(monitor, T0, 25, 20);
+    counted = 0;
+
+    expect(monitor.pickupCount).toBe(0);
+  });
+
+  it('reports nothing when no trip is open', () => {
+    monitor.setPickupSource(() => 12);
+
+    expect(monitor.pickupCount).toBe(0);
   });
 });
