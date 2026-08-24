@@ -58,6 +58,8 @@ export interface PointWriterPort {
   }>;
   readonly pointsCount: number;
   readonly distance: number;
+  /** Duration of the stored trace, still known when the final flush fails. */
+  readonly durationSeconds: number;
   readonly lastAcceptedSample: SampledLocation | null;
 }
 
@@ -69,7 +71,14 @@ export interface TripPort {
 }
 
 /** What happened to the last journey, for the screen to state plainly. */
-export type MonitorOutcome = null | 'submitted' | 'not_a_drive' | 'submit_failed' | 'start_failed';
+export type MonitorOutcome =
+  | null
+  | 'submitted'
+  | 'not_a_drive'
+  | 'submit_failed'
+  | 'start_failed'
+  /** A trip opened but no fix was ever accepted, so there is nothing to score. */
+  | 'nothing_captured';
 
 export class DriveMonitor {
   private readonly port: TripPort;
@@ -81,7 +90,16 @@ export class DriveMonitor {
   private startedBy: 'auto' | 'manual' = 'auto';
   private accelVariance: number | null = null;
   private outcome: MonitorOutcome = null;
-  private phonePickupCount = 0;
+  private readPickups: (() => number) | null = null;
+  /** Source reading at the moment the open trip began, so counts do not carry over. */
+  private pickupBaseline = 0;
+  /**
+   * Set synchronously the instant an open begins, and cleared only when it
+   * finishes. The queue orders the work; this closes the await gap INSIDE it,
+   * where two callers could otherwise both see openTripId still null while
+   * port.startTrip was in flight and open two trips for one drive.
+   */
+  private opening = false;
   private openedAt: number | null = null;
   private queue: Promise<void> = Promise.resolve();
 
@@ -129,9 +147,12 @@ export class DriveMonitor {
     return this.writer?.pointsCount ?? 0;
   }
 
-  /** Phone pickups counted for the trip in progress. */
+  /** Phone pickups during the OPEN trip. Zero when nothing is open. */
   get pickupCount(): number {
-    return this.phonePickupCount;
+    if (this.openTripId === null || this.readPickups === null) return 0;
+    // Clamped: a source reset underneath us must never read as a negative
+    // count, which would flatter the driver rather than merely be wrong.
+    return Math.max(0, this.readPickups() - this.pickupBaseline);
   }
 
   /**
@@ -162,9 +183,22 @@ export class DriveMonitor {
     this.accelVariance = variance;
   }
 
-  /** Phone pickups counted for the trip in progress. */
-  onPhonePickupCount(count: number): void {
-    this.phonePickupCount = count;
+  /**
+   * Where the running phone-pickup count comes from.
+   *
+   * A SOURCE rather than a pushed number, because the previous shape
+   * (onPhonePickupCount) was never called by any app code: every trip Driiva
+   * has ever submitted carried a fabricated zero, and phone usage, which is
+   * 10% of the driving score, silently scored a perfect 100 every time. A
+   * source the monitor pulls from cannot be forgotten by a caller, and the
+   * absence of one is visible here rather than indistinguishable from a real
+   * zero.
+   *
+   * The detector runs for as long as detection is armed, not for as long as a
+   * screen is mounted, so the count is rebased when a trip opens.
+   */
+  setPickupSource(read: (() => number) | null): void {
+    this.readPickups = read;
   }
 
   /**
@@ -232,9 +266,22 @@ export class DriveMonitor {
     }
   }
 
-  /** The driver pressed start. Opens a trip now, without waiting for detection. */
+  /**
+   * The driver pressed start. Opens a trip now, without waiting for detection.
+   *
+   * Routed through the SAME queue as add(), so a tap cannot interleave with a
+   * queued fix that is already partway through opening a trip. Without this a
+   * driver who tapped at the wrong moment got two trips for one drive, and the
+   * loser was stranded in 'recording' with nothing able to close it.
+   */
   async startManually(at: SampledLocation): Promise<void> {
-    if (this.openTripId !== null) return;
+    const work = this.queue.then(() => this.doStartManually(at)).catch(() => undefined);
+    this.queue = work;
+    await work;
+  }
+
+  private async doStartManually(at: SampledLocation): Promise<void> {
+    if (this.openTripId !== null || this.opening) return;
     const opened = await this.open(at, 'manual', at.timestamp);
     if (opened) this.writer?.add(at);
   }
@@ -263,8 +310,8 @@ export class DriveMonitor {
   }
 
   private async openTrip(since: number): Promise<void> {
-    // Never a second trip over an open one.
-    if (this.openTripId !== null) return;
+    // Never a second trip over an open one, or over one being opened.
+    if (this.openTripId !== null || this.opening) return;
 
     const backfill = this.buffer.filter((s) => s.timestamp >= since);
     const first = backfill[0] ?? this.buffer[this.buffer.length - 1];
@@ -284,13 +331,14 @@ export class DriveMonitor {
     startedBy: 'auto' | 'manual',
     tripStartMs: number,
   ): Promise<boolean> {
+    this.opening = true;
     try {
       const tripId = await this.port.startTrip({ lat: at.latitude, lng: at.longitude });
       this.openTripId = tripId;
       this.openedAt = tripStartMs;
       this.startedBy = startedBy;
       this.outcome = null;
-      this.phonePickupCount = 0;
+      this.pickupBaseline = this.readPickups?.() ?? 0;
       const writer = this.port.createWriter(tripId, tripStartMs);
       writer.start();
       this.writer = writer;
@@ -302,6 +350,8 @@ export class DriveMonitor {
       this.outcome = 'start_failed';
       this.resetForNextDrive();
       return false;
+    } finally {
+      this.opening = false;
     }
   }
 
@@ -309,7 +359,7 @@ export class DriveMonitor {
     const tripId = this.openTripId;
     const writer = this.writer;
     const startedBy = this.startedBy;
-    const pickups = this.phonePickupCount;
+    const pickups = this.pickupCount;
     if (!tripId || !writer) {
       this.resetForNextDrive();
       return;
@@ -320,18 +370,31 @@ export class DriveMonitor {
     try {
       totals = await writer.stop();
     } catch {
+      // The flush failed, not the measurement. The writer still knows how long
+      // its trace covers, and filling in a zero here would describe a trip that
+      // covered real ground in no time at all.
       totals = {
         pointsCount: writer.pointsCount,
         distanceMeters: writer.distance,
-        durationSeconds: 0,
+        durationSeconds: writer.durationSeconds,
         rejectedPoints: 0,
         droppedPoints: 0,
       };
     }
 
+    // No accepted fix means no end position and nothing to score. The previous
+    // code wrote 0,0, which is a real place in the Gulf of Guinea and which the
+    // server cannot tell apart from a measurement.
+    if (!last) {
+      await this.port.discard(tripId, 'cancelled').catch(() => undefined);
+      this.outcome = 'nothing_captured';
+      this.resetForNextDrive();
+      return;
+    }
+
     try {
       await this.port.submit(tripId, {
-        end: { lat: last?.latitude ?? 0, lng: last?.longitude ?? 0 },
+        end: { lat: last.latitude, lng: last.longitude },
         distanceMeters: totals.distanceMeters,
         pointsCount: totals.pointsCount,
         durationSeconds: totals.durationSeconds,
@@ -364,7 +427,7 @@ export class DriveMonitor {
     this.writer = null;
     this.buffer = [];
     this.startedBy = 'auto';
-    this.phonePickupCount = 0;
+    this.pickupBaseline = 0;
     this.detector.reset();
   }
 }

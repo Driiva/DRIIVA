@@ -20,6 +20,7 @@
 import * as Location from 'expo-location';
 import * as SecureStore from 'expo-secure-store';
 import { Accelerometer } from 'expo-sensors';
+import { PhonePickupDetector } from './phonePickup';
 import type { SampledLocation } from '@shared/trip-capture';
 
 import { DriveMonitor, type TripPort } from './driveMonitor';
@@ -31,6 +32,8 @@ import {
 } from './trips';
 import {
   BACKGROUND_LOCATION_TASK,
+  hasBackgroundLocationPermission,
+  reportBackgroundCaptureUnavailable,
   resetBackgroundCaptureHealth,
   setActiveWriter,
   startBackgroundLocationUpdates,
@@ -47,6 +50,13 @@ const ARMED_KEY = 'driiva.drive-detection.armed';
  */
 const ACCEL_HZ = 5;
 const ACCEL_WINDOW = ACCEL_HZ * 5;
+
+// TODO (reviewer finding 7, deferred): the accelerometer runs at 5 Hz for as
+// long as detection is armed, which is all day, and its only job while IDLE is
+// to shorten the start hold from 20 s to 10 s. That is a poor trade for a
+// battery. Drop to a low duty cycle (or off) while IDLE and raise it once the
+// detector reaches CANDIDATE.
+
 
 /** Variance of accelerometer magnitude over the window, in g squared. */
 function variance(values: readonly number[]): number | null {
@@ -118,6 +128,14 @@ export async function setDetectionArmed(armed: boolean): Promise<void> {
 
 let foregroundWatch: Location.LocationSubscription | null = null;
 let accelSubscription: { remove: () => void } | null = null;
+/**
+ * Runs for as long as detection is armed, NOT for as long as a screen is
+ * mounted. The previous version was owned by the Drive screen, which for an
+ * automatically detected drive is precisely the screen nobody is looking at,
+ * so every trip submitted a pickup count of zero and phone usage scored a
+ * perfect 100 on every trip Driiva has ever produced.
+ */
+let pickupDetector: PhonePickupDetector | null = null;
 let heartbeat: ReturnType<typeof setInterval> | null = null;
 let magnitudes: number[] = [];
 
@@ -184,9 +202,18 @@ export async function startWatchingForDrives(): Promise<void> {
     });
   }
 
-  await startBackgroundLocationUpdates().catch((err) =>
-    console.warn('[driveMonitor] background updates unavailable', err),
-  );
+  // Background capture is what keeps a drive alive once the app is not in the
+  // foreground. If it cannot run, the driver has to be told, because the
+  // alternative is a screen saying "Watching for your next drive" over a phone
+  // that will notice nothing the moment it locks. A console.warn told nobody.
+  if (!(await hasBackgroundLocationPermission().catch(() => false))) {
+    reportBackgroundCaptureUnavailable('Always location permission not granted');
+  } else {
+    await startBackgroundLocationUpdates().catch((err) => {
+      console.warn('[driveMonitor] background updates unavailable', err);
+      reportBackgroundCaptureUnavailable(String(err));
+    });
+  }
 
   if (!heartbeat) {
     // Without this a drive never ends once the fixes dry up, which is what a
@@ -196,6 +223,14 @@ export async function startWatchingForDrives(): Promise<void> {
     heartbeat = setInterval(() => {
       void driveMonitor.tick(Date.now());
     }, HEARTBEAT_MS);
+  }
+
+  if (!pickupDetector) {
+    pickupDetector = new PhonePickupDetector();
+    pickupDetector.start();
+    // A SOURCE the monitor pulls from, so it cannot be forgotten by a caller
+    // the way the old pushed count was. The monitor rebases it per trip.
+    driveMonitor.setPickupSource(() => pickupDetector?.count ?? 0);
   }
 
   if (!accelSubscription) {
@@ -209,23 +244,52 @@ export async function startWatchingForDrives(): Promise<void> {
   }
 }
 
-/** Stops watching. A trip already open is left to finish on its own terms. */
+/**
+ * Stops watching for NEW drives.
+ *
+ * A trip already open is NOT abandoned. The heartbeat is what ends a drive when
+ * the fixes dry up, so tearing it down while a trip was open left that trip in
+ * 'recording' with nothing able to close it, which is the orphan shape that had
+ * to be cleaned up by hand twice during the simulator proof. The sink, the
+ * background updates and the heartbeat all stay until the trip is finished.
+ */
 export async function stopWatchingForDrives(): Promise<void> {
   driveMonitor.disarm();
   foregroundWatch?.remove();
   foregroundWatch = null;
+
+  if (driveMonitor.tripId !== null) {
+    // Leave the machinery that can still close this trip running. The monitor
+    // is disarmed, so no NEW drive can open behind it.
+    return;
+  }
+
   if (heartbeat) {
     clearInterval(heartbeat);
     heartbeat = null;
   }
   accelSubscription?.remove();
   accelSubscription = null;
+  pickupDetector?.stop();
+  pickupDetector = null;
+  driveMonitor.setPickupSource(null);
   magnitudes = [];
   driveMonitor.onAccelVariance(null);
-  if (driveMonitor.tripId === null) {
-    setActiveWriter(null);
-    await stopBackgroundLocationUpdates().catch(() => undefined);
+  setActiveWriter(null);
+  await stopBackgroundLocationUpdates().catch(() => undefined);
+}
+
+/**
+ * Sign-out, or the app going away for good. An open trip cannot be left to a
+ * monitor that is about to lose its user: end it first so it is submitted or
+ * discarded honestly, rather than stranded in 'recording'.
+ */
+export async function finishAnyOpenDriveAndStop(): Promise<void> {
+  if (driveMonitor.tripId !== null) {
+    await driveMonitor.stopManually().catch(() => undefined);
   }
+  driveMonitor.disarm();
+  await stopWatchingForDrives();
 }
 
 export { BACKGROUND_LOCATION_TASK };

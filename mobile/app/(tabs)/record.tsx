@@ -45,7 +45,6 @@ import { C, T, S, R, FS, LH, alpha, RGB, scoreColor } from '@/components/ui/them
 import { RefundMoment } from '@/components/RefundMoment';
 import { useAuth } from '@/contexts/AuthContext';
 import { firestore, isExpoGo } from '@/lib/firebase';
-import { PhonePickupDetector } from '@/lib/phonePickup';
 import {
   getBackgroundCaptureHealth,
   subscribeBackgroundCaptureHealth,
@@ -238,7 +237,6 @@ export default function Drive() {
   const [lastDrive, setLastDrive] = useState<LastDrive | null>(null);
 
   const tripStartedAt = useRef<number | null>(null);
-  const pickupDetector = useRef<PhonePickupDetector | null>(null);
   const scoreWatch = useRef<(() => void) | null>(null);
   const baseline = useRef<{ score: number | null; premiumCents: number | null }>({
     score: null,
@@ -283,17 +281,13 @@ export default function Drive() {
         // trip that is when the driver set off, not when detection became sure
         // and not when this screen happened to mount.
         tripStartedAt.current = driveMonitor.tripStartedAt ?? Date.now();
-        pickupDetector.current = new PhonePickupDetector();
-        pickupDetector.current.start();
         void captureBaseline();
       }
       if (!open && tripStartedAt.current !== null) {
-        const count = pickupDetector.current?.stop() ?? 0;
-        pickupDetector.current = null;
         tripStartedAt.current = null;
         setElapsed(0);
         setDistanceMeters(0);
-        setPickups(count);
+        setPickups(0);
         onTripClosed(openId);
       }
       if (open) {
@@ -326,6 +320,10 @@ export default function Drive() {
       const outcome = driveMonitor.lastOutcome;
       if (outcome === 'not_a_drive') {
         setNotice('Not counted. That did not look like a drive.');
+        return;
+      }
+      if (outcome === 'nothing_captured') {
+        setNotice('That drive could not be recorded. No location fixes came through.');
         return;
       }
       if (outcome === 'submit_failed') {
@@ -398,8 +396,9 @@ export default function Drive() {
       setSpeedMps(last ? last.speed : null);
       setAccuracyMeters(last ? last.accuracy : null);
       setDistanceMeters(driveMonitor.distanceMeters);
-      const live = pickupDetector.current;
-      if (live) setPickups(driveMonitor.pickupCount);
+      // From the monitor, which owns the detector now. The screen used to own
+      // it, which meant an automatic drive counted nothing at all.
+      setPickups(driveMonitor.pickupCount);
     }, 1000);
     return () => clearInterval(id);
   }, []);
