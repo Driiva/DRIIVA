@@ -48,6 +48,9 @@ function real(p) {
   }
 }
 
+// Only directories that exist. On EAS there is no repo-root node_modules
+// (dependencies are installed in mobile/ only), and a watch folder that does
+// not exist fails the bundle before a single module is read.
 config.watchFolders = [
   ...new Set([
     ...(config.watchFolders ?? []),
@@ -58,7 +61,7 @@ config.watchFolders = [
     real(path.resolve(projectRoot, 'node_modules')),
     real(path.resolve(repoRoot, 'node_modules')),
   ]),
-];
+].filter((dir) => fs.existsSync(dir));
 
 /**
  * SYMLINKED DEPENDENCIES, WHICH IS HOW EVERY WORKTREE IN THIS REPO IS SET UP.
@@ -125,10 +128,12 @@ if (symlinkedModuleRoots.length > 0) {
 // `expo export` fail to resolve it the moment a screen imported @driiva/contracts,
 // while tsc stayed clean because TypeScript resolves it from the repo root.
 // Both roots are searched explicitly.
+// zod (imported by packages/contracts) is a direct dependency of mobile so the
+// EAS build, which installs mobile/ alone, can resolve it without a root tree.
 config.resolver.nodeModulesPaths = [
   path.resolve(projectRoot, 'node_modules'),
   path.resolve(repoRoot, 'node_modules'),
-];
+].filter((dir) => fs.existsSync(dir));
 
 config.resolver.extraNodeModules = {
   ...(config.resolver.extraNodeModules ?? {}),
