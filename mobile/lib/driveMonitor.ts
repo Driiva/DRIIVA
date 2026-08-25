@@ -102,6 +102,9 @@ export class DriveMonitor {
   private opening = false;
   private openedAt: number | null = null;
   private queue: Promise<void> = Promise.resolve();
+  private motionSink: ((needed: boolean) => void) | null = null;
+  /** Last value reported to the sink, so a fix a second cannot restart a sensor. */
+  private motionReported = false;
 
   constructor(port: TripPort) {
     this.port = port;
@@ -167,6 +170,57 @@ export class DriveMonitor {
     return this.openedAt;
   }
 
+  /**
+   * Whether the accelerometer is currently earning its battery.
+   *
+   * It is worth running for exactly two jobs, and neither of them exists
+   * between drives. The gait check only shortens the start hold once a
+   * candidate has appeared, and the phone-pickup count is rebased when a trip
+   * opens, so every pickup counted before that is discarded. Left on from
+   * arming to disarming it therefore ran at 5 Hz all day to produce nothing
+   * anybody reads.
+   *
+   * A TRIP OPEN COUNTS, NOT JUST A DETECTOR OUT OF IDLE. A manually started
+   * trip deliberately bypasses detection, so the detector sits at 'idle' for
+   * its whole length; gating on the detector's state alone would mean a driver
+   * who pressed start got no pickup counting at all, which is the fabricated
+   * zero `cd35366` fixed, reintroduced by a different door.
+   */
+  get needsMotionSensing(): boolean {
+    return this.openTripId !== null || this.opening || this.detector.state !== 'idle';
+  }
+
+  /**
+   * Where the "run the accelerometer now" instruction goes.
+   *
+   * The decision lives here because this file is unit-tested and the native
+   * wiring in lib/driveMonitorInstance.ts is proved on a simulator. Called
+   * only on a CHANGE, and called once on registration so a sink attached
+   * mid-trip is told what is already true rather than assuming a sensor it
+   * cannot see is off.
+   */
+  setMotionSensingSink(sink: ((needed: boolean) => void) | null): void {
+    this.motionSink = sink;
+    this.motionReported = false;
+    if (sink) this.syncMotionSensing();
+  }
+
+  /**
+   * Never throws. This runs off the same path as a location fix, and a monitor
+   * that dies because a sensor could not be started stops noticing drives for
+   * the rest of the day with nothing telling the driver.
+   */
+  private syncMotionSensing(): void {
+    const needed = this.needsMotionSensing;
+    if (needed === this.motionReported) return;
+    this.motionReported = needed;
+    try {
+      this.motionSink?.(needed);
+    } catch {
+      // A sensor that will not start is not a reason to lose the drive.
+    }
+  }
+
   arm(): void {
     this.armed = true;
   }
@@ -176,6 +230,7 @@ export class DriveMonitor {
     this.armed = false;
     this.buffer = [];
     if (this.openTripId === null) this.detector.reset();
+    this.syncMotionSensing();
   }
 
   /** Latest accelerometer variance, used only to corroborate a start. */
@@ -227,16 +282,28 @@ export class DriveMonitor {
    * drive, never open one.
    */
   async tick(now: number): Promise<void> {
-    if (this.openTripId === null) return;
-    // A manual trip is the driver's to end.
-    if (this.startedBy === 'manual') return;
+    try {
+      if (this.openTripId === null) return;
+      // A manual trip is the driver's to end.
+      if (this.startedBy === 'manual') return;
 
-    const event = this.detector.tick(now);
-    if (event.type === 'drive_ended') await this.closeTrip();
-    else if (event.type === 'drive_discarded') await this.discardTrip();
+      const event = this.detector.tick(now);
+      if (event.type === 'drive_ended') await this.closeTrip();
+      else if (event.type === 'drive_discarded') await this.discardTrip();
+    } finally {
+      this.syncMotionSensing();
+    }
   }
 
   async onLocation(sample: SampledLocation): Promise<void> {
+    try {
+      await this.handleLocation(sample);
+    } finally {
+      this.syncMotionSensing();
+    }
+  }
+
+  private async handleLocation(sample: SampledLocation): Promise<void> {
     // A trip in progress always gets the fix, whether detection opened it or
     // the driver did. The writer's own gate decides whether to keep it.
     if (this.writer) this.writer.add(sample);
@@ -281,15 +348,23 @@ export class DriveMonitor {
   }
 
   private async doStartManually(at: SampledLocation): Promise<void> {
-    if (this.openTripId !== null || this.opening) return;
-    const opened = await this.open(at, 'manual', at.timestamp);
-    if (opened) this.writer?.add(at);
+    try {
+      if (this.openTripId !== null || this.opening) return;
+      const opened = await this.open(at, 'manual', at.timestamp);
+      if (opened) this.writer?.add(at);
+    } finally {
+      this.syncMotionSensing();
+    }
   }
 
   /** The driver pressed stop. */
   async stopManually(): Promise<void> {
-    if (this.openTripId === null) return;
-    await this.closeTrip();
+    try {
+      if (this.openTripId === null) return;
+      await this.closeTrip();
+    } finally {
+      this.syncMotionSensing();
+    }
   }
 
   private toDetectionSample(sample: SampledLocation): DetectionSample {

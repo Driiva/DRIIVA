@@ -51,13 +51,6 @@ const ARMED_KEY = 'driiva.drive-detection.armed';
 const ACCEL_HZ = 5;
 const ACCEL_WINDOW = ACCEL_HZ * 5;
 
-// TODO (reviewer finding 7, deferred): the accelerometer runs at 5 Hz for as
-// long as detection is armed, which is all day, and its only job while IDLE is
-// to shorten the start hold from 20 s to 10 s. That is a poor trade for a
-// battery. Drop to a low duty cycle (or off) while IDLE and raise it once the
-// detector reaches CANDIDATE.
-
-
 /** Variance of accelerometer magnitude over the window, in g squared. */
 function variance(values: readonly number[]): number | null {
   if (values.length < ACCEL_WINDOW) return null;
@@ -129,8 +122,8 @@ export async function setDetectionArmed(armed: boolean): Promise<void> {
 let foregroundWatch: Location.LocationSubscription | null = null;
 let accelSubscription: { remove: () => void } | null = null;
 /**
- * Runs for as long as detection is armed, NOT for as long as a screen is
- * mounted. The previous version was owned by the Drive screen, which for an
+ * Runs for as long as the MONITOR asks for it, NOT for as long as a screen is
+ * mounted. The version before that was owned by the Drive screen, which for an
  * automatically detected drive is precisely the screen nobody is looking at,
  * so every trip submitted a pickup count of zero and phone usage scored a
  * perfect 100 on every trip Driiva has ever produced.
@@ -138,6 +131,57 @@ let accelSubscription: { remove: () => void } | null = null;
 let pickupDetector: PhonePickupDetector | null = null;
 let heartbeat: ReturnType<typeof setInterval> | null = null;
 let magnitudes: number[] = [];
+
+/**
+ * THE ACCELEROMETER'S DUTY CYCLE.
+ *
+ * Both listeners go up and down together, on the monitor's instruction, rather
+ * than running from arming to disarming. That was 5 Hz all day for two jobs
+ * that only exist once a drive is in prospect: the gait check shortens the
+ * start hold, and the pickup count is rebased when a trip opens, so anything
+ * counted before that is thrown away. `driveMonitor.needsMotionSensing` is
+ * where the decision lives and where it is tested.
+ *
+ * Idempotent in both directions: the sink is only called on a change, but a
+ * second call must not leave two listeners on one sensor or throw on teardown.
+ *
+ * The gait window is COLD each time, so variance reads null for the first five
+ * seconds of a candidate. That is honest rather than convenient - absent is
+ * not agreement, so a drive that starts before the window fills waits the full
+ * hold instead of the short one, and there is a test for the short hold still
+ * being reached once the window arrives.
+ */
+function startMotionSensors(): void {
+  if (!accelSubscription) {
+    magnitudes = [];
+    Accelerometer.setUpdateInterval(Math.round(1000 / ACCEL_HZ));
+    accelSubscription = Accelerometer.addListener(({ x, y, z }) => {
+      magnitudes.push(Math.sqrt(x * x + y * y + z * z));
+      if (magnitudes.length > ACCEL_WINDOW) magnitudes.shift();
+      driveMonitor.onAccelVariance(variance(magnitudes));
+    });
+  }
+
+  if (!pickupDetector) {
+    pickupDetector = new PhonePickupDetector();
+    pickupDetector.start();
+    // A SOURCE the monitor pulls from, so it cannot be forgotten by a caller
+    // the way the old pushed count was. The monitor rebases it per trip.
+    driveMonitor.setPickupSource(() => pickupDetector?.count ?? 0);
+  }
+}
+
+function stopMotionSensors(): void {
+  accelSubscription?.remove();
+  accelSubscription = null;
+  magnitudes = [];
+  // Null, not a stale last reading: an absent sensor must not go on
+  // corroborating drive starts with a number nothing is measuring.
+  driveMonitor.onAccelVariance(null);
+  pickupDetector?.stop();
+  pickupDetector = null;
+  driveMonitor.setPickupSource(null);
+}
 
 /**
  * How often the monitor is asked to reconsider a drive with no new fix.
@@ -225,23 +269,13 @@ export async function startWatchingForDrives(): Promise<void> {
     }, HEARTBEAT_MS);
   }
 
-  if (!pickupDetector) {
-    pickupDetector = new PhonePickupDetector();
-    pickupDetector.start();
-    // A SOURCE the monitor pulls from, so it cannot be forgotten by a caller
-    // the way the old pushed count was. The monitor rebases it per trip.
-    driveMonitor.setPickupSource(() => pickupDetector?.count ?? 0);
-  }
-
-  if (!accelSubscription) {
-    magnitudes = [];
-    Accelerometer.setUpdateInterval(Math.round(1000 / ACCEL_HZ));
-    accelSubscription = Accelerometer.addListener(({ x, y, z }) => {
-      magnitudes.push(Math.sqrt(x * x + y * y + z * z));
-      if (magnitudes.length > ACCEL_WINDOW) magnitudes.shift();
-      driveMonitor.onAccelVariance(variance(magnitudes));
-    });
-  }
+  // The monitor decides when the accelerometer is worth its battery; this only
+  // does as it is told. Registering the sink reports the current answer, so a
+  // restart with a trip somehow still open brings the sensors straight back up.
+  driveMonitor.setMotionSensingSink((needed) => {
+    if (needed) startMotionSensors();
+    else stopMotionSensors();
+  });
 }
 
 /**
@@ -268,13 +302,10 @@ export async function stopWatchingForDrives(): Promise<void> {
     clearInterval(heartbeat);
     heartbeat = null;
   }
-  accelSubscription?.remove();
-  accelSubscription = null;
-  pickupDetector?.stop();
-  pickupDetector = null;
-  driveMonitor.setPickupSource(null);
-  magnitudes = [];
-  driveMonitor.onAccelVariance(null);
+  // disarm() has already told the sink to let the sensors go, but say it again
+  // rather than trusting an ordering: this path also runs on sign-out.
+  driveMonitor.setMotionSensingSink(null);
+  stopMotionSensors();
   setActiveWriter(null);
   await stopBackgroundLocationUpdates().catch(() => undefined);
 }
