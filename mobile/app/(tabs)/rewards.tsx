@@ -187,8 +187,9 @@ export default function Rewards() {
         </View>
 
         <Text style={styles.disclaimer}>
-          Driiva is operated by Driiva Ltd. Our insurance product is pending FCA
-          authorisation. Nothing on this screen is a binding offer.
+          Driiva is operated by Driiva Ltd, which is working towards the FCA regulatory
+          sandbox. We are not authorised and not operating under an MGA. Nothing on this
+          screen is a binding offer.
         </Text>
       </ScrollView>
     </SafeAreaView>

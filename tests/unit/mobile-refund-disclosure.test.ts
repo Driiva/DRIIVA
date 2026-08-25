@@ -75,28 +75,59 @@ describe.each(SCREENS)('%s', (screen) => {
 
 });
 
-describe('no screen claims a regulatory programme', () => {
+describe('no screen overstates the regulatory position', () => {
   /**
-   * "working towards the FCA regulatory sandbox" is a statement about entry to
-   * a specific scheme, and it was on THREE onboarding screens, not one. The
-   * approved status line is the only one allowed: not authorised, product
-   * pending FCA authorisation.
+   * THIS SUITE USED TO ENFORCE THE LIE.
    *
-   * Swept across the whole app rather than the two refund screens, because the
-   * claim had already spread to screens with no pound figure on them at all.
+   * It asserted that no onboarding screen may say "regulatory sandbox", on the
+   * stated grounds that the approved line was "product pending FCA
+   * authorisation". That is backwards. "Pending FCA authorisation" is the
+   * STRONGER claim: it says an application is in flight and awaiting a
+   * decision, which is not true. The agreed position is the weaker and correct
+   * one, working towards the sandbox, not authorised, not under an MGA.
+   *
+   * The test and the revert arrived in the same commit (418e76b), so the four
+   * onboarding screens reconciled by aaaec97 were pushed back to the false
+   * wording and then held there by a green test. A characterisation test that
+   * pins the wrong copy does not protect the copy, it protects the bug.
+   *
+   * Inverted here: the banned string is the overstatement, and any screen that
+   * raises the FCA at all has to frame it the agreed way.
    */
   const files = onboardingScreens();
 
   it('finds the onboarding screens to inspect', () => {
     // Assert on arrival before asserting on content: an empty list would make
-    // the check below pass while proving nothing.
+    // the checks below pass while proving nothing.
     expect(files.length).toBeGreaterThan(10);
   });
 
-  it.each(files)('%s', (file) => {
-    expect(readFileSync(join(MOBILE, 'app/onboarding', file), 'utf8')).not.toMatch(
-      /regulatory sandbox/i,
+  /**
+   * Copy as the screen renders it, not as the file stores it.
+   *
+   * Comments come out because "// FCA DISCLOSURE REQUIRED" is a note to a
+   * developer, not a claim to a driver, and the same rule already applies to
+   * the pound-figure laws above: a law that punishes its own explanation
+   * trains people to delete the explanation.
+   *
+   * Whitespace collapses because JSX wraps. The agreed sentence is one
+   * sentence to a reader and three lines to a file, and matching the raw
+   * source would fail on the correctly-worded screens while passing anything
+   * short enough to fit a line, which is precisely backwards.
+   */
+  const renderedCopy = (file: string) =>
+    codeOnly(readFileSync(join(MOBILE, 'app/onboarding', file), 'utf8')).replace(/\s+/g, ' ');
+
+  it.each(files)('%s does not claim an application is pending', (file) => {
+    expect(renderedCopy(file)).not.toMatch(
+      /pending FCA|awaiting FCA|FCA application|application phase/i,
     );
+  });
+
+  it.each(files)('%s frames the FCA the agreed way, if it raises it at all', (file) => {
+    const copy = renderedCopy(file);
+    if (!/\bFCA\b/.test(copy)) return;
+    expect(copy).toMatch(/working towards the FCA regulatory sandbox/i);
   });
 });
 
