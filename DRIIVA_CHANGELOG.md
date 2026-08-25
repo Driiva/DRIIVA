@@ -5,6 +5,40 @@
 
 ## Entries
 
+### 2026-08-25 - The accelerometer stops running all day
+
+`4af6b81` on `nightly/2026-08-25`. Review finding 7 off the Fable day sprint, mobile only.
+
+- **What changed** - two accelerometer listeners, the gait check in
+  `lib/driveMonitorInstance.ts` and `PhonePickupDetector`, were started the moment detection was
+  armed and left running until it was disarmed, at 5 Hz, every waking hour. They now go up when a
+  drive is in prospect and down again when it is not. `DriveMonitor.needsMotionSensing` is the
+  decision and `setMotionSensingSink` carries it to the native wiring, which holds no logic of its
+  own because it is the half that gets proved on a simulator rather than in CI.
+- **Why** - between drives neither listener produces anything anybody reads. The gait check only
+  shortens the start hold from 20s to 10s once a candidate has appeared, and the phone-pickup count
+  is rebased when a trip opens, so every pickup counted beforehand is discarded by design. The
+  battery was paying for two jobs that do not exist yet.
+- **Why both, not just the gait one** - the finding names the gait check, but fixing that alone
+  would have bought nothing measurable. `expo-sensors` shares one native sensor across listeners at
+  the shortest requested interval, so the pickup detector at 200ms holds the hardware awake on its
+  own.
+- **The trap** - gating on the detector's state alone is wrong and quietly so. A manual trip
+  deliberately bypasses detection, so the detector sits at `idle` for its whole length; a driver who
+  pressed start would have had no pickup counting at all, which is the fabricated zero `cd35366`
+  fixed arriving back through a different door. `needsMotionSensing` counts an open trip as well.
+- **Left honest** - the gait window is cold at each candidate, so variance reads null for its first
+  five seconds. Absent is not agreement, so a drive that declares itself before the window fills
+  waits the full hold rather than the short one; the corroborated 10s hold is still reached once the
+  window arrives, and that is now a test rather than an assumption.
+- **Tests** - 12 new in `tests/unit/mobile-drive-monitor.test.ts`, written before the change and red
+  first. Full run 1104 passing, 1 skipped, 3 todo, up from 1092. Root `tsc` clean, `eslint` clean on
+  the three changed files, 8 of 8 mobile source laws green. `npm run gates` was not run: it needs
+  Firebase emulators, Doppler and Chrome on 9222, none of which exist in the unattended clone, and
+  it is already recorded as committed-INCOMPLETE. Mobile `tsc` is unchanged at 248 pre-existing
+  errors, all module resolution against a clone with no `mobile/node_modules`, verified identical
+  before and after.
+
 ### 2026-08-24 - Fable day: Drive becomes an instrument, and two fabricated score inputs die
 
 `feat/fable-algo` and `feat/fable-trip` merged through `feat/fable-day` to main (`5c12303`). Mobile,
