@@ -74,15 +74,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signup = useCallback(async (email: string, password: string, name: string) => {
     const { user: fbUser } = await auth().createUserWithEmailAndPassword(email, password);
     await fbUser.updateProfile({ displayName: name });
-    // Create Firestore user doc
-    await firestore().collection('users').doc(fbUser.uid).set({
-      email,
-      fullName: name,
-      displayName: name,
-      onboardingComplete: false,
-      createdAt: firestore.FieldValue.serverTimestamp(),
-      createdBy: 'mobile-app',
-    });
+    // The user doc is provisioned server-side by the provisionUserOnSignup
+    // Auth trigger, same as the web app; the doc's displayName may be null
+    // when the trigger races this updateProfile, and resolveUser falls back
+    // to the Auth profile name for exactly that case. Writing the doc from
+    // the client here too was what broke account creation on TestFlight: the
+    // payload carried no `uid` and moved `createdAt`/`createdBy`, so
+    // firestore.rules denied it whether the trigger's doc had landed yet or
+    // not, and signup threw after the Auth user already existed.
+    // tests/rules/users.test.ts pins the denial.
     track('account_created');
   }, []);
 
@@ -98,10 +98,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const markOnboardingComplete = useCallback(async () => {
     const fbUser = auth().currentUser;
     if (!fbUser) return;
-    await firestore().collection('users').doc(fbUser.uid).update({
-      onboardingComplete: true,
-      'onboarding.completedAt': firestore.FieldValue.serverTimestamp(),
-    });
+    // Merge-set rather than update: update() throws NOT_FOUND if the
+    // provisioning trigger ever failed to land the doc, which would strand
+    // the driver on the last onboarding screen with no way forward. The web
+    // client made the same call for the same reason.
+    await firestore().collection('users').doc(fbUser.uid).set(
+      {
+        onboardingComplete: true,
+        onboarding: { completedAt: firestore.FieldValue.serverTimestamp() },
+      },
+      { merge: true },
+    );
     // Emitted after the write lands, never before: an onboarding_completed
     // event recorded ahead of the gate flipping would report a funnel the
     // product did not actually deliver.

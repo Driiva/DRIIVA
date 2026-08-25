@@ -201,3 +201,103 @@ function renderHookDelays(count: number): { result: number[] } {
   render(<Probe />);
   return captured;
 }
+
+/**
+ * ─── MOBILE ──────────────────────────────────────────────────────────────────
+ *
+ * The mobile app cannot be rendered in this suite: there is no react-native
+ * transform here and the vite alias for `@` points at client/src. So the
+ * mobile primitives keep their arithmetic in a plain module with no react-native
+ * import (mobile/components/ui/motionCore.ts) and motion.tsx is the thin
+ * Reanimated shell over it.
+ *
+ * That split is not a testing convenience. The reduced-motion decision is the
+ * one thing in a motion system that a driver actually depends on, and it is the
+ * first thing lost when someone edits choreography. Keeping it in a pure
+ * function means it can be asserted rather than eyeballed in a simulator.
+ */
+import {
+  MOTION,
+  enterFrom,
+  pressFeedback,
+  staggerDelay,
+} from '../../mobile/components/ui/motionCore';
+
+describe('mobile stagger', () => {
+  it('starts the first item immediately', () => {
+    expect(staggerDelay(0, 6)).toBe(0);
+  });
+
+  it('steps by the stagger token between neighbours in a short list', () => {
+    expect(staggerDelay(1, 6) - staggerDelay(0, 6)).toBe(MOTION.stagger.step);
+  });
+
+  it('caps the total so a long list does not trickle in behind the reader', () => {
+    for (const index of [7, 20, 60]) {
+      expect(staggerDelay(index, 60)).toBeLessThanOrEqual(MOTION.stagger.cap);
+    }
+  });
+
+  it('never goes backwards as the index grows', () => {
+    let previous = -1;
+    for (let i = 0; i < 40; i++) {
+      const delay = staggerDelay(i, 40);
+      expect(delay).toBeGreaterThanOrEqual(previous);
+      previous = delay;
+    }
+  });
+
+  it('holds every item at zero when the driver asked for less motion', () => {
+    for (const index of [0, 3, 30]) {
+      expect(staggerDelay(index, 40, true)).toBe(0);
+    }
+  });
+});
+
+describe('mobile entrances', () => {
+  it('never starts from nothing: a card is already its own size before it fades', () => {
+    // scale(0) is the tell of an element that came out of nowhere. Nothing in
+    // the real world does that.
+    expect(enterFrom(false).scale).toBeGreaterThanOrEqual(0.9);
+  });
+
+  it('drops the movement but keeps the fade under reduced motion', () => {
+    const reduced = enterFrom(true);
+    expect(reduced.translateY).toBe(0);
+    expect(reduced.scale).toBe(1);
+    // Reduced motion means gentler, not absent: an opacity transition still
+    // bridges the gap between nothing and content.
+    expect(reduced.opacity).toBe(0);
+  });
+
+  it('moves upward into place, never downward', () => {
+    expect(enterFrom(false).translateY).toBeGreaterThan(0);
+  });
+});
+
+describe('mobile press feedback', () => {
+  it('is subtle: a press dips the card, it does not shrink it', () => {
+    const { scale } = pressFeedback(false);
+    expect(scale).toBeGreaterThanOrEqual(0.95);
+    expect(scale).toBeLessThan(1);
+  });
+
+  it('swaps the transform for an opacity dip under reduced motion', () => {
+    const reduced = pressFeedback(true);
+    expect(reduced.scale).toBe(1);
+    expect(reduced.opacity).toBeLessThan(1);
+  });
+
+  it('leaves opacity alone when it can use the transform', () => {
+    expect(pressFeedback(false).opacity).toBe(1);
+  });
+
+  it('keeps press feedback inside the 100-160ms band', () => {
+    expect(MOTION.duration.press).toBeGreaterThanOrEqual(100);
+    expect(MOTION.duration.press).toBeLessThanOrEqual(160);
+  });
+
+  it('keeps every entrance inside the 300ms UI budget', () => {
+    expect(MOTION.duration.enter).toBeLessThanOrEqual(300);
+  });
+});

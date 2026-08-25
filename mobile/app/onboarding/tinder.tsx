@@ -7,7 +7,7 @@ import { ProgressBar } from '@/components/onboarding/ProgressBar';
 import { ONBOARDING_TOTAL, stepNumber } from '@/lib/onboardingFlow';
 import { track } from '@/lib/analytics';
 import { SwipeCard } from '@/components/onboarding/SwipeCard';
-import { C, F, S, FS, LH, TR } from '@/components/ui/theme';
+import { C, F, S, FS, LH, TR, T } from '@/components/ui/theme';
 
 const STATEMENTS = [
   "I've driven carefully for years and never once been rewarded for it.",
@@ -75,17 +75,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headline: {
-    color: C.text.hero, fontSize: FS.xxl, fontFamily: F.bodySemiBold,
-    letterSpacing: TR.xxl, lineHeight: LH.xxl, marginBottom: 8,
+    ...T.h0,
+    color: C.text.hero, marginBottom: 8,
     alignSelf: 'flex-start',
   },
   sub: {
     color: C.text.sec, fontFamily: F.body, fontSize: FS.md,
+    lineHeight: LH.md, letterSpacing: TR.md,
     marginBottom: 36, alignSelf: 'flex-start',
   },
   cardArea: { width: '100%', alignItems: 'center' },
   hint: {
     color: C.text.mut, fontFamily: F.body, fontSize: FS.sm,
+    lineHeight: LH.sm, letterSpacing: TR.sm,
     marginTop: 24,
   },
 });

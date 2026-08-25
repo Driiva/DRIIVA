@@ -87,13 +87,33 @@ export interface TripDocument {
     createdBy: string;
     pointsCount: number;
     segmentation?: TripSegmentationSummary;
+    /**
+     * Phone-pickup count reported by the client on the recording->processing
+     * transition (M2-DEC-1 Option A, docs/rebuild/m2-dec-1-phone-usage.md).
+     * NOT locked by firestore.rules the way `events` is - it is deliberately a
+     * separate field so a client can report it without touching the
+     * server-computed events map. `events.phonePickupCount` (server-computed,
+     * authoritative) is still the field a score is read from; this is only the
+     * raw input finalizeTripFromPoints feeds into computeTripMetrics, which
+     * sanity-checks and rate-caps it before it can move a score. Optional
+     * because older/failed trips and any client that has not shipped this yet
+     * never write it.
+     */
+    clientReportedPhonePickupCount?: number;
 }
+/**
+ * Denormalized trip summary on the user doc (max 3, FIFO).
+ *
+ * UNIT CONVENTION (Wave 0, 0e): metres and seconds as integers, matching
+ * TripDocument above and packages/contracts RecentTripSummarySchema. Miles and
+ * minutes are a rendering concern only.
+ */
 export interface RecentTripSummary {
     tripId: string;
     startedAt: Timestamp;
     endedAt: Timestamp;
-    distanceMiles: number;
-    durationMinutes: number;
+    distanceMeters: number;
+    durationSeconds: number;
     score: number;
     routeSummary: string;
 }
@@ -105,7 +125,8 @@ export interface PoolShareSummary {
 }
 export interface ActivePolicySummary {
     policyId: string;
-    policyNumber: string;
+    /** Null until the insurer issues one. Never invented. */
+    policyNumber: string | null;
     status: PolicyStatus;
     premiumCents: number;
     coverageType: CoverageType;
@@ -144,16 +165,24 @@ export interface UserDocument {
 export interface PolicyDocument {
     policyId: string;
     userId: string;
-    policyNumber: string;
+    /** Null until the insurer issues one. Never invented. */
+    policyNumber: string | null;
     status: PolicyStatus;
     coverageType: CoverageType;
+    /**
+     * What the policy actually covers, as stated by whoever underwrote it.
+     * Null when nobody has. Driiva has no underwriter, so pre-launch this is
+     * null rather than a plausible set of limits: it used to be written as
+     * GBP 100,000 liability with roadside assistance on every signup, and
+     * nothing read it, so the numbers existed only to look real.
+     */
     coverageDetails: {
         liabilityLimitCents: number;
         collisionDeductibleCents: number;
         comprehensiveDeductibleCents: number;
         includesRoadside: boolean;
         includesRental: boolean;
-    };
+    } | null;
     basePremiumCents: number;
     currentPremiumCents: number;
     discountPercentage: number;
@@ -349,8 +378,12 @@ export interface AIPattern {
  * Specific driving incident flagged by AI
  */
 export interface AIIncident {
-    /** ISO 8601 timestamp or offset description */
-    timestamp: string;
+    /**
+     * WAVE H: this carried a timestamp the model invented. The analysis prompt
+     * is built from aggregate counts and percentiles, never a per-event
+     * timeline, so nothing on this path knows when an incident occurred. The
+     * field is gone rather than filled with "Unknown".
+     */
     type: IncidentType;
     severity: AIRiskLevel;
     description: string;

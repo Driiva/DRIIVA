@@ -63,6 +63,7 @@ export const LOOP_EVENTS = [
   'score_viewed',
 
   // Community
+  'community_viewed',
   'leaderboard_viewed',
   'invite_created',
   'invite_shared',

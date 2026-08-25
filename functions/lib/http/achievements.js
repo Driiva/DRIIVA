@@ -55,6 +55,17 @@ exports.seedAchievements = functions
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'Must be logged in.');
     }
+    /*
+     * This function's own docstring says "Callable by admin users only" and
+     * the code checked nothing but the presence of a session, so any signed-in
+     * user could rewrite the achievement catalogue every other user reads.
+     * The gap between the comment and the check is why it survived review.
+     */
+    const callerDoc = await db.collection('users').doc(context.auth.uid).get();
+    if (callerDoc.data()?.isAdmin !== true) {
+        functions.logger.warn('[seedAchievements] non-admin attempt', { uid: context.auth.uid });
+        throw new functions.https.HttpsError('permission-denied', 'Admins only.');
+    }
     const batch = db.batch();
     for (const def of achievements_1.ACHIEVEMENT_DEFINITIONS) {
         const ref = db.collection('achievements').doc(def.id);

@@ -18,6 +18,7 @@
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.buildProvisionedUserDoc = buildProvisionedUserDoc;
+const contracts_1 = require("@driiva/contracts");
 /**
  * Returns the Auth record's displayName verbatim, or null when it has none
  * (M1 T7 fix). Previously this derived a fallback from the email local part,
@@ -36,7 +37,7 @@ function deriveDisplayName(displayName) {
     return displayName || null;
 }
 function buildProvisionedUserDoc(input) {
-    const { uid, email, displayName, isAdmin, policyId, policyNumber, now, renewalDate } = input;
+    const { uid, email, displayName, isAdmin, now } = input;
     const doc = {
         uid,
         email,
@@ -46,13 +47,21 @@ function buildProvisionedUserDoc(input) {
         createdAt: now,
         updatedAt: now,
         drivingProfile: {
-            currentScore: 100, // Start at 100 (perfect) - decreases with bad driving.
+            // STARTING_SCORE, not a literal: the onboarding explainer and the
+            // dashboard first-run state both quote this number to the user, and a
+            // retyped copy is one that eventually disagrees with what is written
+            // here. The first scored trip is averaged with it, so the score can move
+            // up as well as down; see the constant's own documentation.
+            currentScore: contracts_1.STARTING_SCORE,
+            // The five factors start where the score starts. Leaving these at 100
+            // while the score sat at STARTING_SCORE showed a driver a breakdown of
+            // five perfect factors under a score that was not perfect.
             scoreBreakdown: {
-                speedScore: 100,
-                brakingScore: 100,
-                accelerationScore: 100,
-                corneringScore: 100,
-                phoneUsageScore: 100,
+                speedScore: contracts_1.STARTING_SCORE,
+                brakingScore: contracts_1.STARTING_SCORE,
+                accelerationScore: contracts_1.STARTING_SCORE,
+                corneringScore: contracts_1.STARTING_SCORE,
+                phoneUsageScore: contracts_1.STARTING_SCORE,
             },
             totalTrips: 0,
             totalMiles: 0,
@@ -61,14 +70,18 @@ function buildProvisionedUserDoc(input) {
             streakDays: 0,
             riskTier: 'low',
         },
-        activePolicy: {
-            policyId,
-            policyNumber,
-            status: 'pending',
-            premiumCents: 0, // Updated when a quote is generated.
-            coverageType: 'standard',
-            renewalDate,
-        },
+        // WAVE H: signing up used to create a policy. Every new user document
+        // carried an activePolicy with a sequential DRV-### number, a renewal date
+        // a year out, and a matching policies/{id} document declaring GBP 100,000
+        // of liability cover, GBP 500 and GBP 250 excesses and roadside
+        // assistance. No insurer had agreed to any of it, and Driiva holds no
+        // permission to arrange cover. A driver who signed up held a policy
+        // number for a contract that did not exist.
+        //
+        // Signing up now gets you an account. A policy appears here when an
+        // insurer issues one, written by the binding path and mirrored by the
+        // policies trigger, and not before.
+        activePolicy: null,
         poolShare: {
             currentShareCents: 0,
             contributionCents: 0,

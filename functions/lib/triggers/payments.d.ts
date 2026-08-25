@@ -9,7 +9,9 @@
  *   1. Checks whether the user already has an active Root policy.
  *   2. If not, retrieves the pending quote for this user and calls acceptInsuranceQuote.
  *   3. Updates the policy's stripeSubscriptionId in Firestore.
- *   4. Sends an FCM push notification: "Your policy is now active."
+ *   4. Tells the driver what actually happened: cover confirmed, cover still
+ *      pending, or payment taken with no cover in place. Never a blanket
+ *      "your policy is active" on the strength of a card having cleared.
  *
  * Design note: The Express server cannot call Firebase callable functions
  * directly (they require a Firebase auth context). Instead:

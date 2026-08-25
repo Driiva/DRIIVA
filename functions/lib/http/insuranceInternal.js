@@ -39,10 +39,38 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.mapRootPolicyStatus = mapRootPolicyStatus;
 exports.acceptInsuranceQuoteInternal = acceptInsuranceQuoteInternal;
 const admin = __importStar(require("firebase-admin"));
 const types_1 = require("../types");
 const db = admin.firestore();
+/**
+ * Root's policy status, mapped onto ours. Only Root saying "active" makes a
+ * policy active here.
+ *
+ * This used to be the literal `status: 'active'`, written regardless of what
+ * Root reported, so a policy Root was still holding in a pending state was
+ * recorded, rendered and pushed to the driver's phone as live cover. Anything
+ * we do not recognise is 'pending', because an unrecognised status is a status
+ * we have not verified, and the rule is that we never assert a state we have
+ * not verified.
+ */
+function mapRootPolicyStatus(rootStatus) {
+    switch ((rootStatus ?? '').toLowerCase()) {
+        case 'active':
+            return 'active';
+        case 'cancelled':
+        case 'canceled':
+            return 'cancelled';
+        case 'expired':
+        case 'lapsed':
+            return 'expired';
+        case 'suspended':
+            return 'suspended';
+        default:
+            return 'pending';
+    }
+}
 function getRootConfig() {
     const apiKey = process.env.ROOT_API_KEY;
     const productModuleKey = process.env.ROOT_PRODUCT_MODULE_KEY;
@@ -85,11 +113,25 @@ async function acceptInsuranceQuoteInternal(userId, quoteId, stripeSubscriptionI
     // Ensure Root policyholder
     let policyholderPackageId = user.rootPolicyholderId;
     if (!policyholderPackageId) {
-        const nameParts = (user.displayName || '').trim().split(/\s+/);
+        // The identity on an insurance record is the driver's or we do not create
+        // it. The old fallback was first_name "Driver", last_name "Unknown" at
+        // `${userId}@driiva.internal`, and since provisioning writes displayName
+        // null for email signups, that was the ordinary path rather than the edge
+        // case. Throwing here marks the pendingPayment failed, which now tells the
+        // driver their cover is not in place instead of leaving them to assume it
+        // is.
+        const nameParts = (user.displayName || '').trim().split(/\s+/).filter(Boolean);
+        const firstName = nameParts[0] ?? '';
+        const lastName = nameParts.slice(1).join(' ');
+        const email = (user.email || '').trim();
+        if (!firstName || !lastName || !email) {
+            throw new Error(`Cannot create a policyholder for ${userId} without a real name and email ` +
+                `(have firstName=${Boolean(firstName)}, lastName=${Boolean(lastName)}, email=${Boolean(email)})`);
+        }
         const ph = await rootApiFetch('/policyholders', 'POST', {
-            first_name: nameParts[0] || 'Driver',
-            last_name: nameParts.slice(1).join(' ') || 'Unknown',
-            email: user.email || `${userId}@driiva.internal`,
+            first_name: firstName,
+            last_name: lastName,
+            email,
             id: userId,
         });
         policyholderPackageId = ph.policyholder_id;
@@ -104,12 +146,19 @@ async function acceptInsuranceQuoteInternal(userId, quoteId, stripeSubscriptionI
     }
     // Get full policy
     const rootPolicy = await rootApiFetch(`/policies/${application.policy_id}`, 'GET');
+    // What Root actually told us, which is the only thing we are entitled to
+    // record. The policy number used to fall back to a timestamp-derived
+    // string: an invented reference, unique per millisecond, that would never
+    // match anything in the insurer's system and was pushed to the driver's
+    // phone as their policy number.
+    const policyNumber = rootPolicy.policy_number || null;
+    const status = mapRootPolicyStatus(rootPolicy.status);
     // Store in Firestore
     await db.collection(types_1.COLLECTION_NAMES.POLICIES).doc(rootPolicy.policy_id).set({
         policyId: rootPolicy.policy_id,
         userId,
-        policyNumber: rootPolicy.policy_number || `DRV-${Date.now()}`,
-        status: 'active',
+        policyNumber,
+        status,
         coverageType: storedCoverage,
         basePremiumCents: rootPolicy.monthly_premium,
         currentPremiumCents: rootPolicy.monthly_premium,
@@ -127,17 +176,19 @@ async function acceptInsuranceQuoteInternal(userId, quoteId, stripeSubscriptionI
         createdBy: userId,
         updatedBy: 'cloud-function',
     });
-    // Update user activePolicy
+    // Update user activePolicy. The denormalised copy carries the same status
+    // the policy document does, so a reader cannot pick up "active" from here
+    // while the policy itself is pending.
     await db.collection(types_1.COLLECTION_NAMES.USERS).doc(userId).update({
         activePolicy: {
             policyId: rootPolicy.policy_id,
-            policyNumber: rootPolicy.policy_number,
-            status: 'active',
+            policyNumber,
+            status,
             startDate: rootPolicy.start_date,
         },
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         updatedBy: 'cloud-function',
     });
-    return { policyId: rootPolicy.policy_id, policyNumber: rootPolicy.policy_number };
+    return { policyId: rootPolicy.policy_id, policyNumber, status };
 }
 //# sourceMappingURL=insuranceInternal.js.map

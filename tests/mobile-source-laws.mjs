@@ -84,6 +84,18 @@ function lineOf(source, index) {
  * Everything a driver could read: string literals, template-literal text and
  * JSX text nodes. Template expressions are dropped so `${a !== b}` is not
  * mistaken for a shout.
+ *
+ * The JSX-text pattern reads "text between a tag that closes and a tag that
+ * opens". TypeScript spends `<` and `>` on comparisons and arrows too, so the
+ * naive version treated operator soup as prose: in
+ *
+ *     ) : route.length >= 2 && region && MapView !== null ? (
+ *
+ * it opened at the `>` of `>=`, ran to the `<` of the next element, and
+ * reported `MapView !== null` as an exclamation mark in driver-facing copy.
+ * A closing tag's `>` is never half of `>=`, `=>`, `!=`, `<=` or `->`, so the
+ * pattern refuses those. This is not the law being relaxed: the law was
+ * reading a line no driver will ever see.
  */
 function readableStrings(source) {
   const found = [];
@@ -91,7 +103,7 @@ function readableStrings(source) {
     /'((?:[^'\\\n]|\\.)*)'/g,
     /"((?:[^"\\\n]|\\.)*)"/g,
     /`((?:[^`\\]|\\.)*)`/g,
-    />([^<>{}]*[A-Za-z][^<>{}]*)</g,
+    /(?<![=!<>-])>(?!=)([^<>{}]*[A-Za-z][^<>{}]*)</g,
   ];
   for (const pattern of patterns) {
     for (const match of source.matchAll(pattern)) {
@@ -125,8 +137,10 @@ const LAWS = [
     check(file, source) {
       const hits = [];
       for (const { text, index } of readableStrings(source)) {
-        // `!` only shouts when it follows a word or closing punctuation.
-        if (/[\w)"'.,]\s*!/.test(text)) {
+        // `!` only shouts when it follows a word or closing punctuation, and
+        // never when it is the first half of `!=` or `!==`. A comparison is
+        // not a raised voice.
+        if (/[\w)"'.,]\s*!(?!=)/.test(text)) {
           hits.push({ line: lineOf(source, index), detail: text.trim().slice(0, 60) });
         }
       }
@@ -236,7 +250,25 @@ const styles = {
 export const copy = 'Great news, your score went up!';
 export const wrong = 'A dash - an em dash \u2014 and an en dash \u2013 and a double hyphen --';
 export const badge = 'All done \u2705';
+export const Node = <Text>Nice one!</Text>;
 `;
+
+/**
+ * Run every law over ONE source string, without touching the filesystem.
+ *
+ * The suite's other entry point walks the real mobile tree, which makes it a
+ * good gate and a poor place to pin a specific shape: "the screen that used to
+ * trip this no longer does" stops being evidence the moment somebody edits
+ * that screen. This lets a test state the shape it cares about directly, in
+ * both directions, and keep proving it after the source moves on.
+ */
+export function lintSource(file, source) {
+  return LAWS.map((law) => ({
+    id: law.id,
+    title: law.title,
+    violations: law.check(file, source).map((hit) => ({ file, ...hit })),
+  }));
+}
 
 export function runMobileSourceLaws({ planted = false } = {}) {
   const files = MOBILE_DIRS.flatMap((dir) => walk(join(ROOT, dir))).map((f) =>

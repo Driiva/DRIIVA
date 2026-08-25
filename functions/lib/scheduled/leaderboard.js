@@ -226,9 +226,13 @@ function getPreviousPeriod(periodType) {
     const now = new Date();
     switch (periodType) {
         case 'weekly':
-            const prevWeekDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-            const weekNum = (0, helpers_1.getWeekNumber)(prevWeekDate);
-            return `${prevWeekDate.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+            // Wave B: this derived the ID as calendar year + ISO week number, the
+            // exact divergence Wave 0 fixed in getCurrentPeriodForType but which
+            // survived here. It only feeds the movement indicators, so the failure
+            // is quiet: around New Year the previous-week lookup misses, every
+            // `change` silently becomes 0, and the board looks frozen rather than
+            // broken. One derivation, shared with the client.
+            return (0, helpers_1.getIsoWeekPeriod)(new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000));
         case 'monthly':
             const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
             return `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, '0')}`;

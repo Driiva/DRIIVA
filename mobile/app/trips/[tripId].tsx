@@ -1,24 +1,36 @@
 /**
  * Trip Detail - Driiva Mobile
- * Reads the same trip doc the (tabs)/trips.tsx list reads. Instrument mode.
  *
- * Wave C (C3) adds the two things that make this a trip detail rather than a
- * trip summary: the five-factor breakdown carrying each factor's real weight,
- * and the recorded route drawn as a polyline.
+ * The screen that answers "why did this trip score what it scored". Three
+ * things do that: the recorded route, the five factors with the weights the
+ * algorithm actually multiplies by, and the events those factors are computed
+ * from, each shown as a RATE rather than a bare count.
+ *
+ * WHY RATES AND NOT COUNTS
+ * Four hard braking events is meaningless on its own. Four over ninety miles
+ * is a careful driver and four over two miles is not, and the scoring engine
+ * only ever looks at the per-mile figure (see computeDrivingScore, which
+ * divides every event count by distanceMiles before penalising it). Showing
+ * the count alone shows the driver a number the algorithm never used.
+ *
+ * WHY A TRACE AND NOT A MAP
+ * See components/ui/RouteTrace. Briefly: a basemap is another company's design
+ * language in the middle of an instrument panel, the shape of the drive is the
+ * information, and react-native-maps does not exist in Expo Go, so the map
+ * panel was permanently a fallback string in every preview build.
  *
  * The weights come from SCORE_WEIGHTS in @driiva/scoring, the same constant
- * computeDrivingScore multiplies by. They are never retyped here: the marketing
- * site shipped transposed weights once because someone copied the numbers
- * across by hand, and a displayed weighting that disagrees with the algorithm
- * is worse than showing none.
+ * computeDrivingScore multiplies by. They are never retyped here: the
+ * marketing site shipped transposed weights once because someone copied the
+ * numbers across by hand, and a displayed weighting that disagrees with the
+ * algorithm is worse than showing none.
  */
 import { useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import MapView, { Marker, Polyline, PROVIDER_DEFAULT } from 'react-native-maps';
-import { SCORE_WEIGHTS } from '@driiva/scoring';
+import { SCORE_WEIGHTS, locateDrivingEvents, type DrivingEventType } from '@driiva/scoring';
 import { firestore } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { C, T, S, R, scoreColor, FS, LH, TR } from '@/components/ui/theme';
@@ -27,7 +39,29 @@ import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import { ScoreBreakdownBar } from '@/components/ui/ScoreBreakdownBar';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader';
+import { RouteTrace, type MarkerShape, type TraceMarker } from '@/components/ui/RouteTrace';
+import { Enter } from '@/components/ui/motion';
 import { getTripPoints, type StoredTripPoint } from '@/lib/trips';
+
+/**
+ * Shape per event type, not colour per event type. Four hues on a
+ * near-monochrome instrument is a rainbow; one earned colour and four shapes
+ * says the same thing and survives being read by somebody who cannot separate
+ * the hues. See RouteTrace.
+ */
+const MARKER_SHAPES: Record<DrivingEventType, MarkerShape> = {
+  braking: 'circle',
+  acceleration: 'triangle',
+  cornering: 'diamond',
+  speeding: 'bar',
+};
+
+const MARKER_LABELS: Record<DrivingEventType, string> = {
+  braking: 'Hard braking',
+  acceleration: 'Hard acceleration',
+  cornering: 'Sharp turn',
+  speeding: 'Over the limit',
+};
 
 interface ScoreBreakdown {
   speedScore: number;
@@ -42,6 +76,7 @@ interface TripEvents {
   hardAccelerationCount: number;
   speedingSeconds: number;
   sharpTurnCount: number;
+  phonePickupCount: number;
 }
 
 interface TripLocation {
@@ -158,27 +193,38 @@ export default function TripDetail() {
     });
   }, [trip, profileTrips]);
 
-  const route = useMemo(
-    () => (points ?? []).map((p) => ({ latitude: p.lat, longitude: p.lng })),
-    [points],
-  );
+  /**
+   * Sorted by t BEFORE anything else reads it, and the same sorted array feeds
+   * both the polyline and the event locator.
+   *
+   * locateDrivingEvents deliberately does not sort, because sorting inside it
+   * would return indices into an array the caller does not hold. computeTripMetrics
+   * sorts by t before scoring, so sorting here is what makes the markers line up
+   * with the pass that produced the score.
+   */
+  const ordered = useMemo(() => [...(points ?? [])].sort((a, b) => a.t - b.t), [points]);
 
-  const region = useMemo(() => {
-    if (route.length === 0) return null;
-    const lats = route.map((p) => p.latitude);
-    const lngs = route.map((p) => p.longitude);
-    const minLat = Math.min(...lats);
-    const maxLat = Math.max(...lats);
-    const minLng = Math.min(...lngs);
-    const maxLng = Math.max(...lngs);
-    return {
-      latitude: (minLat + maxLat) / 2,
-      longitude: (minLng + maxLng) / 2,
-      // A floor on the span so a short trip does not open zoomed to a car park.
-      latitudeDelta: Math.max((maxLat - minLat) * 1.4, 0.01),
-      longitudeDelta: Math.max((maxLng - minLng) * 1.4, 0.01),
-    };
-  }, [route]);
+  const route = useMemo(() => ordered.map((p) => ({ lat: p.lat, lng: p.lng })), [ordered]);
+
+  /**
+   * Event marks, from the same detector and the same thresholds the score was
+   * computed with. Never re-derived here: the marketing site shipped
+   * transposed weights once because someone retyped five numbers, and a marker
+   * placed by a second copy of the rules would disagree with the count beside
+   * it for reasons nobody could see.
+   *
+   * Four types, not five. Phone handling is a client-reported count with no
+   * position attached, so there is nowhere honest to put it on a map and it is
+   * absent from the legend rather than guessed at.
+   */
+  const markers = useMemo<TraceMarker[]>(() => {
+    if (ordered.length < 2) return [];
+    return locateDrivingEvents(ordered).map((event) => ({
+      index: event.index,
+      shape: MARKER_SHAPES[event.type],
+      label: MARKER_LABELS[event.type],
+    }));
+  }, [ordered]);
 
   const formatDate = (ts: Trip['startedAt']) => {
     const date = typeof ts === 'string' ? new Date(ts) : ts?.toDate?.();
@@ -218,7 +264,8 @@ export default function TripDetail() {
     );
   }
 
-  const distanceMiles = (trip.distanceMeters / 1609.34).toFixed(1);
+  const miles = trip.distanceMeters / 1609.34;
+  const distanceMiles = miles.toFixed(1);
   const durationMinutes = Math.round(trip.durationSeconds / 60);
   const dateLabel = formatDate(trip.startedAt);
   const startLabel = trip.startLocation?.address?.split(',')[0] || null;
@@ -254,85 +301,114 @@ export default function TripDetail() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <Header onBack={() => router.back()} />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <SurfaceCard padding="lg" style={{ marginBottom: S.md }}>
-          <View style={styles.headerRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.route}>{routeTitle}</Text>
-              {dateLabel && <Text style={styles.date}>{dateLabel}</Text>}
+        <Enter index={0} count={4}>
+          <SurfaceCard padding="lg" style={styles.section}>
+            <View style={styles.headerRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.route}>{routeTitle}</Text>
+                {dateLabel && <Text style={styles.date}>{dateLabel}</Text>}
+              </View>
+              <View style={[styles.scoreBadge, { borderColor: scoreColor(trip.score) }]}>
+                <Text style={[styles.scoreText, { color: scoreColor(trip.score) }]}>
+                  {Math.round(trip.score)}
+                </Text>
+              </View>
             </View>
-            <View style={[styles.scoreBadge, { borderColor: scoreColor(trip.score) }]}>
-              <Text style={[styles.scoreText, { color: scoreColor(trip.score) }]}>{Math.round(trip.score)}</Text>
+
+            <View style={styles.statRow}>
+              <Stat label="Distance" value={`${distanceMiles} mi`} />
+              <Stat label="Duration" value={`${durationMinutes} min`} />
+              <Stat label="Status" value={trip.status} />
             </View>
-          </View>
+          </SurfaceCard>
+        </Enter>
 
-          <View style={styles.statRow}>
-            <Stat label="Distance" value={`${distanceMiles} mi`} />
-            <Stat label="Duration" value={`${durationMinutes} min`} />
-            <Stat label="Status" value={trip.status} />
-          </View>
-        </SurfaceCard>
-
-        <SurfaceCard padding="lg" style={{ marginBottom: S.md }}>
-          <Text style={styles.sectionTitle}>Route</Text>
-          {points === undefined ? (
-            <SkeletonLoader width="100%" height={200} borderRadius={R.card} />
-          ) : route.length >= 2 && region ? (
-            <View style={styles.mapWrap}>
-              <MapView
-                provider={PROVIDER_DEFAULT}
-                style={styles.map}
-                initialRegion={region}
-                pointerEvents="none"
-                showsUserLocation={false}
-                showsPointsOfInterests={false}
-                toolbarEnabled={false}
-              >
-                <Polyline coordinates={route} strokeColor={C.primary} strokeWidth={4} />
-                <Marker coordinate={route[0]} title="Start" pinColor={C.success} />
-                <Marker coordinate={route[route.length - 1]} title="End" pinColor={C.primary} />
-              </MapView>
-            </View>
-          ) : (
-            <Text style={styles.emptyLine}>
-              No route was recorded for this trip.
-            </Text>
-          )}
-        </SurfaceCard>
-
-        <SurfaceCard padding="lg" style={{ marginBottom: S.md }}>
-          <Text style={styles.sectionTitle}>Score breakdown</Text>
-          {hasBreakdown ? (
-            <>
-              {factors.map((f) => (
-                <ScoreBreakdownBar
-                  key={f.label}
-                  label={f.label}
-                  value={Math.round(f.value ?? 0)}
-                  weight={f.weight}
-                />
-              ))}
-              <Text style={styles.breakdownFootnote}>
-                Each factor is scored out of 100, then weighted into your trip score.
+        <Enter index={1} count={4}>
+          <SurfaceCard padding="lg" style={styles.section}>
+            <Text style={styles.sectionTitle}>Route</Text>
+            {points === undefined ? (
+              <SkeletonLoader width="100%" height={190} borderRadius={R.card} />
+            ) : (
+              <RouteTrace points={route} markers={markers} />
+            )}
+            {(startLabel || endLabel) && (
+              <Text style={styles.routeEnds}>
+                {startLabel ?? 'Unknown'} to {endLabel ?? 'Unknown'}
               </Text>
-            </>
-          ) : (
-            <Text style={styles.emptyLine}>Breakdown not available for this trip yet.</Text>
-          )}
-        </SurfaceCard>
+            )}
+          </SurfaceCard>
+        </Enter>
 
-        <SurfaceCard padding="lg">
-          <Text style={styles.sectionTitle}>Driving events</Text>
-          {trip.events ? (
-            <View style={styles.eventsGrid}>
-              <EventStat label="Hard braking" value={trip.events.hardBrakingCount} />
-              <EventStat label="Hard acceleration" value={trip.events.hardAccelerationCount} />
-              <EventStat label="Speeding" value={`${trip.events.speedingSeconds}s`} />
-              <EventStat label="Sharp turns" value={trip.events.sharpTurnCount} />
-            </View>
-          ) : (
-            <Text style={styles.emptyLine}>Event data not available for this trip yet.</Text>
-          )}
-        </SurfaceCard>
+        <Enter index={2} count={4}>
+          <SurfaceCard padding="lg" style={styles.section}>
+            <Text style={styles.sectionTitle}>Score breakdown</Text>
+            {hasBreakdown ? (
+              <>
+                {factors.map((f) => (
+                  <ScoreBreakdownBar
+                    key={f.label}
+                    label={f.label}
+                    value={Math.round(f.value ?? 0)}
+                    weight={f.weight}
+                  />
+                ))}
+                <Text style={styles.breakdownFootnote}>
+                  Each factor is scored out of 100, then weighted into your trip score at the
+                  percentage beside it.
+                </Text>
+              </>
+            ) : (
+              <Text style={styles.emptyLine}>Breakdown not available for this trip yet.</Text>
+            )}
+          </SurfaceCard>
+        </Enter>
+
+        <Enter index={3} count={4}>
+          <SurfaceCard padding="lg">
+            <Text style={styles.sectionTitle}>Driving events</Text>
+            {trip.events ? (
+              <>
+                <View style={styles.eventsGrid}>
+                  <EventStat
+                    label="Hard braking"
+                    value={trip.events.hardBrakingCount}
+                    rate={perMile(trip.events.hardBrakingCount, miles)}
+                  />
+                  <EventStat
+                    label="Hard acceleration"
+                    value={trip.events.hardAccelerationCount}
+                    rate={perMile(trip.events.hardAccelerationCount, miles)}
+                  />
+                  <EventStat
+                    label="Sharp turns"
+                    value={trip.events.sharpTurnCount}
+                    rate={perMile(trip.events.sharpTurnCount, miles)}
+                  />
+                  <EventStat
+                    label="Speeding"
+                    value={`${trip.events.speedingSeconds}s`}
+                    rate={shareOfDrive(trip.events.speedingSeconds, trip.durationSeconds)}
+                  />
+                  {typeof trip.events.phonePickupCount === 'number' ? (
+                    <EventStat
+                      label="Phone handling"
+                      value={trip.events.phonePickupCount}
+                      rate={perTenMinutes(trip.events.phonePickupCount, trip.durationSeconds)}
+                    />
+                  ) : (
+                    <EventStat label="Phone handling" value="Not measured" rate="scored before phone handling was tracked" />
+                  )}
+                </View>
+                <Text style={styles.breakdownFootnote}>
+                  The rate is what the score is computed from, not the count. Four hard stops
+                  over ninety miles is not the same drive as four over two.
+                </Text>
+              </>
+            ) : (
+              <Text style={styles.emptyLine}>Event data not available for this trip yet.</Text>
+            )}
+          </SurfaceCard>
+        </Enter>
       </ScrollView>
     </SafeAreaView>
   );
@@ -350,6 +426,33 @@ function Header({ onBack }: { onBack: () => void }) {
   );
 }
 
+/**
+ * The three rate shapes the scoring engine actually uses.
+ *
+ * Braking, acceleration and cornering are penalised per MILE; phone handling
+ * is penalised per TEN MINUTES (see computePhoneUsageScore); speeding is a
+ * share of the drive's duration. Showing all five as one unit would be tidier
+ * and would misrepresent four of them.
+ *
+ * Each returns null rather than a zero or an Infinity when its denominator is
+ * missing. A trip with no distance has no per-mile rate, and printing "0.0/mi"
+ * for it is a fabricated reading.
+ */
+function perMile(count: number, miles: number): string | null {
+  if (!Number.isFinite(miles) || miles < 0.1) return null;
+  return `${(count / miles).toFixed(1)} per mile`;
+}
+
+function perTenMinutes(count: number, durationSeconds: number): string | null {
+  if (!Number.isFinite(durationSeconds) || durationSeconds < 60) return null;
+  return `${((count / durationSeconds) * 600).toFixed(1)} per 10 min`;
+}
+
+function shareOfDrive(seconds: number, durationSeconds: number): string | null {
+  if (!Number.isFinite(durationSeconds) || durationSeconds <= 0) return null;
+  return `${((seconds / durationSeconds) * 100).toFixed(1)}% of the drive`;
+}
+
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.stat}>
@@ -359,11 +462,20 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function EventStat({ label, value }: { label: string; value: number | string }) {
+function EventStat({
+  label,
+  value,
+  rate,
+}: {
+  label: string;
+  value: number | string;
+  rate: string | null;
+}) {
   return (
     <View style={styles.eventStat}>
       <Text style={styles.eventValue}>{value}</Text>
       <Text style={styles.eventLabel}>{label}</Text>
+      {rate !== null && <Text style={styles.eventRate}>{rate}</Text>}
     </View>
   );
 }
@@ -399,14 +511,15 @@ const styles = StyleSheet.create({
   stat: { flex: 1 },
   statValue: { ...T.number, color: C.text.pri },
   statLabel: { ...T.caption, color: C.text.sec, marginTop: 2, textTransform: 'capitalize' },
-  sectionTitle: { ...T.label, color: C.text.sec, marginBottom: S.sm, textTransform: 'uppercase', letterSpacing: 0.5 },
+  sectionTitle: { ...T.eyebrow, color: C.text.sec, marginBottom: S.sm },
   emptyLine: { ...T.body, color: C.text.mut },
-  mapWrap: { height: 200, borderRadius: R.card, overflow: 'hidden' },
-  map: { flex: 1 },
-  breakdownFootnote: { ...T.caption, color: C.text.mut, marginTop: S.sm, lineHeight: 16 },
+  section: { marginBottom: S.md },
+  routeEnds: { ...T.caption, color: C.text.sec, marginTop: S.sm },
+  breakdownFootnote: { ...T.caption, color: C.text.mut, marginTop: S.sm },
   eventsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: S.md },
   eventStat: { width: '45%' },
   // Same: T.number is base, so lg needs lg's leading, not base's.
   eventValue: { ...T.number, color: C.text.pri, fontSize: FS.lg, lineHeight: LH.lg, letterSpacing: TR.lg },
   eventLabel: { ...T.caption, color: C.text.sec, marginTop: 2 },
+  eventRate: { ...T.numberSm, color: C.text.mut, marginTop: 2 },
 });

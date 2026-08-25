@@ -7,7 +7,7 @@ import { useOnboarding } from '@/contexts/OnboardingContext';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
 import { ONBOARDING_TOTAL, stepNumber } from '@/lib/onboardingFlow';
 import { track } from '@/lib/analytics';
-import { C, F, S, R, FS, LH, TR } from '@/components/ui/theme';
+import { C, F, S, R, FS, LH, TR, T } from '@/components/ui/theme';
 
 // FCA DISCLOSURE REQUIRED on financial claims before launch
 const ALL_SOLUTIONS = [
@@ -86,10 +86,10 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: S.lg, paddingTop: S.md, paddingBottom: S.lg },
   back: { marginBottom: S.lg },
   headline: {
-    color: C.text.hero, fontSize: FS.xxl, fontFamily: F.bodySemiBold,
-    letterSpacing: TR.xxl, lineHeight: LH.xxl, marginBottom: 8,
+    ...T.h0,
+    color: C.text.hero, marginBottom: 8,
   },
-  sub: { color: C.text.sec, fontFamily: F.body, fontSize: FS.md, marginBottom: 24 },
+  sub: { color: C.text.sec, fontFamily: F.body, fontSize: FS.md, lineHeight: LH.md, letterSpacing: TR.md, marginBottom: 24 },
   solutions: { gap: 12 },
   solutionCard: {
     backgroundColor: C.surface1,
@@ -100,17 +100,17 @@ const styles = StyleSheet.create({
   },
   painText: {
     color: C.text.mut, fontSize: FS.sm,
-    fontFamily: F.bodySemiBold, letterSpacing: -0.005,
+    fontFamily: F.bodySemiBold, lineHeight: LH.sm, letterSpacing: TR.sm,
   },
   arrow: { marginVertical: 8 },
   fixText: {
     color: C.text.hero, fontSize: FS.md,
-    lineHeight: 22, fontFamily: F.body, letterSpacing: -0.005,
+    lineHeight: LH.md, fontFamily: F.body, letterSpacing: TR.md,
   },
   footer: { paddingHorizontal: S.lg, paddingBottom: S.lg },
   primaryBtn: {
     backgroundColor: C.primary, borderRadius: R.card,
     paddingVertical: 16, alignItems: 'center',
   },
-  primaryBtnText: { color: C.text.hero, fontSize: FS.md, fontFamily: F.bodySemiBold, letterSpacing: -0.005 },
+  primaryBtnText: { color: C.text.hero, fontSize: FS.md, fontFamily: F.bodySemiBold, lineHeight: LH.md, letterSpacing: TR.md },
 });

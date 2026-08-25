@@ -67,6 +67,53 @@ describe('firestore.rules: users', () => {
     });
   });
 
+  /*
+   * Pins the write that broke account creation in the first TestFlight build.
+   * mobile/contexts/AuthContext.tsx used to write the user doc itself at
+   * signup, with no `uid` field. As a create that fails the identity check;
+   * as an overwrite of the doc provisionUserOnSignup has already provisioned
+   * it moves `createdAt`/`createdBy`. Denied either way, which surfaced as
+   * "Sign up failed" on device. The client no longer writes this doc; the
+   * Auth onCreate trigger owns it, same as the web app.
+   */
+  describe('the retired mobile signup payload stays denied', () => {
+    const mobileSignupDoc = {
+      email: ALICE_EMAIL,
+      fullName: 'Alice Example',
+      displayName: 'Alice Example',
+      onboardingComplete: false,
+      createdAt: 1000,
+      createdBy: 'mobile-app',
+    };
+
+    it('denies it as a create (no uid field)', async () => {
+      const alice = testEnv.authenticatedContext(ALICE, { email: ALICE_EMAIL });
+      await assertFails(setDoc(doc(alice.firestore(), `users/${ALICE}`), mobileSignupDoc));
+    });
+
+    it('denies it as an overwrite of the provisioned doc (moves createdAt/createdBy)', async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        await setDoc(doc(context.firestore(), `users/${ALICE}`), baseUser({ createdAt: 500, createdBy: 'provisionUserOnSignup' }));
+      });
+      const alice = testEnv.authenticatedContext(ALICE, { email: ALICE_EMAIL });
+      await assertFails(setDoc(doc(alice.firestore(), `users/${ALICE}`), mobileSignupDoc));
+    });
+
+    it('allows the completion write the last onboarding screen makes (merge-set)', async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        await setDoc(doc(context.firestore(), `users/${ALICE}`), baseUser());
+      });
+      const alice = testEnv.authenticatedContext(ALICE, { email: ALICE_EMAIL });
+      await assertSucceeds(
+        setDoc(
+          doc(alice.firestore(), `users/${ALICE}`),
+          { onboardingComplete: true, onboarding: { completedAt: 1234 } },
+          { merge: true },
+        ),
+      );
+    });
+  });
+
   describe('read', () => {
     beforeEach(async () => {
       await testEnv.withSecurityRulesDisabled(async (context) => {

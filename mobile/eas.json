@@ -7,20 +7,29 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "ios": { "simulator": true }
+      "ios": {
+        "simulator": true
+      }
     },
     "preview": {
       "distribution": "internal",
-      "ios": { "simulator": false }
+      "ios": {
+        "simulator": false
+      }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "credentialsSource": "local"
     }
   },
   "submit": {
     "production": {
       "ios": {
-        "ascAppId": "REPLACE_WITH_APP_STORE_CONNECT_APP_ID"
+        "ascAppId": "6804415109",
+        "appleTeamId": "5DYUDAB2Y3",
+        "ascApiKeyPath": "credentials/AuthKey_98J3NXKPRN.p8",
+        "ascApiKeyId": "98J3NXKPRN",
+        "ascApiKeyIssuerId": "79f19cd4-47a0-4164-b85a-33860fb51d36"
       }
     }
   }

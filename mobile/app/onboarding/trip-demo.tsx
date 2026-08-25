@@ -8,8 +8,8 @@ import { ONBOARDING_TOTAL, stepNumber } from '@/lib/onboardingFlow';
 import { track } from '@/lib/analytics';
 import { TripReplay } from '@/components/onboarding/TripReplay';
 import { ScoreRing } from '@/components/ui/ScoreRing';
-import { C, F, S, R, RGB, alpha, FS, LH, TR } from '@/components/ui/theme';
-import { ecoGrade } from '@/hooks/useTripSeed';
+import { C, F, S, R, RGB, alpha, FS, LH, TR, T } from '@/components/ui/theme';
+import { ecoGrade, DEMO_SCORE_DELTAS } from '@/hooks/useTripSeed';
 
 export default function TripDemo() {
   useEffect(() => {
@@ -59,10 +59,14 @@ export default function TripDemo() {
             </View>
 
             <View style={styles.breakdown}>
-              <BreakdownRow label="Smooth braking" value="+8 pts" />
-              <BreakdownRow label="Speed limit observed" value="+5 pts" />
-              <BreakdownRow label="Eco-efficient acceleration" value="+4 pts" />
-              <BreakdownRow label="Night Owl detected (11 pm)" value="+2 pts" special />
+              {DEMO_SCORE_DELTAS.map((row) => (
+                <BreakdownRow
+                  key={row.id}
+                  label={row.label}
+                  value={`+${row.delta} pts`}
+                  special={row.id === 'nightOwl'}
+                />
+              ))}
             </View>
 
             <Text style={styles.simNote}>
@@ -102,11 +106,11 @@ const styles = StyleSheet.create({
   progress: { paddingHorizontal: S.lg, paddingTop: S.sm },
   content: { paddingHorizontal: S.lg, paddingTop: S.md, paddingBottom: 100 },
   headline: {
-    color: C.text.hero, fontSize: FS.xxl, fontFamily: F.bodySemiBold,
-    letterSpacing: TR.xxl, lineHeight: LH.xxl, marginBottom: 6,
+    ...T.h0,
+    color: C.text.hero, marginBottom: 6,
   },
   sub: {
-    color: C.text.sec, fontFamily: F.body, fontSize: FS.md, marginBottom: 24,
+    color: C.text.sec, fontFamily: F.body, fontSize: FS.md, lineHeight: LH.md, letterSpacing: TR.md, marginBottom: 24,
   },
   result: { gap: 16 },
   ringWrap: { alignItems: 'center', paddingVertical: 8 },
@@ -119,11 +123,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   ecoLabel: {
-    color: C.text.mut, fontSize: FS.xs, fontFamily: F.bodySemiBold,
-    letterSpacing: 0.08, textTransform: 'uppercase', marginBottom: 4,
+    ...T.eyebrow,
+    color: C.text.mut, marginBottom: 4,
   },
-  ecoGrade: { color: C.success, fontSize: FS.xxxl, fontFamily: F.bodyBold, letterSpacing: -0.03 },
-  ecoSub: { color: C.success, fontFamily: F.body, fontSize: FS.sm, marginTop: 2 },
+  ecoGrade: { color: C.success, fontSize: FS.xxxl, fontFamily: F.bodyBold, lineHeight: LH.xxxl, letterSpacing: TR.xxxl },
+  ecoSub: { color: C.success, fontFamily: F.body, fontSize: FS.sm, lineHeight: LH.sm, letterSpacing: TR.sm, marginTop: 2 },
   breakdown: {
     backgroundColor: C.surface1,
     borderRadius: R.card,
@@ -139,12 +143,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: C.hairline,
   },
-  breakdownLabel: { color: C.text.pri, fontFamily: F.body, fontSize: FS.md },
-  breakdownValue: { color: C.success, fontSize: FS.md, fontFamily: F.bodySemiBold },
+  breakdownLabel: { color: C.text.pri, fontFamily: F.body, fontSize: FS.md, lineHeight: LH.md, letterSpacing: TR.md },
+  breakdownValue: { ...T.number, color: C.success },
   breakdownValueSpecial: { color: C.warning },
   simNote: {
     color: C.text.mut, fontFamily: F.body, fontSize: FS.sm,
-    lineHeight: 18, textAlign: 'center',
+    lineHeight: LH.sm, letterSpacing: TR.sm, textAlign: 'center',
     paddingHorizontal: 8,
   },
   footer: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: S.lg },
@@ -152,5 +156,5 @@ const styles = StyleSheet.create({
     backgroundColor: C.primary, borderRadius: R.card,
     paddingVertical: 16, alignItems: 'center',
   },
-  primaryBtnText: { color: C.text.hero, fontSize: FS.md, fontFamily: F.bodySemiBold, letterSpacing: -0.005 },
+  primaryBtnText: { color: C.text.hero, fontSize: FS.md, fontFamily: F.bodySemiBold, lineHeight: LH.md, letterSpacing: TR.md },
 });

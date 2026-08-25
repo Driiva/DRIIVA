@@ -7,7 +7,7 @@ import { useOnboarding } from '@/contexts/OnboardingContext';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
 import { ONBOARDING_TOTAL, stepNumber } from '@/lib/onboardingFlow';
 import { track } from '@/lib/analytics';
-import { C, F, S, R, RGB, alpha, FS, LH, TR } from '@/components/ui/theme';
+import { C, F, S, R, RGB, alpha, FS, LH, TR, T } from '@/components/ui/theme';
 
 const OPTIONS = [
   "I've never claimed but my premium keeps rising",
@@ -90,10 +90,10 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: S.lg, paddingTop: S.md, paddingBottom: S.lg },
   back: { marginBottom: S.lg },
   headline: {
-    color: C.text.hero, fontSize: FS.xxl, fontFamily: F.bodySemiBold,
-    letterSpacing: TR.xxl, lineHeight: LH.xxl, marginBottom: 8,
+    ...T.h0,
+    color: C.text.hero, marginBottom: 8,
   },
-  sub: { color: C.text.sec, fontFamily: F.body, fontSize: FS.md, marginBottom: 24 },
+  sub: { color: C.text.sec, fontFamily: F.body, fontSize: FS.md, lineHeight: LH.md, letterSpacing: TR.md, marginBottom: 24 },
   options: { gap: 10 },
   option: {
     flexDirection: 'row',
@@ -118,12 +118,12 @@ const styles = StyleSheet.create({
   checkboxSelected: {
     backgroundColor: C.primary, borderColor: C.primary,
   },
-  optionLabel: { color: C.text.pri, fontFamily: F.body, fontSize: FS.md, flex: 1, lineHeight: 20 },
+  optionLabel: { color: C.text.pri, fontFamily: F.body, fontSize: FS.md, flex: 1, lineHeight: LH.md, letterSpacing: TR.md },
   optionLabelSelected: { color: C.text.hero },
   footer: { paddingHorizontal: S.lg, paddingBottom: S.lg },
   primaryBtn: {
     backgroundColor: C.primary, borderRadius: R.card,
     paddingVertical: 16, alignItems: 'center',
   },
-  primaryBtnText: { color: C.text.hero, fontSize: FS.md, fontFamily: F.bodySemiBold, letterSpacing: -0.005 },
+  primaryBtnText: { color: C.text.hero, fontSize: FS.md, fontFamily: F.bodySemiBold, lineHeight: LH.md, letterSpacing: TR.md },
 });

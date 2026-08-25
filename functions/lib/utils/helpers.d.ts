@@ -23,6 +23,15 @@ export declare function getShareId(userId: string, period: string): string;
  */
 export declare function getWeekNumber(date: Date): number;
 /**
+ * ISO week period ID, e.g. "2026-W06".
+ *
+ * Uses the ISO week-year (the calendar year of the week's Thursday), NOT the
+ * calendar year of the date itself. 31 Dec 2026 belongs to 2026-W53; 1 Jan
+ * 2027 also belongs to 2026-W53. Mirrored by getCurrentWeekPeriod in
+ * client/src/hooks/useCommunityData.ts - change both or neither.
+ */
+export declare function getIsoWeekPeriod(date: Date): string;
+/**
  * Get period string for leaderboard type
  */
 export declare function getCurrentPeriodForType(periodType: string): string;

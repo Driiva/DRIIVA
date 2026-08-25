@@ -43,85 +43,49 @@ exports.ACHIEVEMENT_DEFINITIONS = void 0;
 exports.checkAndUnlockAchievements = checkAndUnlockAchievements;
 const admin = __importStar(require("firebase-admin"));
 const functions = __importStar(require("firebase-functions"));
+const contracts_1 = require("@driiva/contracts");
 const types_1 = require("../types");
 const db = admin.firestore();
-exports.ACHIEVEMENT_DEFINITIONS = [
-    {
-        id: 'first-trip',
-        name: 'First Journey',
-        description: 'Complete your first tracked trip',
-        icon: 'Car',
-        category: 'milestone',
-        maxProgress: null,
-        check: (profile) => profile.totalTrips >= 1,
+/**
+ * The unlock predicates. Metadata (name, description, icon, category,
+ * maxProgress) lives in @driiva/contracts so the client can render the
+ * catalogue without depending on a seeded Firestore collection; only the
+ * decision about what is EARNED lives here, which is authority the client
+ * must never hold.
+ *
+ * Keyed by id and exhaustively checked against the shared catalogue below, so
+ * adding a badge to contracts without a predicate fails loudly at module load
+ * rather than silently never unlocking for anybody.
+ */
+const CHECKS = {
+    'first-trip': (profile) => profile.totalTrips >= 1,
+    'smooth-operator': (profile) => profile.totalTrips >= 10,
+    'century-club': (profile) => profile.totalTrips >= 100,
+    'high-scorer': (profile) => profile.currentScore >= 90,
+    'road-warrior': (profile) => profile.totalMiles >= 500,
+    'streak-master': (profile) => profile.streakDays >= 7,
+    'night-owl': (_profile, trip) => {
+        const startHour = trip.startedAt?.toDate?.()?.getHours?.() ?? 12;
+        return startHour >= 21 && trip.score >= 70;
     },
-    {
-        id: 'smooth-operator',
-        name: 'Smooth Operator',
-        description: '10 trips without hard braking',
-        icon: 'Shield',
-        category: 'safety',
-        maxProgress: 10,
-        check: (profile) => profile.totalTrips >= 10,
-    },
-    {
-        id: 'century-club',
-        name: 'Century Club',
-        description: 'Complete 100 safe trips',
-        icon: 'Target',
-        category: 'milestone',
-        maxProgress: 100,
-        check: (profile) => profile.totalTrips >= 100,
-    },
-    {
-        id: 'high-scorer',
-        name: 'High Scorer',
-        description: 'Achieve a driving score of 90+',
-        icon: 'Star',
-        category: 'safety',
-        maxProgress: null,
-        check: (profile) => profile.currentScore >= 90,
-    },
-    {
-        id: 'road-warrior',
-        name: 'Road Warrior',
-        description: 'Drive 500+ miles safely',
-        icon: 'Route',
-        category: 'milestone',
-        maxProgress: 500,
-        check: (profile) => profile.totalMiles >= 500,
-    },
-    {
-        id: 'streak-master',
-        name: 'Streak Master',
-        description: 'Maintain a 7-day driving streak',
-        icon: 'Flame',
-        category: 'safety',
-        maxProgress: 7,
-        check: (profile) => profile.streakDays >= 7,
-    },
-    {
-        id: 'night-owl',
-        name: 'Night Owl',
-        description: 'Complete a safe night trip (after 9pm)',
-        icon: 'Moon',
-        category: 'safety',
-        maxProgress: null,
-        check: (_profile, trip) => {
-            const startHour = trip.startedAt?.toDate?.()?.getHours?.() ?? 12;
-            return startHour >= 21 && trip.score >= 70;
-        },
-    },
-    {
-        id: 'perfect-score',
-        name: 'Perfect Score',
-        description: 'Score 100 on a single trip',
-        icon: 'Award',
-        category: 'safety',
-        maxProgress: null,
-        check: (_profile, trip) => trip.score >= 100,
-    },
-];
+    'perfect-score': (_profile, trip) => trip.score >= 100,
+};
+exports.ACHIEVEMENT_DEFINITIONS = contracts_1.ACHIEVEMENT_META.map((meta) => {
+    const check = CHECKS[meta.id];
+    if (!check) {
+        throw new Error(`[Achievements] "${meta.id}" is in the shared catalogue with no unlock predicate. ` +
+            'It would render to users as permanently locked.');
+    }
+    return {
+        id: meta.id,
+        name: meta.name,
+        description: meta.description,
+        icon: meta.icon,
+        category: meta.category,
+        maxProgress: meta.maxProgress,
+        check,
+    };
+});
 /**
  * Check and unlock eligible achievements for a user after a trip.
  * Returns an array of achievement IDs that were newly unlocked.

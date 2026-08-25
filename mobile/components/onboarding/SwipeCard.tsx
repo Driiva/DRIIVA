@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import {
   View, Text, PanResponder, Animated, StyleSheet, Dimensions,
 } from 'react-native';
-import { C, F, R, RGB, alpha, FS, LH } from '@/components/ui/theme';
+import { C, F, R, RGB, alpha, FS, LH, TR, T } from '@/components/ui/theme';
 
 const { width } = Dimensions.get('window');
 const SWIPE_THRESHOLD = width * 0.3;
@@ -101,11 +101,8 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   counter: {
+    ...T.eyebrow,
     color: C.text.mut,
-    fontSize: FS.xs,
-    fontFamily: F.bodySemiBold,
-    letterSpacing: 0.06,
-    textTransform: 'uppercase',
     marginBottom: 20,
   },
   statement: {
@@ -113,7 +110,7 @@ const styles = StyleSheet.create({
     fontSize: FS.xl,
     fontFamily: F.body,
     lineHeight: LH.xl,
-    letterSpacing: -0.01,
+    letterSpacing: TR.xl,
   },
   hintRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   hints: {
@@ -125,6 +122,8 @@ const styles = StyleSheet.create({
     color: C.text.mut,
     fontFamily: F.body,
     fontSize: FS.sm,
+    lineHeight: LH.sm,
+    letterSpacing: TR.sm,
   },
   label: {
     position: 'absolute',
@@ -148,5 +147,7 @@ const styles = StyleSheet.create({
     color: C.text.hero,
     fontSize: FS.sm,
     fontFamily: F.bodyBold,
+    lineHeight: LH.sm,
+    letterSpacing: TR.sm,
   },
 });

@@ -22,10 +22,6 @@
  * this task to `shared/refundCalculator.ts:44`'s `calculateRefundCents` only,
  * so no `calculateRefund` alias is exported here; the signatures don't align.
  */
-/**
- * Calculate the blended score from personal and community scores.
- * Weights: 80% personal, 20% community (locked, see CLAUDE.md Hard Stops).
- */
 export declare function blendedScore(personalScore: number, communityScore: number): number;
 /**
  * Calculate the refund rate (5%-15%) from a blended score (0-100).
@@ -53,5 +49,5 @@ export declare function calculateRefundCents(personalScore: number, communitySco
  * @param premiumCents   Total premium in integer cents
  * @returns Projected refund in integer cents
  */
-export declare function projectedRefundCents(personalScore: number, premiumCents: number): number;
+export declare function projectedRefundCents(personalScore: number, premiumCents: number | null | undefined): number | null;
 //# sourceMappingURL=refund.d.ts.map

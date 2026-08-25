@@ -28,8 +28,12 @@ export const DrivingProfileDataSchema = z.object({
   currentScore: z.number().int().min(0).max(100),
   scoreBreakdown: ScoreBreakdownSchema,
   totalTrips: z.number().int().min(0),
-  // Source comment: "stored as integer (miles * 100 for precision)".
-  totalMiles: z.number().int().min(0),
+  // Miles, to two decimal places. NOT miles times one hundred: the only writer
+  // (functions/src/triggers/trips.ts) writes Math.round(miles * 100) / 100, and
+  // shared/schema.ts declares the SQL column decimal(10, 2). This rule used to
+  // be .int() on the authority of a comment that said otherwise, which made the
+  // schema reject the first driver to cover a fractional mile.
+  totalMiles: z.number().min(0),
   totalDrivingMinutes: z.number().int().min(0),
   lastTripAt: FirestoreTimestampSchema.nullable(),
   streakDays: z.number().int().min(0),

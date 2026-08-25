@@ -7,7 +7,7 @@ import { useOnboarding, DrivingFrequency, DrivingTime, DrivingRoutes } from '@/c
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
 import { ONBOARDING_TOTAL, stepNumber } from '@/lib/onboardingFlow';
 import { track } from '@/lib/analytics';
-import { C, F, S, R, RGB, alpha, FS, LH, TR } from '@/components/ui/theme';
+import { C, F, S, R, RGB, alpha, FS, LH, TR, T } from '@/components/ui/theme';
 import { seedScore as calcSeed } from '@/hooks/useTripSeed';
 
 const STEPS = [
@@ -112,8 +112,8 @@ const styles = StyleSheet.create({
   },
   stepDotActive: { backgroundColor: C.primary },
   headline: {
-    color: C.text.hero, fontSize: FS.xxl, fontFamily: F.bodySemiBold,
-    letterSpacing: TR.xxl, lineHeight: LH.xxl, marginBottom: 28,
+    ...T.h0,
+    color: C.text.hero, marginBottom: 28,
   },
   options: { gap: 10 },
   option: {
@@ -131,6 +131,6 @@ const styles = StyleSheet.create({
     borderColor: C.primary,
     backgroundColor: alpha(RGB.primary, 0.12),
   },
-  optionText: { color: C.text.pri, fontFamily: F.body, fontSize: FS.md },
+  optionText: { color: C.text.pri, fontFamily: F.body, fontSize: FS.md, lineHeight: LH.md, letterSpacing: TR.md },
   optionTextSelected: { color: C.text.hero, fontFamily: F.bodySemiBold },
 });

@@ -7,8 +7,9 @@ import { ProgressBar } from '@/components/onboarding/ProgressBar';
 import { ONBOARDING_TOTAL, stepNumber } from '@/lib/onboardingFlow';
 import { track } from '@/lib/analytics';
 import { ScoreRing } from '@/components/ui/ScoreRing';
-import { C, F, S, R, RGB, alpha, FS, LH } from '@/components/ui/theme';
-import { refundEstimate, scorePercentile } from '@/hooks/useTripSeed';
+import { C, F, S, R, RGB, alpha, FS, LH, T, TR } from '@/components/ui/theme';
+import { scorePercentile, refundEstimateRange, DEMO_REFUND_DISCLOSURE } from '@/hooks/useTripSeed';
+import { formatPoundsWhole } from '@/lib/money';
 
 // FCA DISCLOSURE REQUIRED - refund estimates are illustrative, not guaranteed
 export default function ViralMoment() {
@@ -21,9 +22,10 @@ export default function ViralMoment() {
   const { seedScore } = state;
 
   const percentile = scorePercentile(seedScore);
-  const refund = refundEstimate(seedScore); // ESTIMATE - subject to actuarial review
-  const minRefund = Math.round(refund * 0.8);
-  const maxRefund = Math.round(refund * 1.2);
+  // Same range calculation as quote.tsx, delegating to the real
+  // projectedRefundCents. See refundEstimateRange for why the 15% cap has to
+  // be applied after the spread rather than before it.
+  const { min: minRefund, max: maxRefund } = refundEstimateRange(seedScore);
 
   const handleShare = async () => {
     try {
@@ -54,8 +56,9 @@ export default function ViralMoment() {
 
           <View style={styles.refundRow}>
             <Text style={styles.refundLabel}>Estimated annual refund at this score</Text>
-            {/* ESTIMATE - subject to actuarial review */}
-            <Text style={styles.refundValue}>£{minRefund} to £{maxRefund}</Text>
+            <Text style={styles.refundValue}>
+              {formatPoundsWhole(minRefund * 100)} to {formatPoundsWhole(maxRefund * 100)}
+            </Text>
           </View>
 
           <View style={styles.poolRow}>
@@ -74,9 +77,7 @@ export default function ViralMoment() {
 
         <View style={styles.disclaimer}>
           <Text style={styles.disclaimerText}>
-            {/* FCA DISCLOSURE REQUIRED before public launch */}
-            Refund estimates are illustrative and based on typical premium of £1,200/year.
-            Actual refunds depend on your policy, claim history, and pool performance.
+            {DEMO_REFUND_DISCLOSURE}
           </Text>
         </View>
       </ScrollView>
@@ -99,8 +100,8 @@ const styles = StyleSheet.create({
   progress: { paddingHorizontal: S.lg, paddingTop: S.sm },
   content: { paddingHorizontal: S.lg, paddingTop: S.md, paddingBottom: 100 },
   headline: {
-    color: C.text.hero, fontSize: FS.xl, fontFamily: F.bodySemiBold,
-    letterSpacing: -0.025, lineHeight: 30, marginBottom: 24,
+    ...T.h1,
+    color: C.text.hero, marginBottom: 24,
   },
   heroCard: {
     backgroundColor: C.surface1,
@@ -114,22 +115,37 @@ const styles = StyleSheet.create({
   ringWrap: { marginBottom: 24 },
   refundRow: { alignItems: 'center', marginBottom: 16 },
   refundLabel: {
-    color: C.text.sec, fontFamily: F.body, fontSize: FS.sm,
+    color: C.text.sec, fontFamily: F.body, fontSize: FS.sm, lineHeight: LH.sm, letterSpacing: TR.sm,
     textAlign: 'center', marginBottom: 4,
   },
+  /**
+   * The hero face, NOT success green.
+   *
+   * C.success is a SCORE colour. Painting a projected, uncapped-by-nothing,
+   * not-guaranteed pound range in the same green the app uses for "you drove
+   * well" tells the reader the money is earned and safe, which is the one
+   * thing this figure is not. It also out-shouted the score ring beside it,
+   * inverting the hierarchy on a screen whose whole argument is that the score
+   * is what produces the number.
+   */
   refundValue: {
-    color: C.success, fontSize: FS.xxl, fontFamily: F.bodyBold,
-    letterSpacing: -0.03,
+    ...T.stat,
+    color: C.text.hero,
   },
   poolRow: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     paddingTop: 16, borderTopWidth: 1, borderTopColor: C.hairline,
     alignSelf: 'stretch', justifyContent: 'center',
   },
+  /**
+   * Muted, not green. A green status dot means "live", and the sentence
+   * beside it says the pool is NOT open yet. The dot was contradicting the
+   * only sentence it was there to accompany.
+   */
   liveDot: {
-    width: 6, height: 6, borderRadius: 3, backgroundColor: C.success,
+    width: 6, height: 6, borderRadius: 3, backgroundColor: C.text.mut,
   },
-  poolText: { color: C.text.sec, fontFamily: F.body, fontSize: FS.sm },
+  poolText: { color: C.text.sec, fontFamily: F.body, fontSize: FS.sm, lineHeight: LH.sm, letterSpacing: TR.sm },
   shareBtn: {
     backgroundColor: alpha(RGB.primary, 0.15),
     borderRadius: R.card,
@@ -139,21 +155,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 10,
   },
-  shareBtnText: { color: C.primaryLight, fontSize: FS.md, fontFamily: F.bodySemiBold },
+  shareBtnText: { color: C.primaryLight, fontSize: FS.md, fontFamily: F.bodySemiBold, lineHeight: LH.md, letterSpacing: TR.md },
   shareHint: {
     color: C.text.mut, fontFamily: F.body, fontSize: FS.sm, textAlign: 'center',
-    lineHeight: 19, marginBottom: 20,
+    lineHeight: LH.sm, letterSpacing: TR.sm, marginBottom: 20,
   },
   disclaimer: {
     backgroundColor: C.surface1,
     borderRadius: R.card,
     padding: 14,
   },
-  disclaimerText: { color: C.text.mut, fontFamily: F.body, fontSize: FS.sm, lineHeight: LH.sm },
+  disclaimerText: { color: C.text.mut, fontFamily: F.body, fontSize: FS.sm, lineHeight: LH.sm, letterSpacing: TR.sm },
   footer: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: S.lg },
   primaryBtn: {
     backgroundColor: C.primary, borderRadius: R.card,
     paddingVertical: 16, alignItems: 'center',
   },
-  primaryBtnText: { color: C.text.hero, fontSize: FS.md, fontFamily: F.bodySemiBold, letterSpacing: -0.005 },
+  primaryBtnText: { color: C.text.hero, fontSize: FS.md, fontFamily: F.bodySemiBold, lineHeight: LH.md, letterSpacing: TR.md },
 });

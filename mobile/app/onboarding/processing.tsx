@@ -11,7 +11,7 @@ import { ProgressBar } from '@/components/onboarding/ProgressBar';
 import { ONBOARDING_TOTAL, stepNumber } from '@/lib/onboardingFlow';
 import { track } from '@/lib/analytics';
 import { ScoreRing } from '@/components/ui/ScoreRing';
-import { C, F, S, FS } from '@/components/ui/theme';
+import { C, F, S, FS, T, LH, TR } from '@/components/ui/theme';
 
 // Wave 0 (0a): 'Community pool match found' claimed a matching step that
 // does not exist anywhere in the product. The two remaining lines describe
@@ -96,8 +96,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headline: {
-    color: C.text.hero, fontSize: FS.xl, fontFamily: F.bodySemiBold,
-    letterSpacing: -0.025, lineHeight: 28,
+    ...T.h1,
+    color: C.text.hero,
     marginBottom: 40, alignSelf: 'flex-start',
   },
   ringWrap: {
@@ -118,5 +118,5 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: C.border,
   },
-  checkLabel: { color: C.text.pri, fontFamily: F.body, fontSize: FS.md },
+  checkLabel: { color: C.text.pri, fontFamily: F.body, fontSize: FS.md, lineHeight: LH.md, letterSpacing: TR.md },
 });

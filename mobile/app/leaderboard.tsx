@@ -1,15 +1,17 @@
 /**
  * Leaderboard - Driiva Mobile
  *
- * Reads the real `leaderboard/{period}_{periodType}` document the scheduled
- * function recomputes every 15 minutes, and filters it against the viewer's
- * real friendships for the friends tab.
+ * The full board behind the Community tab's Standing section. Reads the real
+ * `leaderboard/{period}_{periodType}` document the scheduled function
+ * recomputes every 15 minutes, and filters it against the viewer's real
+ * friendships for the "Your circle" scope.
  *
- * The period ID must be derived exactly the way the function writes it: the
- * ISO week-YEAR, which is the year of the week's Thursday and NOT the calendar
- * year of the date. Around New Year those disagree, and the two sides then
- * read and write different documents, which empties the board with no error
- * anywhere. See tests/unit/week-period-convention.test.ts.
+ * The period ID derivation moved to lib/isoWeek.ts. It was hand-copied here
+ * and into the dashboard, and the Community screen would have been a third
+ * copy. The week YEAR is the year of the week's Thursday, NOT the calendar
+ * year: around New Year those disagree and the two sides then read and write
+ * different documents, which empties the board with no error anywhere. See
+ * tests/unit/week-period-convention.test.ts.
  */
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -21,12 +23,12 @@ import { useRouter } from 'expo-router';
 import { firestore } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { track } from '@/lib/analytics';
+import { periodIdFor, type PeriodType } from '@/lib/isoWeek';
 import { C, T, S, R, FS, LH, TR } from '@/components/ui/theme';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 
-type PeriodType = 'weekly' | 'monthly' | 'all_time';
-type Scope = 'global' | 'friends';
+type Scope = 'global' | 'circle';
 
 interface Ranking {
   rank: number;
@@ -36,29 +38,6 @@ interface Ranking {
   totalMiles: number;
   totalTrips: number;
   change: number;
-}
-
-/**
- * ISO week period, e.g. "2026-W06". Mirrors getIsoWeekPeriod in
- * functions/src/utils/helpers.ts and getCurrentWeekPeriod on web. Change all
- * three or none.
- */
-function isoWeekPeriod(now: Date): string {
-  const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
-  const dayNum = d.getUTCDay() || 7;
-  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  const weekNum = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
-  return `${d.getUTCFullYear()}-W${String(weekNum).padStart(2, '0')}`;
-}
-
-function periodIdFor(type: PeriodType): string {
-  const now = new Date();
-  if (type === 'weekly') return `${isoWeekPeriod(now)}_weekly`;
-  if (type === 'monthly') {
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}_monthly`;
-  }
-  return 'all_time_all_time';
 }
 
 /** Same masking rule as web, so one person is not named two different ways. */
@@ -75,9 +54,15 @@ const PERIODS: ReadonlyArray<{ id: PeriodType; label: string }> = [
   { id: 'all_time', label: 'All time' },
 ];
 
+/**
+ * "Your circle" replaced "Friends" across the app: the product noun for the
+ * people a driver brought in. The scope ID moved with the label rather than
+ * being left as 'friends', because an identifier that disagrees with every
+ * surface it describes is the next person's wrong assumption.
+ */
 const SCOPES: ReadonlyArray<{ id: Scope; label: string }> = [
-  { id: 'global', label: 'Global' },
-  { id: 'friends', label: 'Friends' },
+  { id: 'global', label: 'Everyone' },
+  { id: 'circle', label: 'Your circle' },
 ];
 
 function Segmented<Id extends string>({
@@ -130,7 +115,7 @@ export default function Leaderboard() {
   const [periodType, setPeriodType] = useState<PeriodType>('weekly');
   const [scope, setScope] = useState<Scope>('global');
   const [rankings, setRankings] = useState<Ranking[]>([]);
-  const [friendUids, setFriendUids] = useState<Set<string>>(new Set());
+  const [circleUids, setCircleUids] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -171,19 +156,19 @@ export default function Leaderboard() {
             const users = d.data().users ?? [];
             users.filter((u) => u !== user.id).forEach((u) => uids.add(u));
           });
-          setFriendUids(uids);
+          setCircleUids(uids);
         },
-        () => setFriendUids(new Set()),
+        () => setCircleUids(new Set()),
       );
     return unsubscribe;
   }, [user?.id]);
 
-  // The friends board is the global board filtered, so a friend's rank is
-  // their real standing overall.
+  // The circle board is the full board filtered, so a person's rank here is
+  // their real standing against everyone, not a rank invented within a group.
   const visible = useMemo(() => {
     if (scope === 'global') return rankings;
-    return rankings.filter((r) => r.userId === user?.id || friendUids.has(r.userId));
-  }, [scope, rankings, friendUids, user?.id]);
+    return rankings.filter((r) => r.userId === user?.id || circleUids.has(r.userId));
+  }, [scope, rankings, circleUids, user?.id]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -206,20 +191,20 @@ export default function Leaderboard() {
           <View style={styles.centre}>
             <ActivityIndicator color={C.primary} />
           </View>
-        ) : scope === 'friends' && friendUids.size === 0 ? (
+        ) : scope === 'circle' && circleUids.size === 0 ? (
           <EmptyState
             icon="person-add-outline"
-            title="No friends yet"
-            subtitle="Share your code with someone and they will appear here, on the same board as everyone else."
-            action={{ label: 'Add a friend', onPress: () => router.push('/invite') }}
+            title="Your circle is empty"
+            subtitle="Share your code with someone and they appear here, on the same board as everyone else."
+            action={{ label: 'Bring someone in', onPress: () => router.push('/invite') }}
           />
         ) : visible.length === 0 ? (
           <EmptyState
             icon="podium-outline"
-            title={scope === 'friends' ? 'No friends on this board yet' : 'No rankings yet'}
+            title={scope === 'circle' ? 'Nobody here this period' : 'No rankings yet'}
             subtitle={
-              scope === 'friends'
-                ? 'Your friends appear once they complete a scored trip in this period.'
+              scope === 'circle'
+                ? 'Your circle appears once they complete a scored trip in this period.'
                 : 'The board fills as drivers complete scored trips. Yours appears once your first trip of the period lands.'
             }
           />

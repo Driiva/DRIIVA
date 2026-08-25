@@ -6,8 +6,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
 import { ScoreRing } from '@/components/ui/ScoreRing';
-import { C, F, S, R, RGB, alpha, FS, LH, TR } from '@/components/ui/theme';
-import { refundEstimate } from '@/hooks/useTripSeed';
+import { C, F, S, R, RGB, alpha, FS, LH, TR, T } from '@/components/ui/theme';
+import { refundEstimateRange, DEMO_REFUND_DISCLOSURE } from '@/hooks/useTripSeed';
+import { formatPoundsWhole } from '@/lib/money';
 import { joinWaitlist, WaitlistError } from '@/lib/waitlist';
 
 // FCA DISCLOSURE REQUIRED - all financial figures are illustrative before product launch
@@ -21,9 +22,12 @@ export default function Quote() {
   const [joined, setJoined] = useState(false);
   const [waitlistError, setWaitlistError] = useState<string | null>(null);
 
-  const refund = refundEstimate(state.seedScore); // ESTIMATE - subject to actuarial review
-  const minRefund = Math.round(refund * 0.8);
-  const maxRefund = Math.round(refund * 1.2);
+  // One range calculation, shared with viral-moment.tsx, delegating to the
+  // real projectedRefundCents. The hand-rolled `refund * 0.8` and `* 1.2` that
+  // used to live here widened a figure already scaled to the 15% ceiling, so
+  // the top of the displayed range sat ABOVE the cap. A cap applied before the
+  // spread is not a cap.
+  const { min: minRefund, max: maxRefund } = refundEstimateRange(state.seedScore);
 
   const handleGetQuote = async () => {
     // TODO: Root Platform API - Sprint 5. Launch quote journey here.
@@ -73,8 +77,10 @@ export default function Quote() {
           <ScoreRing score={state.seedScore} size={120} label="Your score" animated={false} />
           <View style={styles.refundEstimate}>
             <Text style={styles.refundLabel}>Drive like today, earn back</Text>
-            {/* ESTIMATE - subject to actuarial review */}
-            <Text style={styles.refundRange}>£{minRefund} to £{maxRefund} this year</Text>
+            <Text style={styles.refundRange}>
+              {formatPoundsWhole(minRefund * 100)} to {formatPoundsWhole(maxRefund * 100)} this year
+            </Text>
+            <Text style={styles.refundBasis}>{DEMO_REFUND_DISCLOSURE}</Text>
           </View>
         </View>
 
@@ -83,8 +89,8 @@ export default function Quote() {
           <Text style={styles.quoteStubEyebrow}>Quote</Text>
           <Text style={styles.quoteStubTitle}>Launching soon.</Text>
           <Text style={styles.quoteStubSub}>
-            Our insurance product is working towards the FCA regulatory sandbox and is not authorised. Join the waitlist
-            and you'll be first to get a live quote.
+            Driiva Ltd is not authorised by the FCA and our insurance product is pending FCA
+            authorisation. Join the waitlist and you will be first to get a live quote.
           </Text>
         </View>
 
@@ -134,7 +140,7 @@ export default function Quote() {
         <View style={styles.disclaimer}>
           <Text style={styles.disclaimerText}>
             {/* FCA DISCLOSURE REQUIRED */}
-            Driiva is operated by Driiva Ltd. Our insurance product is working towards the FCA regulatory sandbox and is not authorised.
+            Driiva is operated by Driiva Ltd, which is not authorised by the FCA. Our insurance product is pending FCA authorisation.
             Refund estimates are illustrative and do not constitute a binding offer. Terms apply.
           </Text>
         </View>
@@ -157,8 +163,8 @@ const styles = StyleSheet.create({
   progress: { paddingHorizontal: S.lg, paddingTop: S.sm },
   content: { paddingHorizontal: S.lg, paddingTop: S.md, paddingBottom: 120 },
   headline: {
-    color: C.text.hero, fontSize: FS.xxl, fontFamily: F.bodySemiBold,
-    letterSpacing: TR.xxl, lineHeight: LH.xxl, marginBottom: 24,
+    ...T.h0,
+    color: C.text.hero, marginBottom: 24,
   },
   scoreCard: {
     flexDirection: 'row',
@@ -172,8 +178,19 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   refundEstimate: { flex: 1 },
-  refundLabel: { color: C.text.sec, fontFamily: F.body, fontSize: FS.sm, marginBottom: 6 },
-  refundRange: { color: C.success, fontSize: FS.xl, fontFamily: F.bodyBold, letterSpacing: -0.02 },
+  refundBasis: { ...T.caption, color: C.text.mut, marginTop: S.sm },
+  refundLabel: { color: C.text.sec, fontFamily: F.body, fontSize: FS.sm, lineHeight: LH.sm, letterSpacing: TR.sm, marginBottom: 6 },
+  /**
+   * The hero face, NOT success green.
+   *
+   * C.success is a SCORE colour. Painting a projected, uncapped-by-nothing,
+   * not-guaranteed pound range in the same green the app uses for "you drove
+   * well" tells the reader the money is earned and safe, which is the one
+   * thing this figure is not. It also out-shouted the score ring beside it,
+   * inverting the hierarchy on a screen whose whole argument is that the score
+   * is what produces the number.
+   */
+  refundRange: { ...T.stat, color: C.text.hero },
   quoteStub: {
     backgroundColor: alpha(RGB.primary, 0.08),
     borderRadius: R.card,
@@ -183,11 +200,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   quoteStubEyebrow: {
-    color: C.primaryLight, fontSize: FS.xs, fontFamily: F.bodySemiBold,
-    letterSpacing: 0.1, textTransform: 'uppercase', marginBottom: 6,
+    ...T.eyebrow,
+    color: C.primaryLight, marginBottom: 6,
   },
-  quoteStubTitle: { color: C.text.hero, fontSize: FS.xl, fontFamily: F.bodySemiBold, marginBottom: 8 },
-  quoteStubSub: { color: C.text.sec, fontFamily: F.body, fontSize: FS.md, lineHeight: LH.md },
+  quoteStubTitle: { color: C.text.hero, fontSize: FS.xl, fontFamily: F.bodySemiBold, lineHeight: LH.xl, letterSpacing: TR.xl, marginBottom: 8 },
+  quoteStubSub: { color: C.text.sec, fontFamily: F.body, fontSize: FS.md, lineHeight: LH.md, letterSpacing: TR.md },
   waitlistCard: {
     backgroundColor: C.surface1,
     borderRadius: R.card,
@@ -196,8 +213,8 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 16,
   },
-  waitlistTitle: { color: C.text.hero, fontSize: FS.base, fontFamily: F.bodySemiBold, marginBottom: 4 },
-  waitlistSub: { color: C.text.mut, fontFamily: F.body, fontSize: FS.sm, marginBottom: 16 },
+  waitlistTitle: { color: C.text.hero, fontSize: FS.base, fontFamily: F.bodySemiBold, lineHeight: LH.base, letterSpacing: TR.base, marginBottom: 4 },
+  waitlistSub: { color: C.text.mut, fontFamily: F.body, fontSize: FS.sm, lineHeight: LH.sm, letterSpacing: TR.sm, marginBottom: 16 },
   emailInput: {
     backgroundColor: C.surface2,
     borderRadius: R.card,
@@ -207,6 +224,8 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
     fontFamily: F.body,
     fontSize: FS.md,
+    lineHeight: LH.md,
+    letterSpacing: TR.md,
     color: C.text.hero,
     marginBottom: 12,
   },
@@ -215,7 +234,7 @@ const styles = StyleSheet.create({
     paddingVertical: 13, alignItems: 'center',
   },
   waitlistBtnDisabled: { opacity: 0.5 },
-  waitlistBtnText: { color: C.text.hero, fontSize: FS.md, fontFamily: F.bodySemiBold },
+  waitlistBtnText: { color: C.text.hero, fontSize: FS.md, fontFamily: F.bodySemiBold, lineHeight: LH.md, letterSpacing: TR.md },
   joinedBadge: {
     backgroundColor: alpha(RGB.success, 0.12),
     borderRadius: R.card,
@@ -224,13 +243,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: alpha(RGB.success, 0.25),
   },
-  joinedText: { color: C.success, fontSize: FS.md, fontFamily: F.bodySemiBold },
+  joinedText: { color: C.success, fontSize: FS.md, fontFamily: F.bodySemiBold, lineHeight: LH.md, letterSpacing: TR.md },
   waitlistErrorText: {
     color: C.error, fontFamily: F.body, fontSize: FS.sm,
-    marginTop: 10, lineHeight: 18,
+    marginTop: 10, lineHeight: LH.sm, letterSpacing: TR.sm,
   },
   disclaimer: { padding: 2 },
-  disclaimerText: { color: C.text.mut, fontFamily: F.body, fontSize: FS.sm, lineHeight: LH.sm },
+  disclaimerText: { color: C.text.mut, fontFamily: F.body, fontSize: FS.sm, lineHeight: LH.sm, letterSpacing: TR.sm },
   footer: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
     padding: S.lg, gap: 12,
@@ -242,6 +261,6 @@ const styles = StyleSheet.create({
     backgroundColor: C.primary, borderRadius: R.card,
     paddingVertical: 16, alignItems: 'center',
   },
-  primaryBtnText: { color: C.text.hero, fontSize: FS.md, fontFamily: F.bodySemiBold, letterSpacing: -0.005 },
-  skipText: { color: C.text.mut, fontFamily: F.body, fontSize: FS.sm, textAlign: 'center' },
+  primaryBtnText: { color: C.text.hero, fontSize: FS.md, fontFamily: F.bodySemiBold, lineHeight: LH.md, letterSpacing: TR.md },
+  skipText: { color: C.text.mut, fontFamily: F.body, fontSize: FS.sm, lineHeight: LH.sm, letterSpacing: TR.sm, textAlign: 'center' },
 });

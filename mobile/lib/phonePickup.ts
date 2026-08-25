@@ -80,12 +80,12 @@ type AccelerometerSubscription = { remove: () => void };
  */
 export class PhonePickupDetector {
   private subscription: AccelerometerSubscription | null = null;
-  private count = 0;
+  private count_ = 0;
   private disturbanceStartedAt: number | null = null;
   private lastCountedAt = 0;
 
   start(): void {
-    this.count = 0;
+    this.count_ = 0;
     this.disturbanceStartedAt = null;
     this.lastCountedAt = 0;
 
@@ -109,7 +109,7 @@ export class PhonePickupDetector {
       const sustainedFor = now - this.disturbanceStartedAt;
       const sinceLastCount = now - this.lastCountedAt;
       if (sustainedFor >= MIN_SUSTAINED_MS && sinceLastCount >= DEBOUNCE_MS) {
-        this.count += 1;
+        this.count_ += 1;
         this.lastCountedAt = now;
         // Restart the sustain clock rather than leaving it running, so a
         // continued single hold is metered roughly every DEBOUNCE_MS rather
@@ -119,10 +119,19 @@ export class PhonePickupDetector {
     });
   }
 
+  /**
+   * The running count, without stopping. Read live by lib/driveMonitor.ts,
+   * which rebases it at the start of each trip: the detector runs for as long
+   * as detection is armed, not for the length of one trip.
+   */
+  get count(): number {
+    return this.count_;
+  }
+
   /** Stops listening and returns the pickup count for this trip. */
   stop(): number {
     this.subscription?.remove();
     this.subscription = null;
-    return this.count;
+    return this.count_;
   }
 }

@@ -5,24 +5,12 @@ import Animated, {
   useSharedValue, useAnimatedProps, withTiming, withDelay,
   useAnimatedStyle, withSequence,
 } from 'react-native-reanimated';
-import { C, F, R, RGB, alpha, FS } from '@/components/ui/theme';
+import { C, F, R, RGB, alpha, FS, LH, TR, T } from '@/components/ui/theme';
+import { DEMO_SCORE_DELTAS, type DemoScoreDelta } from '@/hooks/useTripSeed';
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 const TRIP_PATH = 'M 20 200 C 40 185 55 175 70 160 S 95 145 115 130 S 140 115 160 105 S 185 90 205 80 S 230 68 255 58 S 272 48 285 42';
 const PATH_LENGTH = 330;
-
-interface Event {
-  label: string;
-  delta: string;
-  delay: number;
-}
-
-const EVENTS: Event[] = [
-  { label: 'Smooth braking detected', delta: '+8', delay: 1200 },
-  { label: 'Speed limit observed', delta: '+5', delay: 2000 },
-  { label: 'Eco-efficient acceleration', delta: '+4', delay: 2800 },
-  { label: 'Night Owl: 11 pm drive detected', delta: '+2', delay: 3600 },
-];
 
 interface Props {
   onComplete?: () => void;
@@ -71,15 +59,15 @@ export function TripReplay({ onComplete }: Props) {
       </View>
 
       <View style={styles.events}>
-        {EVENTS.map((ev, i) => (
-          <EventRow key={i} event={ev} index={i} />
+        {DEMO_SCORE_DELTAS.map((ev) => (
+          <EventRow key={ev.id} event={ev} />
         ))}
       </View>
     </View>
   );
 }
 
-function EventRow({ event, index }: { event: Event; index: number }) {
+function EventRow({ event }: { event: DemoScoreDelta }) {
   const opacity = useSharedValue(0);
   const translateY = useSharedValue(8);
 
@@ -99,7 +87,7 @@ function EventRow({ event, index }: { event: Event; index: number }) {
   return (
     <Animated.View style={[styles.eventRow, style]}>
       <Text style={styles.eventLabel}>{event.label}</Text>
-      <Text style={styles.eventDelta}>{event.delta} pts</Text>
+      <Text style={styles.eventDelta}>+{event.delta} pts</Text>
     </Animated.View>
   );
 }
@@ -125,10 +113,8 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   badgeText: {
+    ...T.eyebrow,
     color: C.text.sec,
-    fontSize: FS.xs,
-    fontFamily: F.bodySemiBold,
-    letterSpacing: 0.04,
   },
   events: { gap: 8 },
   eventRow: {
@@ -142,6 +128,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: C.border,
   },
-  eventLabel: { color: C.text.pri, fontFamily: F.body, fontSize: FS.sm },
-  eventDelta: { color: C.success, fontSize: FS.sm, fontFamily: F.bodyBold },
+  eventLabel: { color: C.text.pri, fontFamily: F.body, fontSize: FS.sm, lineHeight: LH.sm, letterSpacing: TR.sm },
+  eventDelta: { ...T.numberSm, color: C.success },
 });

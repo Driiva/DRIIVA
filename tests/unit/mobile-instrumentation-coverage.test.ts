@@ -64,6 +64,17 @@ describe('instrumentation coverage', () => {
     expect(missing, `declared but never emitted: ${missing.join(', ')}`).toEqual([]);
   });
 
+  it('records the Community screen as its own step in the loop', () => {
+    // Community sits between "I saw my score" and "I brought someone in".
+    // Folding it into leaderboard_viewed would hide whether anyone reaches the
+    // screen at all, which is the only question the section exists to answer.
+    expect(LOOP_EVENTS).toContain('community_viewed');
+
+    const communityScreen = callSites.find((f) => f.endsWith('community.tsx'));
+    expect(communityScreen, 'the Community tab is missing').toBeDefined();
+    expect(readFileSync(communityScreen as string, 'utf8')).toContain("track('community_viewed')");
+  });
+
   it('emits nothing that is not in the taxonomy', () => {
     const emitted = new Set<string>();
     for (const match of corpus.matchAll(/\btrack\(\s*'([a-z_]+)'/g)) {

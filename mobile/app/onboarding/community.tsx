@@ -26,7 +26,7 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
 import { DriivButton } from '@/components/ui/DriivButton';
-import { C, F, S, R, FS, LH, TR } from '@/components/ui/theme';
+import { C, F, S, R, FS, LH, TR, T } from '@/components/ui/theme';
 import { ONBOARDING_TOTAL, stepNumber } from '@/lib/onboardingFlow';
 import { track } from '@/lib/analytics';
 import { getPushPermission, registerForPush, type PushPermission } from '@/lib/push';
@@ -42,7 +42,7 @@ const POINTS = [
   },
   {
     title: 'Bring someone you know.',
-    body: 'A board of strangers is a scoreboard. A board of friends is a reason to come back.',
+    body: 'A board of strangers is a scoreboard. A board of people you know is a reason to come back.',
   },
 ];
 
@@ -147,7 +147,7 @@ export default function Community() {
           disabled={finishing}
         />
         <DriivButton
-          title="Add a friend first"
+          title="Bring someone in first"
           onPress={() => finish('/invite')}
           variant="secondary"
           disabled={finishing}
@@ -164,11 +164,8 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: S.lg, paddingTop: S.md, paddingBottom: S.xl },
 
   headline: {
+    ...T.h0,
     color: C.text.hero,
-    fontSize: FS.xxl,
-    fontFamily: F.bodySemiBold,
-    letterSpacing: TR.xxl,
-    lineHeight: LH.xxl,
     marginBottom: S.lg,
   },
 
@@ -185,12 +182,15 @@ const styles = StyleSheet.create({
     color: C.text.hero,
     fontFamily: F.bodySemiBold,
     fontSize: FS.base,
+    lineHeight: LH.base,
+    letterSpacing: TR.base,
   },
   cardBody: {
     color: C.text.sec,
     fontFamily: F.body,
     fontSize: FS.md,
     lineHeight: LH.md,
+    letterSpacing: TR.md,
   },
   cardAction: { marginTop: S.sm },
 
@@ -206,6 +206,7 @@ const styles = StyleSheet.create({
     fontFamily: F.body,
     fontSize: FS.sm,
     lineHeight: LH.sm,
+    letterSpacing: TR.sm,
     textAlign: 'center',
   },
 });

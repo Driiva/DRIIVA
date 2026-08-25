@@ -23,6 +23,7 @@ import { TripCard } from '@/components/ui/TripCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader';
 import { fetchTripPage, tripCursor } from '@/lib/trips';
+import { tick } from '@/components/ui/motion';
 
 const PAGE_SIZE = 25;
 
@@ -126,6 +127,9 @@ export default function Trips() {
   }, [user?.id, hasMore, head]);
 
   const onRefresh = useCallback(() => {
+    // The head is a live subscription, so this gesture drops the appended
+    // pages rather than refetching. The haptic is the acknowledgement.
+    tick('select');
     setRefreshing(true);
     resetPages();
     // The head is a live subscription and is already current; this gesture
@@ -177,8 +181,16 @@ export default function Trips() {
           <EmptyState
             icon="car-outline"
             title="No trips yet"
-            subtitle="Record a journey and your score for it appears here once it has been scored."
-            action={{ label: 'Record a trip', onPress: () => router.push('/(tabs)/record') }}
+            /*
+             * Deliberately does not say "record". Automatic drive detection is
+             * the headline feature being built alongside this, and an empty
+             * state that instructs the driver to press a button contradicts a
+             * product whose whole claim is that it notices for you. This
+             * sentence is true whether the drive was captured automatically or
+             * started by hand.
+             */
+            subtitle="Your first scored drive appears here."
+            action={{ label: 'Open Drive', onPress: () => router.push('/(tabs)/record') }}
           />
         }
         ListFooterComponent={
@@ -190,6 +202,13 @@ export default function Trips() {
             onRetry={() => void loadMore()}
           />
         }
+        /*
+         * No entrance animation on the rows, deliberately. This list is opened
+         * many times a day and recycled while it scrolls, and the frequency
+         * tier where a cascade earns its place is "occasional", not "every
+         * time the driver checks a trip". Press feedback is the motion this
+         * screen needs; a stagger here would only make it feel slower.
+         */
         renderItem={({ item }) => (
           <TripCard
             trip={{

@@ -7,7 +7,7 @@ import { useOnboarding } from '@/contexts/OnboardingContext';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
 import { ONBOARDING_TOTAL, stepNumber } from '@/lib/onboardingFlow';
 import { track } from '@/lib/analytics';
-import { C, F, S, R, RGB, alpha, FS } from '@/components/ui/theme';
+import { C, F, S, R, RGB, alpha, FS, T, LH, TR } from '@/components/ui/theme';
 
 const OPTIONS = [
   { icon: 'cash-outline', label: 'Save money on insurance' },
@@ -82,10 +82,10 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: S.lg, paddingTop: S.md, paddingBottom: S.lg },
   back: { marginBottom: S.lg },
   headline: {
-    color: C.text.hero, fontSize: FS.xxl, fontFamily: F.bodySemiBold,
-    letterSpacing: -0.025, lineHeight: 34, marginBottom: 8,
+    ...T.h0,
+    color: C.text.hero, marginBottom: 8,
   },
-  sub: { color: C.text.sec, fontFamily: F.body, fontSize: FS.md, marginBottom: 28, lineHeight: 22 },
+  sub: { color: C.text.sec, fontFamily: F.body, fontSize: FS.md, marginBottom: 28, lineHeight: LH.md, letterSpacing: TR.md },
   options: { gap: 10 },
   option: {
     flexDirection: 'row',
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
     backgroundColor: alpha(RGB.primary, 0.12),
   },
   optionIcon: { width: 22, textAlign: 'center' },
-  optionLabel: { color: C.text.pri, fontFamily: F.body, fontSize: FS.md, flex: 1, lineHeight: 22 },
+  optionLabel: { color: C.text.pri, fontFamily: F.body, fontSize: FS.md, flex: 1, lineHeight: LH.md, letterSpacing: TR.md },
   optionLabelSelected: { color: C.text.hero, fontFamily: F.bodySemiBold },
   footer: { paddingHorizontal: S.lg, paddingBottom: S.lg },
   primaryBtn: {
@@ -111,5 +111,5 @@ const styles = StyleSheet.create({
     paddingVertical: 16, alignItems: 'center',
   },
   primaryBtnDisabled: { opacity: 0.4 },
-  primaryBtnText: { color: C.text.hero, fontSize: FS.md, fontFamily: F.bodySemiBold, letterSpacing: -0.005 },
+  primaryBtnText: { color: C.text.hero, fontSize: FS.md, fontFamily: F.bodySemiBold, lineHeight: LH.md, letterSpacing: TR.md },
 });

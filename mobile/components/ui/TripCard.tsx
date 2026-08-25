@@ -5,16 +5,18 @@
  * Rule 4: Tabular figures on score and metrics.
  * Rule 6: Score colour earned through data only.
  * Rule 13: Skeleton loading state matches layout exactly.
+ *
+ * The row answers the finger with a press spring and a selection haptic
+ * (PressableCard) rather than TouchableOpacity's opacity dip. A trip list is
+ * scrolled and tapped constantly, so the feedback has to be immediate and
+ * interruptible: a spring reverses from where the row actually is when a tap
+ * turns into a scroll, and an opacity fade cannot.
  */
 import React from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-} from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { C, T, F, S, R, ROW, scoreColor } from './theme';
+import { C, T, S, R, ROW, scoreColor } from './theme';
+import { PressableCard } from './motion';
 
 interface Trip {
   id?: string;
@@ -36,11 +38,11 @@ export const TripCard: React.FC<TripCardProps> = ({ trip, onPress }) => {
   const color = scoreColor(trip.score);
 
   return (
-    <TouchableOpacity
+    <PressableCard
       style={styles.container}
       onPress={onPress}
-      activeOpacity={0.8}
-      disabled={!onPress}
+      haptic="select"
+      accessibilityLabel={`${trip.routeSummary || 'Trip'}, ${miles} miles, scored ${trip.score}`}
     >
       {/* Route icon */}
       <View style={styles.iconWrap}>
@@ -61,7 +63,7 @@ export const TripCard: React.FC<TripCardProps> = ({ trip, onPress }) => {
       <View style={[styles.scoreBadge, { borderColor: color }]}>
         <Text style={[styles.scoreText, { color }]}>{trip.score}</Text>
       </View>
-    </TouchableOpacity>
+    </PressableCard>
   );
 };
 

@@ -23,16 +23,20 @@
 import { useEffect, useState } from 'react';
 import { View, Text, ScrollView, RefreshControl, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { firestore } from '@/lib/firebase';
+import { periodIdFor } from '@/lib/isoWeek';
+import { formatPounds } from '@/lib/money';
 import { useAuth } from '@/contexts/AuthContext';
 import { track } from '@/lib/analytics';
-import { C, T, F, S, scoreColor, FS } from '@/components/ui/theme';
+import { C, T, S, scoreColor } from '@/components/ui/theme';
 import { ScoreRing } from '@/components/ui/ScoreRing';
 import { StatCard } from '@/components/ui/StatCard';
 import { ScoreBreakdownBar } from '@/components/ui/ScoreBreakdownBar';
 import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import { CountUp } from '@/components/ui/CountUp';
+import { Enter, PressableCard, tick } from '@/components/ui/motion';
 import { SCORE_WEIGHTS, projectedRefundCents } from '@driiva/scoring';
 
 /**
@@ -63,14 +67,18 @@ interface ScoreBreakdown {
 }
 
 interface DashboardData {
-  overallScore: number;
+  /** When the last trip finished scoring. Null before the first one. */
+  lastTripAt: Date | null;
+  /** Null until a trip has actually been scored. Never a placeholder zero. */
+  overallScore: number | null;
   totalTrips: number;
   totalMiles: number;
   /** Pence per month, from a real policy. Null when there is no policy. */
   premiumCents: number | null;
   /** The driver's share of the pool, 0-100, as the server computed it. */
   sharePercentage: number | null;
-  scoreBreakdown: ScoreBreakdown;
+  /** Null until the server has written one. A zeroed breakdown reads as bad driving. */
+  scoreBreakdown: ScoreBreakdown | null;
   recentTrips: RecentTrip[];
 }
 
@@ -94,28 +102,22 @@ const FACTORS: ReadonlyArray<{ key: keyof ScoreBreakdown; label: string; weight:
   { key: 'phoneUsageScore', label: 'Phone', weight: SCORE_WEIGHTS.phoneUsage },
 ];
 
-const EMPTY_BREAKDOWN: ScoreBreakdown = {
-  speedScore: 0,
-  brakingScore: 0,
-  accelerationScore: 0,
-  corneringScore: 0,
-  phoneUsageScore: 100,
-};
-
 /**
- * ISO week period, e.g. "2026-W06". Mirrors getIsoWeekPeriod in
- * functions/src/utils/helpers.ts and the copy in app/leaderboard.tsx. The week
- * YEAR is the year of the week's Thursday, not the calendar year of the date;
- * around New Year those disagree and the two sides then read and write
- * different documents with no error anywhere. Change all of them or none.
+ * The header line. It used to read "Your driving dashboard", which named the
+ * screen the driver was already looking at. A date is worth more than a label:
+ * it answers whether the score below is current, which is the only reason to
+ * doubt it.
  */
-function isoWeekPeriod(now: Date): string {
-  const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
-  const dayNum = d.getUTCDay() || 7;
-  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  const weekNum = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
-  return `${d.getUTCFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+function lastTripLabel(lastTripAt: Date | null): string {
+  if (!lastTripAt) return 'No scored trips yet.';
+  const days = Math.floor((Date.now() - lastTripAt.getTime()) / 86_400_000);
+  if (days <= 0) return 'Last scored trip today.';
+  if (days === 1) return 'Last scored trip yesterday.';
+  if (days < 14) return `Last scored trip ${days} days ago.`;
+  return `Last scored trip ${lastTripAt.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'long',
+  })}.`;
 }
 
 export default function Dashboard() {
@@ -146,6 +148,7 @@ export default function Dashboard() {
         const profile = (userData.drivingProfile ?? {}) as Partial<DashboardData> & {
           currentScore?: number;
           scoreBreakdown?: ScoreBreakdown;
+          lastTripAt?: { toDate?: () => Date } | null;
         };
         const policy = (userData.activePolicy ?? null) as { premiumCents?: number } | null;
         const share = (userData.poolShare ?? null) as { sharePercentage?: number } | null;
@@ -156,13 +159,19 @@ export default function Dashboard() {
           // app was pinned at 0 in the red tier forever. `currentScore` is the
           // canonical field in packages/contracts and the one every writer
           // (provisionUser, trip triggers, damoovSync) actually sets.
-          overallScore: profile.currentScore ?? 0,
+          //
+          // Null when the field is absent, not zero. A zero draws the gauge in
+          // the red tier, so a driver who has simply not driven yet would be
+          // shown the instrument of somebody who drives badly. Empty is a
+          // state; a plausible zero is the gauge lying on the app's behalf.
+          overallScore: typeof profile.currentScore === 'number' ? profile.currentScore : null,
           totalTrips: profile.totalTrips ?? 0,
           totalMiles: profile.totalMiles ?? 0,
+          lastTripAt: profile.lastTripAt?.toDate ? profile.lastTripAt.toDate() : null,
           premiumCents: typeof policy?.premiumCents === 'number' ? policy.premiumCents : null,
           sharePercentage:
             typeof share?.sharePercentage === 'number' ? share.sharePercentage : null,
-          scoreBreakdown: profile.scoreBreakdown ?? EMPTY_BREAKDOWN,
+          scoreBreakdown: profile.scoreBreakdown ?? null,
           recentTrips: (userData.recentTrips ?? []) as RecentTrip[],
         });
       });
@@ -200,7 +209,7 @@ export default function Dashboard() {
     if (!user?.id) return;
     const unsubscribe = firestore()
       .collection('leaderboard')
-      .doc(`${isoWeekPeriod(new Date())}_weekly`)
+      .doc(periodIdFor('weekly'))
       .onSnapshot(
         (snap: {
           data: () => { rankings?: Array<{ rank: number; userId: string }> } | undefined;
@@ -213,17 +222,29 @@ export default function Dashboard() {
     return unsubscribe;
   }, [user?.id]);
 
-  const onRefresh = async () => {
+  const router = useRouter();
+
+  const onRefresh = () => {
+    // Every panel here is a live Firestore subscription and is already
+    // current, so the gesture acknowledges itself and stops. The haptic is the
+    // acknowledgement: without it a pull that fetches nothing feels ignored.
+    tick('select');
     setRefreshing(true);
-    // Firestore listener auto-updates, just show the indicator briefly
-    setTimeout(() => setRefreshing(false), 1000);
+    setTimeout(() => setRefreshing(false), 700);
   };
 
-  const score = data?.overallScore ?? 0;
+  const score = data?.overallScore ?? null;
   const premiumCents = data?.premiumCents ?? null;
-  // Pence in, pence out. Pounds happen only at the point of drawing.
+  const breakdown = data?.scoreBreakdown ?? null;
+  // Pence in, pence out. Pounds happen only at the point of drawing, through
+  // lib/money.ts, which is why CountUp counts the PENCE figure and formats it
+  // rather than being handed a float.
   const projectedCents =
-    premiumCents != null && score > 0 ? projectedRefundCents(score, premiumCents) : null;
+    premiumCents != null && score != null && score > 0
+      ? projectedRefundCents(score, premiumCents)
+      : null;
+
+  const recent = data?.recentTrips ?? [];
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -234,128 +255,179 @@ export default function Dashboard() {
         }
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
-          <Text style={styles.greeting}>Hey, {user?.name?.split(' ')[0] ?? 'Driver'}</Text>
-          <Text style={styles.subtitle}>Your driving dashboard</Text>
-        </View>
+        <Enter index={0} count={7}>
+          <View style={styles.header}>
+            <Text style={styles.greeting}>Hey, {user?.name?.split(' ')[0] ?? 'Driver'}</Text>
+            <Text style={styles.subtitle}>{lastTripLabel(data?.lastTripAt ?? null)}</Text>
+          </View>
+        </Enter>
 
         {/* 1. SCORE, on the canonical 270-degree gauge. */}
-        <View style={styles.scoreCard}>
-          <ScoreRing score={score} size="lg" />
-          <Text style={styles.scoreCaption}>Safety score</Text>
-        </View>
+        <Enter index={1} count={7}>
+          <View style={styles.scoreCard}>
+            <ScoreRing score={score} size={172} />
+            <Text style={styles.scoreCaption}>Safety score</Text>
+          </View>
+        </Enter>
 
         {/* 2. CASHBACK. A projection where a premium exists, honest otherwise. */}
-        <SurfaceCard padding="lg" style={styles.target}>
-          <View style={styles.targetHead}>
-            <Ionicons name="cash-outline" size={18} color={C.text.sec} />
-            <Text style={styles.targetLabel}>Cashback</Text>
-          </View>
-          {projectedCents != null ? (
-            <>
-              <CountUp
-                value={projectedCents / 100}
-                decimals={2}
-                prefix="£"
-                style={styles.targetValue}
-              />
-              <Text style={styles.targetNote}>
-                Projected from your score of {Math.round(score)} against your current premium.
-                It moves with every trip and is settled at the end of the pool period.
-              </Text>
-            </>
-          ) : (
-            <>
-              <Text style={styles.targetPending}>Not started</Text>
-              <Text style={styles.targetNote}>
-                Cashback is projected from your score against a live policy premium. There is
-                no active policy on your account yet, so there is nothing to project from.
-              </Text>
-            </>
-          )}
-        </SurfaceCard>
+        <Enter index={2} count={7}>
+          <SurfaceCard padding="lg" style={styles.target}>
+            <View style={styles.targetHead}>
+              <Ionicons name="cash-outline" size={18} color={C.text.sec} />
+              <Text style={styles.targetLabel}>Cashback</Text>
+            </View>
+            {projectedCents != null && score != null ? (
+              <>
+                <CountUp
+                  value={projectedCents}
+                  format={(pence) => formatPounds(pence)}
+                  style={styles.targetValue}
+                />
+                <Text style={styles.targetNote}>
+                  Projected from your score of {Math.round(score)} against your current premium,
+                  capped at 15%. It moves with every trip and is settled at the end of the pool
+                  period.
+                </Text>
+              </>
+            ) : (
+              <>
+                <Text style={styles.targetPending}>Not started</Text>
+                <Text style={styles.targetNote}>
+                  Cashback is projected from your score against a live policy premium, up to
+                  15%. There is no active policy on your account yet, so there is nothing to
+                  project from.
+                </Text>
+              </>
+            )}
+          </SurfaceCard>
+        </Enter>
 
         {/* 3. COMMUNITY POOL. Participation and share, never a pound figure. */}
-        <SurfaceCard padding="lg" style={styles.target}>
-          <View style={styles.targetHead}>
-            <Ionicons name="people-outline" size={18} color={C.text.sec} />
-            <Text style={styles.targetLabel}>Community pool</Text>
-          </View>
-          {pool && pool.activeParticipants > 0 ? (
-            <>
-              <View style={styles.poolRow}>
-                <View style={styles.poolFigure}>
-                  <CountUp value={pool.activeParticipants} style={styles.targetValue} />
-                  <Text style={styles.poolFigureLabel}>drivers in the pool</Text>
-                </View>
-                <View style={styles.poolFigure}>
-                  <Text style={styles.targetValue}>
-                    {data?.sharePercentage != null
-                      ? `${data.sharePercentage.toFixed(2)}%`
-                      : 'None yet'}
-                  </Text>
-                  <Text style={styles.poolFigureLabel}>your share</Text>
-                </View>
+        <Enter index={3} count={7}>
+          <PressableCard
+            onPress={() => router.push('/(tabs)/community')}
+            haptic="press"
+            accessibilityLabel="Open Community"
+          >
+            <SurfaceCard padding="lg" style={styles.target}>
+              <View style={styles.targetHead}>
+                <Ionicons name="people-outline" size={18} color={C.text.sec} />
+                <Text style={styles.targetLabel}>Community pool</Text>
+                <View style={styles.flex} />
+                <Ionicons name="chevron-forward" size={16} color={C.text.mut} />
               </View>
-              <Text style={styles.targetNote}>
-                Your share is set by your weighted score against everyone else in the pool,
-                which currently averages {pool.averagePoolScore.toFixed(1)}. Shares are stated
-                as a percentage, not a sum, until the pool is funded.
-              </Text>
-            </>
-          ) : (
-            <>
-              <Text style={styles.targetPending}>Opens at launch</Text>
-              <Text style={styles.targetNote}>
-                Contributions begin when the product goes live. Your score is being recorded
-                now, and it is what will set your share of the pool.
-              </Text>
-            </>
-          )}
-        </SurfaceCard>
+              {pool && pool.activeParticipants > 0 ? (
+                <>
+                  <View style={styles.poolRow}>
+                    <View style={styles.poolFigure}>
+                      <CountUp value={pool.activeParticipants} style={styles.targetValue} />
+                      <Text style={styles.poolFigureLabel}>drivers in the pool</Text>
+                    </View>
+                    <View style={styles.poolFigure}>
+                      <Text style={styles.targetValue}>
+                        {data?.sharePercentage != null
+                          ? `${data.sharePercentage.toFixed(2)}%`
+                          : 'None yet'}
+                      </Text>
+                      <Text style={styles.poolFigureLabel}>your share</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.targetNote}>
+                    Your share is set by your weighted score against everyone else in the pool,
+                    which currently averages {pool.averagePoolScore.toFixed(1)}. Shares are
+                    stated as a percentage, not a sum, until the pool is funded.
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.targetPending}>Opens at launch</Text>
+                  <Text style={styles.targetNote}>
+                    Contributions begin when the product goes live. Your score is being recorded
+                    now, and it is what will set your share of the pool.
+                  </Text>
+                </>
+              )}
+            </SurfaceCard>
+          </PressableCard>
+        </Enter>
 
         {/* Supporting detail, below the three targets. */}
-        <View style={styles.statsRow}>
-          <StatCard label="Trips" value={String(data?.totalTrips ?? 0)} />
-          <StatCard label="Miles" value={String(Math.round(data?.totalMiles ?? 0))} />
-          {rank != null && <StatCard label="Rank" value={String(rank)} />}
-        </View>
+        <Enter index={4} count={7}>
+          <View style={styles.statsRow}>
+            <StatCard label="Trips" value={String(data?.totalTrips ?? 0)} />
+            <StatCard label="Miles" value={String(Math.round(data?.totalMiles ?? 0))} />
+            {rank != null && (
+              <PressableCard
+                onPress={() => router.push('/leaderboard')}
+                haptic="select"
+                outerStyle={styles.flex}
+                accessibilityLabel={`Rank ${rank}. Open the board.`}
+              >
+                <StatCard label="Rank" value={String(rank)} />
+              </PressableCard>
+            )}
+          </View>
+        </Enter>
 
-        <SurfaceCard padding="lg" style={styles.card}>
-          <Text style={styles.cardTitle}>Score breakdown</Text>
-          {FACTORS.map((factor) => (
-            <ScoreBreakdownBar
-              key={factor.key}
-              label={factor.label}
-              value={Math.round(data?.scoreBreakdown[factor.key] ?? EMPTY_BREAKDOWN[factor.key])}
-              weight={factor.weight}
-            />
-          ))}
-        </SurfaceCard>
-
-        <SurfaceCard padding="lg" style={styles.card}>
-          <Text style={styles.cardTitle}>Recent trips</Text>
-          {(data?.recentTrips?.length ?? 0) === 0 ? (
-            <Text style={styles.emptyText}>
-              No trips yet. Your score appears once your first drive has been scored.
-            </Text>
-          ) : (
-            data?.recentTrips.slice(0, 5).map((trip) => (
-              <View key={trip.tripId} style={styles.tripRow}>
-                <View>
-                  <Text style={styles.tripRoute}>{trip.routeSummary || 'Trip'}</Text>
-                  <Text style={styles.tripMeta}>
-                    {(trip.distanceMeters / 1609.34).toFixed(1)} mi ·{' '}
-                    {Math.round(trip.durationSeconds / 60)} min
-                  </Text>
-                </View>
-                <Text style={[styles.tripScore, { color: scoreColor(trip.score) }]}>
-                  {trip.score}
+        <Enter index={5} count={7}>
+          <SurfaceCard padding="lg" style={styles.card}>
+            <Text style={styles.cardTitle}>Score breakdown</Text>
+            {breakdown ? (
+              <>
+                {FACTORS.map((factor) => (
+                  <ScoreBreakdownBar
+                    key={factor.key}
+                    label={factor.label}
+                    value={Math.round(breakdown[factor.key] ?? 0)}
+                    weight={factor.weight}
+                  />
+                ))}
+                <Text style={styles.breakdownNote}>
+                  Each factor is scored out of 100, then weighted into your overall score. Open
+                  a trip to see the events behind it.
                 </Text>
-              </View>
-            ))
-          )}
-        </SurfaceCard>
+              </>
+            ) : (
+              <Text style={styles.emptyText}>
+                Nothing to break down yet. The five factors appear once your first trip has
+                been scored.
+              </Text>
+            )}
+          </SurfaceCard>
+        </Enter>
+
+        <Enter index={6} count={7}>
+          <SurfaceCard padding="lg" style={styles.card}>
+            <Text style={styles.cardTitle}>Recent trips</Text>
+            {recent.length === 0 ? (
+              <Text style={styles.emptyText}>
+                No trips yet. Your score appears once your first drive has been scored.
+              </Text>
+            ) : (
+              recent.slice(0, 5).map((trip) => (
+                <PressableCard
+                  key={trip.tripId}
+                  onPress={() => router.push(`/trips/${trip.tripId}`)}
+                  haptic="select"
+                  style={styles.tripRow}
+                  accessibilityLabel={`${trip.routeSummary || 'Trip'}, scored ${trip.score}`}
+                >
+                  <View style={styles.flex}>
+                    <Text style={styles.tripRoute}>{trip.routeSummary || 'Trip'}</Text>
+                    <Text style={styles.tripMeta}>
+                      {(trip.distanceMeters / 1609.34).toFixed(1)} mi ·{' '}
+                      {Math.round(trip.durationSeconds / 60)} min
+                    </Text>
+                  </View>
+                  <Text style={[styles.tripScore, { color: scoreColor(trip.score) }]}>
+                    {trip.score}
+                  </Text>
+                </PressableCard>
+              ))
+            )}
+          </SurfaceCard>
+        </Enter>
       </ScrollView>
     </SafeAreaView>
   );
@@ -369,25 +441,33 @@ const styles = StyleSheet.create({
   subtitle: { ...T.body, color: C.text.sec, marginTop: 2 },
 
   scoreCard: { alignItems: 'center', marginBottom: S.lg },
+  /**
+   * Pulled UP into the gauge, not stacked under it.
+   *
+   * The gauge is a 270 degree arc that opens at the bottom, and the caption
+   * belongs in that opening: it is the label on the dial, not a line of body
+   * copy that happens to follow it. Laid out normally it sits below the full
+   * square bounding box of the ring, which leaves the better part of an inch
+   * of nothing between the arc and its own label and makes the anchor of the
+   * screen look like it is floating.
+   */
   scoreCaption: {
-    ...T.label,
+    ...T.eyebrow,
     color: C.text.sec,
-    marginTop: S.sm,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    marginTop: -34,
   },
+
+  flex: { flex: 1 },
 
   target: { marginBottom: S.md },
   targetHead: { flexDirection: 'row', alignItems: 'center', gap: S.xs, marginBottom: S.sm },
-  targetLabel: { ...T.label, color: C.text.sec, textTransform: 'uppercase', letterSpacing: 0.5 },
+  targetLabel: { ...T.eyebrow, color: C.text.sec },
   targetValue: {
-    fontFamily: F.monoSemiBold,
-    fontSize: FS.xxl,
+    ...T.statLg,
     color: C.text.hero,
-    fontVariant: ['tabular-nums'],
   },
   targetPending: { ...T.h2, color: C.text.sec },
-  targetNote: { ...T.caption, color: C.text.mut, lineHeight: 16, marginTop: S.sm },
+  targetNote: { ...T.caption, color: C.text.mut, marginTop: S.sm },
 
   poolRow: { flexDirection: 'row', gap: S.lg },
   poolFigure: { flex: 1, minWidth: 0 },
@@ -397,6 +477,7 @@ const styles = StyleSheet.create({
 
   card: { marginBottom: S.md },
   cardTitle: { ...T.h2, color: C.text.hero, marginBottom: S.md },
+  breakdownNote: { ...T.caption, color: C.text.mut, marginTop: S.sm },
 
   tripRow: {
     flexDirection: 'row',

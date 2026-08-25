@@ -54,8 +54,8 @@ export interface AchievementMeta {
 export const ACHIEVEMENT_META: readonly AchievementMeta[] = [
   {
     id: 'first-trip',
-    name: 'First Journey',
-    description: 'Complete your first tracked trip',
+    name: 'First drive',
+    description: 'Complete your first scored drive',
     icon: 'Car',
     category: 'milestone',
     maxProgress: null,

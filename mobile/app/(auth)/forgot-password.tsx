@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
-import { C, F, FS, S, R } from '@/components/ui/theme';
+import { C, F, FS, S, R, LH, TR } from '@/components/ui/theme';
 
 export default function ForgotPassword() {
   const { resetPassword } = useAuth();
@@ -89,12 +89,12 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
   content: { flex: 1, justifyContent: 'center', paddingHorizontal: S.lg },
   card: { backgroundColor: C.surface1, borderRadius: R.sheet, borderWidth: 1, borderColor: C.border, padding: S.lg },
-  title: { fontSize: FS.xl, fontFamily: F.bodyBold, color: C.text.pri, marginBottom: S.sm },
-  body: { fontFamily: F.body, fontSize: FS.md, color: C.text.sec, marginBottom: S.lg, lineHeight: 22 },
-  input: { backgroundColor: C.surface3, borderRadius: R.card, paddingHorizontal: S.md, paddingVertical: 14, fontFamily: F.body, fontSize: FS.md, color: C.text.pri, borderWidth: 1, borderColor: C.border },
+  title: { fontSize: FS.xl, fontFamily: F.bodyBold, lineHeight: LH.xl, letterSpacing: TR.xl, color: C.text.pri, marginBottom: S.sm },
+  body: { fontFamily: F.body, fontSize: FS.md, color: C.text.sec, marginBottom: S.lg, lineHeight: LH.md, letterSpacing: TR.md },
+  input: { backgroundColor: C.surface3, borderRadius: R.card, paddingHorizontal: S.md, paddingVertical: 14, fontFamily: F.body, fontSize: FS.md, lineHeight: LH.md, letterSpacing: TR.md, color: C.text.pri, borderWidth: 1, borderColor: C.border },
   button: { backgroundColor: C.primary, borderRadius: R.card, paddingVertical: 16, alignItems: 'center', marginTop: S.md },
   buttonDisabled: { opacity: 0.6 },
-  buttonText: { color: C.text.pri, fontSize: FS.lg, fontFamily: F.bodyBold },
+  buttonText: { color: C.text.pri, fontSize: FS.lg, fontFamily: F.bodyBold, lineHeight: LH.lg, letterSpacing: TR.lg },
   link: { alignItems: 'center', marginTop: S.md },
-  linkText: { color: C.primaryLight, fontFamily: F.body, fontSize: FS.sm },
+  linkText: { color: C.primaryLight, fontFamily: F.body, fontSize: FS.sm, lineHeight: LH.sm, letterSpacing: TR.sm },
 });
