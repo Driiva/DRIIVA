@@ -99,4 +99,43 @@ describe("securityHeaders CSP", () => {
     expect(scriptSrc).not.toContain("unsafe-inline");
     expect(scriptSrc).not.toContain("unsafe-eval");
   });
+
+  /*
+   * Sentry could not report, and could not tell anyone it could not report.
+   *
+   * The browser SDK has been initialised the whole time; connect-src simply
+   * had no Sentry host, so every envelope was refused here and the SDK
+   * swallowed the transport error rather than crashing the app. Production is
+   * the environment that matters most, so it is asserted first.
+   */
+  it("lets Sentry reach its ingest host in production", () => {
+    const connectSrc = cspFor("production")["connect-src"];
+
+    expect(connectSrc).toContain("ingest.sentry.io");
+  });
+
+  /*
+   * The near-miss that makes this worth a test rather than a comment. The live
+   * DSN is the DE-region host, so a policy carrying only *.ingest.sentry.io
+   * still refuses every send while looking correct at a glance. If the DSN
+   * region ever moves, this is the assertion that should be updated to match
+   * it, not deleted.
+   */
+  it("covers the DE ingest region the live DSN actually uses", () => {
+    for (const mode of ["development", "production"]) {
+      expect(cspFor(mode)["connect-src"]).toContain("https://*.ingest.de.sentry.io");
+    }
+  });
+
+  /*
+   * Scoped to the ingest subdomains only. A blanket https://*.sentry.io would
+   * also open sentry.io itself and every marketing/app subdomain on it, which
+   * is far more than an error reporter needs.
+   */
+  it("does not open sentry.io beyond the ingest subdomains", () => {
+    const connectSrc = cspFor("production")["connect-src"];
+
+    expect(connectSrc).not.toContain("https://*.sentry.io");
+    expect(connectSrc).not.toContain("https://sentry.io");
+  });
 });

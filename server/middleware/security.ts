@@ -90,11 +90,29 @@ export const securityHeaders = (req: express.Request, res: express.Response, nex
     ? "ws: wss: http://127.0.0.1:* http://localhost:*"
     : "";
 
+  /*
+   * Sentry ingest, in EVERY environment including production.
+   *
+   * client/src/lib/sentry.ts has been initialising Sentry for months and not
+   * one browser event has ever arrived, because connect-src had no Sentry host
+   * at all, so every envelope POST was refused by this header. The failure is
+   * silent by design: Sentry swallows transport errors so it cannot take the
+   * app down with it, which is why an error monitor reporting nothing looked
+   * exactly like an app with no errors.
+   *
+   * Both regional hosts are listed on purpose. The live DSN is the DE one
+   * (o4510852635099136.ingest.de.sentry.io), so a policy carrying only
+   * *.ingest.sentry.io would still refuse every send - that near-miss is the
+   * whole reason this is pinned by a test below. Dev-only would be useless:
+   * production is the environment whose errors nobody can otherwise see.
+   */
+  const SENTRY_INGEST = "https://*.ingest.sentry.io https://*.ingest.de.sentry.io";
+
   // Content Security Policy
   const csp = [
     "default-src 'self'",
     `script-src 'self' ${isDev ? "'unsafe-inline' 'unsafe-eval'" : ""} https://*.firebaseapp.com https://*.firebase.com https://*.googletagmanager.com https://js.stripe.com`,
-    `connect-src 'self' ${devConnectSrc} https://*.googleapis.com https://*.firebaseio.com https://api.anthropic.com wss://*.firebaseio.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://api.stripe.com`,
+    `connect-src 'self' ${devConnectSrc} https://*.googleapis.com https://*.firebaseio.com https://api.anthropic.com wss://*.firebaseio.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://api.stripe.com ${SENTRY_INGEST}`,
     "img-src 'self' data: https://*.openstreetmap.org https://*.googletagmanager.com https://*.google-analytics.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' data: https://fonts.gstatic.com",
