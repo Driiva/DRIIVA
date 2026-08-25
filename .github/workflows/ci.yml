@@ -115,9 +115,14 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      # Node 22, not 20, for this job only: dev-deps bump #63 brought jsdom 30,
+      # which pulls undici 8 (engines: node >=22.19.0). On Node 20 the whole
+      # suite dies at import with "webidl.util.markAsUncloneable is not a
+      # function". The Cloud Functions jobs stay on 20 so the deployed runtime
+      # is unchanged; this pin only affects the test runner.
       - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Install root dependencies
@@ -130,7 +135,7 @@ jobs:
       # while passing for anyone who had run npm ci in functions/ locally.
       - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: functions/package-lock.json
 
