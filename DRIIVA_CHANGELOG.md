@@ -101,6 +101,62 @@ one. Two review findings are deferred and recorded next to the code they concern
 accelerometer's all-day 5 Hz duty cycle, and a resume threshold of 4.5 m/s against a stationary clock
 that clears at 1.0 m/s, which lets the screen say "Stopped. Still recording." while the car crawls.
 
+---
+
+### 2026-08-24 - The QA gate could not sign in because of our own CSP
+
+`nightly/2026-08-24`. Closes the named half of the "gates is still committed
+INCOMPLETE" ticket: `npm run gates` has never once reached an authenticated
+route, so the design laws and the axe audit have only ever been measuring the
+signed-out surface.
+
+- **Root cause** (`server/middleware/security.ts`) - `securityHeaders` sends
+  `connect-src 'self'`. The dev server serves the page from
+  `localhost:5202`; the Firebase Auth emulator answers on `127.0.0.1:9098`.
+  Different origin, so Chrome refused the sign-in request outright, and the
+  Firebase SDK reported the refusal as `auth/network-request-failed` - which is
+  exactly what a genuine network fault looks like. That mislabelling is why the
+  hunt went through browser extensions, emulator ports and env-file loading in
+  turn, each of which was a real bug, fixed, and still left the gate at 1 of 5
+  routes.
+- **Fix** - `connect-src` gains `http://127.0.0.1:* http://localhost:*` when
+  `NODE_ENV` is not production, alongside the `ws: wss:` that was already
+  dev-gated there. The production policy is unchanged.
+- **Diagnosis method worth keeping** - the error text was actively misleading,
+  so nothing was learned by reading it. Listening for the page's own
+  `securitypolicyviolation` event named the blocked URL and the violated
+  directive in one line.
+- **Gate script** (`scripts/run-gates.sh`) - the header no longer claims the
+  extension block is the likely cause. It records the confirmed one, and says
+  that a red from the gate is now a real violation rather than a reach problem.
+
+**Verified:** `npx tsc --noEmit` clean. `npx vitest run`: 76 files, 796 tests
+passing, 1 skipped, 2 todo, including five new tests in
+`server/__tests__/security-headers.test.ts` that pin the dev allowance, pin the
+absence of any loopback or plain-http source in production, and pin that
+production `script-src` still carries no `unsafe-inline`/`unsafe-eval`. Written
+before the fix and confirmed red on the right assertion. End to end in a real
+browser, the seeded driver now signs in where the same probe was returning
+`stuck` with a `CSP-VIOLATION` on `identitytoolkit` a minute earlier. Gate
+coverage went from 1 of 5 design-law routes and 7 of 14 axe routes to 5 of 5
+and 14 of 14.
+
+**`npm run gates` is still not green, and this change is why we can see it.**
+With every route reachable for the first time, the gate reports three
+pre-existing product defects it was previously blind to: dashboard breaks the
+capsule, type-floor and tabular-figure laws; leaderboard breaks tabular figures
+on its SVG axis labels; rewards has five SERIOUS axe contrast nodes on the
+`opacity-50` locked cards. None of these were introduced here and each is its
+own piece of work, so they are written up as tickets rather than swept into
+this diff. The roadmap ticket stays unchecked.
+
+**Also found, not fixed:** `connect-src` has no `https://*.ingest.sentry.io` in
+any environment, so every browser Sentry envelope is refused by CSP. Client
+error monitoring has been reporting nothing. Ticketed rather than fixed here -
+it is a production security-header change and deserves its own reviewed diff.
+
+---
+
 ### 2026-08-18 - Phone-usage scoring wired end-to-end (M2-DEC-1 Option A)
 
 `feat/phone-usage-detection`, merged to main 18 Aug (`f520505`). Closes the gap flagged in

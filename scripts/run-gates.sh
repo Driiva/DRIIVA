@@ -23,27 +23,33 @@
 #   http://127.0.0.1:9098/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword
 #
 # So any content blocker holding a rule against "identitytoolkit.googleapis.com"
-# blocks a request going to localhost. curl succeeds, the page gets
-# net::ERR_BLOCKED_BY_CLIENT, and Firebase reports auth/network-request-failed,
-# which looks exactly like a config error and is not one. ~/chrome-cdp-profile
-# has 19 extensions. Two rounds of correct config changes could never have
-# fixed it. A dedicated empty profile removes the whole layer, and unlike an
-# allowlist it cannot rot when an extension updates its rules.
+# would block a request going to localhost. A dedicated empty profile removes
+# that whole layer, and unlike an allowlist it cannot rot when an extension
+# updates its rules. It also removes the ambient-session problem, which is
+# reason enough on its own to keep it.
 #
-# STILL INCOMPLETE, do not read a green from this yet. The stack now comes up
-# clean: the emulator is reused if already running, the driver is seeded, the
-# client env is written where Vite will actually read it, and the gate gets its
-# own extension-free browser. Two things are still open.
+# But read the next paragraph before believing extensions were ever the cause
+# here. They were not.
 #
-#   1. Sign-in. On the one full run of this script, the four authenticated
-#      routes were STILL reported NOT REACHED against the clean browser, so the
-#      extension block explains the ERR_BLOCKED_BY_CLIENT that was observed but
-#      is not proven to be the only cause. That run's failure text was not
-#      captured, so treat the clean profile as untested rather than as a fix.
-#   2. FIXED (299b131). axe used to resolve axe-core through a literal
-#      ../node_modules path, which does not exist in a git worktree, so the
-#      audit died on ENOENT before checking anything and accessibility could
-#      not be run from any branch. It resolves the module properly now.
+# SIGN-IN: FIXED. The four authenticated routes were reported NOT REACHED on
+# every run, against the extension-free profile as well, so the content-blocker
+# theory above was never the explanation. The actual cause was this repo's own
+# Content-Security-Policy. `securityHeaders` sends connect-src 'self', the page
+# is served from localhost:5202, and the Auth emulator answers on
+# 127.0.0.1:9098 - a different origin. Chrome refused the request and Firebase
+# surfaced the refusal as auth/network-request-failed, which is exactly what a
+# real network fault looks like and is why this was chased through extensions,
+# ports and env files instead. Caught by listening for securitypolicyviolation
+# in the page rather than reading the error text. connect-src now allows
+# loopback when NODE_ENV is not production; the shipped policy is unchanged.
+#
+# axe: FIXED (299b131). It used to resolve axe-core through a literal
+# ../node_modules path, which does not exist in a git worktree, so the audit
+# died on ENOENT before checking anything and accessibility could not be run
+# from any branch. It resolves the module properly now.
+#
+# The gate now measures all 5 design-law routes and all 14 axe routes, so a red
+# from here is a real violation and no longer a reach problem.
 #
 # Usage:  ./scripts/run-gates.sh [--keep]      (--keep leaves the stack up)
 set -uo pipefail

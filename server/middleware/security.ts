@@ -72,11 +72,29 @@ export const securityHeaders = (req: express.Request, res: express.Response, nex
 
   const isDev = process.env.NODE_ENV !== 'production';
 
+  /*
+   * Dev-only connect-src additions, and why the loopback ones are here.
+   *
+   * The Firebase emulators listen on 127.0.0.1 while the dev server serves the
+   * page from localhost, so every emulator call is cross-origin and
+   * connect-src 'self' refused it. Firebase reports that refusal as
+   * auth/network-request-failed, which reads as a network fault or a bad
+   * config and is neither - it is this header. That is what kept the four
+   * authenticated routes NOT REACHED in `npm run gates`, and why chasing it
+   * through browser extensions and emulator ports never landed.
+   *
+   * Loopback and plain http only reach the policy when NODE_ENV is not
+   * production, so the shipped policy is byte-for-byte what it was.
+   */
+  const devConnectSrc = isDev
+    ? "ws: wss: http://127.0.0.1:* http://localhost:*"
+    : "";
+
   // Content Security Policy
   const csp = [
     "default-src 'self'",
     `script-src 'self' ${isDev ? "'unsafe-inline' 'unsafe-eval'" : ""} https://*.firebaseapp.com https://*.firebase.com https://*.googletagmanager.com https://js.stripe.com`,
-    `connect-src 'self' ${isDev ? "ws: wss:" : ""} https://*.googleapis.com https://*.firebaseio.com https://api.anthropic.com wss://*.firebaseio.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://api.stripe.com`,
+    `connect-src 'self' ${devConnectSrc} https://*.googleapis.com https://*.firebaseio.com https://api.anthropic.com wss://*.firebaseio.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://api.stripe.com`,
     "img-src 'self' data: https://*.openstreetmap.org https://*.googletagmanager.com https://*.google-analytics.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' data: https://fonts.gstatic.com",
