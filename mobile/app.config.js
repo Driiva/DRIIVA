@@ -19,11 +19,28 @@
 //
 // On the EAS builder process.env.GOOGLE_SERVICES_PLIST is the written path.
 // Locally it is usually unset, so fall back to the plist next to this file.
+//
+// Android needs exactly the same treatment, and used to look fine only because
+// android had no `googleServicesFile` key at all - `expo export` passed and read
+// as proof while the first real android build died in prebuild:
+//
+//   [android.dangerous]: withAndroidDangerousBaseMod: Path to
+//   google-services.json is not defined. Please specify the
+//   expo.android.googleServicesFile field in app.json.
+//
+// @react-native-firebase/app's copyGoogleServices mod requires it whenever the
+// plugin is present, so both platforms are wired here and neither belongs in
+// app.json.
 module.exports = ({ config }) => ({
   ...config,
   ios: {
     ...config.ios,
     googleServicesFile:
       process.env.GOOGLE_SERVICES_PLIST ?? './GoogleService-Info.plist',
+  },
+  android: {
+    ...config.android,
+    googleServicesFile:
+      process.env.GOOGLE_SERVICES_JSON ?? './google-services.json',
   },
 });
