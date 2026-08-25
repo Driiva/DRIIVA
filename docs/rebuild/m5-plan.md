@@ -71,14 +71,23 @@ Everything else in M5 is internal plumbing; this one is on the open web.
   reinsurer" assertion unless Jamal can name the reinsurer and the agreement - if
   he can, it still does not belong in a present-tense FAQ answer while the
   sandbox application is pending.
-- Extend `tests/fabrication-laws.mjs` `DIRS` (`:69-73`) so the gate reaches
-  `apps/marketing` package-root HTML, `mobile/lib`, `mobile/hooks`,
-  `mobile/contexts`. Add `.html` to the scanned extensions if it is not already
-  effective there.
-- Verify the extension is not vacuous: run the gate against the **pre-fix**
-  `index.html` content and watch it go red, then fix and watch it go green.
-  Report both halves. A gate written this session does not vouch for itself on
-  its first green.
+- Widen `tests/fabrication-laws.mjs` on **both** axes, because either alone is a
+  no-op. `DIRS` (`:61-70`) lists six directories and the package root is not one
+  of them; the walker's extension filter (`:84`) is
+  `/\.(tsx?|css|txt|md)$/` and does not include `.html`. Adding the directory
+  without the extension looks like a fix and changes nothing.
+- **Add the mobile tree to `DIRS`.** No `mobile` directory is scanned at all -
+  not `app`, not `components`, not `lib`. Commit `e21f652` changed regulatory
+  copy in eleven mobile files that this gate cannot see; they are held only by
+  the specific-string assertions in `tests/unit/mobile-*.test.ts`, which catch a
+  revert of a known line but not a newly invented claim. Expect the widening to
+  surface real hits that need whitelisting with justification, and budget for
+  that rather than treating a red gate as a mistake.
+- Verify the widening is not vacuous, per this repo's five recorded
+  harnesses-that-never-arrived: feed the gate the **pre-fix** `index.html`
+  string and a planted claim in a mobile file, watch both go red, then fix and
+  watch them go green. Report both halves. A gate edited this session does not
+  vouch for itself on its first green.
 - Check whether `apps/marketing/dist/` is committed; if it is, the built copy
   needs the same treatment or the gate needs to ignore build output explicitly.
 

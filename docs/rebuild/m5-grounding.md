@@ -215,17 +215,36 @@ This is materially stronger than the line every other surface was normalised to
 it is present tense, and it names an underwriting relationship. It is served to
 crawlers as structured data and is mirrored into `apps/marketing/dist/`.
 
-`tests/fabrication-laws.mjs` would flag it on sight - but it scans a `DIRS` list
-of eight directories (`fabrication-laws.mjs:69-73`) which includes
-`apps/marketing/src`, `api` and `public`, and **not the package root**, where
-`index.html` sits. Commit `e21f652` ("finish the FCA reconciliation, and fix the
-guard that let it revert", 26 Aug) hardened that gate by 172 lines and did not
-touch this file - so the reconciliation is not actually finished, and the gate
-that is supposed to prevent regression cannot see the surviving instance.
+`tests/fabrication-laws.mjs` would flag the string on sight, and it never sees
+the file. Read the scan config directly (`fabrication-laws.mjs:61-70` and the
+extension filter at `:84`) rather than trusting any summary of it, including an
+earlier draft of this brief which got it wrong:
 
-Other confirmed blind spots in the same gate: `mobile/lib`, `hooks`, `contexts`
-(only `app` and `components` are scanned), the legacy `marketing-site/` and
-`driiva-design-system/` trees, and any non-text channel.
+```js
+const DIRS = ['client/src', 'apps/marketing/src', 'apps/marketing/api',
+              'apps/marketing/public', 'server', 'functions/src'];
+// walk(): } else if (/\.(tsx?|css|txt|md)$/.test(entry) && !SKIP.test(full)) {
+```
+
+`apps/marketing/index.html` is excluded **twice over** - it is in the package
+root, not one of the six listed directories, and `.html` is not in the extension
+filter at all. Adding the directory without adding the extension would look like
+a fix and change nothing.
+
+**The larger blind spot: no `mobile` directory is scanned.** Not `mobile/app`,
+not `mobile/components`, not `mobile/lib`. `grep -n mobile tests/fabrication-laws.mjs`
+returns two hits and both are prose in comments. This matters because commit
+`e21f652` ("finish the FCA reconciliation, and fix the guard that let it revert",
+26 Aug) changed regulatory copy in eleven mobile files, and the general gate
+cannot see a single one of them - they are protected only by the bespoke
+`tests/unit/mobile-*.test.ts` assertions that commit also added, which check
+specific known strings rather than the shapes a new claim would take. So the
+mobile surface is in exactly the state the gate exists to prevent: correct today,
+unguarded tomorrow.
+
+Also unscanned: the legacy `marketing-site/` and `driiva-design-system/` trees,
+and any non-text channel (video, PDF, email templates outside the scanned API
+directories).
 
 This is the highest-severity item in the module and the cheapest to fix.
 
