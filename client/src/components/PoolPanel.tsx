@@ -16,7 +16,7 @@
  */
 import { useMemo } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Text } from 'recharts';
 import { Users, TrendingUp } from 'lucide-react';
 import { AnimatedNumber } from '@/components/AnimatedNumber';
 import { EmptyState, Skeleton } from '@/components/ui/EmptyState';
@@ -42,6 +42,36 @@ function shortPeriod(period: string): string {
   const index = Number(month) - 1;
   const names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   return names[index] ?? period;
+}
+
+/**
+ * The axis tick, rendered by hand so the figures hold their columns.
+ *
+ * recharts' `tick` prop, given a plain object, silently drops any custom
+ * `className` that object carries: CartesianAxis.renderTickItem's default
+ * branch (recharts/lib/cartesian/CartesianAxis.js) hardcodes
+ * `className: "recharts-cartesian-axis-tick-value"` on the element it builds,
+ * discarding whatever the object set. Only the function form keeps a merged
+ * className, which is why this exists instead of `tick={{ className:
+ * 'tabular' }}` - that read as correct, and a render test caught it silently
+ * doing nothing. `fill`/`fontSize` are set explicitly here for the same
+ * reason: the function form receives no styling from the tick prop at all,
+ * where the object form used to carry both.
+ */
+function tabularAxisTick(props: {
+  payload?: { value: string | number };
+  tickFormatter?: (value: string | number, index: number) => string;
+  index?: number;
+  className?: string;
+  [key: string]: unknown;
+}) {
+  const { payload, tickFormatter, index, className, ...rest } = props;
+  const value = payload ? (tickFormatter ? tickFormatter(payload.value, index ?? 0) : payload.value) : '';
+  return (
+    <Text {...rest} fill="var(--app-text-mut)" fontSize={11} className={`${className ?? ''} tabular`.trim()}>
+      {value}
+    </Text>
+  );
 }
 
 function ChartTooltip({ active, payload }: { active?: boolean; payload?: Array<{ payload: PoolHistoryPoint }> }) {
@@ -201,12 +231,12 @@ export function PoolPanel({
                 <CartesianGrid stroke="var(--app-border)" vertical={false} />
                 <XAxis
                   dataKey="label"
-                  tick={{ fill: 'var(--app-text-mut)', fontSize: 11 }}
+                  tick={tabularAxisTick}
                   tickLine={false}
                   axisLine={false}
                 />
                 <YAxis
-                  tick={{ fill: 'var(--app-text-mut)', fontSize: 11 }}
+                  tick={tabularAxisTick}
                   tickLine={false}
                   axisLine={false}
                   width={40}
