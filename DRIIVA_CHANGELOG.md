@@ -5,6 +5,26 @@
 
 ## Entries
 
+### 2026-08-29 - Resuming from paused agrees with the clock that cleared it
+
+`db9cc03` on `nightly/2026-08-29`. Review finding 8 off the Fable day sprint, mobile only.
+
+- **What changed** - `DriveDetector.fromPaused` in `mobile/lib/driveDetection.ts` now resumes a
+  paused drive at `PAUSE_SPEED_MPS` (1.0 m/s) instead of `START_SPEED_MPS` (4.5 m/s). Declaring a
+  brand new drive from idle/candidate is untouched and still needs the higher bar.
+- **Why** - the stationary clock that puts a drive into `paused` already clears itself the moment
+  a sample reads at or above `PAUSE_SPEED_MPS` (`lastMovingAt` resets on every such sample). Between
+  1.0 and 4.5 m/s the vehicle was genuinely moving and the clock agreed, but the state stayed
+  `paused` and `record.tsx` kept showing "Stopped. Still recording." over a car crawling through a
+  junction queue. The trip was recording correctly the whole time - this was a labelling mismatch
+  between two thresholds that should have been one, not lost data.
+- **Tests** - new case in `tests/unit/mobile-drive-detection.test.ts` ("resumes on the same speed
+  that clears the stationary clock, not only at full road speed"), confirmed red against the old
+  code before the fix. Full root suite: `npx vitest run` - 89 files, 1113 passed, 1 skipped, 3
+  todo, 0 failed. `npm run check` and eslint have pre-existing, unrelated failures (a firebase-admin
+  type mismatch and a TS7/typescript-eslint version conflict); confirmed via `git stash` that both
+  are identical with and without this change.
+
 ### 2026-08-25 - The accelerometer stops running all day
 
 `4af6b81` on `nightly/2026-08-25`. Review finding 7 off the Fable day sprint, mobile only.
