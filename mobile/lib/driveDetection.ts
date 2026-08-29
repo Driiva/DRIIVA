@@ -63,17 +63,18 @@ export const DETECTION = {
    */
   GAIT_VARIANCE_G2: 0.05,
 
-  /** Below this the vehicle is treated as stationary rather than moving. */
+  /**
+   * Below this the vehicle is treated as stationary rather than moving. Also
+   * the threshold that clears PAUSED back to DRIVING: resuming used to
+   * require START_SPEED_MPS (4.5) while this is what actually keeps the
+   * stationary clock from accumulating, so a car crawling between the two
+   * was already not-stopped by the clock's own reasoning while the state,
+   * and the "Stopped. Still recording." label it drives, disagreed. One
+   * threshold for both removes the disagreement by construction. If flapping
+   * at junctions turns out to be a problem in practice, revisit with a
+   * hysteresis band rather than two independent numbers again.
+   */
   PAUSE_SPEED_MPS: 1.0,
-
-  // TODO (reviewer finding 8, deferred): resuming from PAUSED requires
-  // START_SPEED_MPS (4.5) while the stationary clock clears at
-  // PAUSE_SPEED_MPS (1.0). Between the two a vehicle is moving, is not
-  // accumulating toward the end of the trip, and still reads as paused. It
-  // records correctly throughout, so this is a labelling mismatch rather than
-  // lost data, but the screen can sit on "Stopped. Still recording." while the
-  // car crawls. Decide one threshold for both, with a hysteresis band if
-  // flapping at junctions turns out to be the reason for two.
 
   /** Stationary this long pauses the drive. Recording continues throughout. */
   PAUSE_HOLD_MS: 60_000,
@@ -309,7 +310,10 @@ export class DriveDetector {
     const discarded = this.judgePeak(sample);
     if (discarded) return discarded;
 
-    if (speed >= DETECTION.START_SPEED_MPS) {
+    // Resume on the same speed that clears the stationary clock (see
+    // PAUSE_SPEED_MPS), not on the higher bar for declaring a brand new
+    // drive. The clock already treats this as moving; the label must agree.
+    if (speed >= DETECTION.PAUSE_SPEED_MPS) {
       this.current = 'driving';
       return { type: 'drive_resumed' };
     }

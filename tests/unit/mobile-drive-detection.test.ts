@@ -241,6 +241,24 @@ describe('DriveDetector: traffic does not end a drive', () => {
     expect(events.filter((e) => e.type === 'drive_resumed')).toHaveLength(1);
   });
 
+  it('resumes on the same speed that clears the stationary clock, not only at full road speed', () => {
+    // Regression for review finding 8: resuming from PAUSED required
+    // START_SPEED_MPS (4.5) while the stationary clock that put it there
+    // clears at PAUSE_SPEED_MPS (1.0). A car crawling between the two kept
+    // resetting the clock - so it was never "stopped" - while the state (and
+    // the "Stopped. Still recording." label it drives) stayed paused. The two
+    // must agree: anything that counts as moving for the clock must also
+    // count as moving for the label.
+    const d = driving();
+    drive(d, T0 + 25_000, 65, 0);
+    expect(d.state).toBe('paused');
+
+    const events = drive(d, T0 + 90_000, 3, DETECTION.PAUSE_SPEED_MPS + 0.1);
+
+    expect(d.state).toBe('driving');
+    expect(events.filter((e) => e.type === 'drive_resumed')).toHaveLength(1);
+  });
+
   it('does not end a drive that is crawling in traffic rather than stopped', () => {
     const d = driving();
     drive(d, T0 + 25_000, 65, 0);
