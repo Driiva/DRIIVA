@@ -270,6 +270,88 @@ describe('DriveDetector: traffic does not end a drive', () => {
   });
 });
 
+/**
+ * ONE LINE BETWEEN MOVING AND STOPPED, READ THE SAME IN BOTH DIRECTIONS
+ * =====================================================================
+ * Resuming from paused used to need START_SPEED_MPS (4.5 m/s, about 10 mph)
+ * while the stationary clock cleared at 1.0. Between the two the car was
+ * moving, was not accumulating toward the end of the trip, and still read as
+ * paused, so the screen sat on "Stopped. Still recording." through most of a
+ * stop-start urban crawl. It recorded correctly throughout - this was always a
+ * label and never lost data - but a screen whose whole job is to be legible
+ * from a mount should not tell the driver the opposite of what is happening
+ * out of the window.
+ *
+ * The high bar belongs to STARTING a drive from nothing, where the asymmetry
+ * at the top of the source applies and a walk must never open a trip. Resuming
+ * a drive that is already open and already recording carries none of that
+ * risk, so it reads off MOVING_SPEED_MPS, the same line the stationary clock
+ * uses. These tests pin that the two can never disagree again.
+ */
+describe('DriveDetector: a crawl is moving, not stopped', () => {
+  /** Declared, then stationary long enough to pause. */
+  function paused() {
+    const d = new DriveDetector();
+    drive(d, T0, 25, 15);
+    drive(d, T0 + 25_000, 65, 0);
+    return d;
+  }
+
+  /** Inside the old dead band: too slow to start a drive, plainly moving. */
+  const CRAWL = (DETECTION.MOVING_SPEED_MPS + DETECTION.START_SPEED_MPS) / 2;
+
+  it('is paused before the resume is tested, so these test the resume and not the pause', () => {
+    expect(paused().state).toBe('paused');
+  });
+
+  it('resumes at a crawl rather than waiting for road speed', () => {
+    const d = paused();
+
+    const event = d.push(sample({ t: T0 + 90_000, speedMps: CRAWL }));
+
+    expect(event.type).toBe('drive_resumed');
+    expect(d.state).toBe('driving');
+  });
+
+  it('stays paused on a speed too small to clear the stationary clock', () => {
+    const d = paused();
+
+    d.push(sample({ t: T0 + 90_000, speedMps: DETECTION.MOVING_SPEED_MPS - 0.1 }));
+
+    expect(d.state).toBe('paused');
+  });
+
+  it('resumes exactly when the stationary clock clears, never in between', () => {
+    fc.assert(
+      fc.property(fc.double({ min: 0, max: 20, noNaN: true }), (speedMps) => {
+        const d = paused();
+        d.push(sample({ t: T0 + 90_000, speedMps }));
+        const moving = speedMps >= DETECTION.MOVING_SPEED_MPS;
+        return (d.state === 'driving') === moving;
+      }),
+      { numRuns: 300 },
+    );
+  });
+
+  it('can pause again after resuming at a crawl, so the label is not stuck on', () => {
+    const d = paused();
+    d.push(sample({ t: T0 + 90_000, speedMps: CRAWL }));
+
+    const events = drive(d, T0 + 91_000, 65, 0);
+
+    expect(d.state).toBe('paused');
+    expect(events.filter((e) => e.type === 'drive_paused')).toHaveLength(1);
+  });
+
+  it('still refuses to open a trip at a crawl, which is the direction that matters', () => {
+    const d = new DriveDetector();
+
+    drive(d, T0, 600, CRAWL);
+
+    expect(d.state).toBe('idle');
+  });
+});
+
 describe('DriveDetector: a potter is not a drive', () => {
   it('discards a trip that never reaches a real road speed', () => {
     const d = new DriveDetector();
@@ -356,6 +438,12 @@ describe('DETECTION constants', () => {
 
   it('corroborated start is faster than uncorroborated, never slower', () => {
     expect(DETECTION.START_HOLD_CORROBORATED_MS).toBeLessThan(DETECTION.START_HOLD_MS);
+  });
+
+  it('starts a drive at a higher bar than it resumes one, the two being different decisions', () => {
+    // If these ever met, the tests above would pass without measuring
+    // anything: there would be no crawl to be wrong about.
+    expect(DETECTION.MOVING_SPEED_MPS).toBeLessThan(DETECTION.START_SPEED_MPS);
   });
 });
 

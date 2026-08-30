@@ -5,6 +5,52 @@
 
 ## Entries
 
+### 2026-08-30 - A crawling car stops calling itself stopped
+
+`nightly/2026-08-30`. Review finding 8 off the Fable day sprint, mobile only, one file of logic.
+
+- **What changed** - `mobile/lib/driveDetection.ts` read two different speeds for one question.
+  Resuming from `paused` needed `START_SPEED_MPS` (4.5 m/s, about 10 mph) while the stationary clock
+  cleared at `PAUSE_SPEED_MPS` (1.0 m/s, about 2 mph). Both directions now read one constant,
+  renamed `MOVING_SPEED_MPS`, and `fromPaused` resumes off the same line that clears the clock.
+- **Why** - the band between the two is most of a stop-start urban crawl. Inside it the car was
+  moving, was not accumulating toward the end of the trip, and the Drive screen still said "Stopped.
+  Still recording." over a windscreen that plainly disagreed. `record.tsx` also drops `LiveArc` out
+  of its active state while paused, so the instrument went quiet at the exact moment it was meant to
+  say "this is working". Nothing was ever mislabelled in the recording, which is why this sat as a
+  deferred TODO rather than a fault.
+- **Why the two thresholds were not simply averaged** - the high bar is not arbitrary, it is the
+  asymmetry the whole file is built on: starting a drive for a walk writes a journey the driver did
+  not drive into an insurance record. That argument applies to opening a trip from nothing. It does
+  not apply to resuming one that is already declared and already recording, where the trip exists
+  either way and only the word on the screen moves. So the bar stays at 4.5 for `idle` to
+  `candidate` and comes off entirely for `paused` to `driving`.
+- **No hysteresis band was added**, though the TODO left room for one. `PAUSE_HOLD_MS` already is
+  the hysteresis: getting back to paused takes a full minute with nothing above the line, so a crawl
+  at a junction cannot oscillate the label however often it dips below 1.0 m/s.
+- **Left honest** - a driver who parks and walks off carrying the phone will now see driving rather
+  than stopped. That trip was already failing to end, before this change and for the same reason,
+  because `push` has always cleared the stationary clock at 1.0 m/s regardless of state. What moved
+  is a word on a screen nobody is looking at, not a trip boundary. Recorded in the source beside the
+  constant rather than only here.
+- **Blast radius** - `drive_paused` and `drive_resumed` fall through `DriveMonitor.handle` to
+  `default: return`. Nothing opens, closes, backfills or scores on them; they surface only as
+  `driveState` to `record.tsx`. This changes a label and nothing else, which is what made it safe to
+  do unattended.
+- **Tests** - 7 new in `tests/unit/mobile-drive-detection.test.ts`, written first and red first (4
+  failures for the right reasons). The one that matters is a property test over 300 speeds asserting
+  that the state after a sample is `driving` if and only if that sample cleared the stationary
+  clock, so the two can never silently diverge again rather than merely agreeing today. A companion
+  constants test pins `MOVING_SPEED_MPS < START_SPEED_MPS`, without which the crawl tests would pass
+  by measuring nothing. Full run 89 of 89 files, 1119 passing, 1 skipped, 3 todo, up from 1112. 8 of
+  8 mobile source laws and 8 of 8 fabrication laws green. Root `tsc` unchanged at the same 7
+  pre-existing `firebase-admin` errors; `driveDetection.ts` contributes none.
+- **Not run, and why** - `npm run gates` needs Firebase emulators, Doppler and its own Chrome, none
+  of which are available to the unattended clone, and it is already recorded as committed-INCOMPLETE
+  on its own ticket. It measures the web client, which this change does not touch. `eslint` could
+  not run at all: `typescript-eslint` refuses TS 7.0 repo-wide and dies before reading a file, which
+  is a pre-existing break and not a finding about this diff.
+
 ### 2026-08-25 - The accelerometer stops running all day
 
 `4af6b81` on `nightly/2026-08-25`. Review finding 7 off the Fable day sprint, mobile only.
