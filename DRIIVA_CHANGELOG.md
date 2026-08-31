@@ -5,6 +5,38 @@
 
 ## Entries
 
+### 2026-08-31 - Paused no longer sits over a moving car
+
+`5810e51` on `nightly/2026-08-31`. Review finding 8 off the Fable day sprint, mobile only.
+
+- **What changed** - resuming from PAUSED demanded `START_SPEED_MPS` (4.5 m/s) while the stationary
+  clock cleared at `PAUSE_SPEED_MPS` (1.0), so between the two the car was moving, the clock knew
+  it, and the state still read paused: the screen sat on "Stopped. Still recording." over a
+  crawling car. `fromPaused` now resumes at `PAUSE_SPEED_MPS`, the same line the clock trusts, so
+  one threshold decides stationary versus moving in both directions and the label can never
+  disagree with the clock about whether the car moved.
+- **Why one threshold and not a hysteresis band** - the deferred TODO offered a speed band if
+  flapping at junctions was the reason for two thresholds. It is not needed, because the hysteresis
+  is already in time: resuming is instant, while pausing again takes the full `PAUSE_HOLD_MS` of
+  unbroken stillness, so a queue that inches forward every minute simply stays driving. A test pins
+  exactly that.
+- **Why the strict threshold bought nothing here** - the start-speed asymmetry prevents a walk
+  being scored as a drive; on resume the trip is already open and recording either way, so a strict
+  threshold could only mislabel a right trip, and did.
+- **Left alone on purpose** - trip lifetimes are untouched. `drive_paused` and `drive_resumed` are
+  ignored by the monitor, and ending runs off the shared movement clock in either state, so a car
+  that crawls and then parks ends at the same moment it did before. Only the label and the arc
+  animation see the difference.
+- **Tests** - 5 new in `tests/unit/mobile-drive-detection.test.ts`, written first, 3 red against
+  the old threshold including a property over the whole crawl band. Full run 1116 passing, 1
+  skipped, 3 todo, up from 1111. Root `tsc` delta zero against 7 pre-existing errors, and `eslint`
+  cannot run on this branch at all - both regressions arrived with the `a94ce78` dev-deps bump to
+  TypeScript 7.0.2, present on the untouched baseline and flagged in the run summary rather than
+  fixed, being a second ticket. Mobile `tsc` unchanged at 248 pre-existing module-resolution errors
+  in a clone with no `mobile/node_modules`, verified identical before and after. `npm run gates`
+  not run: it needs Firebase emulators, Doppler and Chrome on 9222, none of which exist in the
+  unattended clone, and it does not exercise the mobile detector.
+
 ### 2026-08-25 - The accelerometer stops running all day
 
 `4af6b81` on `nightly/2026-08-25`. Review finding 7 off the Fable day sprint, mobile only.
