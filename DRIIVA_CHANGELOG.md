@@ -5,6 +5,49 @@
 
 ## Entries
 
+### 2026-09-02 - The locked reward card's own "locked" label was the least readable thing on it
+
+`nightly/2026-09-02`. Closes the Rewards line off ROADMAP's "npm run gates" design-law ticket: five
+axe SERIOUS colour-contrast nodes, all on the locked reward cards.
+
+- **Root cause** (`client/src/components/RewardsTimeline.tsx`) - `RewardNode` put `opacity-40` on
+  the whole card whenever a tier was locked. CSS `opacity` on an ancestor does not sit beside a
+  descendant's own alpha, it multiplies it, so the overlay drawn specifically to tell a driver a
+  reward is locked - the Lock icon and "X days to go" label, both `text-white/60` - was the thing
+  dimmed hardest on the page. Every other card on Rewards uses that same `white/60` at full strength
+  with no complaint from axe; only the locked state compounded it.
+- **Fix** - the whole-card `opacity-40` is gone. The blur overlay (`backdrop-blur-[2px]`) and the
+  Lock icon already carry the "this is locked" signal on their own; removing the opacity does not
+  remove the locked cue, it removes the thing crushing its own label's contrast.
+- **Verified by computation, not by eye** - the browser gate that found this (axe-core over CDP)
+  cannot run in the unattended clone: no Chrome on :9222, no Firebase emulator, no seeded driver.
+  `tests/unit/rewards-locked-card-contrast.test.ts` runs the actual WCAG relative-luminance formula
+  against the app's own `--app-bg` (`#0a0a14`) and `--app-surface-1` (`#12111f`) tokens, read live
+  from `client/src/index.css` rather than pasted: `text-white/60` directly on the card background
+  computes to 7.16:1, past the 4.5:1 AA floor; the same text composited through a 40% ancestor
+  opacity - what the old code actually painted - computes to 2.06:1, confirming the finding was
+  real rather than a false positive. A source pin holds the fix (no `isLocked && 'opacity-<n>'` in
+  `RewardNode`'s `cardClass`) and a planted-violation test proves the pin fires.
+- **Also checked, not touched** - the two other open findings under the same ROADMAP ticket were
+  already handled elsewhere and are not re-done here: the dashboard three-law fix is sitting on open
+  PR #84 (unmerged, do not re-implement), the leaderboard/pool-chart tabular-figures fix is sitting
+  on open PR #68 (unmerged, do not re-implement), and the Sentry-CSP line was fixed on main by
+  `b6fe697` under a stale checkbox that PR #84 already corrects. None of that is re-done here to keep
+  this diff to the one ticket.
+
+**Tests:** the new file's own 5 tests, run in isolation, red first against the unmodified source - one
+failure, the source pin, on `isLocked && 'opacity-40'` genuinely still being present - then green
+after the fix, all 5. Full suite after the fix: 90 files, 1117 passing, 1 skipped, 3 todo (1121
+total, this file's 5 included). Root `tsc --noEmit` byte-identical at its 7 pre-existing
+`firebase-admin` errors, confirmed with `git stash`/`git stash pop` around a real before/after diff
+rather than assumed. `npm run build` exit 0. `eslint` still cannot load its config on TS 7.0.2
+(pre-existing, PR #69 pending, unrelated to this change). `npm run gates` was not run: it needs
+Chrome on :9222, a Firebase emulator and a seeded driver, none of which exist in the unattended
+clone, and the parent gates ticket stays open for that reason - this is a source-level pin standing
+in for the pixel measurement, not a replacement for it.
+
+---
+
 ### 2026-08-25 - The accelerometer stops running all day
 
 `4af6b81` on `nightly/2026-08-25`. Review finding 7 off the Fable day sprint, mobile only.

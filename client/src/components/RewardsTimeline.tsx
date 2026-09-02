@@ -8,7 +8,13 @@
  *   - Horizontal timeline on desktop (≥768px)
  *
  * States per reward:
- *   - locked   - 40% opacity, blur overlay, "X days to go" counter
+ *   - locked   - blur overlay, "X days to go" counter. NOT a whole-card
+ *                opacity: CSS opacity on an ancestor multiplies every
+ *                descendant's alpha, including the overlay's own label, which
+ *                is the one thing a locked card most needs a driver to read.
+ *                That compounding took text-white/60 under WCAG AA and was
+ *                five axe SERIOUS colour-contrast nodes, all on this card.
+ *                The blur plus the lock icon carry the "locked" signal now.
  *   - unlocked - full opacity, emerald glow, earned-but-not-redeemable notice
  *   - claimed  - purple "Claimed" badge, no CTA
  *
@@ -199,7 +205,6 @@ function RewardNode({
 
   const cardClass = [
     'instrument-card relative',
-    isLocked && 'opacity-40',
     isUnlocked && 'reward-glow-unlocked',
     isClaimed && 'reward-glow-claimed',
   ].filter(Boolean).join(' ');
