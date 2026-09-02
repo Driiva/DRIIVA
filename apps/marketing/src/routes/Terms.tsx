@@ -11,7 +11,7 @@ export function Terms() {
 
       <h2>1. About these terms</h2>
       <p>
-        These terms form a contract between you and Driiva Technologies Ltd. By using this site or
+        These terms form a contract between you and Driiva Ltd. By using this site or
         joining the waitlist you agree to them.
       </p>
 
@@ -38,7 +38,7 @@ export function Terms() {
       <h2>5. Intellectual property</h2>
       <p>
         The Driiva name, wordmark, scoring algorithm, written content, illustrations, and code are
-        owned by Driiva Technologies Ltd. or licensed to us. We publish the scoring algorithm
+        owned by Driiva Ltd. or licensed to us. We publish the scoring algorithm
         openly under a permissive licence; everything else is reserved unless explicitly stated.
       </p>
 

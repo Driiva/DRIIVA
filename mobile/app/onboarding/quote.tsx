@@ -89,8 +89,8 @@ export default function Quote() {
           <Text style={styles.quoteStubEyebrow}>Quote</Text>
           <Text style={styles.quoteStubTitle}>Launching soon.</Text>
           <Text style={styles.quoteStubSub}>
-            Driiva Ltd is not authorised by the FCA and our insurance product is pending FCA
-            authorisation. Join the waitlist and you will be first to get a live quote.
+            Driiva Ltd is working towards the FCA regulatory sandbox. We are not authorised and
+            not operating under an MGA. Join the waitlist and you will be first to get a live quote.
           </Text>
         </View>
 
@@ -140,7 +140,7 @@ export default function Quote() {
         <View style={styles.disclaimer}>
           <Text style={styles.disclaimerText}>
             {/* FCA DISCLOSURE REQUIRED */}
-            Driiva is operated by Driiva Ltd, which is not authorised by the FCA. Our insurance product is pending FCA authorisation.
+            Driiva is operated by Driiva Ltd, which is working towards the FCA regulatory sandbox. We are not authorised and not operating under an MGA.
             Refund estimates are illustrative and do not constitute a binding offer. Terms apply.
           </Text>
         </View>
