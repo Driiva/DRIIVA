@@ -5,6 +5,48 @@
 
 ## Entries
 
+### 2026-08-26 - A crawl in traffic is moving, and the screen now says so
+
+`d58885d` on `nightly/2026-08-26`. Review finding 8 off the Fable day sprint, mobile only,
+`mobile/lib/driveDetection.ts` alone.
+
+- **What changed** - resuming a paused drive required `START_SPEED_MPS` (4.5 m/s, about 10 mph)
+  while the stationary clock cleared at `PAUSE_SPEED_MPS` (1.0 m/s, about 2 mph). Between the two
+  the car was moving, was not accumulating toward the end of the trip, and still read as paused, so
+  the Drive screen could sit on "Stopped. Still recording." through an entire queue. One threshold
+  now answers both, and it is renamed `MOVING_SPEED_MPS` because a constant called PAUSE_SPEED
+  deciding when to resume is the same quiet disagreement the DETECTION object exists to prevent.
+- **Why `START_SPEED_MPS` is deliberately left out of it** - it answers a different question. It
+  decides whether a journey is a DRIVE at all: asked once, from cold, leaning toward refusing,
+  because starting a trip for a walk or a bus writes a journey the driver never drove into an
+  insurance record. By the time anything can pause, that decision has already been made and paid
+  for. Resuming is not it being asked again; it is only "is this vehicle moving", which is exactly
+  what the stationary clock already asks a line earlier in the same method.
+- **No hysteresis band, and why not** - the deferred note left the door open to one if flapping at
+  junctions turned out to be the reason for two numbers. It is not needed: `PAUSE_HOLD_MS` already
+  is a hysteresis band. Resuming is immediate but pausing again costs a full minute of no movement,
+  so the state cannot change more than once a minute however the traffic behaves. A second
+  threshold would have bought nothing the hold does not already buy, at the price of the mislabelled
+  band.
+- **No data was ever lost** - recording continues through paused and always did, so this was a
+  labelling fault throughout, not a capture one. The trip that crawls is unchanged on disk; what
+  changes is what the driver is told is happening, and whether `LiveArc` stops breathing at them
+  while the car is moving.
+- **Tests** - 7 new in `tests/unit/mobile-drive-detection.test.ts`, written first and red first
+  (7 failed, 42 passed before the change). Two are fast-check properties over the whole speed range
+  rather than examples, pinning the pairing itself: every speed at or above the moving threshold
+  resumes, every speed below it does not, so the two thresholds cannot drift apart again without a
+  test going red. The pre-existing crawl test carried a comment describing the behaviour this
+  removes; the comment is corrected and the test gained an assertion rather than losing one.
+- **Verified** - full root run 1119 passing, 1 skipped, 3 todo, up from 1112. Root `tsc` unchanged
+  at 7 pre-existing errors in `server/` (firebase-admin namespace typings), confirmed identical
+  against a stashed tree. 8 of 8 mobile source laws and 8 of 8 fabrication laws green. `eslint`
+  could not run at all: `typescript-eslint` refuses TS 7, which is a pre-existing toolchain
+  incompatibility in this clone and not something this change introduced. `npm run gates` was not
+  run - it needs the QA Firebase emulator, Doppler and a browser on 9222, none of which exist in
+  the unattended clone, and it is already recorded as committed-INCOMPLETE. It covers rendered web
+  routes and would not reach this file in any case.
+
 ### 2026-08-25 - The accelerometer stops running all day
 
 `4af6b81` on `nightly/2026-08-25`. Review finding 7 off the Fable day sprint, mobile only.
