@@ -5,6 +5,68 @@
 
 ## Entries
 
+### 2026-09-03 - The reduced-motion override is measured, not read
+
+`74b94ee` on `nightly/2026-09-03`. The last open item on the marketing
+rendered-behaviour pass. One new file, `tests/marketing-reduced-motion.mjs`,
+plus two npm scripts. No product code changed.
+
+- **What was open** - `.reveal-init` starts at opacity 0 and is made visible
+  again by two independent mechanisms. The JS path, where `useReveal` and the
+  hero timeline assign the resting style, has been under test since `7f1ca28`.
+  The CSS path, the `.reveal-init` override inside
+  `@media (prefers-reduced-motion: reduce)`, is what catches every element the
+  JS never reaches, and it was covered by nothing. Reading the file said it
+  resolves, the override following the base rule at equal specificity, but that
+  is a source fact and the whole point of a rendered-behaviour pass is not to
+  settle questions that way.
+- **Why it stayed open for three weeks** - two reasons, and only one of them
+  has gone away. jsdom applies no stylesheet, so a test there reports those
+  elements at opacity 0 and manufactures a bug that does not exist; that is
+  still true and is why this is a browser harness rather than another vitest
+  file. The other reason was that Chrome on 9222 was down for the whole
+  original follow-up. It is up tonight, so the run that was described as "one
+  clean probe" could finally happen.
+- **What the run says** - 38 `.reveal-init` elements on `/` that the JS had not
+  touched compute opacity 1 under the emulated preference. The same 38 compute
+  opacity 0 without it. The override holds, on the shipped stylesheet, in a
+  real engine. The five legal routes carry no reveals and are reported as such
+  rather than counted toward the green.
+- **An incidental finding, recorded because it changes how the CSS half reads.**
+  The JS path had reached none of those 38 at page load. So under reduced
+  motion the CSS override is not a backstop behind the JS, it is the thing
+  actually carrying the page, and the half that was already tested is the half
+  that does less.
+- **Why every route is measured twice** - the control run at `no-preference` is
+  not decoration. If the untouched elements read opacity 1 under both
+  preferences then the stylesheet is not reaching them at all, and a clean
+  reduce pass would be measuring an absent rule. That case reports INCONCLUSIVE
+  and exits non-zero. This harness set has been bitten twice by a gate that
+  reported green on a surface it never reached, and this is the cheapest
+  possible guard against a third.
+- **Production build, not the dev server** - the question is rule ordering in
+  the stylesheet that ships, and a dev server injects CSS a different way.
+  Served by a zero-dependency static server rather than `vite preview`, so the
+  check runs without `apps/marketing/node_modules`; directory requests resolve
+  to the prerendered `index.html` inside them rather than falling back to the
+  root one, which would have measured the home page under five other route
+  names.
+- **Tests** - the planted run came first and was red on all 38
+  (`npm run motion:reduced:plant` injects a higher-specificity override that
+  re-hides them), so the green that followed is a measurement rather than a
+  no-op. Root suite 1136 passing, 1 skipped, 3 todo across 89 files, up from
+  1119 - the rest of that rise is other work already on `main`, none of it
+  touched here. 8 of 8 mobile source laws and 7 of 7 fabrication laws green.
+  Root `tsc` unchanged at the 7 pre-existing `server/` errors from the
+  firebase-admin namespace typings. `eslint` still cannot run in this clone:
+  `typescript-eslint` refuses TS 7, which predates this branch.
+- **Not run, and not claimed** - `npm run gates`. It needs the QA emulator,
+  Doppler and a seeded driver, none of which exist in the unattended clone, and
+  it audits the signed-in client app rather than the marketing site, so it
+  would not reach this file. `docs/premium-lift/marketing-rendered-behaviour.md`
+  still lists this check as open; that document is an audit trail and is left
+  for Jamal to close.
+
 ### 2026-08-26 - A crawl in traffic is moving, and the screen now says so
 
 `d58885d` on `nightly/2026-08-26`. Review finding 8 off the Fable day sprint, mobile only,
