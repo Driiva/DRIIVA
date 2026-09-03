@@ -12,8 +12,9 @@
  * WHAT THIS SCREEN WILL NOT SHOW
  * A pound figure against the pool. The money model (D6) is undefined and
  * addPoolContribution still has no callers, so a balance here would be a
- * number nobody has committed to, printed beside an insurance product that is
- * pending FCA authorisation. Participants, the average score and the driver's
+ * number nobody has committed to, printed beside an insurance product from a
+ * company that is only working towards the FCA regulatory sandbox and is not
+ * authorised. Participants, the average score and the driver's
  * share percentage are all computed server-side and all real, and they are the
  * whole of what gets rendered.
  *

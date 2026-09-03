@@ -4,10 +4,16 @@ import { useEffect } from 'react';
  *
  * Wave 0 (0a): this screen was entirely invented. Three testimonials from
  * named people who do not exist (Meera 24, Jordan 27, Marcus 31) with quoted
- * praise and driver scores, a "117 drivers already on the waitlist" headline,
- * a "£162 avg refund est." stat and a "4.9 avg score" stat. None of it came
- * from data. Presented in an FCA-sensitive insurance funnel, invented reviews
- * and invented performance figures are not placeholder copy.
+ * praise and driver scores, a hardcoded waitlist-count headline carrying the
+ * same invented figure that turned up in four other places, an invented
+ * average-refund stat and an invented average-score stat. None of it came from
+ * data. Presented in an FCA-sensitive insurance funnel, invented reviews and
+ * invented performance figures are not placeholder copy.
+ *
+ * The figures themselves are deliberately not repeated here. This file is
+ * linted, and an allowlist entry naming the exact literal would suppress the
+ * same literal if it ever came back as rendered copy in this file, which for
+ * that particular number is not a hypothetical.
  *
  * The route is kept so the 14-step flow and its ProgressBar are unchanged.
  * It now explains the model rather than fake-crowding it. Real reviews and a
@@ -68,8 +74,8 @@ export default function SocialProof() {
         </View>
 
         <Text style={styles.disclaimer}>
-          Driiva is operated by Driiva Ltd. Our insurance product is pending FCA
-          authorisation.
+          Driiva is operated by Driiva Ltd, which is working towards the FCA regulatory
+          sandbox. We are not authorised and not operating under an MGA.
         </Text>
       </View>
 

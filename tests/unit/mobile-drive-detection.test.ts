@@ -241,11 +241,68 @@ describe('DriveDetector: traffic does not end a drive', () => {
     expect(events.filter((e) => e.type === 'drive_resumed')).toHaveLength(1);
   });
 
+  it('resumes on a crawl, not only at start speed (review finding 8)', () => {
+    // Resuming used to require START_SPEED_MPS (4.5) while the stationary
+    // clock cleared at PAUSE_SPEED_MPS (1.0), so between the two the machine
+    // read "paused" over a moving car and the screen said "Stopped. Still
+    // recording." while it crawled. One threshold now decides stationary
+    // versus moving in both directions.
+    const d = driving();
+    drive(d, T0 + 25_000, 65, 0);
+    const events = drive(d, T0 + 90_000, 3, 2.0);
+
+    expect(d.state).toBe('driving');
+    expect(events.filter((e) => e.type === 'drive_resumed')).toHaveLength(1);
+  });
+
+  it('does not resume below the stationary threshold', () => {
+    const d = driving();
+    drive(d, T0 + 25_000, 65, 0);
+    const events = drive(d, T0 + 90_000, 3, DETECTION.PAUSE_SPEED_MPS / 2);
+
+    expect(d.state).toBe('paused');
+    expect(events.filter((e) => e.type === 'drive_resumed')).toHaveLength(0);
+  });
+
+  it('any speed that resets the stationary clock also resumes, so paused can never sit over a moving car', () => {
+    fc.assert(
+      fc.property(
+        fc.double({
+          min: DETECTION.PAUSE_SPEED_MPS,
+          max: DETECTION.START_SPEED_MPS - 0.01,
+          noNaN: true,
+        }),
+        (speedMps) => {
+          const d = driving();
+          drive(d, T0 + 25_000, 65, 0);
+          d.push(sample({ t: T0 + 90_000, speedMps }));
+          return d.state === 'driving';
+        },
+      ),
+      { numRuns: 100 },
+    );
+  });
+
+  it('resuming is instant but pausing again takes the full hold, so junctions cannot flap the state', () => {
+    const d = driving();
+    drive(d, T0 + 25_000, 65, 0);
+    d.push(sample({ t: T0 + 90_000, speedMps: 1.5 }));
+    expect(d.state).toBe('driving');
+
+    // Half the pause hold of stillness is not enough to pause again.
+    drive(d, T0 + 91_000, 30, 0);
+    expect(d.state).toBe('driving');
+
+    // The full hold is.
+    drive(d, T0 + 121_000, 35, 0);
+    expect(d.state).toBe('paused');
+  });
+
   it('does not end a drive that is crawling in traffic rather than stopped', () => {
     const d = driving();
     drive(d, T0 + 25_000, 65, 0);
-    // Creeping forward resets the stationary clock even though it is too slow
-    // to count as pulling away.
+    // Creeping forward resets the stationary clock, and now also resumes the
+    // drive: a car inching through a queue is moving, not stopped.
     for (let i = 0; i < 400; i++) {
       d.push(sample({ t: T0 + 90_000 + i * 1000, speedMps: i % 2 === 0 ? 1.4 : 0 }));
     }

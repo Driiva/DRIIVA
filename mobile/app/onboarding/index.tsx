@@ -68,7 +68,8 @@ export default function Welcome() {
 
         <Text style={styles.caveat}>
           Refunds depend on your policy, your claims and how the pool performs. Driiva Ltd is
-          not authorised by the FCA and our insurance product is pending FCA authorisation.
+          working towards the FCA regulatory sandbox. We are not authorised and we are not
+          operating under an MGA.
         </Text>
       </ScrollView>
 

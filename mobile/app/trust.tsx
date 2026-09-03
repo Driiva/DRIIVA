@@ -69,9 +69,11 @@ export default function Trust() {
         <SurfaceCard padding="lg" style={{ marginBottom: S.md }}>
           <Text style={styles.cardTitle}>Who underwrites your policy</Text>
           <Text style={styles.rightBody}>
-            Driiva is a technology and distribution platform. Insurance policies are
-            underwritten by our capacity partner and are subject to their terms and
-            conditions. Driiva is not the insurer.
+            Driiva is a technology and distribution platform. Driiva is not the insurer.
+            When we are authorised to distribute policies, they will be underwritten by a
+            regulated capacity partner and subject to that partner's terms, and we will
+            name them here before you can buy anything. No capacity partner is in place
+            today.
           </Text>
         </SurfaceCard>
 
