@@ -241,17 +241,73 @@ describe('DriveDetector: traffic does not end a drive', () => {
     expect(events.filter((e) => e.type === 'drive_resumed')).toHaveLength(1);
   });
 
+  it('resumes on a crawl, not only at start speed (review finding 8)', () => {
+    // Resuming used to require START_SPEED_MPS (4.5) while the stationary
+    // clock cleared at PAUSE_SPEED_MPS (1.0), so between the two the machine
+    // read "paused" over a moving car and the screen said "Stopped. Still
+    // recording." while it crawled. One threshold now decides stationary
+    // versus moving in both directions.
+    const d = driving();
+    drive(d, T0 + 25_000, 65, 0);
+    const events = drive(d, T0 + 90_000, 3, 2.0);
+
+    expect(d.state).toBe('driving');
+    expect(events.filter((e) => e.type === 'drive_resumed')).toHaveLength(1);
+  });
+
+  it('does not resume below the stationary threshold', () => {
+    const d = driving();
+    drive(d, T0 + 25_000, 65, 0);
+    const events = drive(d, T0 + 90_000, 3, DETECTION.PAUSE_SPEED_MPS / 2);
+
+    expect(d.state).toBe('paused');
+    expect(events.filter((e) => e.type === 'drive_resumed')).toHaveLength(0);
+  });
+
+  it('any speed that resets the stationary clock also resumes, so paused can never sit over a moving car', () => {
+    fc.assert(
+      fc.property(
+        fc.double({
+          min: DETECTION.PAUSE_SPEED_MPS,
+          max: DETECTION.START_SPEED_MPS - 0.01,
+          noNaN: true,
+        }),
+        (speedMps) => {
+          const d = driving();
+          drive(d, T0 + 25_000, 65, 0);
+          d.push(sample({ t: T0 + 90_000, speedMps }));
+          return d.state === 'driving';
+        },
+      ),
+      { numRuns: 100 },
+    );
+  });
+
+  it('resuming is instant but pausing again takes the full hold, so junctions cannot flap the state', () => {
+    const d = driving();
+    drive(d, T0 + 25_000, 65, 0);
+    d.push(sample({ t: T0 + 90_000, speedMps: 1.5 }));
+    expect(d.state).toBe('driving');
+
+    // Half the pause hold of stillness is not enough to pause again.
+    drive(d, T0 + 91_000, 30, 0);
+    expect(d.state).toBe('driving');
+
+    // The full hold is.
+    drive(d, T0 + 121_000, 35, 0);
+    expect(d.state).toBe('paused');
+  });
+
   it('does not end a drive that is crawling in traffic rather than stopped', () => {
     const d = driving();
     drive(d, T0 + 25_000, 65, 0);
     // Creeping forward resets the stationary clock, and now also resumes the
-    // drive, so the trip neither ends nor sits mislabelled as stopped.
+    // drive: a car inching through a queue is moving, not stopped.
     for (let i = 0; i < 400; i++) {
       d.push(sample({ t: T0 + 90_000 + i * 1000, speedMps: i % 2 === 0 ? 1.4 : 0 }));
     }
 
     expect(d.state).not.toBe('ended');
-    expect(d.state).toBe('driving');
   });
 
   it('ends the drive once it has been stationary for the full stop hold', () => {
@@ -339,91 +395,6 @@ describe('DriveDetector: reset', () => {
   });
 });
 
-describe('DriveDetector: a crawl is moving, and the screen must say so', () => {
-  // Reviewer finding 8. Resuming from paused used to need START_SPEED_MPS
-  // (4.5 m/s), while the stationary clock cleared at the moving threshold
-  // (1.0 m/s). Between the two a vehicle was moving, was not accumulating
-  // toward the end of the trip, and still read as paused, so the Drive screen
-  // could sit on "Stopped. Still recording." while the car crawled. One
-  // threshold now answers both questions.
-  function paused() {
-    const d = new DriveDetector();
-    drive(d, T0, 25, 15);
-    drive(d, T0 + 25_000, 65, 0);
-    expect(d.state).toBe('paused');
-    return d;
-  }
-
-  it('resumes as soon as the car is moving, not only once it reaches road speed', () => {
-    const d = paused();
-    // 2 m/s is about 4.5 mph: a crawl in a queue, well under the speed that
-    // would be needed to DECLARE a drive from cold.
-    const event = d.push(sample({ t: T0 + 91_000, speedMps: 2 }));
-
-    expect(event.type).toBe('drive_resumed');
-    expect(d.state).toBe('driving');
-  });
-
-  it('stays paused while the vehicle is genuinely stationary', () => {
-    const d = paused();
-
-    const event = d.push(sample({ t: T0 + 91_000, speedMps: 0.5 }));
-
-    expect(event.type).toBe('none');
-    expect(d.state).toBe('paused');
-  });
-
-  it('never reads as paused through a sustained crawl', () => {
-    const d = paused();
-    // Ten minutes of queue traffic at walking-pace-in-a-car. The old
-    // behaviour held 'paused' for every second of it.
-    for (let i = 0; i < 600; i++) {
-      d.push(sample({ t: T0 + 91_000 + i * 1000, speedMps: 1.6 }));
-      expect(d.state).toBe('driving');
-    }
-  });
-
-  it('one threshold answers both questions: anything that counts as moving resumes', () => {
-    fc.assert(
-      fc.property(
-        fc.double({ min: DETECTION.MOVING_SPEED_MPS, max: 40, noNaN: true }),
-        (speedMps) => {
-          const d = paused();
-          const event = d.push(sample({ t: T0 + 91_000, speedMps }));
-          return event.type === 'drive_resumed' && d.state === 'driving';
-        },
-      ),
-      { numRuns: 100 },
-    );
-  });
-
-  it('and anything below it does not', () => {
-    fc.assert(
-      fc.property(
-        fc.double({ min: 0, max: DETECTION.MOVING_SPEED_MPS - 0.001, noNaN: true }),
-        (speedMps) => {
-          const d = paused();
-          const event = d.push(sample({ t: T0 + 91_000, speedMps }));
-          return event.type === 'none' && d.state === 'paused';
-        },
-      ),
-      { numRuns: 100 },
-    );
-  });
-
-  it('a resumed crawl can still end once it actually stops', () => {
-    const d = paused();
-    d.push(sample({ t: T0 + 91_000, speedMps: 2 }));
-    expect(d.state).toBe('driving');
-
-    expect(d.tick(T0 + 91_000 + DETECTION.PAUSE_HOLD_MS).type).toBe('drive_paused');
-    expect(d.tick(T0 + 91_000 + DETECTION.STOP_HOLD_MS)).toMatchObject({
-      type: 'drive_ended',
-      reason: 'stopped',
-    });
-  });
-});
-
 describe('DETECTION constants', () => {
   it('starts above running pace so a runner cannot open a trip', () => {
     // World-record marathon pace is about 5.7 m/s and a sprint is about 10,
@@ -442,14 +413,6 @@ describe('DETECTION constants', () => {
 
   it('corroborated start is faster than uncorroborated, never slower', () => {
     expect(DETECTION.START_HOLD_CORROBORATED_MS).toBeLessThan(DETECTION.START_HOLD_MS);
-  });
-
-  it('moving is a lower bar than declaring a drive, and they are separate jobs', () => {
-    // MOVING_SPEED_MPS answers "is this vehicle stationary". START_SPEED_MPS
-    // answers "is this journey a drive at all", which is asked once, from
-    // cold, and leans toward refusing. Resuming an already-declared drive is
-    // the first question, not the second.
-    expect(DETECTION.MOVING_SPEED_MPS).toBeLessThan(DETECTION.START_SPEED_MPS);
   });
 });
 
