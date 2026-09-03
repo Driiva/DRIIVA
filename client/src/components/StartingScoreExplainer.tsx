@@ -20,7 +20,7 @@ import { STARTING_SCORE, STARTING_SCORE_COPY } from '@driiva/contracts';
 export function StartingScoreExplainer({ variant = 'card' }: { variant?: 'card' | 'inline' }) {
   if (variant === 'inline') {
     return (
-      <p className="text-[13px] leading-relaxed" style={{ color: 'var(--app-text-sec)' }}>
+      <p className="text-[15px] leading-relaxed" style={{ color: 'var(--app-text-sec)' }}>
         {STARTING_SCORE_COPY.long}
       </p>
     );
@@ -45,7 +45,7 @@ export function StartingScoreExplainer({ variant = 'card' }: { variant?: 'card' 
         <p className="text-[14px] mb-1" style={{ color: 'var(--app-text-pri)' }}>
           You start on <span className="tabular">{STARTING_SCORE}</span>.
         </p>
-        <p className="text-[13px] leading-relaxed" style={{ color: 'var(--app-text-sec)' }}>
+        <p className="text-[15px] leading-relaxed" style={{ color: 'var(--app-text-sec)' }}>
           {STARTING_SCORE_COPY.long}
         </p>
       </div>

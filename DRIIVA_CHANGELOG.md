@@ -5,6 +5,55 @@
 
 ## Entries
 
+### 2026-09-01 - The dashboard obeys the design laws the gate could see but CI could not
+
+`nightly/2026-09-01`. The dashboard design-law ticket off the "gates is still
+committed INCOMPLETE" list: three laws broken on the signed-in dashboard,
+found by the one real gate run and invisible to every check that runs in CI.
+
+- **What changed** - client web only, `client/src/pages/dashboard.tsx` plus
+  `client/src/components/StartingScoreExplainer.tsx`. Law 1: all five capsule
+  oblongs the gate named (the indigo Beta badge, and both progress bars as
+  track plus fill) re-radiused, plus the pool loading skeleton's twin bar the
+  gate never saw because it only renders mid-load. Thin bars take a literal
+  2px following the shimmer's own recorded precedent; the badge takes
+  `rounded-xs`, the project's 4px token. `rounded-sm` was rejected after
+  reading the BUILT css, not the source: it compiles to
+  `calc(var(--radius) - 4px)` and `--radius` is defined nowhere in the
+  bundle, so it computes to 0. Law 5: the footer row ("Trust Centre", Terms,
+  Privacy) up from 11px to the 13px secondary floor, and the starting-score
+  explainer's ~330-character body copy up from 13px to the 15px body floor
+  in both its variants. Law 6: seven plain numeric spans (trip score, trip
+  distance, total miles, pool share, safety factor twice, participants) now
+  carry `.tabular`, joining the score-breakdown row that already did.
+- **Why the fix is at source and the proof is a pin** - `npm run gates` needs
+  Chrome on 9222, Doppler and the Firebase emulators, none of which exist in
+  the unattended clone, so the browser gate could not be re-run. The fixes are
+  held instead by `tests/unit/web-dashboard-laws.test.ts`: a line-level
+  reading of the capsule law (painted `rounded-full` that is neither a circle
+  nor an inset-0 overlay), the two type-floor literals, and a window check
+  that every listed figure span carries `.tabular` - each matcher proved
+  against a planted violation before the fixes went in, red first (4 law
+  pins red on the real offenders, 5 plant tests green). The gate stays the
+  authority: the page has drifted since the 22 Aug run and still carries
+  12px long-copy law-5 debt (the AI tip body among others) for the next real
+  run to enumerate, which is why the parent gates ticket stays open.
+- **Left honest** - the radii and floors here are law-compliant by
+  measurement of the classes and tokens, not by a rendered screenshot; no
+  browser confirmed the composed page tonight.
+- **Also tonight, no code** - the resume-threshold ticket (review finding 8)
+  turned out to be implemented on FOUR open unmerged nightly PRs (#67, #70,
+  #71, #83); tonight's run re-implemented it red-green before discovering
+  the duplicates, then reverted rather than open a fifth. ROADMAP now warns
+  against re-implementation and records that the Sentry-CSP ticket was
+  already done on main (`b6fe697`) with a stale checkbox.
+- **Tests** - 9 new in `tests/unit/web-dashboard-laws.test.ts`. Full run 1121
+  passing, 1 skipped, 3 todo, up from 1112. `npm run build` exit 0, and the
+  built css checked for `.rounded-xs{border-radius:var(--radius-xs)}` with
+  `--radius-xs:4px` resolving, and `.rounded-\[2px\]{border-radius:2px}`.
+  Root `tsc` unchanged at its 7 pre-existing TS 7.0.2 errors, byte-identical
+  error set before and after. `eslint` still refuses to load its config on
+  TS 7.0.2 (pre-existing, PR #69 pending). Mobile untouched.
 ### 2026-08-31 - Paused no longer sits over a moving car
 
 `5810e51` on `nightly/2026-08-31`. Review finding 8 off the Fable day sprint, mobile only.

@@ -672,7 +672,7 @@ export default function Dashboard() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-semibold text-white">AI Driiva</span>
-                      <span className="px-1.5 py-0.5 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-[10px] font-medium">Beta</span>
+                      <span className="px-1.5 py-0.5 rounded-xs bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-[10px] font-medium">Beta</span>
                     </div>
                     <p className="text-xs text-white/60 truncate">Personalised driving insights</p>
                   </div>
@@ -770,12 +770,12 @@ export default function Dashboard() {
                 >
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-white font-medium">{trip.from} → {trip.to}</span>
-                    <span className={`text-sm font-bold ${trip.score >= 80 ? 'text-emerald-400' : trip.score >= 60 ? 'text-amber-400' : 'text-red-400'}`}>
+                    <span className={`text-sm font-bold tabular ${trip.score >= 80 ? 'text-emerald-400' : trip.score >= 60 ? 'text-amber-400' : 'text-red-400'}`}>
                       {trip.score}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-xs text-white/60">
-                    <span>{trip.distance} mi</span>
+                    <span className="tabular">{trip.distance} mi</span>
                     <span>{trip.date}</span>
                   </div>
                 </motion.div>
@@ -783,7 +783,7 @@ export default function Dashboard() {
               <div className="pt-2 border-t border-white/10">
                 <div className="flex items-center justify-between">
                   <span className="text-white/60 text-sm">Total Miles</span>
-                  <span className="text-white font-semibold">{totalMiles.toLocaleString()} mi</span>
+                  <span className="text-white font-semibold tabular">{totalMiles.toLocaleString()} mi</span>
                 </div>
               </div>
             </div>
@@ -829,7 +829,7 @@ export default function Dashboard() {
                   <div className="h-4 w-16 bg-white/10 rounded" />
                 </div>
               ))}
-              <div className="h-2 w-full bg-white/10 rounded-full mt-2" />
+              <div className="h-2 w-full bg-white/10 rounded-[2px] mt-2" />
             </div>
           ) : (
             <div className="space-y-3">
@@ -860,19 +860,19 @@ export default function Dashboard() {
               {userSharePercentage > 0 && (
                 <div className="flex items-center justify-between">
                   <span className="text-white/60 text-sm">Your Share</span>
-                  <span className="text-white font-semibold">{userSharePercentage.toFixed(2)}%</span>
+                  <span className="text-white font-semibold tabular">{userSharePercentage.toFixed(2)}%</span>
                 </div>
               )}
               {safetyFactor != null && (
                 <div className="flex items-center justify-between">
                   <span className="text-white/60 text-sm">Safety Factor</span>
-                  <span className="text-white font-semibold">{Math.round(safetyFactor * 100)}%</span>
+                  <span className="text-white font-semibold tabular">{Math.round(safetyFactor * 100)}%</span>
                 </div>
               )}
               {activeParticipants > 0 && (
                 <div className="flex items-center justify-between">
                   <span className="text-white/60 text-sm">Participants</span>
-                  <span className="text-white font-semibold">{activeParticipants.toLocaleString()}</span>
+                  <span className="text-white font-semibold tabular">{activeParticipants.toLocaleString()}</span>
                 </div>
               )}
               
@@ -881,14 +881,14 @@ export default function Dashboard() {
               <div className="pt-2">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs text-white/60">Safety Factor</span>
-                  <span className="text-xs text-white/60">{Math.round(safetyFactor * 100)}%</span>
+                  <span className="text-xs text-white/60 tabular">{Math.round(safetyFactor * 100)}%</span>
                 </div>
-                <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                  <motion.div 
+                <div className="h-2 bg-white/10 rounded-[2px] overflow-hidden">
+                  <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${safetyFactor * 100}%` }}
                     transition={{ duration: 1, ease: "easeOut", delay: 0.3 }}
-                    className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"
+                    className="h-full bg-gradient-to-r from-purple-500 to-pink-500"
                   />
                 </div>
               </div>
@@ -922,12 +922,12 @@ export default function Dashboard() {
               <span>Based on {drivingScore}% score</span>
               <span>Max £{Math.round(premiumAmount * 0.15)}</span>
             </div>
-            <div className="h-3 bg-white/10 rounded-full overflow-hidden">
-              <motion.div 
+            <div className="h-3 bg-white/10 rounded-[2px] overflow-hidden">
+              <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${Math.min((surplusProjection / Math.max(premiumAmount * 0.15, 1)) * 100, 100)}%` }}
                 transition={{ duration: 1, ease: "easeOut", delay: 0.4 }}
-                className="h-full bg-gradient-to-r from-amber-500 to-emerald-500 rounded-full"
+                className="h-full bg-gradient-to-r from-amber-500 to-emerald-500"
               />
             </div>
             {isNewUser ? (
@@ -1018,22 +1018,22 @@ export default function Dashboard() {
         <div className="flex items-center justify-center gap-4 pt-2 pb-2">
           <button
             onClick={() => setLocation('/trust')}
-            className="flex items-center gap-1 text-white/55 text-[11px] hover:text-white/60 transition-colors"
+            className="flex items-center gap-1 text-white/55 text-[13px] hover:text-white/60 transition-colors"
           >
             <Shield className="w-3 h-3" />
             Trust Centre
           </button>
-          <span className="text-white/20 text-[11px]">·</span>
+          <span className="text-white/20 text-[13px]">·</span>
           <button
             onClick={() => setLocation('/terms')}
-            className="text-white/55 text-[11px] hover:text-white/60 transition-colors"
+            className="text-white/55 text-[13px] hover:text-white/60 transition-colors"
           >
             Terms
           </button>
-          <span className="text-white/20 text-[11px]">·</span>
+          <span className="text-white/20 text-[13px]">·</span>
           <button
             onClick={() => setLocation('/privacy')}
-            className="flex items-center gap-1 text-white/55 text-[11px] hover:text-white/60 transition-colors"
+            className="flex items-center gap-1 text-white/55 text-[13px] hover:text-white/60 transition-colors"
           >
             Privacy
             <ExternalLink className="w-2.5 h-2.5" />
