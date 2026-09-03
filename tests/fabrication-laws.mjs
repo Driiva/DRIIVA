@@ -58,6 +58,14 @@ const ROOT = repoRoot();
 // invented regulatory position there travels further than the same sentence in
 // a component. It sat outside this lint until 10 Aug 2026 purely because it is
 // not .tsx.
+// `mobile/app` and `mobile/components` are here because the law could not see
+// them until 26 Aug 2026, and that is where the damage was. Of the eight files
+// still claiming "pending FCA authorisation" sixteen days after the sweep that
+// was meant to have removed it, SEVEN were mobile screens. Widening the regex
+// alone would have caught exactly one of the eight. A guard that reads two of
+// the three surfaces does not cover the product, it covers the part somebody
+// remembered to point it at, and the mobile app is the surface a user actually
+// signs up through.
 const DIRS = [
   'client/src',
   'apps/marketing/src',
@@ -65,6 +73,8 @@ const DIRS = [
   'apps/marketing/public',
   'server',
   'functions/src',
+  'mobile/app',
+  'mobile/components',
 ];
 const SKIP = /node_modules|__tests__|\.test\.|\.spec\.|__snapshots__/;
 
@@ -141,10 +151,50 @@ function extractContentDeclarations(source) {
  */
 const LAWS = [
   {
+    /*
+     * This law was a list of spellings, and a paraphrase walked past it.
+     *
+     * It matched `FCA-authorised`, `FCA-regulated`, `FCA-supervised`. Eight
+     * files said "our insurance product is pending FCA authorisation" and not
+     * one of them tripped it, because "authorisation" is not "authorised".
+     * The regex never fired, so the reconciliation of 10 Aug looked like it
+     * held for sixteen days while four screens had already been reverted and
+     * four more had never been in scope.
+     *
+     * Adding `pending FCA` to the list would fix those eight and miss the
+     * ninth. "Awaiting FCA sign-off", "our FCA application", "FCA approval in
+     * progress" are all the same claim wearing different words, and a guard
+     * that enumerates the failures it has already seen only ever catches the
+     * failure it has already seen.
+     *
+     * So this matches the SHAPE instead: the letters FCA within a short span
+     * of any word that asserts a position in front of it, in either order.
+     * That deliberately fires on the TRUE sentences too, including the agreed
+     * one, and every one of them is signed off by name in ALLOWED with the
+     * reason it is true. A false positive costs one allowlist line. A false
+     * negative costs a regulatory incident, and just did.
+     */
     id: 'regulatory-claim',
     title: 'Claims about regulated status, underwriting or capacity',
-    pattern:
-      /authorised and regulated|FCA[- ]regulated|FCA[- ]authorised|FCA[- ]supervised|we are authorised|regulated by the Financial Conduct|underwritten by|PRA[- ]regulated|capacity partner|reinsur\w*|registration number/gi,
+    pattern: new RegExp(
+      [
+        // FCA, then a status word close behind it.
+        String.raw`\bFCA\b[^.\n]{0,40}?\b(authoris\w+|approv\w+|regulat\w+|supervis\w+|registr\w+|licen[cs]\w+|permission\w*|sandbox|application|sign[- ]off)\b`,
+        // A status word, then FCA close behind it. Catches "pending FCA
+        // authorisation" from the other end, and "applied to the FCA".
+        String.raw`\b(pending|awaiting|await\w+|applied|applying|application|submitted|in review|under review|approved|authoris\w+|registered|licen[cs]\w+)\b[^.\n]{0,40}?\bFCA\b`,
+        // The claims that never mention the FCA by name.
+        String.raw`authorised and regulated`,
+        String.raw`we are authorised`,
+        String.raw`regulated by the Financial Conduct`,
+        String.raw`PRA[- ]regulated`,
+        String.raw`underwritten by`,
+        String.raw`capacity partner`,
+        String.raw`reinsur\w*`,
+        String.raw`registration number`,
+      ].join('|'),
+      'gi',
+    ),
   },
   {
     id: 'invented-scale',
@@ -276,6 +326,80 @@ const ALLOWED = new Map(Object.entries({
   'client/src/pages/policy.tsx::fca-authorised':
     'Two honest empty states: cover "cannot issue one until it is FCA-authorised", and refunds "not paid until Driiva is FCA-authorised".',
 
+  // ── The agreed status line, and the sentences that qualify it.
+  //
+  // These are all hits on the broadened shape above, and they are all TRUE.
+  // The agreed wording is "working towards the FCA regulatory sandbox, not
+  // authorised, not under an MGA", and a law that matches any FCA-adjacent
+  // status word necessarily matches the true sentence as well as the false
+  // one. That is the trade the law is making: it cannot tell truth from
+  // falsehood, only a human can, so each true one is written down here with
+  // the reason it is true rather than being quietly excluded by the regex.
+  'client/src/components/BetaEstimateCard.tsx::fca regulatory':
+    'The agreed line, on the beta estimate disclaimer: "working towards the FCA regulatory sandbox, not authorised and not operating under an MGA". Reconciled 26 Aug after it had reverted to the stronger "pending FCA authorisation".',
+  'client/src/pages/policy.tsx::fca regulatory':
+    'Two honest empty states, both conditional: cover "cannot issue one until it is through the FCA regulatory sandbox", refunds the same.',
+  'client/src/pages/profile.tsx::fca regulatory':
+    'Empty state: "Driiva cannot issue policies until it is through the FCA regulatory sandbox". A statement of what we cannot do.',
+  'client/src/pages/terms.tsx::fca regulatory':
+    'Legal page, the agreed line in full: "working towards the FCA regulatory sandbox, is not authorised, and is not operating under an MGA".',
+  'client/src/pages/trust.tsx::fca sandbox':
+    'Badge label "Working towards FCA sandbox". Towards, not in.',
+  'client/src/pages/trust.tsx::fca regulatory':
+    'The agreed line, twice, each followed by the explicit denial: "We are not authorised by the FCA, we are not operating under an MGA, and we cannot sell".',
+  'apps/marketing/src/routes/Complaints.tsx::fca regulatory':
+    'Legal page, conditional: the FOS route opens "when Driiva is through the FCA regulatory sandbox and able to sell motor insurance". Not yet.',
+  'apps/marketing/src/routes/Privacy.tsx::fca sandbox':
+    'Legal page, conditional and future tense: a product privacy notice arrives "when Driiva begins underwriting real policies (post FCA Sandbox)".',
+  'apps/marketing/src/routes/Terms.tsx::fca regulatory':
+    'The agreed line on the Terms page, followed by "We are not authorised to issue motor insurance".',
+  'apps/marketing/src/sections/BetaCountdown.tsx::fca sandbox':
+    'A source comment noting the beta target date moves with the sandbox milestone. Not rendered, and not a claim about status.',
+  'apps/marketing/src/sections/FAQ.tsx::fca authorises':
+    'Answer to "What happens if I have an accident?": "Nothing yet, because we cannot sell you a policy until the FCA authorises us." The FCA has not.',
+  'apps/marketing/src/sections/FAQ.tsx::fca regulatory':
+    'The agreed line as the answer to "Are you FCA-regulated?", which begins "Not yet."',
+  'apps/marketing/src/sections/Footer.tsx::fca regulatory':
+    'Site-wide fine print, the agreed line: "working towards the FCA regulatory sandbox and is not yet authorised to issue motor insurance policies".',
+  'apps/marketing/src/sections/Pool.tsx::fca sandbox':
+    'Illustration label: "Nothing is paid until we are through the FCA sandbox", under an explicit "Illustration, not a quote" heading.',
+  'apps/marketing/src/sections/ScoreCalculator.tsx::fca sandbox':
+    'Source comment: real underwriting "will replace this once Driiva is through the FCA sandbox". Future tense, not rendered.',
+  'apps/marketing/src/sections/ScoreCalculator.tsx::fca regulatory':
+    'The honest-framing exemplar: "Real pricing happens once we are through the FCA regulatory sandbox and we score your actual driving".',
+  'apps/marketing/api/lib/waitlist-core.ts::fca regulatory':
+    'The agreed line in the confirmation email that goes to real signups, in both the HTML and the plain-text part: "working towards the FCA regulatory sandbox and is not authorised. The waitlist is not a policy offer." This file is why the law exists; it once emailed real people that Driiva was in the "FCA Regulatory Sandbox application phase".',
+  // ── Mobile, in scope since 26 Aug 2026
+  'mobile/app/(tabs)/community.tsx::fca regulatory':
+    'Header comment explaining why no pound figure may appear against the pool: the company is "only working towards the FCA regulatory sandbox and is not authorised". Not rendered.',
+  'mobile/app/(tabs)/profile.tsx::fca regulatory':
+    'The settings legal line, the agreed wording in its shortest form: "Working towards the FCA regulatory sandbox, not authorised, not operating under an MGA".',
+  'mobile/app/(tabs)/rewards.tsx::fca regulatory':
+    'Rewards disclaimer, the agreed line plus "Nothing on this screen is a binding offer".',
+  'mobile/app/onboarding/account.tsx::fca regulatory':
+    'The agreed line on the Shariah badge. Was "pending FCA authorisation" until 26 Aug.',
+  'mobile/app/onboarding/comparison.tsx::fca regulatory':
+    'The agreed line on the comparison callout. Was "pending FCA authorisation" until 26 Aug.',
+  'mobile/app/onboarding/index.tsx::fca regulatory':
+    'The agreed line on the first onboarding screen. Was "pending FCA authorisation" until 26 Aug.',
+  'mobile/app/onboarding/quote.tsx::fca regulatory':
+    'The agreed line twice: on the quote stub and on the refund-estimate disclaimer. Both were "pending FCA authorisation" until 26 Aug.',
+  'mobile/app/onboarding/social-proof.tsx::fca regulatory':
+    'The agreed line on the disclaimer under the principles list.',
+  'mobile/app/trust.tsx::fca regulatory':
+    'The financial-promotion disclaimer, the agreed line: "working towards the FCA regulatory sandbox and is not authorised".',
+  'mobile/app/trust.tsx::we are authorised':
+    'Conditional: "When we are authorised to distribute policies". Same construction as the already-acknowledged apps/marketing/src/routes/Terms.tsx.',
+  'mobile/app/trust.tsx::underwritten by':
+    'Future tense since 26 Aug: "When we are authorised to distribute policies, they will be underwritten by a regulated capacity partner". The screen previously said policies ARE underwritten by our capacity partner, in the present tense, on a product with no insurer and no partner. Matched to the wording already on client/src/pages/trust.tsx.',
+  'mobile/app/trust.tsx::capacity partner':
+    'Same sentence, and the paragraph now ends "No capacity partner is in place today".',
+  "mobile/app/trips/[tripId].tsx::?? 'unknown'":
+    'A trip whose route will not resolve a start or end place has no known start or end place. "Unknown" is the fact, not a stand-in for it. Same case as the already-acknowledged client/src/hooks/useDashboardData.ts.',
+
+  'apps/marketing/public/llms.txt::fca regulatory':
+    'The machine-readable summary states the position three times and each is the agreed line or its denial: line 3 "working towards the FCA regulatory sandbox, is not FCA authorised, is not operating under an MGA", line 10 the regulatory-position list, line 53 the do-say list.',
+
   // ── Placeholders that are correct
   'client/src/pages/forgot-password.tsx::example.com':
     'Input placeholder "you@example.com". example.com is the reserved documentation domain; it cannot reach a real person.',
@@ -320,11 +444,37 @@ const ALLOWED = new Map(Object.entries({
 const PLANTED = `
 // A planted file. Every law that reads components must fire on it.
 export const badge = 'Driiva Ltd. Authorised and regulated by the Financial Conduct Authority.';
+// The paraphrases. The old regulatory-claim law matched none of these, which
+// is how "pending FCA authorisation" survived on eight screens for sixteen
+// days after the sweep that was meant to have removed it. They are planted
+// individually because each is a different way of not saying "authorised".
+export const pending = 'Our insurance product is pending FCA authorisation.';
+export const awaiting = 'We are awaiting FCA sign-off on the product.';
+export const applied = 'Our FCA application is in review.';
+export const phase = 'Driiva is in the FCA Regulatory Sandbox application phase.';
 export const scale = 'Join thousands of drivers already saving.';
 export const money = 'Refunds tracked: £18.4k, paid out within 14 days.';
 export const who = 'Test Driver, 0800 123 4567, test@driiva.co.uk';
 export const bound = { status: rootPolicy.status || 'active', safety: pool.factor ?? 1.0 };
 `;
+
+/**
+ * Lines of PLANTED that must each be caught in their own right.
+ *
+ * "Every law fired at least once" is too weak a plant check for a law with ten
+ * alternatives in it: `badge` alone trips regulatory-claim, and the four
+ * paraphrases below could all silently stop matching while the planted run
+ * still reported that the gate works. That is the same shape as the design:laws
+ * plant check that certified a two-thirds-blind gate. So the planted run
+ * asserts these BY LINE, not by law.
+ */
+const PLANTED_LINES_THAT_MUST_TRIP = [
+  ['regulatory-claim', 'pending FCA authorisation'],
+  ['regulatory-claim', 'awaiting FCA sign-off'],
+  ['regulatory-claim', 'FCA application is in review'],
+  ['regulatory-claim', 'Sandbox application phase'],
+  ['regulatory-claim', 'Authorised and regulated by the Financial Conduct Authority'],
+];
 
 /**
  * The stylesheet half of the planted run. The laws that only read CSS cannot
@@ -413,7 +563,25 @@ if (!process.env.VITEST && process.argv[1] && process.argv[1].endsWith('fabricat
       console.log(`planted run did NOT trip: ${quiet.map((l) => l.id).join(', ')}`);
       process.exit(1);
     }
+
+    // A law firing somewhere is not the same as a law firing on the specimen
+    // it was written for. Check the specimens themselves.
+    const missed = PLANTED_LINES_THAT_MUST_TRIP.filter(([lawId, needle]) => {
+      const law = result.laws.find((l) => l.id === lawId);
+      if (!law) return true;
+      const source = PLANTED.split('\n');
+      return !law.violations.some(
+        (v) => v.file === 'planted.tsx' && (source[v.line - 1] || '').includes(needle),
+      );
+    });
+    if (missed.length > 0) {
+      console.log('planted run missed the specimens it was written for:');
+      for (const [lawId, needle] of missed) console.log(`          ${lawId}  "${needle}"`);
+      process.exit(1);
+    }
+
     console.log('planted run tripped every law, as it must.');
+    console.log(`and caught all ${PLANTED_LINES_THAT_MUST_TRIP.length} named specimens by line.`);
     process.exit(0);
   }
   if (failed) {

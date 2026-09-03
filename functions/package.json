@@ -22,7 +22,7 @@
     "node": "20"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.80.0",
+    "@anthropic-ai/sdk": "^0.122.0",
     "@driiva/contracts": "file:vendor/contracts",
     "@neondatabase/serverless": "^0.10.4",
     "@sentry/node": "^10.70.0",
@@ -36,7 +36,7 @@
     "@types/node": "^26.2.0",
     "@types/node-fetch": "^2.6.11",
     "@types/ws": "^8.5.13",
-    "@typescript-eslint/eslint-plugin": "^8.57.2",
+    "@typescript-eslint/eslint-plugin": "^8.68.0",
     "@typescript-eslint/parser": "^7.0.0",
     "@vitest/coverage-v8": "^4.1.10",
     "eslint": "^8.57.0",

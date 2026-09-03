@@ -22,7 +22,7 @@ jobs:
     name: Lint & Type Check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v7
         with:
@@ -57,7 +57,7 @@ jobs:
       VITE_FIREBASE_PROJECT_ID: driiva
       VITE_FIREBASE_APP_ID: 1:000000000000:web:ci-placeholder
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v7
         with:
@@ -74,7 +74,7 @@ jobs:
     name: Build (Cloud Functions)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v7
         with:
@@ -113,7 +113,7 @@ jobs:
     name: Tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # Node 22, not 20, for this job only: dev-deps bump #63 brought jsdom 30,
       # which pulls undici 8 (engines: node >=22.19.0). On Node 20 the whole
@@ -153,7 +153,7 @@ jobs:
     name: Packages (contracts + scoring)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v7
         with:
@@ -179,7 +179,7 @@ jobs:
     name: Firestore Rules (emulator)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v7
         with:
@@ -187,7 +187,7 @@ jobs:
           cache: npm
 
       # The rules suite runs under `firebase emulators:exec`, which needs a JRE.
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'
@@ -220,7 +220,7 @@ jobs:
       # shaped, so a placeholder unblocks the dev server boot without a real DB.
       DATABASE_URL: postgresql://ci:ci@localhost:5432/ci_placeholder
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v7
         with:
@@ -303,7 +303,7 @@ jobs:
       VITE_FEATURE_COMMUNITY_POOL: "true"
       VITE_FEATURE_LEADERBOARD: "true"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v7
         with:
@@ -395,7 +395,7 @@ jobs:
       VITE_FEATURE_COMMUNITY_POOL: "true"
       VITE_FEATURE_LEADERBOARD: "true"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v7
         with:

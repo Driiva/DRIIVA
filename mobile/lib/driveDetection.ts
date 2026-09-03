@@ -63,17 +63,28 @@ export const DETECTION = {
    */
   GAIT_VARIANCE_G2: 0.05,
 
-  /** Below this the vehicle is treated as stationary rather than moving. */
-  PAUSE_SPEED_MPS: 1.0,
-
-  // TODO (reviewer finding 8, deferred): resuming from PAUSED requires
-  // START_SPEED_MPS (4.5) while the stationary clock clears at
-  // PAUSE_SPEED_MPS (1.0). Between the two a vehicle is moving, is not
-  // accumulating toward the end of the trip, and still reads as paused. It
-  // records correctly throughout, so this is a labelling mismatch rather than
-  // lost data, but the screen can sit on "Stopped. Still recording." while the
-  // car crawls. Decide one threshold for both, with a hysteresis band if
-  // flapping at junctions turns out to be the reason for two.
+  /**
+   * Below this the vehicle is treated as stationary rather than moving.
+   *
+   * ONE THRESHOLD, TWO JOBS, DELIBERATELY. It clears the stationary clock and
+   * it resumes a paused drive, because both are the same question: is this
+   * vehicle moving. Two numbers used to answer it - the clock cleared here at
+   * 1.0 while resuming needed START_SPEED_MPS at 4.5 - and a car crawling
+   * between the two was moving, was not accumulating toward the end of the
+   * trip, and still read as paused, so the Drive screen sat on "Stopped. Still
+   * recording." through a whole queue.
+   *
+   * START_SPEED_MPS is not the same question and is not used here. It decides
+   * whether a journey is a DRIVE at all, once, from cold, and leans toward
+   * refusing for the reason set out at the top of this file. That decision has
+   * already been made and paid for by the time anything can pause.
+   *
+   * NO HYSTERESIS BAND, because PAUSE_HOLD_MS already is one. Resuming is
+   * immediate but pausing again costs a full minute of no movement, so a
+   * junction cannot flap the state more than once a minute however the traffic
+   * behaves.
+   */
+  MOVING_SPEED_MPS: 1.0,
 
   /** Stationary this long pauses the drive. Recording continues throughout. */
   PAUSE_HOLD_MS: 60_000,
@@ -140,7 +151,7 @@ export class DriveDetector {
   /** When the present run of at-or-above-start-speed samples began. */
   private candidateSince: number | null = null;
   /**
-   * When anything last actually MOVED, at or above PAUSE_SPEED_MPS.
+   * When anything last actually MOVED, at or above MOVING_SPEED_MPS.
    *
    * The stationary clock runs from here rather than from "when stationary
    * samples started arriving", because a parked car eventually stops producing
@@ -189,7 +200,7 @@ export class DriveDetector {
     // One clock for both pause and end, and it measures time since the last
     // real movement. Creeping in traffic keeps resetting it, so a slow crawl
     // can never accumulate toward ending the drive.
-    if (speed >= DETECTION.PAUSE_SPEED_MPS) {
+    if (speed >= DETECTION.MOVING_SPEED_MPS) {
       this.lastMovingAt = sample.t;
     }
 
@@ -309,7 +320,10 @@ export class DriveDetector {
     const discarded = this.judgePeak(sample);
     if (discarded) return discarded;
 
-    if (speed >= DETECTION.START_SPEED_MPS) {
+    // Moving at all resumes, on the same threshold that just cleared the
+    // stationary clock above. Anything higher leaves a band in which the car
+    // is moving and the screen says it is stopped.
+    if (speed >= DETECTION.MOVING_SPEED_MPS) {
       this.current = 'driving';
       return { type: 'drive_resumed' };
     }
