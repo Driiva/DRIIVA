@@ -5,6 +5,59 @@
 
 ## Entries
 
+### 2026-08-28 - The pool chart's axis figures hold their columns, and two documentation gaps found along the way
+
+`3660011` on `nightly/2026-08-28`. Closes one item of the "npm run gates no
+longer reports INCOMPLETE" ticket in the Premium lift sprint.
+
+- **What changed** - `PoolPanel.tsx`'s recharts XAxis/YAxis (the pool-history
+  line chart, imported into `/leaderboard`) render their tick labels through a
+  hand-written tick function now, instead of `tick={{ ... }}`.
+- **Why the object form looked right and was not** - `tick={{ fill, fontSize,
+  className: 'tabular' }}` matches recharts' public prop shape, and a read of
+  its own `filterProps`/`SVGElementPropKeys`/`Text.js` says `className`
+  should flow straight through to the rendered `<text>`. It does not, for a
+  plain object specifically: `CartesianAxis.renderTickItem`'s default branch
+  hardcodes `className: "recharts-cartesian-axis-tick-value"` on the element
+  it builds from an object tick, discarding whatever the object set. A type
+  check cannot see this - the discard happens one layer past the public API.
+  A render test that actually walked the DOM came back with zero `.tabular`
+  elements and said so.
+- **The fix** - a tick function, which recharts merges a className into
+  rather than overwrites, built on recharts' own exported `Text` component so
+  multi-line wrapping and anchor positioning are not hand-rolled. `fill` and
+  `fontSize` are set explicitly inside it, because the function form carries
+  no styling from the `tick` prop at all - the object form used to supply
+  both, so leaving them out would have quietly reverted the axis colour and
+  size while fixing the class.
+- **Not run against `npm run gates`** - it needs Chrome on :9222, a Firebase
+  emulator and a seeded driver, none of which exist in the unattended nightly
+  clone. The parent ticket stays recorded as committed-INCOMPLETE for the
+  same reason it already was.
+- **Two documentation gaps found while picking tonight's ticket, not left for
+  next time** -
+  1. The Sentry CSP fix (`b6fe697`, 25 Aug) was real, merged, and verified,
+     but its ROADMAP checkbox was never ticked. Ticked tonight, four lines
+     above this ticket in `ROADMAP.md`.
+  2. `nightly/2026-08-26` had already fixed the *next* ticket down
+     (`d58885d` + `f7ffb9e`, the resume-threshold labelling mismatch) two
+     nights ago, cleanly and with a better fix than a first pass here
+     produced independently before this was noticed - and it is still
+     sitting unmerged as PR #67. Its CI is red on `Lint & Type Check`
+     (repo-wide: `typescript-eslint does not support TS 7.0`, not anything in
+     that diff), `Create Neon Branch` and the Claude Code Review check
+     (`Bad credentials`, an expired/misconfigured GitHub App token) - all
+     three are infrastructure failures, not defects in the PR's code, and all
+     three would fail identically on this PR too. Flagged rather than
+     silently redone: the duplicate work was caught before a second commit
+     was made, not after.
+- **Tests** - 90 files, 1113 passing (was 89/1112), 1 skipped, 3 todo. New
+  test written red first (0 tabular ticks found against the object-tick
+  attempt), green after the function-tick fix. Root `tsc` clean; the 7
+  pre-existing `firebase-admin` errors are untouched, confirmed identical via
+  `git stash` before and after. `npm run lint` could not run either way -
+  same `typescript-eslint`/TS 7.0 repo-wide breakage as PR #67's CI, not
+  attempted here since it is out of scope for one ticket.
 ### 2026-09-03 - The reduced-motion override is measured, not read
 
 `74b94ee` on `nightly/2026-09-03`. The last open item on the marketing
