@@ -47,6 +47,242 @@ clone, and the parent gates ticket stays open for that reason - this is a source
 in for the pixel measurement, not a replacement for it.
 
 ---
+### 2026-09-01 - The dashboard obeys the design laws the gate could see but CI could not
+
+`nightly/2026-09-01`. The dashboard design-law ticket off the "gates is still
+committed INCOMPLETE" list: three laws broken on the signed-in dashboard,
+found by the one real gate run and invisible to every check that runs in CI.
+
+- **What changed** - client web only, `client/src/pages/dashboard.tsx` plus
+  `client/src/components/StartingScoreExplainer.tsx`. Law 1: all five capsule
+  oblongs the gate named (the indigo Beta badge, and both progress bars as
+  track plus fill) re-radiused, plus the pool loading skeleton's twin bar the
+  gate never saw because it only renders mid-load. Thin bars take a literal
+  2px following the shimmer's own recorded precedent; the badge takes
+  `rounded-xs`, the project's 4px token. `rounded-sm` was rejected after
+  reading the BUILT css, not the source: it compiles to
+  `calc(var(--radius) - 4px)` and `--radius` is defined nowhere in the
+  bundle, so it computes to 0. Law 5: the footer row ("Trust Centre", Terms,
+  Privacy) up from 11px to the 13px secondary floor, and the starting-score
+  explainer's ~330-character body copy up from 13px to the 15px body floor
+  in both its variants. Law 6: seven plain numeric spans (trip score, trip
+  distance, total miles, pool share, safety factor twice, participants) now
+  carry `.tabular`, joining the score-breakdown row that already did.
+- **Why the fix is at source and the proof is a pin** - `npm run gates` needs
+  Chrome on 9222, Doppler and the Firebase emulators, none of which exist in
+  the unattended clone, so the browser gate could not be re-run. The fixes are
+  held instead by `tests/unit/web-dashboard-laws.test.ts`: a line-level
+  reading of the capsule law (painted `rounded-full` that is neither a circle
+  nor an inset-0 overlay), the two type-floor literals, and a window check
+  that every listed figure span carries `.tabular` - each matcher proved
+  against a planted violation before the fixes went in, red first (4 law
+  pins red on the real offenders, 5 plant tests green). The gate stays the
+  authority: the page has drifted since the 22 Aug run and still carries
+  12px long-copy law-5 debt (the AI tip body among others) for the next real
+  run to enumerate, which is why the parent gates ticket stays open.
+- **Left honest** - the radii and floors here are law-compliant by
+  measurement of the classes and tokens, not by a rendered screenshot; no
+  browser confirmed the composed page tonight.
+- **Also tonight, no code** - the resume-threshold ticket (review finding 8)
+  turned out to be implemented on FOUR open unmerged nightly PRs (#67, #70,
+  #71, #83); tonight's run re-implemented it red-green before discovering
+  the duplicates, then reverted rather than open a fifth. ROADMAP now warns
+  against re-implementation and records that the Sentry-CSP ticket was
+  already done on main (`b6fe697`) with a stale checkbox.
+- **Tests** - 9 new in `tests/unit/web-dashboard-laws.test.ts`. Full run 1121
+  passing, 1 skipped, 3 todo, up from 1112. `npm run build` exit 0, and the
+  built css checked for `.rounded-xs{border-radius:var(--radius-xs)}` with
+  `--radius-xs:4px` resolving, and `.rounded-\[2px\]{border-radius:2px}`.
+  Root `tsc` unchanged at its 7 pre-existing TS 7.0.2 errors, byte-identical
+  error set before and after. `eslint` still refuses to load its config on
+  TS 7.0.2 (pre-existing, PR #69 pending). Mobile untouched.
+### 2026-08-31 - Paused no longer sits over a moving car
+
+`5810e51` on `nightly/2026-08-31`. Review finding 8 off the Fable day sprint, mobile only.
+
+- **What changed** - resuming from PAUSED demanded `START_SPEED_MPS` (4.5 m/s) while the stationary
+  clock cleared at `PAUSE_SPEED_MPS` (1.0), so between the two the car was moving, the clock knew
+  it, and the state still read paused: the screen sat on "Stopped. Still recording." over a
+  crawling car. `fromPaused` now resumes at `PAUSE_SPEED_MPS`, the same line the clock trusts, so
+  one threshold decides stationary versus moving in both directions and the label can never
+  disagree with the clock about whether the car moved.
+- **Why one threshold and not a hysteresis band** - the deferred TODO offered a speed band if
+  flapping at junctions was the reason for two thresholds. It is not needed, because the hysteresis
+  is already in time: resuming is instant, while pausing again takes the full `PAUSE_HOLD_MS` of
+  unbroken stillness, so a queue that inches forward every minute simply stays driving. A test pins
+  exactly that.
+- **Why the strict threshold bought nothing here** - the start-speed asymmetry prevents a walk
+  being scored as a drive; on resume the trip is already open and recording either way, so a strict
+  threshold could only mislabel a right trip, and did.
+- **Left alone on purpose** - trip lifetimes are untouched. `drive_paused` and `drive_resumed` are
+  ignored by the monitor, and ending runs off the shared movement clock in either state, so a car
+  that crawls and then parks ends at the same moment it did before. Only the label and the arc
+  animation see the difference.
+- **Tests** - 5 new in `tests/unit/mobile-drive-detection.test.ts`, written first, 3 red against
+  the old threshold including a property over the whole crawl band. Full run 1116 passing, 1
+  skipped, 3 todo, up from 1111. Root `tsc` delta zero against 7 pre-existing errors, and `eslint`
+  cannot run on this branch at all - both regressions arrived with the `a94ce78` dev-deps bump to
+  TypeScript 7.0.2, present on the untouched baseline and flagged in the run summary rather than
+  fixed, being a second ticket. Mobile `tsc` unchanged at 248 pre-existing module-resolution errors
+  in a clone with no `mobile/node_modules`, verified identical before and after. `npm run gates`
+  not run: it needs Firebase emulators, Doppler and Chrome on 9222, none of which exist in the
+  unattended clone, and it does not exercise the mobile detector.
+### 2026-08-28 - The pool chart's axis figures hold their columns, and two documentation gaps found along the way
+
+`3660011` on `nightly/2026-08-28`. Closes one item of the "npm run gates no
+longer reports INCOMPLETE" ticket in the Premium lift sprint.
+
+- **What changed** - `PoolPanel.tsx`'s recharts XAxis/YAxis (the pool-history
+  line chart, imported into `/leaderboard`) render their tick labels through a
+  hand-written tick function now, instead of `tick={{ ... }}`.
+- **Why the object form looked right and was not** - `tick={{ fill, fontSize,
+  className: 'tabular' }}` matches recharts' public prop shape, and a read of
+  its own `filterProps`/`SVGElementPropKeys`/`Text.js` says `className`
+  should flow straight through to the rendered `<text>`. It does not, for a
+  plain object specifically: `CartesianAxis.renderTickItem`'s default branch
+  hardcodes `className: "recharts-cartesian-axis-tick-value"` on the element
+  it builds from an object tick, discarding whatever the object set. A type
+  check cannot see this - the discard happens one layer past the public API.
+  A render test that actually walked the DOM came back with zero `.tabular`
+  elements and said so.
+- **The fix** - a tick function, which recharts merges a className into
+  rather than overwrites, built on recharts' own exported `Text` component so
+  multi-line wrapping and anchor positioning are not hand-rolled. `fill` and
+  `fontSize` are set explicitly inside it, because the function form carries
+  no styling from the `tick` prop at all - the object form used to supply
+  both, so leaving them out would have quietly reverted the axis colour and
+  size while fixing the class.
+- **Not run against `npm run gates`** - it needs Chrome on :9222, a Firebase
+  emulator and a seeded driver, none of which exist in the unattended nightly
+  clone. The parent ticket stays recorded as committed-INCOMPLETE for the
+  same reason it already was.
+- **Two documentation gaps found while picking tonight's ticket, not left for
+  next time** -
+  1. The Sentry CSP fix (`b6fe697`, 25 Aug) was real, merged, and verified,
+     but its ROADMAP checkbox was never ticked. Ticked tonight, four lines
+     above this ticket in `ROADMAP.md`.
+  2. `nightly/2026-08-26` had already fixed the *next* ticket down
+     (`d58885d` + `f7ffb9e`, the resume-threshold labelling mismatch) two
+     nights ago, cleanly and with a better fix than a first pass here
+     produced independently before this was noticed - and it is still
+     sitting unmerged as PR #67. Its CI is red on `Lint & Type Check`
+     (repo-wide: `typescript-eslint does not support TS 7.0`, not anything in
+     that diff), `Create Neon Branch` and the Claude Code Review check
+     (`Bad credentials`, an expired/misconfigured GitHub App token) - all
+     three are infrastructure failures, not defects in the PR's code, and all
+     three would fail identically on this PR too. Flagged rather than
+     silently redone: the duplicate work was caught before a second commit
+     was made, not after.
+- **Tests** - 90 files, 1113 passing (was 89/1112), 1 skipped, 3 todo. New
+  test written red first (0 tabular ticks found against the object-tick
+  attempt), green after the function-tick fix. Root `tsc` clean; the 7
+  pre-existing `firebase-admin` errors are untouched, confirmed identical via
+  `git stash` before and after. `npm run lint` could not run either way -
+  same `typescript-eslint`/TS 7.0 repo-wide breakage as PR #67's CI, not
+  attempted here since it is out of scope for one ticket.
+### 2026-09-03 - The reduced-motion override is measured, not read
+
+`74b94ee` on `nightly/2026-09-03`. The last open item on the marketing
+rendered-behaviour pass. One new file, `tests/marketing-reduced-motion.mjs`,
+plus two npm scripts. No product code changed.
+
+- **What was open** - `.reveal-init` starts at opacity 0 and is made visible
+  again by two independent mechanisms. The JS path, where `useReveal` and the
+  hero timeline assign the resting style, has been under test since `7f1ca28`.
+  The CSS path, the `.reveal-init` override inside
+  `@media (prefers-reduced-motion: reduce)`, is what catches every element the
+  JS never reaches, and it was covered by nothing. Reading the file said it
+  resolves, the override following the base rule at equal specificity, but that
+  is a source fact and the whole point of a rendered-behaviour pass is not to
+  settle questions that way.
+- **Why it stayed open for three weeks** - two reasons, and only one of them
+  has gone away. jsdom applies no stylesheet, so a test there reports those
+  elements at opacity 0 and manufactures a bug that does not exist; that is
+  still true and is why this is a browser harness rather than another vitest
+  file. The other reason was that Chrome on 9222 was down for the whole
+  original follow-up. It is up tonight, so the run that was described as "one
+  clean probe" could finally happen.
+- **What the run says** - 38 `.reveal-init` elements on `/` that the JS had not
+  touched compute opacity 1 under the emulated preference. The same 38 compute
+  opacity 0 without it. The override holds, on the shipped stylesheet, in a
+  real engine. The five legal routes carry no reveals and are reported as such
+  rather than counted toward the green.
+- **An incidental finding, recorded because it changes how the CSS half reads.**
+  The JS path had reached none of those 38 at page load. So under reduced
+  motion the CSS override is not a backstop behind the JS, it is the thing
+  actually carrying the page, and the half that was already tested is the half
+  that does less.
+- **Why every route is measured twice** - the control run at `no-preference` is
+  not decoration. If the untouched elements read opacity 1 under both
+  preferences then the stylesheet is not reaching them at all, and a clean
+  reduce pass would be measuring an absent rule. That case reports INCONCLUSIVE
+  and exits non-zero. This harness set has been bitten twice by a gate that
+  reported green on a surface it never reached, and this is the cheapest
+  possible guard against a third.
+- **Production build, not the dev server** - the question is rule ordering in
+  the stylesheet that ships, and a dev server injects CSS a different way.
+  Served by a zero-dependency static server rather than `vite preview`, so the
+  check runs without `apps/marketing/node_modules`; directory requests resolve
+  to the prerendered `index.html` inside them rather than falling back to the
+  root one, which would have measured the home page under five other route
+  names.
+- **Tests** - the planted run came first and was red on all 38
+  (`npm run motion:reduced:plant` injects a higher-specificity override that
+  re-hides them), so the green that followed is a measurement rather than a
+  no-op. Root suite 1136 passing, 1 skipped, 3 todo across 89 files, up from
+  1119 - the rest of that rise is other work already on `main`, none of it
+  touched here. 8 of 8 mobile source laws and 7 of 7 fabrication laws green.
+  Root `tsc` unchanged at the 7 pre-existing `server/` errors from the
+  firebase-admin namespace typings. `eslint` still cannot run in this clone:
+  `typescript-eslint` refuses TS 7, which predates this branch.
+- **Not run, and not claimed** - `npm run gates`. It needs the QA emulator,
+  Doppler and a seeded driver, none of which exist in the unattended clone, and
+  it audits the signed-in client app rather than the marketing site, so it
+  would not reach this file. `docs/premium-lift/marketing-rendered-behaviour.md`
+  still lists this check as open; that document is an audit trail and is left
+  for Jamal to close.
+
+### 2026-08-26 - A crawl in traffic is moving, and the screen now says so
+
+`d58885d` on `nightly/2026-08-26`. Review finding 8 off the Fable day sprint, mobile only,
+`mobile/lib/driveDetection.ts` alone.
+
+- **What changed** - resuming a paused drive required `START_SPEED_MPS` (4.5 m/s, about 10 mph)
+  while the stationary clock cleared at `PAUSE_SPEED_MPS` (1.0 m/s, about 2 mph). Between the two
+  the car was moving, was not accumulating toward the end of the trip, and still read as paused, so
+  the Drive screen could sit on "Stopped. Still recording." through an entire queue. One threshold
+  now answers both, and it is renamed `MOVING_SPEED_MPS` because a constant called PAUSE_SPEED
+  deciding when to resume is the same quiet disagreement the DETECTION object exists to prevent.
+- **Why `START_SPEED_MPS` is deliberately left out of it** - it answers a different question. It
+  decides whether a journey is a DRIVE at all: asked once, from cold, leaning toward refusing,
+  because starting a trip for a walk or a bus writes a journey the driver never drove into an
+  insurance record. By the time anything can pause, that decision has already been made and paid
+  for. Resuming is not it being asked again; it is only "is this vehicle moving", which is exactly
+  what the stationary clock already asks a line earlier in the same method.
+- **No hysteresis band, and why not** - the deferred note left the door open to one if flapping at
+  junctions turned out to be the reason for two numbers. It is not needed: `PAUSE_HOLD_MS` already
+  is a hysteresis band. Resuming is immediate but pausing again costs a full minute of no movement,
+  so the state cannot change more than once a minute however the traffic behaves. A second
+  threshold would have bought nothing the hold does not already buy, at the price of the mislabelled
+  band.
+- **No data was ever lost** - recording continues through paused and always did, so this was a
+  labelling fault throughout, not a capture one. The trip that crawls is unchanged on disk; what
+  changes is what the driver is told is happening, and whether `LiveArc` stops breathing at them
+  while the car is moving.
+- **Tests** - 7 new in `tests/unit/mobile-drive-detection.test.ts`, written first and red first
+  (7 failed, 42 passed before the change). Two are fast-check properties over the whole speed range
+  rather than examples, pinning the pairing itself: every speed at or above the moving threshold
+  resumes, every speed below it does not, so the two thresholds cannot drift apart again without a
+  test going red. The pre-existing crawl test carried a comment describing the behaviour this
+  removes; the comment is corrected and the test gained an assertion rather than losing one.
+- **Verified** - full root run 1119 passing, 1 skipped, 3 todo, up from 1112. Root `tsc` unchanged
+  at 7 pre-existing errors in `server/` (firebase-admin namespace typings), confirmed identical
+  against a stashed tree. 8 of 8 mobile source laws and 8 of 8 fabrication laws green. `eslint`
+  could not run at all: `typescript-eslint` refuses TS 7, which is a pre-existing toolchain
+  incompatibility in this clone and not something this change introduced. `npm run gates` was not
+  run - it needs the QA Firebase emulator, Doppler and a browser on 9222, none of which exist in
+  the unattended clone, and it is already recorded as committed-INCOMPLETE. It covers rendered web
+  routes and would not reach this file in any case.
 
 ### 2026-08-25 - The accelerometer stops running all day
 

@@ -256,7 +256,8 @@ export default function Profile() {
 
             <Text style={styles.version}>Driiva {version}</Text>
             <Text style={styles.legal}>
-              Driiva Ltd. Our insurance product is pending FCA authorisation.
+              Driiva Ltd. Working towards the FCA regulatory sandbox, not authorised, not
+              operating under an MGA.
             </Text>
           </View>
         </Enter>

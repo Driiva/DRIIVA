@@ -63,17 +63,19 @@ export const DETECTION = {
    */
   GAIT_VARIANCE_G2: 0.05,
 
-  /** Below this the vehicle is treated as stationary rather than moving. */
+  /**
+   * Below this the vehicle is treated as stationary rather than moving, and it
+   * decides BOTH directions: it clears the stationary clock and it resumes a
+   * paused drive. Reviewer finding 8: resume used to demand START_SPEED_MPS
+   * (4.5) while the clock cleared here at 1.0, so between the two the machine
+   * read "paused" over a moving car and the screen said "Stopped. Still
+   * recording." while it crawled. One threshold means the label and the clock
+   * can never disagree about whether the car moved. No speed hysteresis band
+   * is needed to stop flapping at junctions, because the hysteresis is already
+   * in time: resuming is instant, while pausing again takes PAUSE_HOLD_MS of
+   * unbroken stillness.
+   */
   PAUSE_SPEED_MPS: 1.0,
-
-  // TODO (reviewer finding 8, deferred): resuming from PAUSED requires
-  // START_SPEED_MPS (4.5) while the stationary clock clears at
-  // PAUSE_SPEED_MPS (1.0). Between the two a vehicle is moving, is not
-  // accumulating toward the end of the trip, and still reads as paused. It
-  // records correctly throughout, so this is a labelling mismatch rather than
-  // lost data, but the screen can sit on "Stopped. Still recording." while the
-  // car crawls. Decide one threshold for both, with a hysteresis band if
-  // flapping at junctions turns out to be the reason for two.
 
   /** Stationary this long pauses the drive. Recording continues throughout. */
   PAUSE_HOLD_MS: 60_000,
@@ -309,7 +311,10 @@ export class DriveDetector {
     const discarded = this.judgePeak(sample);
     if (discarded) return discarded;
 
-    if (speed >= DETECTION.START_SPEED_MPS) {
+    // Any movement resumes. The trip is already open and recording, so the
+    // start-speed asymmetry does not apply here: a strict threshold on resume
+    // could not prevent a wrong trip, it could only mislabel a right one.
+    if (speed >= DETECTION.PAUSE_SPEED_MPS) {
       this.current = 'driving';
       return { type: 'drive_resumed' };
     }
