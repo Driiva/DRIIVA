@@ -12,7 +12,7 @@ export function Privacy() {
 
       <h2>1. Who we are</h2>
       <p>
-        Driiva Technologies Ltd. is a UK company registered in England and Wales. We are the data
+        Driiva Ltd. is a UK company registered in England and Wales. We are the data
         controller for personal information collected on driiva.co.uk. Contact:{' '}
         <a href="mailto:hello@driiva.co.uk">hello@driiva.co.uk</a>.
       </p>

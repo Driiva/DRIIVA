@@ -147,7 +147,8 @@ export function BetaEstimateCard({
         <p className="text-xs text-white/60 leading-relaxed">
           Beta estimate only, produced by Driiva's own model. It is not a quote
           and nobody has underwritten it. Real pricing needs an insurer, and
-          Driiva is pending FCA authorisation.
+          Driiva is working towards the FCA regulatory sandbox, not authorised
+          and not operating under an MGA.
         </p>
       </div>
     </div>

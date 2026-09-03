@@ -19,7 +19,8 @@
  * 3. NO POUND FIGURE MAY APPEAR ON THE POOL. The money model (D6) is
  *    undefined and addPoolContribution has no callers, so a pool balance in
  *    pounds would be a number nobody has committed to, printed next to an
- *    insurance product that is pending FCA authorisation. Participation, share
+ *    insurance product from a company that is only working towards the FCA
+ *    regulatory sandbox and is not authorised. Participation, share
  *    percentage and the community score are all real and computed; a pound is
  *    not.
  */
@@ -90,7 +91,7 @@ describe('the Community screen', () => {
 
   it('never prints a pound figure against the pool', () => {
     // The pool has no funded balance. A currency symbol here would be a number
-    // nobody has committed to, on a product pending FCA authorisation.
+    // nobody has committed to, from a company that is not FCA authorised.
     expect(community).not.toContain('£');
     expect(community).not.toContain('formatPounds');
   });
