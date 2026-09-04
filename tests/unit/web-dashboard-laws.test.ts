@@ -19,6 +19,12 @@
  *    rendered at 11px against the 13px secondary floor, and the starting
  *    score explainer set its ~330-character body copy at 13px against the
  *    15px body floor.
+ *  - Law 5, a second pass (`npm run gates` run for real on 2026-09-04, Chrome
+ *    up on :9222): three more strings classed as body copy by length (>=60
+ *    characters of own text, the same rule tests/design-laws.mjs uses) were
+ *    still on `text-xs` (13px, the secondary tier) instead of the 15px body
+ *    floor - the AI tip body, the empty-pool contribution note, and the
+ *    "you're on track for a refund" banner.
  *  - Law 6, tabular figures: the dashboard's plain numeric spans (trip score,
  *    trip distance, total miles, pool share, safety factor twice,
  *    participants) computed no tabular-nums while the score breakdown row
@@ -92,6 +98,38 @@ const FIGURE_ANCHORS = [
   '{activeParticipants.toLocaleString()}',
 ];
 
+/**
+ * The three long (>=60 own-text characters) strings design-laws.mjs classes
+ * as "body" copy, which the browser gate found still painted at text-xs
+ * (13px, the secondary floor) instead of the 15px body floor.
+ */
+const BODY_COPY_ANCHORS = [
+  '{tip.tip}',
+  'Contributions start when the insurance product launches.',
+  "You're on track for £{surplusProjection} back this period.",
+];
+
+/**
+ * The className carrying each anchor sits on the same line or up to two
+ * lines above it, the same window shape figureLinesMissingTabular already
+ * uses for law 6.
+ */
+function bodyCopyStillOnSecondaryFloor(source: string, anchors: string[]): string[] {
+  const lines = source.split('\n');
+  const offenders: string[] = [];
+  for (const anchor of anchors) {
+    const hits = lines
+      .map((line, i) => (line.includes(anchor) ? i : -1))
+      .filter((i) => i >= 0);
+    expect(hits.length, `anchor not found in ${DASHBOARD}: ${anchor}`).toBeGreaterThan(0);
+    for (const i of hits) {
+      const window = lines.slice(Math.max(0, i - 2), i + 1).join('\n');
+      if (/text-xs\b/.test(window)) offenders.push(`${i + 1}: ${anchor}`);
+    }
+  }
+  return offenders;
+}
+
 describe('dashboard design-law pins', () => {
   it('law 1: no painted oblong on the dashboard is a capsule', () => {
     expect(capsuleOffenders(read(DASHBOARD)).join('\n')).toBe('');
@@ -107,6 +145,10 @@ describe('dashboard design-law pins', () => {
 
   it('law 6: every plain numeric readout span on the dashboard is tabular', () => {
     expect(figureLinesMissingTabular(read(DASHBOARD), FIGURE_ANCHORS).join('\n')).toBe('');
+  });
+
+  it('law 5: the three >=60-character body strings sit at the 15px floor, not text-xs', () => {
+    expect(bodyCopyStillOnSecondaryFloor(read(DASHBOARD), BODY_COPY_ANCHORS).join('\n')).toBe('');
   });
 });
 
@@ -141,5 +183,10 @@ describe('the pins fire on planted violations', () => {
     expect(
       figureLinesMissingTabular(planted, ['{activeParticipants.toLocaleString()}']),
     ).toHaveLength(1);
+  });
+
+  it('a long body string still on text-xs trips the new law 5 pin', () => {
+    const planted = '<p className="text-xs text-white/70 leading-relaxed">{tip.tip}</p>';
+    expect(bodyCopyStillOnSecondaryFloor(planted, ['{tip.tip}'])).toHaveLength(1);
   });
 });

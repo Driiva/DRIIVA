@@ -5,6 +5,51 @@
 
 ## Entries
 
+### 2026-09-04 - `npm run gates` ran for real, found two more findings, and went green
+
+`nightly/2026-09-04`. Closes ROADMAP's "`npm run gates` no longer reports INCOMPLETE" ticket. Every
+prior pass at this ticket assumed the browser gate could not run in the unattended nightly clone and
+held fixes as source-level pins instead. Tonight Chrome was actually up on :9222, so the gate ran the
+real thing: its own throwaway browser, the QA emulator, a seeded driver, `npm run design:laws` and
+`npm run axe` end to end. It found two real findings neither prior pin had caught, both from a
+different code path than what was already fixed.
+
+- **Dashboard, three more strings on the wrong floor** (`client/src/pages/dashboard.tsx`). The
+  2026-09-01 dashboard pass fixed the footer and the starting-score explainer, but design-laws.mjs
+  classes any element as "body" copy by its own text length (>=60 characters), independent of which
+  component it lives in, and three more strings on the page matched that rule while still painted
+  `text-xs` (13px, the secondary tier): the AI coaching tip body, the empty-pool "contributions start
+  when the insurance product launches" note, and the "you're on track for a refund" banner. All three
+  moved to `text-sm` (15px, the body floor the ladder in `tailwind.config.ts` already defines).
+- **Rewards, a second locked-card contrast bug in a different component.** The 2 Sep fix removed
+  `RewardsTimeline`'s whole-card `opacity-40`, which was multiplying every descendant's alpha instead
+  of sitting beside it. axe still failed `/rewards` tonight with 5 SERIOUS color-contrast nodes on
+  `.opacity-50.p-5.instrument-card` - not `RewardsTimeline`, but the Achievements grid on the same
+  page, in `rewards.tsx`, with its own `!achievement.unlocked ? 'opacity-50' : ''` on `GlassCard`. Same
+  bug shape, a component the earlier fix never touched. The card's locked state is already carried two
+  other ways that don't touch text opacity - the icon switches from `--app-primary-text` to the muted
+  `--app-text-sec`, and the unlocked-only green check badge is absent - so dropping the whole-card
+  opacity removes only what was crushing the description's contrast, not the locked cue itself.
+- **Held by tests, not just the browser run.** `tests/unit/web-dashboard-laws.test.ts` gained a new
+  law-5 pin (`bodyCopyStillOnSecondaryFloor`) proved red first against the unmodified source (via
+  `git stash` of the one file, not a compound command) on exactly the three offending lines, then
+  green after the fix; a planted-violation case proves it still fires. A new file,
+  `tests/unit/rewards-achievement-card-contrast.test.ts`, mirrors the existing RewardNode pin for the
+  Achievements card: the real WCAG contrast formula against the app's own `--app-bg`/`--app-surface-1`
+  tokens shows the `opacity-50` composition failing AA, a source pin against the class returning, and
+  a planted-regression test proving the pin fires.
+- **Then re-verified against the real thing.** A second full `npm run gates` run after the fixes:
+  `DESIGN LAWS: ALL GREEN on all 5 route(s)`, `AXE: 0 serious or critical across 14 route(s) audited`,
+  `gates: all green`. This is the first time this ticket has closed on a real gate result rather than
+  a source-level pin standing in for one.
+
+**Tests:** full suite 93 files, 1155 passing, 1 skipped, 3 todo (up from 1121 two nights ago), the two
+new/extended test files included. Root `tsc --noEmit` unchanged at its 7 pre-existing `firebase-admin`
+errors (confirmed by running before and after; my changes never touch `server/`). `npm run build` exit
+0. `npm run gates` run twice, live: once to find the two findings above, once after the fix to confirm
+green. Both runs' own processes and ports (5202, 9333, the throwaway Chrome profile) were confirmed
+cleaned up afterwards.
+
 ### 2026-09-02 - The locked reward card's own "locked" label was the least readable thing on it
 
 `nightly/2026-09-02`. Closes the Rewards line off ROADMAP's "npm run gates" design-law ticket: five
