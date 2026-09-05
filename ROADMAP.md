@@ -203,7 +203,7 @@ These are known gaps that don't have tickets yet:
 - [x] Un-red CI on `main`. `mobile/tsconfig.json` extended `expo/tsconfig.base`, which resolves through `mobile/node_modules`, and CI installs at the root and in `functions/` only; the root suite imports four mobile modules on purpose, so vite found that tsconfig, could not resolve the extends, and killed five test files before a single assertion ran. Tests, Lint and E2E had been red on main because of it, so no PR could go green. Expo's base is inlined with a guard test that fails on a planted violation, and the Tests job now installs `functions/` deps too since the root suite imports `firebase-functions` at module scope - *done: `efafe39`; verified with `mobile/node_modules` absent, 5 failed / 57 passed before, 63 passed (676 tests) after*
 - [ ] Split `server/routes.ts` into domain-specific route modules
 - [ ] Add OpenAPI documentation for Express API
-- [ ] Set up structured logging with Sentry breadcrumbs
+- [x] Set up structured logging with Sentry breadcrumbs - *done: `functions/src/lib/sentry.ts` gained `addBreadcrumb`, called automatically from `wrapFunction`/`wrapTrigger` before every handler invocation. @sentry/node adds no console/fetch/nav breadcrumbs on its own the way the browser SDK does, so every Cloud Functions error had arrived with no trail; now every captured event carries which function/trigger ran (plus the caller's uid on `wrapFunction`) leading up to it.*
 - [ ] Add pre-commit hooks (lint + type-check)
 
 ## Sprint: "Observation Mode" (Live Monitoring)
