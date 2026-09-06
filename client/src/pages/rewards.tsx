@@ -373,7 +373,7 @@ export default function Rewards() {
                       whileHover={microInteractions.hoverSubtle}
                       whileTap={microInteractions.tap}
                     >
-                      <GlassCard className={`p-5 ${!achievement.unlocked ? 'opacity-50' : ''}`}>
+                      <GlassCard className="p-5">
                         <div className="flex items-start gap-4">
                           <motion.div
                             className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center flex-shrink-0"
