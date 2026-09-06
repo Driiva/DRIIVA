@@ -5,6 +5,56 @@
 
 ## Entries
 
+### 2026-09-06 - The client speaks one palette, not a canonical one plus thirty aliases for it
+
+`nightly/2026-09-06`. Closes ROADMAP's "Client SPA token alignment" ticket under "Remaining features
+not yet in any sprint".
+
+- **What the ticket actually needed** - the ticket was written against `--color-accent-primary` and
+  friends, and those were already gone: the canonical block (`--app-*`, `--ink-*`, `--brand-*`,
+  `--ok`/`--warn`/`--err`, `--hairline-*`) has mirrored `design-system/colors_and_type.css` in
+  `client/src/index.css` since `c1e5ff4`. What was left underneath it was a "compatibility aliases"
+  block of thirty legacy names, `--success-green`, `--warning-yellow`, `--error-red`,
+  `--primary-blue`, `--primary-purple`, `--ease-smooth`, `--ease-bounce`, the ten `--neutral-*`
+  steps, the `--glass-overlay*` pair and a dozen more, each declared as a pure `var()` indirection to
+  a canonical token, plus 24 rules in the same file still written against them. Two palettes with
+  one set of values is still two palettes: a rule written against `--primary-blue` reads as if the
+  app had a blue, and anyone retuning the accent has to know that six other names move with it.
+- **Fix** (`client/src/index.css` only) - the alias block is deleted and every rule speaks the
+  canonical name: `--ok`/`--warn`/`--err` on the status and state classes, `--app-primary` on the
+  focus rings, `--ease-fast`/`--spring` on the animation utilities, `--app-text-pri` on the compact
+  card title, `--glass-white-8` on the loading skeleton. `.gradient-primary` had both stops aliased to
+  the one accent, so it was already a flat fill and is now written as one. Computed values are
+  unchanged by construction: each alias resolved to exactly the token that replaced it. Three names
+  stay on purpose. `--accent` is read by Tailwind's accent colour in `tailwind.config.ts` and so by
+  every shadcn primitive built on `bg-accent`, and is a canonical design-system name in its own
+  right; `--radius-card` and `--radius-button` are semantic role tokens that name a place, not a
+  value. `tailwind.config.ts` never used a legacy name and is untouched. No component file changed:
+  every call site was inside `index.css` itself.
+- **Held by** `tests/unit/web-token-aliases.test.ts`, following the `web-type-source` pattern. Two
+  laws: no legacy alias is declared or referenced anywhere in `client/src` (ts, tsx or css), and
+  every `var(--x)` the client reads resolves to a property the client declares or a runtime (Radix,
+  Tailwind) is known to set. The second is the safety net for the rename itself, because a
+  `var()` whose property is declared nowhere does not error, it silently falls back to nothing.
+  Both laws are proved against planted violations.
+- **Found and recorded, not fixed** - the resolution law turned up two pre-existing dangling
+  references this ticket did not create: `components/ui/sidebar.tsx`, the stock shadcn sidebar
+  primitive, reads `--sidebar-border` and `--sidebar-accent`, shadcn theme tokens this app's `:root`
+  never declared. No route imports the sidebar, so nothing renders against the gap today. They are
+  listed as the exact known exception, so a new dangling reference still fails and fixing or deleting
+  the sidebar makes the list wrong and forces it to shrink.
+
+**Tests:** the new file red first against the unmodified source, 2 of 4 failing: the alias law on all
+24 real call sites plus the 30 declarations, and the resolution law on the two sidebar tokens. Green
+after the fix, 4 of 4. Full suite: 93 files, 1152 passing, 1 skipped, 3 todo (1156 total, this
+file's 4 included). `vite build` exit 0 and the compiled stylesheet grepped for every retired name:
+0 hits, with `var(--ok)`, `var(--warn)`, `var(--err)`, `var(--app-primary)`, `var(--ease-fast)` and
+`var(--spring)` present where the aliases used to be. Root `tsc --noEmit` byte-identical at its 7
+pre-existing `firebase-admin` errors, by a real before/after diff of the full output rather than a
+count. `npm run gates` was not run: it needs Chrome on :9222, Doppler and the Firebase emulators,
+none of which the unattended clone has, and this change alters no computed value for it to measure.
+
+---
 ### 2026-09-02 - The locked reward card's own "locked" label was the least readable thing on it
 
 `nightly/2026-09-02`. Closes the Rewards line off ROADMAP's "npm run gates" design-law ticket: five

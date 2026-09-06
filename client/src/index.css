@@ -125,9 +125,10 @@ button, a, input, select, textarea, [role="button"] {
    INSTRUMENT mode: solid dark surfaces, one accent, colour earned.
    Glass belongs to the marketing site and never mixes in here.
 
-   Names below the canonical block are compatibility aliases kept
-   so existing rules resolve; they point AT the canon, they do not
-   carry their own values. Never add a literal hex to a component.
+   Every name below is either canonical or a semantic role token
+   (--radius-card, --radius-button) that names a place, not a value.
+   There are no compatibility aliases: rules speak the canonical names
+   directly. Never add a literal hex to a component.
    ──────────────────────────────────────────────────────────── */
 :root {
   /* ── Instrument surfaces - the app's ground truth ────────── */
@@ -192,18 +193,6 @@ button, a, input, select, textarea, [role="button"] {
   --font-display: 'Inter Tight', 'Instrument Sans', -apple-system, sans-serif;
   --font-mono:    'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 
-  /* ── Compatibility aliases - resolve to the canon above ─── */
-  --neutral-900: var(--app-bg);
-  --neutral-800: var(--app-surface-1);
-  --neutral-700: var(--app-surface-2);
-  --neutral-600: var(--app-surface-3);
-  --neutral-500: var(--app-text-mut);
-  --neutral-400: var(--app-text-sec);
-  --neutral-300: rgba(255, 255, 255, 0.70);
-  --neutral-200: rgba(255, 255, 255, 0.86);
-  --neutral-100: var(--app-text-pri);
-  --neutral-50:  var(--app-text-hero);
-
   /* Glass Morphism Tokens - Premium Tech Feel */
   --glass-white-5: rgba(255, 255, 255, 0.05);
   --glass-white-8: rgba(255, 255, 255, 0.08);
@@ -231,9 +220,6 @@ button, a, input, select, textarea, [role="button"] {
   --font-regular: 400;
   --font-semibold: 600;
   --font-bold: 700;
-  /* Kept pointing at the nearest real weight so existing callers do not
-     silently request a face that has to be faked. */
-  --font-medium: var(--font-semibold);
   
   /* Spacing Scale - 4px Grid System */
   --space-0: 0px;
@@ -282,34 +268,13 @@ button, a, input, select, textarea, [role="button"] {
      ---------------------------------------------------------- */
   --spring:    cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-fast: cubic-bezier(0.22, 1, 0.36, 1);
-  /* Aliases so existing rules land on the canonical curves */
-  --ease-smooth: var(--ease-fast);
-  --ease-bounce: var(--spring);
-  --ease-out:    var(--ease-fast);
 
-  /* Status - earned colour only */
-  --success-green:  var(--ok);
-  --warning-amber:  var(--warn);
-  --warning-yellow: var(--warn);
-  --error-red:      var(--err);
-  --info-accent:    var(--app-primary);
-
-  /* Backward compatibility - every alias resolves to the canon */
-  --primary-purple: var(--app-primary);
-  --secondary-blue: var(--app-primary);
-  --primary-blue:   var(--app-primary);
+  /* Read by Tailwind's accent colour in tailwind.config.ts, and so by every
+     shadcn primitive built on bg-accent. A canonical design-system name too. */
   --accent:         var(--app-primary);
-  --glass-overlay: var(--glass-white-10);
-  --glass-overlay-subtle: var(--glass-white-8);
-  --glass-border: var(--app-border);
-  --glass-shadow: var(--shadow-md);
-  --font-heading: var(--font-xl);
-  --font-caption: var(--font-xs);
-  --blur-glass: var(--glass-blur-md);
   --radius-button: var(--radius-md);
   /* 16px on every app card. Deviation is defect. */
   --radius-card: var(--radius-xl);
-  --radius-container: var(--radius-xl);
 }
 
 /* Base Styles - iOS Production Standards */
@@ -352,7 +317,7 @@ h1, h2, h3, h4, h5, h6 {
 .card-title-compact {
   font-size: var(--font-sm);
   font-weight: var(--font-semibold);
-  color: var(--neutral-100);
+  color: var(--app-text-pri);
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -379,15 +344,15 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Gradient Backgrounds */
 .gradient-primary {
-  background: linear-gradient(135deg, var(--primary-blue), var(--primary-purple));
+  background: var(--app-primary); /* both ends of the old gradient were the one accent: a flat fill, now written as one */
 }
 
 .gradient-success {
-  background: linear-gradient(135deg, var(--success-green), var(--primary-blue));
+  background: linear-gradient(135deg, var(--ok), var(--app-primary));
 }
 
 .gradient-warning {
-  background: linear-gradient(135deg, var(--warning-yellow), #F97316);
+  background: linear-gradient(135deg, var(--warn), #F97316);
 }
 
 /* Performance Optimizations */
@@ -423,18 +388,18 @@ button:active:not(:disabled), .btn:active:not(:disabled) {
 
 /* Success/Warning Color Coding */
 .status-success {
-  color: var(--success-green);
-  border-color: var(--success-green);
+  color: var(--ok);
+  border-color: var(--ok);
 }
 
 .status-warning {
-  color: var(--warning-yellow);
-  border-color: var(--warning-yellow);
+  color: var(--warn);
+  border-color: var(--warn);
 }
 
 .status-error {
-  color: var(--error-red);
-  border-color: var(--error-red);
+  color: var(--err);
+  border-color: var(--err);
 }
 
 /* Professional Loading States */
@@ -465,7 +430,7 @@ button:active:not(:disabled), .btn:active:not(:disabled) {
 }
 
 .loading-skeleton {
-  background: var(--glass-overlay-subtle);
+  background: var(--glass-white-8);
   border-radius: var(--radius-card);
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
@@ -482,7 +447,7 @@ button:active:not(:disabled), .btn:active:not(:disabled) {
 
 /* Professional Focus States */
 input:focus, select:focus, textarea:focus {
-  outline: 2px solid var(--primary-purple);
+  outline: 2px solid var(--app-primary);
   outline-offset: 2px;
   box-shadow: 0 0 0 4px rgba(var(--app-primary-rgb), 0.1);
 }
@@ -600,15 +565,15 @@ h1, h2, h3, h4, h5, h6, .font-display {
 }
 
 .animate-fade-in {
-  animation: fade-in var(--duration-base) var(--ease-smooth) forwards;
+  animation: fade-in var(--duration-base) var(--ease-fast) forwards;
 }
 
 .animate-scale-in {
-  animation: scale-in var(--duration-slow) var(--ease-bounce) forwards;
+  animation: scale-in var(--duration-slow) var(--spring) forwards;
 }
 
 .animate-slide-up {
-  animation: slide-up var(--duration-base) var(--ease-smooth) forwards;
+  animation: slide-up var(--duration-base) var(--ease-fast) forwards;
 }
 
 .animate-pulse-glow {
@@ -617,7 +582,7 @@ h1, h2, h3, h4, h5, h6, .font-display {
 
 /* Staggered Animations for Lists */
 .stagger-children > * {
-  animation: fade-in var(--duration-base) var(--ease-smooth) forwards;
+  animation: fade-in var(--duration-base) var(--ease-fast) forwards;
   opacity: 0;
 }
 
@@ -664,20 +629,20 @@ h1, h2, h3, h4, h5, h6, .font-display {
 button:focus,
 input:focus,
 select:focus {
-  outline: 2px solid var(--primary-blue);
+  outline: 2px solid var(--app-primary);
   outline-offset: 2px;
 }
 
 /* Error States */
 .error-state {
-  color: var(--error-red);
-  border-color: var(--error-red);
+  color: var(--err);
+  border-color: var(--err);
 }
 
 /* Success States */
 .success-state {
-  color: var(--success-green);
-  border-color: var(--success-green);
+  color: var(--ok);
+  border-color: var(--ok);
 }
 
 /* DRIBackgroundView - Base Gradient (all pages) */
@@ -1332,8 +1297,8 @@ body:has(.welcome-page-container) .animated-bg-container {
   border-radius: var(--radius-2xl);       /* 20px */
   padding: var(--card-padding-lg);         /* 20px */
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.30);
-  transition: border-color var(--duration-base) var(--ease-smooth),
-    box-shadow var(--duration-base) var(--ease-smooth);
+  transition: border-color var(--duration-base) var(--ease-fast),
+    box-shadow var(--duration-base) var(--ease-fast);
 }
 
 /* ============================================
