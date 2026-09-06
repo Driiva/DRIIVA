@@ -682,7 +682,7 @@ export default function Dashboard() {
                     <TipIcon name={tip.icon} />
                     {tip.headline}
                   </p>
-                  <p className="text-xs text-white/70 leading-relaxed">{tip.tip}</p>
+                  <p className="text-sm text-white/70 leading-relaxed">{tip.tip}</p>
                 </div>
                 
                 {/*
@@ -842,7 +842,7 @@ export default function Dashboard() {
               */}
               {!isDemoMode && poolTotal === 0 && (
                 <div className="rounded-xl bg-white/[0.03] border border-white/10 p-3">
-                  <p className="text-xs text-white/70 leading-relaxed">
+                  <p className="text-sm text-white/70 leading-relaxed">
                     Contributions start when the insurance product launches.
                     Your score is being tracked now and will set your share of
                     the pool from day one.
@@ -935,7 +935,7 @@ export default function Dashboard() {
                 Drive safely to unlock refunds up to 15% of your premium!
               </p>
             ) : surplusProjection > 0 ? (
-              <p className="text-emerald-300/70 text-xs text-center mt-2">
+              <p className="text-emerald-300/70 text-sm text-center mt-2">
                 You're on track for £{surplusProjection} back this period. Refunds are calculated at the end of each period.
               </p>
             ) : drivingScore < 70 ? (

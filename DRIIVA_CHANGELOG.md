@@ -55,6 +55,97 @@ count. `npm run gates` was not run: it needs Chrome on :9222, Doppler and the Fi
 none of which the unattended clone has, and this change alters no computed value for it to measure.
 
 ---
+### 2026-09-05 - Cloud Functions errors reached Sentry with no trail of what ran before them
+
+`nightly/2026-09-05`. Closes the "Set up structured logging with Sentry breadcrumbs" ROADMAP ticket
+(Code Quality & UX Fixes). Ahead of it in file order, every other unchecked ticket was gated
+(Root creds, D6 pool funding, a deliberate call on the `@google-cloud/storage` major bump, the
+phone-frame asset, the physical-device proof) or already taken by an open PR (#88, the `npm run
+gates` ticket); a few more turned out to already be implemented under a stale checkbox (pool-share
+calculation in `functions/src/scheduled/pool.ts` + `triggers/trips.ts`, the policy-page premium
+display, the client CSS token rename) or now obsolete (the Tesco/Halfords/Nectar voucher thresholds
+ticket predates Wave 0's removal of those named partnerships as fabricated claims - implementing it
+as written would reintroduce exactly what that wave took out). `server/routes.ts` was next but was
+set aside rather than split tonight: it is 1,519 lines with real Stripe webhook/idempotency logic in
+it, and there is no existing test that exercises the registered Express routes at all (no supertest
+anywhere in the repo) to prove a mechanical split preserves behaviour - a refactor of that size and
+sensitivity deserves its own reviewed pass with route-level tests written first, not an unattended
+one.
+
+- **Root cause** - `functions/src/lib/sentry.ts` already had `wrapFunction`/`wrapTrigger` wiring
+  every Cloud Function and Firestore trigger through `captureError` on failure, but nothing ever
+  called `Sentry.addBreadcrumb`. The browser SDK auto-instruments console/fetch/navigation
+  breadcrumbs; `@sentry/node` does not, so every server-side error Sentry ever captured arrived with
+  an empty breadcrumb trail - no way to see what ran immediately before it.
+- **Fix** - added `addBreadcrumb(category, message, data?)` to `sentry.ts`, guarded by the same
+  `SENTRY_DSN_FUNCTIONS` + `initialized` check as `captureError`/`setSentryUser`. `wrapFunction` now
+  leaves a `'function'` breadcrumb (handler name + caller uid) before invoking the handler;
+  `wrapTrigger` leaves a `'trigger'` breadcrumb (handler name) before invoking its handler. Every
+  function/trigger already routed through these wrappers gets the trail automatically - no call
+  site elsewhere in the codebase needed touching.
+- **Verified** - `functions/src/__tests__/lib/sentry.test.ts` (new, 6 tests): red first against the
+  unmodified source (`addBreadcrumb is not a function`, then two assertions on zero breadcrumb calls
+  from the wrappers), green after the fix, via `git stash` around the source file so the before/after
+  diff is real rather than assumed. Confirms breadcrumbs no-op with no DSN configured and before
+  `initSentry()` has run, and that the breadcrumb call happens before the wrapped handler runs
+  (`invocationCallOrder`), not after.
+
+**Tests:** the new file's 6 tests, isolated: 5 red / 1 passed before, 6/6 green after. Full suite
+after the fix: 93 files, 1154 passing, 1 skipped, 3 todo. `functions/` suite alone: 14 files, 161
+passing. Root `tsc --noEmit`: byte-identical 7 pre-existing errors before and after (confirmed with
+`git stash`/`git stash pop` around a real diff, none in `sentry.ts`). `functions/` `tsc --noEmit`:
+same 6 pre-existing `@driiva/contracts` module-resolution errors before and after, none in
+`sentry.ts`. `npm run build` not re-run (no client/build-affecting change). `npm run gates` not run:
+this is a Cloud Functions backend change with no marketing/client visual surface, so the browser
+design-law gate doesn't apply here; the parent gates ticket's own status is unrelated to and
+unaffected by this change.
+
+---
+### 2026-09-04 - `npm run gates` ran for real, found two more findings, and went green
+
+`nightly/2026-09-04`. Closes ROADMAP's "`npm run gates` no longer reports INCOMPLETE" ticket. Every
+prior pass at this ticket assumed the browser gate could not run in the unattended nightly clone and
+held fixes as source-level pins instead. Tonight Chrome was actually up on :9222, so the gate ran the
+real thing: its own throwaway browser, the QA emulator, a seeded driver, `npm run design:laws` and
+`npm run axe` end to end. It found two real findings neither prior pin had caught, both from a
+different code path than what was already fixed.
+
+- **Dashboard, three more strings on the wrong floor** (`client/src/pages/dashboard.tsx`). The
+  2026-09-01 dashboard pass fixed the footer and the starting-score explainer, but design-laws.mjs
+  classes any element as "body" copy by its own text length (>=60 characters), independent of which
+  component it lives in, and three more strings on the page matched that rule while still painted
+  `text-xs` (13px, the secondary tier): the AI coaching tip body, the empty-pool "contributions start
+  when the insurance product launches" note, and the "you're on track for a refund" banner. All three
+  moved to `text-sm` (15px, the body floor the ladder in `tailwind.config.ts` already defines).
+- **Rewards, a second locked-card contrast bug in a different component.** The 2 Sep fix removed
+  `RewardsTimeline`'s whole-card `opacity-40`, which was multiplying every descendant's alpha instead
+  of sitting beside it. axe still failed `/rewards` tonight with 5 SERIOUS color-contrast nodes on
+  `.opacity-50.p-5.instrument-card` - not `RewardsTimeline`, but the Achievements grid on the same
+  page, in `rewards.tsx`, with its own `!achievement.unlocked ? 'opacity-50' : ''` on `GlassCard`. Same
+  bug shape, a component the earlier fix never touched. The card's locked state is already carried two
+  other ways that don't touch text opacity - the icon switches from `--app-primary-text` to the muted
+  `--app-text-sec`, and the unlocked-only green check badge is absent - so dropping the whole-card
+  opacity removes only what was crushing the description's contrast, not the locked cue itself.
+- **Held by tests, not just the browser run.** `tests/unit/web-dashboard-laws.test.ts` gained a new
+  law-5 pin (`bodyCopyStillOnSecondaryFloor`) proved red first against the unmodified source (via
+  `git stash` of the one file, not a compound command) on exactly the three offending lines, then
+  green after the fix; a planted-violation case proves it still fires. A new file,
+  `tests/unit/rewards-achievement-card-contrast.test.ts`, mirrors the existing RewardNode pin for the
+  Achievements card: the real WCAG contrast formula against the app's own `--app-bg`/`--app-surface-1`
+  tokens shows the `opacity-50` composition failing AA, a source pin against the class returning, and
+  a planted-regression test proving the pin fires.
+- **Then re-verified against the real thing.** A second full `npm run gates` run after the fixes:
+  `DESIGN LAWS: ALL GREEN on all 5 route(s)`, `AXE: 0 serious or critical across 14 route(s) audited`,
+  `gates: all green`. This is the first time this ticket has closed on a real gate result rather than
+  a source-level pin standing in for one.
+
+**Tests:** full suite 93 files, 1155 passing, 1 skipped, 3 todo (up from 1121 two nights ago), the two
+new/extended test files included. Root `tsc --noEmit` unchanged at its 7 pre-existing `firebase-admin`
+errors (confirmed by running before and after; my changes never touch `server/`). `npm run build` exit
+0. `npm run gates` run twice, live: once to find the two findings above, once after the fix to confirm
+green. Both runs' own processes and ports (5202, 9333, the throwaway Chrome profile) were confirmed
+cleaned up afterwards.
+
 ### 2026-09-02 - The locked reward card's own "locked" label was the least readable thing on it
 
 `nightly/2026-09-02`. Closes the Rewards line off ROADMAP's "npm run gates" design-law ticket: five
@@ -712,7 +803,7 @@ Six discrete fixes landed on the same day.
 - New `design-system/` directory at repo root is now the canonical source for Driiva brand + UI tokens:
   - `design-system/colors_and_type.css` - ink ladder, brand gradient, glass surfaces, radii, shadows, motion, type stack (Inter Tight / Inter / JetBrains Mono). Matches `.h-display`, `.hero-sub`, `.eyebrow` spec used by marketing-site.
   - `design-system/README.md` - voice/tone rules (sentence case, em dashes, UK spelling, no exclamation marks/emoji), visual foundations (two philosophies: marketing glass vs. product instrument), animation curves (`--spring`, `--ease-fast`), iconography (Lucide, currentColor, 24×24, stroke-width 2).
-  - `design-system/source/` - `Driiva_Figma_Design_System_Rules.md`, `Driiva_Instrument_Philosophy.md`.
+  - `design-system/source/` - `Driiva_Instrument_Philosophy.md` (the Figma rules file lives at `.figma/design-system-rules.md`).
   - `design-system/assets/` - 14 brand PNGs (gradient + white wordmarks v1/v2/v3, ii-mark, d-mark, app-icon-artifact, gradient background 1563×1563).
 - Logo propagation:
   - `marketing-site/assets/driiva-logo.png` → swapped to canonical `logo-wordmark-gradient.png` (already matching - confirmed identical bytes).
