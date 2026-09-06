@@ -662,7 +662,7 @@ Six discrete fixes landed on the same day.
 - New `design-system/` directory at repo root is now the canonical source for Driiva brand + UI tokens:
   - `design-system/colors_and_type.css` - ink ladder, brand gradient, glass surfaces, radii, shadows, motion, type stack (Inter Tight / Inter / JetBrains Mono). Matches `.h-display`, `.hero-sub`, `.eyebrow` spec used by marketing-site.
   - `design-system/README.md` - voice/tone rules (sentence case, em dashes, UK spelling, no exclamation marks/emoji), visual foundations (two philosophies: marketing glass vs. product instrument), animation curves (`--spring`, `--ease-fast`), iconography (Lucide, currentColor, 24×24, stroke-width 2).
-  - `design-system/source/` - `Driiva_Figma_Design_System_Rules.md`, `Driiva_Instrument_Philosophy.md`.
+  - `design-system/source/` - `Driiva_Instrument_Philosophy.md` (the Figma rules file lives at `.figma/design-system-rules.md`).
   - `design-system/assets/` - 14 brand PNGs (gradient + white wordmarks v1/v2/v3, ii-mark, d-mark, app-icon-artifact, gradient background 1563×1563).
 - Logo propagation:
   - `marketing-site/assets/driiva-logo.png` → swapped to canonical `logo-wordmark-gradient.png` (already matching - confirmed identical bytes).
