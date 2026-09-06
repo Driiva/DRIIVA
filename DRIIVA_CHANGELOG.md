@@ -5,6 +5,52 @@
 
 ## Entries
 
+### 2026-09-05 - Cloud Functions errors reached Sentry with no trail of what ran before them
+
+`nightly/2026-09-05`. Closes the "Set up structured logging with Sentry breadcrumbs" ROADMAP ticket
+(Code Quality & UX Fixes). Ahead of it in file order, every other unchecked ticket was gated
+(Root creds, D6 pool funding, a deliberate call on the `@google-cloud/storage` major bump, the
+phone-frame asset, the physical-device proof) or already taken by an open PR (#88, the `npm run
+gates` ticket); a few more turned out to already be implemented under a stale checkbox (pool-share
+calculation in `functions/src/scheduled/pool.ts` + `triggers/trips.ts`, the policy-page premium
+display, the client CSS token rename) or now obsolete (the Tesco/Halfords/Nectar voucher thresholds
+ticket predates Wave 0's removal of those named partnerships as fabricated claims - implementing it
+as written would reintroduce exactly what that wave took out). `server/routes.ts` was next but was
+set aside rather than split tonight: it is 1,519 lines with real Stripe webhook/idempotency logic in
+it, and there is no existing test that exercises the registered Express routes at all (no supertest
+anywhere in the repo) to prove a mechanical split preserves behaviour - a refactor of that size and
+sensitivity deserves its own reviewed pass with route-level tests written first, not an unattended
+one.
+
+- **Root cause** - `functions/src/lib/sentry.ts` already had `wrapFunction`/`wrapTrigger` wiring
+  every Cloud Function and Firestore trigger through `captureError` on failure, but nothing ever
+  called `Sentry.addBreadcrumb`. The browser SDK auto-instruments console/fetch/navigation
+  breadcrumbs; `@sentry/node` does not, so every server-side error Sentry ever captured arrived with
+  an empty breadcrumb trail - no way to see what ran immediately before it.
+- **Fix** - added `addBreadcrumb(category, message, data?)` to `sentry.ts`, guarded by the same
+  `SENTRY_DSN_FUNCTIONS` + `initialized` check as `captureError`/`setSentryUser`. `wrapFunction` now
+  leaves a `'function'` breadcrumb (handler name + caller uid) before invoking the handler;
+  `wrapTrigger` leaves a `'trigger'` breadcrumb (handler name) before invoking its handler. Every
+  function/trigger already routed through these wrappers gets the trail automatically - no call
+  site elsewhere in the codebase needed touching.
+- **Verified** - `functions/src/__tests__/lib/sentry.test.ts` (new, 6 tests): red first against the
+  unmodified source (`addBreadcrumb is not a function`, then two assertions on zero breadcrumb calls
+  from the wrappers), green after the fix, via `git stash` around the source file so the before/after
+  diff is real rather than assumed. Confirms breadcrumbs no-op with no DSN configured and before
+  `initSentry()` has run, and that the breadcrumb call happens before the wrapped handler runs
+  (`invocationCallOrder`), not after.
+
+**Tests:** the new file's 6 tests, isolated: 5 red / 1 passed before, 6/6 green after. Full suite
+after the fix: 93 files, 1154 passing, 1 skipped, 3 todo. `functions/` suite alone: 14 files, 161
+passing. Root `tsc --noEmit`: byte-identical 7 pre-existing errors before and after (confirmed with
+`git stash`/`git stash pop` around a real diff, none in `sentry.ts`). `functions/` `tsc --noEmit`:
+same 6 pre-existing `@driiva/contracts` module-resolution errors before and after, none in
+`sentry.ts`. `npm run build` not re-run (no client/build-affecting change). `npm run gates` not run:
+this is a Cloud Functions backend change with no marketing/client visual surface, so the browser
+design-law gate doesn't apply here; the parent gates ticket's own status is unrelated to and
+unaffected by this change.
+
+---
 ### 2026-09-04 - `npm run gates` ran for real, found two more findings, and went green
 
 `nightly/2026-09-04`. Closes ROADMAP's "`npm run gates` no longer reports INCOMPLETE" ticket. Every
