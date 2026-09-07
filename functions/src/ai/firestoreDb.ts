@@ -1,8 +1,5 @@
 /**
- * The Firestore handle the AI pipeline writes through. Kept in its own module
- * so tripAnalysis.ts and apiUsage.ts share one `admin.firestore()` call made at
- * import time, exactly as the single-file version did.
+ * The Firestore handle the AI pipeline writes through. Re-exported from
+ * lib/db so the whole functions codebase shares one admin.firestore() call.
  */
-import * as admin from 'firebase-admin';
-
-export const db = admin.firestore();
+export { db } from '../lib/db';

@@ -31,6 +31,33 @@ function read(relativePath: string): string {
   return readFileSync(path.join(REPO_ROOT, relativePath), 'utf8');
 }
 
+/**
+ * Read several files as one body of source. The Cloud Functions types and the
+ * trip trigger are each split across sibling modules now, and these pins are
+ * about what the code SAYS, not which file it happens to say it in - reading
+ * the group is what stops a pin going quiet when a declaration moves.
+ */
+function readAll(relativePaths: string[]): string {
+  return relativePaths.map(read).join('\n');
+}
+
+/** Every module the Cloud Functions document interfaces are declared across. */
+const FUNCTIONS_TYPES = [
+  'functions/src/schema/enums.ts',
+  'functions/src/schema/documents.ts',
+  'functions/src/schema/tripPoints.ts',
+  'functions/src/schema/segmentation.ts',
+  'functions/src/schema/aiInsights.ts',
+];
+
+/** Every module the trip trigger is split across. */
+const TRIP_TRIGGER = [
+  'functions/src/triggers/trips.ts',
+  'functions/src/triggers/tripSideEffects.ts',
+  'functions/src/triggers/tripFinalisation.ts',
+  'functions/src/triggers/driverProfile.ts',
+];
+
 /** Pulls the property names out of a named TypeScript interface body. */
 function interfaceFields(source: string, interfaceName: string): string[] {
   const match = source.match(
@@ -52,7 +79,7 @@ describe('RecentTripSummary shape', () => {
 
   it('matches the Cloud Functions interface field for field', () => {
     const functionsFields = interfaceFields(
-      read('functions/src/types.ts'),
+      readAll(FUNCTIONS_TYPES),
       'RecentTripSummary',
     ).sort();
 
@@ -60,7 +87,7 @@ describe('RecentTripSummary shape', () => {
   });
 
   it('is written by the trip trigger using only canonical field names', () => {
-    const trigger = read('functions/src/triggers/trips.ts');
+    const trigger = readAll(TRIP_TRIGGER);
     const summaryLiteral = trigger.match(
       /const tripSummary: RecentTripSummary = \{([\s\S]*?)\n {4}\};/,
     );

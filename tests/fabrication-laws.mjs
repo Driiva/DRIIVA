@@ -339,8 +339,8 @@ const ALLOWED = new Map(Object.entries({
     'The agreed line, on the beta estimate disclaimer: "working towards the FCA regulatory sandbox, not authorised and not operating under an MGA". Reconciled 26 Aug after it had reverted to the stronger "pending FCA authorisation".',
   'client/src/pages/policy.tsx::fca regulatory':
     'Two honest empty states, both conditional: cover "cannot issue one until it is through the FCA regulatory sandbox", refunds the same.',
-  'client/src/pages/profile.tsx::fca regulatory':
-    'Empty state: "Driiva cannot issue policies until it is through the FCA regulatory sandbox". A statement of what we cannot do.',
+  'client/src/components/profile/CoverageTypeSection.tsx::fca regulatory':
+    'Empty state: "Driiva cannot issue policies until it is through the FCA regulatory sandbox". A statement of what we cannot do. Moved here from client/src/pages/profile.tsx when that page was split.',
   'client/src/pages/terms.tsx::fca regulatory':
     'Legal page, the agreed line in full: "working towards the FCA regulatory sandbox, is not authorised, and is not operating under an MGA".',
   'client/src/pages/trust.tsx::fca sandbox':
@@ -431,10 +431,10 @@ const ALLOWED = new Map(Object.entries({
     'Component documentation example in a doc comment, not rendered.',
   'client/src/components/ui/Readout.tsx::£1,204.50':
     'Component documentation example in a doc comment, not rendered.',
-  'client/src/pages/profile.tsx::£20m':
-    'Inside the Wave G comment recording why the benefit list is now gated.',
-  'client/src/pages/profile.tsx::£100,000':
-    'Inside the same Wave G comment.',
+  'client/src/components/profile/CoverageTypeSection.tsx::£20m':
+    'The Wave G comment recording why the benefit list is now gated, and the benefit line itself, which renders only behind a real coverageType. Moved here from client/src/pages/profile.tsx when that page was split.',
+  'client/src/components/profile/CoverageTypeSection.tsx::£100,000':
+    'The same Wave G comment and the same coverageType gate.',
 
   // ── Copy printed from a stylesheet
   'apps/marketing/src/styles/global.css::typical':

@@ -1,202 +1,35 @@
 import { useState, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 import { doc, updateDoc, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { PageWrapper } from '../components/PageWrapper';
 import { BottomNav } from '../components/BottomNav';
-import ExportDataButton from "@/components/ExportDataButton";
-import DeleteAccount from "@/components/DeleteAccount";
-import { ChevronDown, Bell, Pencil, Check, X, Loader2, Shield } from "lucide-react";
-import { timing, easing } from "@/lib/animations";
+import { Pencil, Check, X, Loader2 } from "lucide-react";
 import { useAuth } from '../contexts/AuthContext';
 import { useDashboardData } from '@/hooks/useDashboardData';
-import { projectedRefundCents } from '@driiva/scoring';
-import { Shimmer } from '@/components/Shimmer';
-import { AnimatedNumber } from '@/components/AnimatedNumber';
 import { useHaptics } from '@/hooks/useHaptics';
 
-function Skeleton({ className = "" }: { className?: string }) {
-  return <Shimmer className={className} />;
+// The presentational pieces this page is assembled from live in
+// client/src/components/profile/.
+import { DetailRow, Skeleton, StatCard } from '@/components/profile/primitives';
+import { CoverageTypeSection } from '@/components/profile/CoverageTypeSection';
+import { ProfileHeader } from '@/components/profile/ProfileHeader';
+import { VehicleCard } from '@/components/profile/VehicleCard';
+import { PreferencesCard } from '@/components/profile/PreferencesCard';
+import { PrivacyCard } from '@/components/profile/PrivacyCard';
+import type { EditableFields } from '@/components/profile/types';
+
+/** The vehicle sub-document the edit form writes back. */
+interface ProfileVehicleUpdate {
+  make: string | null;
+  model: string | null;
+  year: number | null;
+  color: string | null;
+  vin: string | null;
 }
 
-function DetailRow({ label, value, loading }: { label: string; value: string; loading?: boolean }) {
-  return (
-    <div className="flex items-center justify-between py-2">
-      <span className="text-sm text-white/60">{label}</span>
-      {loading ? (
-        <Skeleton className="h-4 w-28" />
-      ) : (
-        <span className="text-sm font-medium text-white text-right">{value}</span>
-      )}
-    </div>
-  );
-}
-
-function StatCard({ value, label, loading, numericValue }: { value: string | number; label: string; loading?: boolean; numericValue?: number }) {
-  return (
-    <motion.div
-      className="backdrop-blur-xl bg-white/[0.03] border border-white/[0.05] rounded-xl p-4 text-center"
-      whileTap={{ scale: 0.97 }}
-      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-    >
-      {loading ? (
-        <>
-          <Skeleton className="h-7 w-12 mx-auto mb-2" />
-          <Skeleton className="h-3 w-16 mx-auto" />
-        </>
-      ) : (
-        <>
-          {numericValue !== undefined ? (
-            <AnimatedNumber value={numericValue} className="text-2xl font-bold text-white mb-1" />
-          ) : (
-            <p className="text-2xl font-bold text-white mb-1">{value}</p>
-          )}
-          <p className="text-xs text-white/60">{label}</p>
-        </>
-      )}
-    </motion.div>
-  );
-}
-
-function PolicyFeature({ icon, title, description }: { icon: string; title: string; description: string }) {
-  return (
-    <div className="flex items-start gap-3">
-      <span className="text-base mt-0.5">{icon}</span>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-white">{title}</p>
-        <p className="text-xs text-white/60">{description}</p>
-      </div>
-    </div>
-  );
-}
-
-function CoverageTypeSection({ currentScore, coverageType, premiumAmount, loading }: { currentScore: number; coverageType: string | null; premiumAmount: number; loading?: boolean }) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  // WEB-17: use the canonical @driiva/scoring refund (blended score, 50-100
-  // scale) instead of a divergent hand-rolled 5-15%/70-100 formula.
-  // projectedRefundCents returns null when there is no premium to project
-  // against, so the "could reduce your premium by" line below has nothing to
-  // state. It used to promise a saving of nothing at renewal to any driver
-  // scoring 70 or better with no policy bound, which is a figure nobody
-  // calculated. The block is now gated on there being a refund to name.
-  const projectedRefundCentsValue = currentScore >= 70
-    ? projectedRefundCents(currentScore, Math.round(premiumAmount * 100))
-    : null;
-  const projectedRefund = projectedRefundCentsValue === null ? 0 : projectedRefundCentsValue / 100;
-
-  if (loading) {
-    return (
-      <div className="backdrop-blur-xl bg-white/[0.04] border border-white/[0.08] rounded-2xl p-4">
-        <Skeleton className="h-5 w-full" />
-      </div>
-    );
-  }
-
-  return (
-    <div className="backdrop-blur-xl bg-white/[0.04] border border-white/[0.08] rounded-2xl overflow-hidden">
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full p-4 flex items-center justify-between text-left hover:bg-white/[0.02] transition-colors min-h-[56px]"
-      >
-        <span className="text-sm text-white/60">Coverage Type</span>
-        <div className="flex items-center gap-2">
-          <span className="text-emerald-400 font-medium">{coverageType ?? 'Not active'}</span>
-          <motion.div
-            animate={{ rotate: isExpanded ? 180 : 0 }}
-            transition={{ duration: 0.2 }}
-          >
-            <ChevronDown className="w-4 h-4 text-emerald-400" />
-          </motion.div>
-        </div>
-      </button>
-
-      <AnimatePresence initial={false}>
-        {isExpanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: easing.smoothDecel }}
-            className="overflow-hidden"
-          >
-            <div className="px-4 pb-4 pt-2 border-t border-white/[0.08]">
-              {/*
-                WAVE G: this benefit list, the excess panel and the premium-reduction
-                line used to render for every signed-in user, whether or not they had a
-                policy. Driiva has never issued one, so a driver with no cover was being
-                shown "Third-Party Liability up to £20M" and "Legal Expenses up to
-                £100,000" as though those limits applied to them. They are gated on a
-                real coverage type now: no policy, no benefits list.
-              */}
-              {!coverageType ? (
-                <p className="text-sm text-white/50">
-                  You have no cover in place. Driiva cannot issue policies until it is
-                  through the FCA regulatory sandbox, so there is nothing to summarise here yet. Your driving
-                  score is still being recorded in the meantime.
-                </p>
-              ) : (
-              <>
-              <p className="text-sm text-white/60 mb-4">Full coverage with extras</p>
-
-              <div className="space-y-3">
-                <h4 className="text-xs font-semibold text-white/80 uppercase tracking-wide">
-                  What's included
-                </h4>
-
-                <PolicyFeature icon="✅" title="Collision Coverage" description="Damage to your vehicle from accidents" />
-                <PolicyFeature icon="✅" title="Comprehensive Coverage" description="Theft, vandalism, weather damage" />
-                <PolicyFeature icon="✅" title="Third-Party Liability" description="Up to £20M coverage for injuries & property" />
-                <PolicyFeature icon="✅" title="Personal Injury Protection" description="Medical expenses for you and passengers" />
-                <PolicyFeature icon="✅" title="Roadside Assistance" description="24/7 emergency breakdown service" />
-                <PolicyFeature icon="✅" title="Courtesy Car" description="Replacement vehicle during repairs" />
-                <PolicyFeature icon="✅" title="Legal Expenses" description="Up to £100,000 legal cover" />
-              </div>
-
-              <div className="mt-4 p-3 bg-white/[0.03] rounded-xl border border-white/[0.05]">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-white/60">Voluntary Excess</span>
-                  <span className="text-sm font-medium text-white/60">—</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-white/60">Compulsory Excess</span>
-                  <span className="text-sm font-medium text-white/60">—</span>
-                </div>
-                <div className="mt-2 pt-2 border-t border-white/[0.05] flex items-center justify-between">
-                  <span className="text-xs font-semibold text-white/80">Total Excess</span>
-                  <span className="text-base font-semibold text-white/60">—</span>
-                </div>
-              </div>
-
-              {currentScore >= 70 && projectedRefund > 0 && (
-                <div className="mt-4 flex items-start gap-2 p-3 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
-                  <span className="text-base">ℹ️</span>
-                  <div>
-                    <p className="text-xs text-emerald-300 font-medium mb-1">Policy Benefits</p>
-                    <p className="text-xs text-emerald-200/70">
-                      Your safe driving score of {currentScore} could reduce your premium by up to £{projectedRefund.toFixed(2)} at renewal.
-                    </p>
-                  </div>
-                </div>
-              )}
-              </>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
-interface EditableFields {
-  displayName: string;
-  phoneNumber: string;
-  vehicleMake: string;
-  vehicleModel: string;
-  vehicleYear: string;
-}
-
+/** Everything the profile edit form is allowed to write to the user document. */
+type ProfileUpdate = Record<string, string | Timestamp | ProfileVehicleUpdate>;
 export default function Profile() {
   const [, setLocation] = useLocation();
   const { user, logout } = useAuth();
@@ -242,7 +75,7 @@ export default function Profile() {
 
     try {
       const userRef = doc(db, 'users', user.id);
-      const updates: Record<string, any> = {
+      const updates: ProfileUpdate = {
         updatedAt: Timestamp.now(),
         updatedBy: user.id,
       };
@@ -340,72 +173,15 @@ export default function Profile() {
     <PageWrapper>
       <div className="pb-24 text-white space-y-6">
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="flex items-start justify-between"
-        >
-          <div className="flex items-start gap-3">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500/30 to-purple-700/30 border border-white/10 flex items-center justify-center overflow-hidden">
-              <img src="/logo.png" alt="Driiva" className="w-full h-full object-cover" />
-            </div>
-            <div style={{ marginTop: '2px' }}>
-              <h1 className="text-xl font-bold text-white">Driiva</h1>
-              <p className="text-sm text-white/60">{getGreeting()}, {greetingName}</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 relative">
-            <button className="p-2 rounded-full hover:bg-white/5 transition-colors" aria-label="Notifications">
-              <Bell className="w-5 h-5 text-white/60" />
-            </button>
-
-            <button
-              onClick={() => setShowDropdown(!showDropdown)}
-              className="flex items-center gap-1"
-            >
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center">
-                <span className="text-white font-bold text-lg">{avatarInitial}</span>
-              </div>
-              <ChevronDown className={`w-4 h-4 text-white/60 transition-transform ${showDropdown ? 'rotate-180' : ''}`} />
-            </button>
-
-            <AnimatePresence>
-              {showDropdown && (
-                <>
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    onClick={() => setShowDropdown(false)}
-                    className="fixed inset-0 z-40"
-                  />
-                  <motion.div
-                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                    transition={{ duration: 0.2 }}
-                    className="absolute top-12 right-0 w-56 z-50 backdrop-blur-2xl bg-[#1a1a2e]/95 border border-white/10 rounded-xl shadow-2xl overflow-hidden"
-                  >
-                    <div className="p-4">
-                      <p className="text-xs text-white/60 mb-1">Member ID</p>
-                      <p className="text-sm font-medium text-white">{memberId}</p>
-                    </div>
-                    <div className="border-t border-white/10">
-                      <button
-                        onClick={handleLogout}
-                        className="w-full px-4 py-3 text-left text-sm text-red-400 hover:bg-white/5 transition-colors"
-                      >
-                        Logout
-                      </button>
-                    </div>
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
-          </div>
-        </motion.div>
+        <ProfileHeader
+          greeting={getGreeting()}
+          greetingName={greetingName}
+          avatarInitial={avatarInitial}
+          memberId={memberId}
+          showDropdown={showDropdown}
+          setShowDropdown={setShowDropdown}
+          handleLogout={handleLogout}
+        />
 
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold text-white">Profile</h2>
@@ -553,64 +329,13 @@ export default function Profile() {
         </div>
 
         {/* Vehicle Information */}
-        <div className="backdrop-blur-xl bg-white/[0.04] border border-white/[0.08] rounded-2xl p-4">
-          <h3 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
-            <span>🚗</span>
-            Vehicle
-          </h3>
-
-          {isEditing ? (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-white/60">Make</span>
-                <input
-                  type="text"
-                  value={editFields.vehicleMake}
-                  onChange={(e) => setEditFields(f => ({ ...f, vehicleMake: e.target.value }))}
-                  className="text-sm font-medium text-white text-right bg-white/[0.06] border border-white/10 rounded-lg px-2 py-1 w-40 focus:outline-none focus:border-emerald-500/50"
-                  placeholder="e.g. Toyota"
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-white/60">Model</span>
-                <input
-                  type="text"
-                  value={editFields.vehicleModel}
-                  onChange={(e) => setEditFields(f => ({ ...f, vehicleModel: e.target.value }))}
-                  className="text-sm font-medium text-white text-right bg-white/[0.06] border border-white/10 rounded-lg px-2 py-1 w-40 focus:outline-none focus:border-emerald-500/50"
-                  placeholder="e.g. Corolla"
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-white/60">Year</span>
-                <input
-                  type="number"
-                  value={editFields.vehicleYear}
-                  onChange={(e) => setEditFields(f => ({ ...f, vehicleYear: e.target.value }))}
-                  className="text-sm font-medium text-white text-right bg-white/[0.06] border border-white/10 rounded-lg px-2 py-1 w-24 focus:outline-none focus:border-emerald-500/50"
-                  placeholder="2024"
-                  min="1980"
-                  max={new Date().getFullYear() + 1}
-                />
-              </div>
-            </div>
-          ) : loading ? (
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-3/4" />
-            </div>
-          ) : dashboardData?.vehicle?.make ? (
-            <div className="space-y-1">
-              <DetailRow label="Make" value={dashboardData.vehicle.make} />
-              <DetailRow label="Model" value={dashboardData.vehicle.model || '--'} />
-              <DetailRow label="Year" value={dashboardData.vehicle.year ? String(dashboardData.vehicle.year) : '--'} />
-            </div>
-          ) : (
-            <p className="text-sm text-white/60">
-              No vehicle added yet. Tap Edit to add your car details.
-            </p>
-          )}
-        </div>
+        <VehicleCard
+          isEditing={isEditing}
+          loading={loading}
+          editFields={editFields}
+          setEditFields={setEditFields}
+          dashboardData={dashboardData}
+        />
 
         <CoverageTypeSection
           currentScore={currentScore}
@@ -633,89 +358,14 @@ export default function Profile() {
           </div>
         </div>
 
-        <div className="backdrop-blur-xl bg-white/[0.04] border border-white/[0.08] rounded-2xl p-4">
-          <h3 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
-            <span>⚙️</span>
-            Preferences
-          </h3>
+        <PreferencesCard
+          locationTracking={locationTracking}
+          setLocationTracking={setLocationTracking}
+          pushNotifications={pushNotifications}
+          setPushNotifications={setPushNotifications}
+        />
 
-          <div className="space-y-4">
-            <div className="flex justify-between items-center py-2">
-              <div>
-                <div className="text-sm font-medium text-white">Location Tracking</div>
-                <div className="text-xs text-white/60">Required for trip recording</div>
-              </div>
-              <motion.button
-                onClick={() => setLocationTracking(!locationTracking)}
-                role="switch"
-                aria-checked={locationTracking}
-                aria-label="Location tracking"
-                className={`w-12 h-7 rounded-full transition-colors duration-200 relative ${locationTracking ? 'bg-emerald-500' : 'bg-white/20'
-                  }`}
-                whileTap={{ scale: 0.95 }}
-              >
-                <motion.div
-                  className="absolute top-1 w-5 h-5 bg-white rounded-full shadow-md"
-                  animate={{ left: locationTracking ? 24 : 4 }}
-                  transition={{ duration: timing.interaction / 1000, ease: easing.button }}
-                />
-              </motion.button>
-            </div>
-            <div className="flex justify-between items-center py-2">
-              <div>
-                <div className="text-sm font-medium text-white">Push Notifications</div>
-                <div className="text-xs text-white/60">Trip summaries and alerts</div>
-              </div>
-              <motion.button
-                onClick={() => setPushNotifications(!pushNotifications)}
-                role="switch"
-                aria-checked={pushNotifications}
-                aria-label="Push notifications"
-                className={`w-12 h-7 rounded-full transition-colors duration-200 relative ${pushNotifications ? 'bg-emerald-500' : 'bg-white/20'
-                  }`}
-                whileTap={{ scale: 0.95 }}
-              >
-                <motion.div
-                  className="absolute top-1 w-5 h-5 bg-white rounded-full shadow-md"
-                  animate={{ left: pushNotifications ? 24 : 4 }}
-                  transition={{ duration: timing.interaction / 1000, ease: easing.button }}
-                />
-              </motion.button>
-            </div>
-          </div>
-        </div>
-
-        <div className="backdrop-blur-xl bg-white/[0.04] border border-white/[0.08] rounded-2xl p-4">
-          <h3 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
-            <span>🔒</span>
-            Privacy & Data
-          </h3>
-
-          <p className="text-xs text-white/60 mb-3">
-            Your data is used only for your score and refund. We don't sell it. Trip data is encrypted in transit and at rest.
-          </p>
-
-          <button
-            onClick={() => setLocation('/trust')}
-            className="w-full flex items-center justify-between p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 hover:bg-indigo-500/20 transition-colors mb-3"
-          >
-            <div className="flex items-center gap-2">
-              <Shield className="w-4 h-4 text-indigo-400" />
-              <div className="text-left">
-                <p className="text-sm font-medium text-white">Trust Centre</p>
-                <p className="text-xs text-white/60">FCA · GDPR · Your Rights</p>
-              </div>
-            </div>
-            <ChevronDown className="w-4 h-4 text-indigo-300 -rotate-90" />
-          </button>
-
-          <div className="space-y-3">
-            <ExportDataButton userId={user?.id ?? ''} />
-            <div className="border-t border-white/5 pt-3">
-              <DeleteAccount userId={user?.id ?? ''} />
-            </div>
-          </div>
-        </div>
+        <PrivacyCard userId={user?.id ?? ''} setLocation={setLocation} />
       </div>
 
       <BottomNav />

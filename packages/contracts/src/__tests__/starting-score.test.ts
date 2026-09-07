@@ -79,10 +79,16 @@ describe('starting score', () => {
   // trigger ever went back to replacing it, the copy would quietly become a
   // lie, so the claim is pinned against the trigger's own source.
   it('the copy claim matches the trigger: first trip averages, it does not replace', () => {
-    const trigger = readFileSync(
-      path.join(REPO_ROOT, 'functions/src/triggers/trips.ts'),
-      'utf8',
-    );
+    // The trigger is split across sibling modules; the claim is pinned against
+    // all of them so it follows the code rather than one file path.
+    const trigger = [
+      'functions/src/triggers/trips.ts',
+      'functions/src/triggers/tripSideEffects.ts',
+      'functions/src/triggers/tripFinalisation.ts',
+      'functions/src/triggers/driverProfile.ts',
+    ]
+      .map((rel) => readFileSync(path.join(REPO_ROOT, rel), 'utf8'))
+      .join('\n');
     expect(trigger).toMatch(/scoreWeight\(user\.drivingProfile\.totalTrips\)/);
     expect(trigger).not.toMatch(/oldWeight\s*===\s*0\s*\n?\s*\?\s*trip\.score/);
     expect(STARTING_SCORE_COPY.long).toMatch(/averaged with it/);
