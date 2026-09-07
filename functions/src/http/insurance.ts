@@ -18,7 +18,7 @@
  *
  * All monetary values use integer cents (Root sandbox uses ZAR cents against a
  * UK GBP product - no conversion exists yet, see resolveCurrency() in
- * rootAdapter.ts for the pinned TODO, do not guess a rate).
+ * rootAdapter.ts for the pinned decision, do not guess a rate).
  *
  * M4 Task 4: the Root HTTP transport (quote/bind/sync/cancel) now lives behind
  * the typed RootAdapter interface in ./rootAdapter - see that file for the

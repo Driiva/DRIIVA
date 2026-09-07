@@ -12,7 +12,7 @@ import { formatPoundsWhole } from '@/lib/money';
 import { joinWaitlist, WaitlistError } from '@/lib/waitlist';
 
 // FCA DISCLOSURE REQUIRED - all financial figures are illustrative before product launch
-// TODO: Root Platform API integration - Sprint 5
+// No Root Platform call behind this screen yet. See ROADMAP.md TD-5.
 export default function Quote() {
   const router = useRouter();
   const { user, markOnboardingComplete } = useAuth();
@@ -30,7 +30,7 @@ export default function Quote() {
   const { min: minRefund, max: maxRefund } = refundEstimateRange(state.seedScore);
 
   const handleGetQuote = async () => {
-    // TODO: Root Platform API - Sprint 5. Launch quote journey here.
+    // The real quote journey launches from here once Root is wired: ROADMAP.md TD-5.
     // Wave 0 (0d): this used to promise an email to people whose address was
     // never captured. It now points at the waitlist, which does store one.
     Alert.alert(
@@ -84,7 +84,7 @@ export default function Quote() {
           </View>
         </View>
 
-        {/* TODO: Root Platform API - Sprint 5 */}
+        {/* Placeholder until the Root quote journey exists: ROADMAP.md TD-5. */}
         <View style={styles.quoteStub}>
           <Text style={styles.quoteStubEyebrow}>Quote</Text>
           <Text style={styles.quoteStubTitle}>Launching soon.</Text>

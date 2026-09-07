@@ -110,7 +110,7 @@ describe('RootAdapter (M4 Task 4 structural seam)', () => {
     );
   });
 
-  it('resolveCurrency() is an identity pass-through today (pinned ZAR-vs-GBP TODO, not a guessed rate)', () => {
+  it('resolveCurrency() is an identity pass-through today (pinned ZAR-vs-GBP decision, not a guessed rate)', () => {
     expect(resolveCurrency(1000)).toBe(1000);
     expect(resolveCurrency(0)).toBe(0);
   });

@@ -14,7 +14,7 @@ import { ArcTracer } from '@/components/motion/Instrument';
 /**
  * VERIFY EMAIL PAGE
  * -----------------
- * 1) If opened with ?mode=verifyEmail&oobCode=XXX (link from email), we apply the
+ * 1) If opened with ?mode=verifyEmail&oobCode=<code> (link from email), we apply the
  *    code here using OUR auth/key so verification works even when Firebase's
  *    default link uses an expired key. Set "Action URL" in Firebase Console →
  *    Authentication → Templates → Email address verification to this page URL.
@@ -52,7 +52,7 @@ export default function VerifyEmail() {
   const [linkState, setLinkState] = useState<"idle" | "applying" | "success" | "error">("idle");
   const linkHandled = useRef(false);
 
-  // Handle email link: ?mode=verifyEmail&oobCode=XXX — apply with our key so we never hit Firebase's broken link
+  // Handle email link: ?mode=verifyEmail&oobCode=<code> — apply with our key so we never hit Firebase's broken link
   useEffect(() => {
     const mode = getQueryParam("mode");
     const oobCode = getQueryParam("oobCode");

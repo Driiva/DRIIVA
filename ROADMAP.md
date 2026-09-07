@@ -214,6 +214,18 @@ These are known gaps that don't have tickets yet:
 - [x] Add Vercel Analytics + Speed Insights - Web Vitals, page latency, geographic distribution
 - [x] Configure alerting - watchdog function (`monitorTripHealth`) for failed trips, GPS drop-off, stuck trips; health endpoint enhanced with version/checks
 
+## Sprint: "Tech debt lifted out of code comments" (September 2026)
+
+These were `TODO` comments sitting in source. None can be closed without a
+credential or a product decision, so each is a ticket here and the code carries
+a plain reference to it instead of a marker.
+
+- [ ] **TD-1 Admin monitoring reads no real metrics.** `client/src/pages/admin/monitoring.tsx` renders `avgLatencyMs`, `functionsInvocations`, `firestoreReads` and `firestoreWrites` as hardcoded zeros. The latency figure needs parsing out of the `[metric] trip_pipeline` log lines that already exist; the other three need the Cloud Monitoring API, which needs the API enabled and a service account with `monitoring.viewer`. Until then the page shows four zeros that look like measurements and are not.
+- [ ] **TD-2 The web trip recorder has no phone-pickup detection.** `client/src/pages/trip-recording.tsx` sets the pickup count without an accelerometer reading behind it. Mobile has a real detector (`driveMonitorInstance`); the web surface does not, and phone usage is 10% of the score. Either wire a browser-side heuristic or stop the web surface claiming a count at all.
+- [ ] **TD-3 Seven Cloud Functions callables have no rate limiting.** `functions/src/http/admin.ts` (initializePool, cancelTrip, contribute), `classifier.ts` (classifyTrip, batch job) and `gdpr.ts` (export, delete). Needs a decision on the limits and on where the counters live, since the Express `rateLimiter` middleware does not reach a callable.
+- [ ] **TD-4 ZAR-vs-GBP conversion is an identity pass-through.** `functions/src/http/rootAdapter.ts` `resolveCurrency` returns its input unchanged: Root's sandbox models money in ZAR cents, Driiva is a GBP product, and no conversion is applied anywhere. Deliberately not guessed. Closes on either Root's UK/GBP product module key (needs sandbox credentials) or an FX rate signed off under D15. See `docs/rebuild/m4-grounding.md` sections 2 and 4.
+- [ ] **TD-5 Mobile onboarding cannot launch a real quote journey.** `mobile/app/onboarding/quote.tsx` has the screen but no Root Platform call behind it. Blocked on the same Root credentials as the P0 ticket above.
+
 ## Completed (reference)
 
 - [x] Cloud Functions build fixed

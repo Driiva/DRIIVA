@@ -2,7 +2,7 @@
  * Waitlist writes for the mobile onboarding funnel.
  *
  * Wave 0 (0d): the quote screen used to render "You're on the list" with a
- * `// TODO: write to waitlist Firestore collection` where the write should be.
+ * a comment marking where the write should be, and no write.
  * Every signup evaporated while the user was told they had joined, and the
  * waitlist is the raise-critical metric.
  *

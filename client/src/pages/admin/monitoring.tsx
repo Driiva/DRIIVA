@@ -186,7 +186,7 @@ async function fetchTripMetrics(): Promise<TripMetrics> {
       total: trips.length,
       failed,
       stuck: stuckSnap.size,
-      avgLatencyMs: 0, // TODO: Parse from [metric] trip_pipeline logs when available
+      avgLatencyMs: 0, // Not measured: ROADMAP.md TD-1.
       lastTripAt,
       hourlyBreakdown,
     };
@@ -232,9 +232,9 @@ async function fetchCostTracking(): Promise<CostTracking> {
     return {
       aiSpendToday: aiSpendToday / 100, // Convert cents to pounds
       aiSpendMonth: aiSpendMonth / 100,
-      functionsInvocations: 0, // TODO: Query Cloud Monitoring API
-      firestoreReads: 0, // TODO: Query Cloud Monitoring API
-      firestoreWrites: 0, // TODO: Query Cloud Monitoring API
+      functionsInvocations: 0, // Not measured: ROADMAP.md TD-1.
+      firestoreReads: 0, // Not measured: ROADMAP.md TD-1.
+      firestoreWrites: 0, // Not measured: ROADMAP.md TD-1.
     };
   } catch {
     return COST_TRACKING_ZERO;

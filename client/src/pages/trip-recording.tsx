@@ -96,8 +96,8 @@ export default function TripRecording() {
         }));
 
         // Detect driving events (simplified - production would be more sophisticated)
-        // TODO: Implement real phone pickup detection (accelerometer pattern recognition)
-        // Currently hardcoded to 0 — phone usage weight is 10% per CLAUDE.md scoring spec
+        // No phone-pickup detection on this surface, so the count stays 0.
+        // Phone usage is 10% of the score. See ROADMAP.md TD-2.
         if (point.speed !== null) {
           const speedMph = point.speed * 2.237;
           if (speedMph > 75) {

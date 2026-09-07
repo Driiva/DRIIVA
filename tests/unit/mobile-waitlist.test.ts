@@ -4,7 +4,7 @@
  * resolve.
  *
  * Wave 0 (0d): the quote screen rendered "You're on the list" over a
- * `// TODO: write to waitlist Firestore collection`. These tests pin the two
+ * only a comment marking where the write belonged. These tests pin the two
  * properties that were missing: a real write happens, and every path that
  * does not produce one throws so the caller cannot show a confirmation.
  */
