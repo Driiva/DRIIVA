@@ -110,7 +110,7 @@ export const policies = pgTable("policies", {
   // thereafter. Nullable columns allow multiple NULLs under a UNIQUE
   // constraint in Postgres, so policies not yet bound to a subscription are
   // unaffected. See migrations/0003_policies_stripe_subscription_id_unique.sql
-  // and handleStripePaymentSucceeded's 23505 handling in server/routes.ts.
+  // and handleStripePaymentSucceeded's 23505 handling in server/lib/stripePaymentSucceeded.ts.
   stripeSubscriptionId: text("stripe_subscription_id").unique(),
   billingCycle: text("billing_cycle").default("annual"),
   createdAt: timestamp("created_at").defaultNow(),
