@@ -42,62 +42,19 @@ import { SkeletonLoader } from '@/components/ui/SkeletonLoader';
 import { RouteTrace, type MarkerShape, type TraceMarker } from '@/components/ui/RouteTrace';
 import { Enter } from '@/components/ui/motion';
 import { getTripPoints, type StoredTripPoint } from '@/lib/trips';
-
-/**
- * Shape per event type, not colour per event type. Four hues on a
- * near-monochrome instrument is a rainbow; one earned colour and four shapes
- * says the same thing and survives being read by somebody who cannot separate
- * the hues. See RouteTrace.
- */
-const MARKER_SHAPES: Record<DrivingEventType, MarkerShape> = {
-  braking: 'circle',
-  acceleration: 'triangle',
-  cornering: 'diamond',
-  speeding: 'bar',
-};
-
-const MARKER_LABELS: Record<DrivingEventType, string> = {
-  braking: 'Hard braking',
-  acceleration: 'Hard acceleration',
-  cornering: 'Sharp turn',
-  speeding: 'Over the limit',
-};
-
-interface ScoreBreakdown {
-  speedScore: number;
-  brakingScore: number;
-  accelerationScore: number;
-  corneringScore: number;
-  phoneUsageScore: number;
-}
-
-interface TripEvents {
-  hardBrakingCount: number;
-  hardAccelerationCount: number;
-  speedingSeconds: number;
-  sharpTurnCount: number;
-  phonePickupCount: number;
-}
-
-interface TripLocation {
-  address: string | null;
-}
-
-interface Trip {
-  tripId: string;
-  userId: string;
-  score: number;
-  scoreBreakdown?: ScoreBreakdown;
-  distanceMeters: number;
-  durationSeconds: number;
-  startedAt: { toDate?: () => Date } | string;
-  startLocation?: TripLocation;
-  endLocation?: TripLocation;
-  routeSummary?: string;
-  status: string;
-  events?: TripEvents;
-}
-
+// The marker vocabulary, the document shapes, the rate helpers, the rows and
+// the stylesheet live in mobile/components/tripDetail/.
+import {
+  MARKER_LABELS,
+  MARKER_SHAPES,
+  type ScoreBreakdown,
+  type Trip,
+  type TripEvents,
+  type TripLocation,
+} from '@/components/tripDetail/types';
+import { perMile, perTenMinutes, shareOfDrive } from '@/components/tripDetail/rates';
+import { EventStat, Header, Stat } from '@/components/tripDetail/rows';
+import { styles } from '@/components/tripDetail/styles';
 export default function TripDetail() {
   const { tripId } = useLocalSearchParams<{ tripId: string }>();
   const { user } = useAuth();
@@ -413,113 +370,3 @@ export default function TripDetail() {
     </SafeAreaView>
   );
 }
-
-function Header({ onBack }: { onBack: () => void }) {
-  return (
-    <View style={styles.headerBar}>
-      <TouchableOpacity onPress={onBack} style={styles.backButton} activeOpacity={0.7}>
-        <Ionicons name="chevron-back" size={22} color={C.text.pri} />
-      </TouchableOpacity>
-      <Text style={styles.headerTitle}>Trip</Text>
-      <View style={{ width: 36 }} />
-    </View>
-  );
-}
-
-/**
- * The three rate shapes the scoring engine actually uses.
- *
- * Braking, acceleration and cornering are penalised per MILE; phone handling
- * is penalised per TEN MINUTES (see computePhoneUsageScore); speeding is a
- * share of the drive's duration. Showing all five as one unit would be tidier
- * and would misrepresent four of them.
- *
- * Each returns null rather than a zero or an Infinity when its denominator is
- * missing. A trip with no distance has no per-mile rate, and printing "0.0/mi"
- * for it is a fabricated reading.
- */
-function perMile(count: number, miles: number): string | null {
-  if (!Number.isFinite(miles) || miles < 0.1) return null;
-  return `${(count / miles).toFixed(1)} per mile`;
-}
-
-function perTenMinutes(count: number, durationSeconds: number): string | null {
-  if (!Number.isFinite(durationSeconds) || durationSeconds < 60) return null;
-  return `${((count / durationSeconds) * 600).toFixed(1)} per 10 min`;
-}
-
-function shareOfDrive(seconds: number, durationSeconds: number): string | null {
-  if (!Number.isFinite(durationSeconds) || durationSeconds <= 0) return null;
-  return `${((seconds / durationSeconds) * 100).toFixed(1)}% of the drive`;
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.stat}>
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
-    </View>
-  );
-}
-
-function EventStat({
-  label,
-  value,
-  rate,
-}: {
-  label: string;
-  value: number | string;
-  rate: string | null;
-}) {
-  return (
-    <View style={styles.eventStat}>
-      <Text style={styles.eventValue}>{value}</Text>
-      <Text style={styles.eventLabel}>{label}</Text>
-      {rate !== null && <Text style={styles.eventRate}>{rate}</Text>}
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: C.bg },
-  scroll: { padding: S.md, paddingBottom: S.xxl },
-  headerBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: S.md,
-    paddingBottom: S.sm,
-  },
-  backButton: {
-    width: 36,
-    height: 36,
-    borderRadius: R.badge,
-    backgroundColor: C.surface1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTitle: { ...T.h2, color: C.text.pri },
-  headerRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
-  route: { ...T.h1, color: C.text.hero },
-  date: { ...T.caption, color: C.text.sec, marginTop: S.xs },
-  scoreBadge: {
-    width: 56, height: 56, borderRadius: R.full, borderWidth: 3,
-    justifyContent: 'center', alignItems: 'center', backgroundColor: C.surface1,
-  },
-  scoreText: { ...T.stat },
-  statRow: { flexDirection: 'row', marginTop: S.lg, gap: S.lg },
-  stat: { flex: 1 },
-  statValue: { ...T.number, color: C.text.pri },
-  statLabel: { ...T.caption, color: C.text.sec, marginTop: 2, textTransform: 'capitalize' },
-  sectionTitle: { ...T.eyebrow, color: C.text.sec, marginBottom: S.sm },
-  emptyLine: { ...T.body, color: C.text.mut },
-  section: { marginBottom: S.md },
-  routeEnds: { ...T.caption, color: C.text.sec, marginTop: S.sm },
-  breakdownFootnote: { ...T.caption, color: C.text.mut, marginTop: S.sm },
-  eventsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: S.md },
-  eventStat: { width: '45%' },
-  // Same: T.number is base, so lg needs lg's leading, not base's.
-  eventValue: { ...T.number, color: C.text.pri, fontSize: FS.lg, lineHeight: LH.lg, letterSpacing: TR.lg },
-  eventLabel: { ...T.caption, color: C.text.sec, marginTop: 2 },
-  eventRate: { ...T.numberSm, color: C.text.mut, marginTop: 2 },
-});

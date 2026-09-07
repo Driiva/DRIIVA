@@ -6,11 +6,8 @@
  */
 import { vi } from 'vitest';
 
-
-import { DETECTION } from '../../mobile/lib/driveDetection';
 import {
   DriveMonitor,
-  MAX_PRETRIP_SAMPLES,
   type PointWriterPort,
   type TripPort,
 } from '../../mobile/lib/driveMonitor';

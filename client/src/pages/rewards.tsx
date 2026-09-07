@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 import { PageWrapper } from '../components/PageWrapper';
@@ -6,17 +6,10 @@ import { BottomNav } from '../components/BottomNav';
 import { GlassCard } from "@/components/GlassCard";
 import RewardsTimeline from "@/components/RewardsTimeline";
 import type { RewardState } from "@/components/RewardsTimeline";
-import {
-  Gift, TrendingUp, Check, Bell, ChevronDown, Loader2,
-  Car, Shield, Target, Star, Flame, Route, Moon, Award, Trophy,
-} from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { Gift, TrendingUp, Check, Trophy } from "lucide-react";
 import { container, item, timing, easing, microInteractions } from "@/lib/animations";
 import { SmoothTabs } from "@/components/SmoothTabs";
 import { Stagger, StaggerItem } from "@/components/motion/Stagger";
-import { Shimmer } from "@/components/Shimmer";
-import { AnimatedNumber } from "@/components/AnimatedNumber";
-import { useHaptics } from "@/hooks/useHaptics";
 import { useAuth } from '../contexts/AuthContext';
 import { useUserProfile } from "../hooks/useUserProfile";
 import { DEFAULT_DRIVING_PROFILE } from '../../../shared/firestore-types';
@@ -26,29 +19,14 @@ import { isFirebaseConfigured } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { EmptyState } from '@/components/ui/EmptyState';
 
-function Skeleton({ className = "" }: { className?: string }) {
-  return <Shimmer className={className} />;
-}
-
-interface DisplayAchievement {
-  id: string;
-  title: string;
-  description: string;
-  icon: LucideIcon;
-  unlocked: boolean;
-  unlockedAt?: string;
-  category: string;
-}
-
-/*
- * Lucide names from the shared catalogue. The previous table mapped each one
- * to an EMOJI, which the brand bans outright and which rendered as the only
- * visual for a real achievement.
- */
-const ICON_MAP: Record<string, LucideIcon> = {
-  Car, Shield, Target, Star, Flame, Route, Moon, Award, Trophy,
-};
-
+// The achievement view model, the icon map, the shimmer and the header live in
+// client/src/components/rewards/.
+import {
+  ICON_MAP,
+  type DisplayAchievement,
+} from '@/components/rewards/achievements';
+import { Skeleton } from '@/components/rewards/RewardsSkeleton';
+import { RewardsHeader } from '@/components/rewards/RewardsHeader';
 export default function Rewards() {
   const [, setLocation] = useLocation();
   const { user, logout } = useAuth();
@@ -190,74 +168,15 @@ export default function Rewards() {
     <PageWrapper>
       <div className="pb-24 text-white">
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="flex items-start justify-between mb-6"
-        >
-          <div className="flex items-start gap-3">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500/30 to-purple-700/30 border border-white/10 flex items-center justify-center overflow-hidden">
-              <img src="/logo.png" alt="Driiva" className="w-full h-full object-cover" />
-            </div>
-            <div style={{ marginTop: '2px' }}>
-              <h1 className="text-xl font-bold text-white">Driiva</h1>
-              <p className="text-sm text-white/60">{getGreeting()}, {firstName}</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 relative">
-            <button className="p-2 rounded-full hover:bg-white/5 transition-colors" aria-label="Notifications">
-              <Bell className="w-5 h-5 text-white/60" aria-hidden="true" />
-            </button>
-
-            <button
-              onClick={() => setShowDropdown(!showDropdown)}
-              className="flex items-center gap-1"
-            >
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center">
-                <span className="text-white font-bold text-lg">
-                  {(user?.name?.[0] ?? user?.email?.[0] ?? 'd').toUpperCase()}
-                </span>
-              </div>
-              <ChevronDown className={`w-4 h-4 text-white/60 transition-transform ${showDropdown ? 'rotate-180' : ''}`} />
-            </button>
-
-            <AnimatePresence>
-              {showDropdown && (
-                <>
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    onClick={() => setShowDropdown(false)}
-                    className="fixed inset-0 z-40"
-                  />
-                  <motion.div
-                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                    transition={{ duration: 0.2 }}
-                    className="absolute top-12 right-0 w-56 z-50 backdrop-blur-2xl bg-[#1a1a2e]/95 border border-white/10 rounded-xl shadow-2xl overflow-hidden"
-                  >
-                    <div className="p-4">
-                      <p className="text-xs text-white/60 mb-1">Policy No:</p>
-                      <p className="text-sm font-medium text-white">{policyNumber}</p>
-                    </div>
-                    <div className="border-t border-white/10">
-                      <button
-                        onClick={handleLogout}
-                        className="w-full px-4 py-3 text-left text-sm text-red-400 hover:bg-white/5 transition-colors"
-                      >
-                        Logout
-                      </button>
-                    </div>
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
-          </div>
-        </motion.div>
+        <RewardsHeader
+          greeting={getGreeting()}
+          firstName={firstName}
+          avatarInitial={(user?.name?.[0] ?? user?.email?.[0] ?? 'd').toUpperCase()}
+          policyNumber={policyNumber}
+          showDropdown={showDropdown}
+          setShowDropdown={setShowDropdown}
+          handleLogout={handleLogout}
+        />
 
         <h2 className="text-2xl font-bold text-white mb-4">Rewards</h2>
 
@@ -320,7 +239,7 @@ export default function Rewards() {
               { id: 'progress', label: 'Progress' },
             ]}
             activeTab={activeTab}
-            onChange={(id) => setActiveTab(id as any)}
+            onChange={(id) => setActiveTab(id as "achievements" | "rewards" | "progress")}
           />
         </motion.div>
 
@@ -522,3 +441,4 @@ export default function Rewards() {
     </PageWrapper>
   );
 }
+
