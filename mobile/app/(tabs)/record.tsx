@@ -50,176 +50,23 @@ import {
   subscribeBackgroundCaptureHealth,
   type BackgroundCaptureHealth,
 } from '@/lib/backgroundLocation';
+// The screen's readout rules, its arc, its hold-to-end control and its
+// stylesheet live in mobile/components/drive/.
+import {
+  formatDay,
+  formatDuration,
+  fixQuality,
+  METRES_PER_MILE,
+  METRES_PER_SECOND_TO_MPH,
+  QUALITY_LABEL,
+  type LandedTrip,
+  type LastDrive,
+} from '@/components/drive/readout';
+import { ARC_SIZE } from '@/components/drive/arcGeometry';
+import { LiveArc } from '@/components/drive/LiveArc';
+import { HoldToEnd } from '@/components/drive/HoldToEnd';
+import { styles } from '@/components/drive/styles';
 import { driveMonitor } from '@/lib/driveMonitorInstance';
-
-interface LandedTrip {
-  tripScore: number;
-  previousOverallScore: number | null;
-  newOverallScore: number | null;
-  previousProjectedPence: number | null;
-  newProjectedPence: number | null;
-}
-
-interface LastDrive {
-  miles: number;
-  score: number;
-  endedAt: Date;
-}
-
-const METRES_PER_SECOND_TO_MPH = 2.23694;
-const METRES_PER_MILE = 1609.34;
-/** How long "End drive" must be held. Long enough that a pocket cannot do it. */
-const HOLD_TO_END_MS = 600;
-
-function formatDuration(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${String(s).padStart(2, '0')}`;
-}
-
-function formatDay(date: Date): string {
-  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-}
-
-type FixQuality = 'good' | 'fair' | 'poor' | 'unknown';
-
-function fixQuality(accuracyMeters: number | null): FixQuality {
-  if (accuracyMeters === null || !Number.isFinite(accuracyMeters) || accuracyMeters < 0) {
-    return 'unknown';
-  }
-  if (accuracyMeters <= 10) return 'good';
-  if (accuracyMeters <= 30) return 'fair';
-  return 'poor';
-}
-
-const QUALITY_LABEL: Record<FixQuality, string> = {
-  good: 'strong',
-  fair: 'fair',
-  poor: 'weak',
-  unknown: 'waiting',
-};
-
-// ─── ─────────────────────────────────────────────────────────────
-// The arc
-// ─── ─────────────────────────────────────────────────────────────
-
-/** Same geometry as ScoreRing: a 270 degree sweep opening at the bottom. */
-const SWEEP_DEGREES = 270;
-const START_DEGREES = 135;
-const ARC_SIZE = 260;
-const ARC_STROKE = 2;
-
-function pointAt(centre: number, radius: number, degrees: number): [number, number] {
-  const radians = (degrees * Math.PI) / 180;
-  return [centre + radius * Math.cos(radians), centre + radius * Math.sin(radians)];
-}
-
-function arcPath(centre: number, radius: number): string {
-  const [x1, y1] = pointAt(centre, radius, START_DEGREES);
-  const [x2, y2] = pointAt(centre, radius, START_DEGREES + SWEEP_DEGREES);
-  return `M ${x1} ${y1} A ${radius} ${radius} 0 1 1 ${x2} ${y2}`;
-}
-
-/**
- * The breathing arc. It is not a gauge and does not encode a value: it says
- * capture is alive, which is the one thing a driver glancing at a mounted phone
- * needs. Reduce-motion holds it steady rather than removing it, because it is
- * the only thing on screen saying the trip is running.
- */
-function LiveArc({ active }: { active: boolean }) {
-  const reduceMotion = useReducedMotion();
-  const breath = useSharedValue(0);
-
-  useEffect(() => {
-    if (active && !reduceMotion) {
-      breath.value = 0;
-      breath.value = withRepeat(
-        withTiming(1, { duration: 2000, easing: Easing.inOut(Easing.quad) }),
-        -1,
-        true,
-      );
-    } else {
-      cancelAnimation(breath);
-      breath.value = 0;
-    }
-    return () => cancelAnimation(breath);
-  }, [active, reduceMotion, breath]);
-
-  const style = useAnimatedStyle(() => ({ opacity: 0.35 + breath.value * 0.45 }));
-  const centre = ARC_SIZE / 2;
-  const radius = (ARC_SIZE - ARC_STROKE) / 2;
-
-  return (
-    <Animated.View style={[styles.arc, style]} pointerEvents="none">
-      <Svg width={ARC_SIZE} height={ARC_SIZE}>
-        <Path
-          d={arcPath(centre, radius)}
-          stroke={C.primary}
-          strokeWidth={ARC_STROKE}
-          strokeLinecap="round"
-          fill="none"
-        />
-      </Svg>
-    </Animated.View>
-  );
-}
-
-// ─── ─────────────────────────────────────────────────────────────
-// Hold to end
-// ─── ─────────────────────────────────────────────────────────────
-
-/**
- * A press and hold rather than a tap, because ending a drive closes the trace
- * and cannot be undone, and a phone in a mount gets brushed. The fill is the
- * confirmation: it shows the hold being served, so nobody has to guess how long
- * to keep their thumb down.
- */
-function HoldToEnd({ onEnd, label }: { onEnd: () => void; label: string }) {
-  const reduceMotion = useReducedMotion();
-  const progress = useSharedValue(0);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const clear = useCallback(() => {
-    if (timer.current) {
-      clearTimeout(timer.current);
-      timer.current = null;
-    }
-  }, []);
-
-  useEffect(() => clear, [clear]);
-
-  const onPressIn = useCallback(() => {
-    Haptics.selectionAsync().catch(() => {});
-    progress.value = reduceMotion ? 1 : withTiming(1, { duration: HOLD_TO_END_MS, easing: Easing.linear });
-    timer.current = setTimeout(() => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-      onEnd();
-    }, HOLD_TO_END_MS);
-  }, [onEnd, progress, reduceMotion]);
-
-  const onPressOut = useCallback(() => {
-    clear();
-    progress.value = withTiming(0, { duration: 160 });
-  }, [clear, progress]);
-
-  const fill = useAnimatedStyle(() => ({ width: `${progress.value * 100}%` }));
-
-  return (
-    <Pressable
-      onPressIn={onPressIn}
-      onPressOut={onPressOut}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityHint="Press and hold to end the drive"
-      style={styles.holdWrap}
-    >
-      <Animated.View style={[styles.holdFill, fill]} pointerEvents="none" />
-      <Text style={styles.holdLabel}>{label}</Text>
-    </Pressable>
-  );
-}
-
-// ─── ─────────────────────────────────────────────────────────────
 
 export default function Drive() {
   const { user } = useAuth();
@@ -544,75 +391,3 @@ export default function Drive() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: C.bg, paddingHorizontal: S.md },
-  header: { ...T.h1, color: C.text.hero, marginTop: S.md, marginBottom: S.xl },
-
-  live: { flex: 1, alignItems: 'center' },
-  arcWrap: {
-    width: ARC_SIZE,
-    height: ARC_SIZE,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: S.lg,
-  },
-  arc: { position: 'absolute' },
-  speedBlock: { alignItems: 'center' },
-  speed: {
-    fontFamily: 'InterTight-Bold',
-    fontSize: FS.mega,
-    lineHeight: LH.mega,
-    color: C.text.hero,
-    fontVariant: ['tabular-nums'],
-  },
-  speedWaiting: { color: C.text.mut },
-  speedUnit: { ...T.label, color: C.text.sec, marginTop: -S.xs },
-  speedNote: { ...T.numberSm, color: C.text.mut, marginTop: S.xs },
-
-  readout: { flexDirection: 'row', alignItems: 'center', marginTop: S.xl },
-  readoutItem: { ...T.number, color: C.text.pri },
-  readoutDivider: { ...T.number, color: C.text.mut, marginHorizontal: S.sm },
-  handling: { ...T.numberSm, color: C.text.sec, marginTop: S.md },
-  quiet: { ...T.caption, color: C.text.sec, marginTop: S.md, textAlign: 'center' },
-
-  holdWrap: {
-    marginTop: 'auto',
-    marginBottom: S.xxl,
-    alignSelf: 'stretch',
-    height: 48,
-    borderRadius: R.card,
-    borderWidth: 1,
-    borderColor: C.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  holdFill: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    backgroundColor: alpha(RGB.error, 0.22),
-  },
-  holdLabel: { ...T.label, color: C.text.pri },
-
-  armedView: { flex: 1 },
-  watchRow: { flexDirection: 'row', alignItems: 'center' },
-  dot: { width: 8, height: 8, borderRadius: R.full },
-  dotLive: { backgroundColor: C.success },
-  dotOff: { backgroundColor: C.text.mut },
-  watchLabel: { ...T.h2, color: C.text.pri, marginLeft: S.sm },
-  watchBody: { ...T.body, color: C.text.sec, marginTop: S.sm, maxWidth: 340 },
-
-  lastDrive: { marginTop: S.xl },
-  lastDriveLabel: { ...T.eyebrow, color: C.text.mut },
-  lastDriveRow: { flexDirection: 'row', alignItems: 'baseline', marginTop: S.sm },
-  lastDriveDate: { ...T.body, color: C.text.pri },
-  lastDriveMiles: { ...T.number, color: C.text.sec, marginLeft: S.md },
-  lastDriveScore: { ...T.stat, marginLeft: 'auto' },
-
-  notice: { ...T.caption, color: C.text.sec, marginTop: S.lg, maxWidth: 340 },
-
-  textAction: { marginTop: 'auto', marginBottom: S.xxl, alignSelf: 'flex-start' },
-  textActionLabel: { ...T.label, color: C.primary },
-});

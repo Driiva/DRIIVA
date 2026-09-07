@@ -33,6 +33,20 @@ const read = (rel: string) => readFileSync(join(MOBILE, rel), 'utf8');
 
 const layout = read('app/(tabs)/_layout.tsx');
 const community = read('app/(tabs)/community.tsx');
+/**
+ * The screen plus the modules it was split into. The pound-figure law is about
+ * what the Community surface RENDERS, so it reads the whole surface: checking
+ * the screen alone would let a currency symbol in through a row component.
+ */
+const communitySurface = [
+  'app/(tabs)/community.tsx',
+  'components/community/types.ts',
+  'components/community/display.ts',
+  'components/community/rows.tsx',
+  'components/community/styles.ts',
+]
+  .map(read)
+  .join('\n');
 const leaderboard = read('app/leaderboard.tsx');
 
 /**
@@ -92,8 +106,8 @@ describe('the Community screen', () => {
   it('never prints a pound figure against the pool', () => {
     // The pool has no funded balance. A currency symbol here would be a number
     // nobody has committed to, from a company that is not FCA authorised.
-    expect(community).not.toContain('£');
-    expect(community).not.toContain('formatPounds');
+    expect(communitySurface).not.toContain('£');
+    expect(communitySurface).not.toContain('formatPounds');
   });
 
   it('records that the screen was actually looked at', () => {

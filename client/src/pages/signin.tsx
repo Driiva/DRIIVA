@@ -12,16 +12,22 @@ import { auth, db, isFirebaseConfigured, googleProvider } from "@/lib/firebase";
 import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import WelcomeBackOverlay from "@/components/WelcomeBackOverlay";
-import BiometricAuth from "@/components/BiometricAuth";
 
-const LAST_USER_KEY = 'driiva-last-user';
-
-interface LastUserData {
-  name: string;
-  email: string;
-  score?: number;
-  lastTrip?: string;
-}
+// The device's "welcome back" memory and the alternative sign-in methods live
+// in their own modules.
+import {
+  LAST_USER_KEY,
+  getLastUser,
+  saveLastUser,
+  type LastUserData,
+} from '@/lib/lastSignedInUser';
+import { AlternateSignIn } from '@/components/signin/AlternateSignIn';
+import {
+  asAuthError,
+  googleSignInMessage,
+  isDismissedGooglePopup,
+  passwordSignInMessage,
+} from '@/lib/signInErrors';
 
 /**
  * SIGN-IN PAGE
@@ -29,17 +35,6 @@ interface LastUserData {
  * This page handles REAL Firebase authentication only.
  * NO demo accounts - demo mode is accessed via /demo route.
  */
-
-function getLastUser(): LastUserData | null {
-  try {
-    const raw = localStorage.getItem(LAST_USER_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch { return null; }
-}
-
-function saveLastUser(data: LastUserData) {
-  localStorage.setItem(LAST_USER_KEY, JSON.stringify(data));
-}
 
 export default function SignIn() {
   const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'unavailable'>('checking');
@@ -173,25 +168,9 @@ export default function SignIn() {
       }
 
     } catch (error: unknown) {
-      const err = error as { code?: string; message?: string };
+      const err = asAuthError(error);
       console.error('[SignIn] Authentication failed:', err);
-      let errorMessage = "Invalid email or password. Try demo mode if you don't have an account yet.";
-
-      if (err.message?.includes('Sign-in timed out')) {
-        errorMessage = "Sign-in timed out. Please check your connection and try again.";
-      } else if (err.code === 'auth/api-key-not-valid.-please-pass-a-valid-api-key' ||
-        err.code === 'auth/api-key-not-valid-please-pass-a-valid-api-key' ||
-        err.message?.includes('api-key-not-valid')) {
-        errorMessage = "Service configuration error. The Firebase API key is invalid or restricted.";
-      } else if (err.code === 'auth/invalid-email') {
-        errorMessage = "Invalid email address format.";
-      } else if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-        errorMessage = "Invalid email or password. Use one of the test accounts or try demo mode.";
-      } else if (err.code === 'auth/too-many-requests') {
-        errorMessage = "Too many attempts. Please try again later.";
-      } else if (err.code === 'auth/network-request-failed') {
-        errorMessage = "Network error. Check your connection and try again.";
-      }
+      const errorMessage = passwordSignInMessage(err);
 
       setLoginError(errorMessage);
       toast({
@@ -226,23 +205,18 @@ export default function SignIn() {
       setWelcomeData({ name: gDisplayName });
       setShowWelcomeOverlay(true);
 
-    } catch (error: any) {
+    } catch (error) {
       console.error('[SignIn] Google sign-in failed:', error);
 
+      const code = asAuthError(error).code ?? '';
+
       // User closed the popup — not an error worth showing
-      if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+      if (isDismissedGooglePopup(code)) {
         setIsLoading(false);
         return;
       }
 
-      let errorMessage = "Google sign-in failed. Please try again.";
-      if (error.code === 'auth/account-exists-with-different-credential') {
-        errorMessage = "An account already exists with this email using a different sign-in method.";
-      } else if (error.code === 'auth/network-request-failed') {
-        errorMessage = "Network error. Please check your connection.";
-      } else if (error.code === 'auth/popup-blocked') {
-        errorMessage = "Pop-up was blocked by your browser. Please allow pop-ups for this site.";
-      }
+      const errorMessage = googleSignInMessage(code);
 
       setLoginError(errorMessage);
       toast({
@@ -447,69 +421,27 @@ export default function SignIn() {
                   )}
                 </button>
 
-                {/* Divider */}
-                <div className="flex items-center gap-3 py-1">
-                  <div className="flex-1 h-px bg-white/15" />
-                  <span className="text-white/60 text-[13px] uppercase tracking-wider">or</span>
-                  <div className="flex-1 h-px bg-white/15" />
-                </div>
-
-                {/* Google Sign-In */}
-                <button
-                  type="button"
-                  onClick={handleGoogleSignIn}
-                  disabled={isLoading || connectionStatus === 'unavailable'}
-                  className="w-full flex items-center justify-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.08)',
-                    border: '1px solid rgba(255, 255, 255, 0.15)',
-                    color: 'rgba(255, 255, 255, 0.9)',
+                <AlternateSignIn
+                  isLoading={isLoading}
+                  connectionStatus={connectionStatus}
+                  isReturningUser={isReturningUser}
+                  biometricEmail={emailOrUsername || lastUser?.email || ''}
+                  handleGoogleSignIn={handleGoogleSignIn}
+                  onBiometricSuccess={(userData) => {
+                    // Firebase session is already established inside BiometricAuth
+                    // via signInWithCustomToken — we just need to update React state.
+                    setUser({
+                      id: userData.firebaseUid || userData.id,
+                      email: userData.email,
+                      name: userData.displayName || userData.firstName || 'User',
+                      onboardingComplete: true,
+                      emailVerified: true,
+                    });
+                    pendingDestination.current = '/dashboard';
+                    setWelcomeData({ name: userData.displayName || userData.firstName || 'User' });
+                    setShowWelcomeOverlay(true);
                   }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.14)';
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.25)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
-                  }}
-                  aria-label="Continue with Google"
-                >
-                  <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
-                    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
-                    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
-                    <path fill="#FBBC05" d="M10.53 28.59a14.5 14.5 0 0 1 0-9.18l-7.98-6.19a24.01 24.01 0 0 0 0 21.56l7.98-6.19z" />
-                    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
-                  </svg>
-                  <span>Continue with Google</span>
-                </button>
-
-                {isReturningUser && (
-                  <>
-                    <div className="flex items-center gap-3 py-1">
-                      <div className="flex-1 h-px bg-white/15" />
-                      <span className="text-white/60 text-[13px] uppercase tracking-wider">or</span>
-                      <div className="flex-1 h-px bg-white/15" />
-                    </div>
-                    <BiometricAuth
-                      email={emailOrUsername || lastUser?.email || ''}
-                      onSuccess={(userData) => {
-                        // Firebase session is already established inside BiometricAuth
-                        // via signInWithCustomToken — we just need to update React state.
-                        setUser({
-                          id: userData.firebaseUid || userData.id,
-                          email: userData.email,
-                          name: userData.displayName || userData.firstName || 'User',
-                          onboardingComplete: true,
-                          emailVerified: true,
-                        });
-                        pendingDestination.current = '/dashboard';
-                        setWelcomeData({ name: userData.displayName || userData.firstName || 'User' });
-                        setShowWelcomeOverlay(true);
-                      }}
-                    />
-                  </>
-                )}
+                />
 
                 {/* Links */}
                 <div className="text-center space-y-2 pt-2">
@@ -564,3 +496,4 @@ export default function SignIn() {
     </div>
   );
 }
+
