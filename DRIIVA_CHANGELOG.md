@@ -5,6 +5,52 @@
 
 ## Entries
 
+### 2026-09-07 - The API is assembled from seven route modules, not one 1,500-line function
+
+`nightly/2026-09-07`. Closes ROADMAP's "Split `server/routes.ts` into domain-specific route modules"
+ticket under "Code Quality & UX Fixes".
+
+- **What was there** - `server/routes.ts` was 1,519 lines and one `registerRoutes` closure: profile
+  and passkeys, dashboard and trips, the community pool, GDPR, two AI endpoints, three Stripe routes,
+  both webhooks and 265 lines of Stripe-to-policy glue, all sharing one import list. Thirty-six
+  registrations, and the only way to know which middleware a route carried was to find it in the
+  scroll.
+- **Fix** - `server/routes/index.ts` mounts the Firebase token verifier, the health check and seven
+  domain modules on one screen: `auth.ts`, `telematics.ts`, `community.ts`, `gdpr.ts`, `ai.ts`,
+  `payments.ts`, `webhooks.ts`. The two things more than one module needed moved to `server/lib`:
+  the leaderboard TTL cache (`leaderboardCache.ts`, shared by the dashboard and the leaderboard
+  route, still one map) and the Stripe payment-succeeded glue (`stripePaymentSucceeded.ts`). Route
+  code is moved, not rewritten: same paths, same middleware chains, same handlers, same responses.
+  The only deliberate edits are import paths, em dashes in moved comments and two thrown-error
+  strings replaced with hyphens, the unused `zod` import dropped, and the four comments elsewhere
+  that pointed at `routes.ts` line numbers repointed at the module that now holds the code.
+  `app.ts` is untouched: `./routes` resolves to the directory index under the `bundler` resolution
+  the repo already uses, and esbuild bundles it the same way. Largest module is `webhooks.ts` at
+  334 lines.
+- **Held by two tests, both written before the split** - `server/__tests__/route-inventory.test.ts`
+  runs `registerRoutes` against a fake app and pins every registration as method, path and handler
+  count. The count is the security-relevant part: a route that drops from three handlers to two has
+  usually lost `requireAuth` or `requireResourceOwner`. It also pins that the token verifier is the
+  first registration and that no path is registered twice. Green on the monolith, green on the
+  split. `tests/unit/server-route-modules.test.ts` is the source law: the monolith stays gone, no
+  route module passes the 500-line ceiling, every `register*Routes` a module exports is called from
+  `index.ts`, and `app.ts` imports only the index. Red before the split (three of four failing),
+  green after.
+- **Negative control** - removing `requireAuth` from the GDPR export route turned the inventory test
+  red on exactly `GET /api/gdpr/export/:userId [2]` against the pinned `[3]`; the file was then
+  restored and the test went green again.
+- **Verified** - full `npm test`: 97 files, 1172 passing, 1 skipped, 3 todo (server suite alone went
+  from 10 files and 110 tests to 12 and 117). `tsc` error set identical before and after at the 7
+  pre-existing TypeScript 7 errors, the one in `routes.ts:1405` now reported at
+  `stripePaymentSucceeded.ts:160` because its code moved. `npm run build` exit 0, `dist/index.js`
+  115 kB, 34 distinct `/api` path strings in the bundle (36 registrations less the two paths that
+  carry two methods). `npm run gates` not run: it audits rendered pages behind the Firebase
+  emulators and a dev server, and nothing rendered changed.
+- **Left alone** - `docs/rebuild/` audit documents still name `server/routes.ts`; they are an audit
+  trail of what was true when written, not live documentation. Found in passing and not ticked:
+  "Add premium amount display on policy page" under "Make It Payable" is already live in
+  `client/src/pages/policy.tsx`, which formats `currentPremiumCents` on the policy card.
+
 ### 2026-09-06 - The client speaks one palette, not a canonical one plus thirty aliases for it
 
 `nightly/2026-09-06`. Closes ROADMAP's "Client SPA token alignment" ticket under "Remaining features

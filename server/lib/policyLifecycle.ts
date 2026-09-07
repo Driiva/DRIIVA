@@ -2,7 +2,7 @@
  * Policy lifecycle state machine + audit trail (M4 Task 3).
  *
  * Replaces the direct `policies.status = 'cancelled'` stopgap write that Task 2
- * left in the `customer.subscription.deleted` webhook handler (server/routes.ts),
+ * left in the `customer.subscription.deleted` webhook handler (server/routes/webhooks.ts),
  * and the client-only `checkout.tsx:204` flag flip on payment success. Every
  * write to `policies.status` from now on should go through `transitionPolicy`
  * (existing policy) or `createPolicyWithAudit` (brand new policy), so the state

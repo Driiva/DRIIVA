@@ -2,7 +2,7 @@
  * Stripe webhook idempotency + audit trail (M4 Task 2).
  *
  * Verifies the stripe_events dedupe/audit contract added on top of the existing
- * ACK-after-process webhook handler (server/routes.ts ~1080-1280):
+ * ACK-after-process webhook handler (server/routes/webhooks.ts):
  *   - a signed event writes a stripe_events row (status received → processed)
  *   - a redelivery of an event already marked "processed" short-circuits: ack 200
  *     without re-running the switch / side effects

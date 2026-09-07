@@ -49,7 +49,7 @@ export const tripDataLimiter = makeRateLimiter({
 });
 
 // /api/ai/coach — 5 requests per minute per authenticated user ID
-// Exported so routes.ts can apply it as middleware on the coach endpoint.
+// Exported so routes/ai.ts can apply it as middleware on the coach endpoint.
 export const coachLimiter = makeRateLimiter({
   windowMs: 60 * 1000,
   max: 5,

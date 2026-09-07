@@ -1,7 +1,7 @@
 /**
  * CHARACTERISATION SUITE — server API contract (rebuild mission, 2026-07).
  *
- * Locks in the CURRENT behaviour of server/app.ts + server/routes.ts, quirks
+ * Locks in the CURRENT behaviour of server/app.ts + server/routes/*, quirks
  * included. A failure here means behaviour changed (or the test is wrong) —
  * never "found a bug". Contract source: docs/rebuild/audit-api-contracts.md
  * (API-01..API-36).
