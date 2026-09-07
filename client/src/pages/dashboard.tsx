@@ -11,189 +11,45 @@
  *   - Demo mode support for testing
  */
 
-import { useState, lazy, Suspense, useEffect, useCallback } from 'react';
-import { DemoBadge } from "@/components/DemoBadge";
-import { motion, AnimatePresence } from 'framer-motion';
-
-import { Stagger, StaggerItem } from '@/components/motion/Stagger';
-import { SettlePulse } from '@/components/motion/Instrument';
+import { useState, useEffect, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import { useLocation } from 'wouter';
-import { collection, doc, getDoc } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '@/lib/firebase';
 import { getTripPoints } from '@/lib/firestore';
 import {
-  Car, FileText, AlertCircle, TrendingUp, ChevronRight,
-  Bell, ChevronDown, ChevronUp, MapPin, Users, Trophy, Target,
-  Play, Navigation, RefreshCw, Shield, ExternalLink,
-  Eye, Footprints, Gauge, CornerUpLeft, PhoneOff, Moon,
+  Bell, FileText, AlertCircle, Shield, ExternalLink,
 } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
 import { PageWrapper } from '../components/PageWrapper';
 import { BottomNav } from '../components/BottomNav';
 import { useAuth } from "@/contexts/AuthContext";
-import MapLoader from '../components/MapLoader';
-import { useDashboardData, DashboardData } from '@/hooks/useDashboardData';
+import { useDashboardData } from '@/hooks/useDashboardData';
 import { useCommunityData } from '@/hooks/useCommunityData';
-import { projectedRefundCents, SCORE_WEIGHTS } from '@driiva/scoring';
 import { useBetaEstimate } from '@/hooks/useBetaEstimate';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useToast } from '@/hooks/use-toast';
 import { BetaEstimateCard } from '@/components/BetaEstimateCard';
-import ScoreRing from '@/components/ScoreRing';
-import { FinancialPromotionDisclaimer } from '@/components/FinancialPromotionDisclaimer';
-import { AnimatedNumber } from '@/components/AnimatedNumber';
 import { PullToRefreshIndicator } from '@/components/PullToRefresh';
-import { ScoreCardShimmer } from '@/components/Shimmer';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { useHaptics } from '@/hooks/useHaptics';
 import { container, item } from '@/lib/animations';
-import { Skeleton, SkeletonList } from '@/components/ui/EmptyState';
-import { StartingScoreExplainer } from '@/components/StartingScoreExplainer';
 
-const LeafletMap = lazy(() => import('../components/LeafletMap'));
-
-// ============================================================================
-// TYPES
-// ============================================================================
-
-interface DemoUser {
-  id: string;
-  email: string;
-  name?: string;
-  first_name?: string;
-  last_name?: string;
-  premium_amount?: number;
-  premiumAmount?: number;
-  personal_score?: number;
-  community_score?: number;
-  overall_score?: number;
-  drivingScore?: number;
-  totalMiles?: number;
-  projectedRefund?: number;
-  trips?: Array<{
-    id: number;
-    from: string;
-    to: string;
-    score: number;
-    distance: number;
-    date: string;
-  }>;
-  poolTotal?: number;
-  poolShare?: number;
-  safetyFactor?: number;
-}
-
-// ============================================================================
-// SKELETON COMPONENTS
-// ============================================================================
-
-function ScoreCardSkeleton() {
-  return <ScoreCardShimmer />;
-}
-
-// Both skeletons use the shared shimmer so the dashboard waits in the same
-// visual language as trips, the leaderboard and rewards.
-function TripsSkeleton() {
-  return (
-    <div className="instrument-card mb-4">
-      <div className="flex items-center justify-between mb-4">
-        <Skeleton className="h-6 w-24" />
-        <Skeleton className="h-5 w-5" />
-      </div>
-      <SkeletonList count={3} />
-    </div>
-  );
-}
-
-function PoolSkeleton() {
-  return (
-    <div className="instrument-card mb-4">
-      <div className="flex items-center justify-between mb-4">
-        <Skeleton className="h-6 w-36" />
-        <Skeleton className="h-5 w-5" />
-      </div>
-      <div className="space-y-3">
-        {[1, 2, 3].map(i => (
-          <div key={i} className="flex items-center justify-between">
-            <Skeleton className="h-4 w-24" />
-            <Skeleton className="h-4 w-16" />
-          </div>
-        ))}
-        <Skeleton className="h-2 w-full mt-2" />
-      </div>
-    </div>
-  );
-}
-
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
-
-function getGreeting(): string {
-  const hour = new Date().getHours();
-  if (hour < 12) return "Good morning";
-  if (hour < 17) return "Good afternoon";
-  return "Good evening";
-}
-
-function getScoreMessage(score: number): string {
-  // No exclamation marks. The brand voice is plain-English confident, and a
-  // telematics score is information, not a cheer.
-  if (score >= 80) return "Strong driving. Keep this up to maximise your refund.";
-  if (score >= 70) return "Good progress. A few more safe trips will lift your score.";
-  return "Keep practising safe driving to unlock rewards.";
-}
-
-/** Lucide icons for the coaching tips, resolved by name. Never emoji. */
-const TIP_ICONS: Record<string, LucideIcon> = {
-  Eye, Footprints, Gauge, CornerUpLeft, PhoneOff, Moon,
-};
-
-function TipIcon({ name }: { name: string }) {
-  const Icon = TIP_ICONS[name] ?? Eye;
-  return <Icon className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden="true" />;
-}
-
-/*
- * Coaching tips.
- *
- * The icons were EMOJI, which this brand bans outright, and the copy carried
- * three em dashes and an equals sign standing in for a word. Icons are Lucide
- * names resolved at render.
- *
- * The cornering figure is quoted from SCORE_WEIGHTS in @driiva/scoring rather
- * than retyped: cornering is 0.2, and the marketing site has already shipped
- * transposed weights once because somebody typed them by hand.
- */
-const AI_DRIIVA_TIPS = [
-  { headline: "Anticipate the road ahead", tip: "Look 10 to 15 seconds forward. Spotting hazards early means smoother, gentler braking, which directly improves your score.", icon: "Eye" },
-  { headline: "Lift off gently", tip: "Releasing the accelerator gradually before a junction saves fuel and avoids the hard-braking penalty that chips away at your score.", icon: "Footprints" },
-  { headline: "Speed limits are scoring limits", tip: "Even brief periods above the limit add speeding seconds to your score. Staying within limits is the single biggest score multiplier.", icon: "Gauge" },
-  { headline: "Smooth cornering pays", tip: `Enter bends at a steady speed rather than braking mid-corner. Cornering is worth ${Math.round(SCORE_WEIGHTS.cornering * 100)}% of your total score.`, icon: "CornerUpLeft" },
-  { headline: "Keep your phone face down", tip: "Phone pickups are logged and count against your score. Use Do Not Disturb before you start the engine, since every pickup costs points.", icon: "PhoneOff" },
-  { headline: "Night driving costs more", tip: "Fatigue and reduced visibility increase risk at night. Keeping night trips short and smooth helps your overall risk profile.", icon: "Moon" },
-];
-
-function getAiDriivaTip(score: number): typeof AI_DRIIVA_TIPS[0] {
-  if (score === 0) return AI_DRIIVA_TIPS[0];
-  const idx = Math.floor(score * 7.3) % AI_DRIIVA_TIPS.length;
-  return AI_DRIIVA_TIPS[idx];
-}
-
-function calculateSurplus(score: number, premiumPounds: number): number {
-  // Pounds for display (WEB-13): projectedRefundCents returns pence, and every
-  // downstream render site (the refund figure, the pounds-denominated bar-width
-  // calc, the "on track for" copy) treats surplusProjection as pounds.
-  // projectedRefundCents returns null when there is no premium to project a
-  // refund against, which is a different thing from a refund of zero. This
-  // surface reads the two the same way: every consumer downstream already
-  // gates on "> 0" before it renders a figure, so null collapses to 0 here and
-  // the existing empty states carry it. The mobile app reads the null itself
-  // and renders "Not started".
-  const cents = projectedRefundCents(score, Math.round(premiumPounds * 100));
-  return cents === null ? 0 : cents / 100;
-}
-
+// The types, skeletons, helpers and cards this page is built from live in
+// client/src/components/dashboard/, one module per concern.
+import type { DemoUser } from '@/components/dashboard/types';
+import {
+  ScoreCardSkeleton,
+  TripsSkeleton,
+  PoolSkeleton,
+} from '@/components/dashboard/DashboardSkeletons';
+import { getGreeting, calculateSurplus } from '@/components/dashboard/helpers';
+import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
+import { DrivingScoreCard } from '@/components/dashboard/DrivingScoreCard';
+import { AiDriivaCard } from '@/components/dashboard/AiDriivaCard';
+import { GpsMapCard } from '@/components/dashboard/GpsMapCard';
+import { TripsCard } from '@/components/dashboard/TripsCard';
+import { CommunityPoolCard } from '@/components/dashboard/CommunityPoolCard';
+import { RefundGoalsCard } from '@/components/dashboard/RefundGoalsCard';
+import { AchievementsCard } from '@/components/dashboard/AchievementsCard';
 // ============================================================================
 // COMPONENT
 // ============================================================================
@@ -446,130 +302,18 @@ export default function Dashboard() {
         )}
 
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="flex items-start justify-between mb-6"
-        >
-          {/* Left side - Logo and greeting */}
-          <div className="flex items-start gap-3">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500/30 to-purple-700/30 border border-white/10 flex items-center justify-center overflow-hidden">
-              <img src="/logo.png" alt="Driiva" className="w-full h-full object-cover" />
-            </div>
-            <div style={{ marginTop: '2px' }}>
-              <h1 className="text-xl font-bold text-white">Driiva</h1>
-              <p className="text-sm text-white/60">Beta Programme</p>
-              {isDemoMode && (
-                <DemoBadge />
-              )}
-            </div>
-          </div>
-
-          {/* Right side - Bell, refresh, and avatar with dropdown */}
-          <div className="flex items-center gap-2 relative">
-            {!isDemoMode && (
-              <button 
-                onClick={refresh}
-                className="p-2 rounded-full hover:bg-white/5 transition-colors"
-                aria-label="Refresh dashboard data"
-                title="Refresh data"
-              >
-                <RefreshCw className={`w-4 h-4 text-white/60 ${dataLoading ? 'animate-spin' : ''}`} />
-              </button>
-            )}
-            <button
-              onClick={() => { setShowNotifications(!showNotifications); setShowDropdown(false); }}
-              className="p-2 rounded-full hover:bg-white/5 transition-colors"
-              aria-label="Notifications"
-              aria-expanded={showNotifications}
-            >
-              <Bell className="w-5 h-5 text-white/60" aria-hidden="true" />
-            </button>
-            
-            <button 
-              onClick={() => { setShowDropdown(!showDropdown); setShowNotifications(false); }}
-              className="flex items-center gap-1"
-            >
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center">
-                <span className="text-white font-bold text-lg">
-                  {displayName[0]?.toUpperCase() ?? '?'}
-                </span>
-              </div>
-              <ChevronDown className={`w-4 h-4 text-white/60 transition-transform ${showDropdown ? 'rotate-180' : ''}`} />
-            </button>
-
-            {/* Notifications Dropdown */}
-            <AnimatePresence>
-              {showNotifications && (
-                <>
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    onClick={() => setShowNotifications(false)}
-                    className="fixed inset-0 z-40"
-                  />
-                  <motion.div
-                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                    transition={{ duration: 0.2 }}
-                    className="absolute top-12 right-0 w-[280px] z-50 backdrop-blur-2xl bg-[#1a1a2e]/95 border border-white/10 rounded-xl shadow-2xl overflow-hidden"
-                  >
-                    <div className="p-4 border-b border-white/10">
-                      <h3 className="text-sm font-semibold text-white">Notifications</h3>
-                    </div>
-                    <div className="p-4">
-                      <div className="flex flex-col items-center justify-center py-6 text-center">
-                        <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mb-3">
-                          <Bell className="w-5 h-5 text-white/60" />
-                        </div>
-                        <p className="text-sm text-white/70 mb-1">No new notifications</p>
-                        <p className="text-xs text-white/60">We'll notify you when something happens</p>
-                      </div>
-                    </div>
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
-
-            {/* Dropdown Menu */}
-            <AnimatePresence>
-              {showDropdown && (
-                <>
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    onClick={() => setShowDropdown(false)}
-                    className="fixed inset-0 z-40"
-                  />
-                  <motion.div
-                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                    transition={{ duration: 0.2 }}
-                    className="absolute top-12 right-0 w-56 z-50 backdrop-blur-2xl bg-[#1a1a2e]/95 border border-white/10 rounded-xl shadow-2xl overflow-hidden"
-                  >
-                    <div className="p-4">
-                      <p className="text-xs text-white/60 mb-1">Policy No:</p>
-                      <p className="text-sm font-medium text-white">{policyNumber ?? '—'}</p>
-                    </div>
-                    <div className="border-t border-white/10">
-                      <button
-                        onClick={handleLogout}
-                        className="w-full px-4 py-3 text-left text-sm text-red-400 hover:bg-white/5 transition-colors"
-                      >
-                        Logout
-                      </button>
-                    </div>
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
-          </div>
-        </motion.div>
+        <DashboardHeader
+          isDemoMode={isDemoMode}
+          displayName={displayName}
+          policyNumber={policyNumber}
+          dataLoading={dataLoading}
+          refresh={refresh}
+          showDropdown={showDropdown}
+          setShowDropdown={setShowDropdown}
+          showNotifications={showNotifications}
+          setShowNotifications={setShowNotifications}
+          handleLogout={handleLogout}
+        />
 
         {/* Personalised greeting — time-of-day + full registered name */}
         <h2 className="text-2xl font-bold text-white mb-4">
@@ -592,110 +336,15 @@ export default function Dashboard() {
         <motion.div variants={container} initial="hidden" animate="show">
 
         {/* Driving Score Card */}
-        <motion.div variants={item} className="instrument-card mb-4">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-white">Driving score</h2>
-            <TrendingUp className="w-5 h-5 text-emerald-400" />
-          </div>
-
-          {isNewUser ? (
-            <div className="flex flex-col items-center py-4">
-              <div className="w-[140px] h-[140px] rounded-full border-[6px] border-white/8 flex items-center justify-center mb-3">
-                <span className="text-4xl font-bold text-white/55">—</span>
-              </div>
-              <p className="text-sm text-white/60 text-center">
-                Complete your first trip to get a driving score.
-              </p>
-              {/* Keith Q1: what score do I begin on. Answered from the same
-                  constant provisioning writes, rather than a number typed
-                  into copy. */}
-              <StartingScoreExplainer />
-            </div>
-          ) : (
-            <div className="flex flex-col items-center">
-              {/* The ring already counts the figure up. The pulse is what makes
-                  a change felt: it fires once, only when the score is actually
-                  a different number from the one that was on screen. */}
-              <SettlePulse pulseKey={drivingScore}>
-                <ScoreRing score={drivingScore} size={140} strokeWidth={8} />
-              </SettlePulse>
-              <p className="text-sm text-white/60 mt-3 text-center">
-                {getScoreMessage(drivingScore)}
-              </p>
-            </div>
-          )}
-          
-          {!isDemoMode && !isNewUser && dashboardData?.scoreBreakdown && (
-            <Stagger
-              className="mt-4 pt-4 border-t border-white/10 grid grid-cols-5 gap-2 text-center"
-              delay={0.35}
-            >
-              {/* The five factors the score is made of, arriving after the ring
-                  has settled so the reader sees the total before the breakdown.
-                  Tabular figures, because these five sit in a row and a digit
-                  changing width would shift its neighbours. */}
-              {[
-                { label: 'Speed', value: dashboardData.scoreBreakdown.speed },
-                { label: 'Braking', value: dashboardData.scoreBreakdown.braking },
-                { label: 'Accel', value: dashboardData.scoreBreakdown.acceleration },
-                { label: 'Corners', value: dashboardData.scoreBreakdown.cornering },
-                { label: 'Phone', value: dashboardData.scoreBreakdown.phoneUsage },
-              ].map((factor) => (
-                <StaggerItem key={factor.label} yOffset={6}>
-                  <div className="text-xs text-white/60">{factor.label}</div>
-                  <div className="text-sm font-semibold text-white tabular">{factor.value}</div>
-                </StaggerItem>
-              ))}
-            </Stagger>
-          )}
-        </motion.div>
+        <DrivingScoreCard
+          isNewUser={isNewUser}
+          isDemoMode={isDemoMode}
+          drivingScore={drivingScore}
+          dashboardData={dashboardData}
+        />
 
         {/* AI Driiva Card — always visible, zero-latency static insight */}
-        <motion.div variants={item} className="mb-4">
-          {(() => {
-            const tip = getAiDriivaTip(drivingScore);
-
-            return (
-              <div className="instrument-card relative overflow-hidden">
-                {/* Premium gradient glow border */}
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-indigo-500/20 via-purple-500/15 to-pink-500/20 blur-xl -z-10" />
-                <div className="absolute inset-0 rounded-2xl border border-indigo-400/30" />
-
-                <div className="flex items-center gap-3 mb-3 relative z-10">
-                  {/* Pulsing indigo orb */}
-                  <div className="relative flex-shrink-0">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
-                      <span className="text-base leading-none">✦</span>
-                    </div>
-                    <span className="absolute inset-0 rounded-full animate-ping bg-indigo-500/20" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-white">AI Driiva</span>
-                      <span className="px-1.5 py-0.5 rounded-xs bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-[10px] font-medium">Beta</span>
-                    </div>
-                    <p className="text-xs text-white/60 truncate">Personalised driving insights</p>
-                  </div>
-                </div>
-                <div className="bg-white/5 rounded-xl p-3 mb-3">
-                  <p className="text-[13px] font-semibold mb-1 flex items-center gap-1.5" style={{ color: 'var(--app-primary-text)' }}>
-                    <TipIcon name={tip.icon} />
-                    {tip.headline}
-                  </p>
-                  <p className="text-sm text-white/70 leading-relaxed">{tip.tip}</p>
-                </div>
-                
-                {/*
-                  Wave 0 (0a): the "Get Deep Insight" expander rendered a
-                  hardcoded array of invented trip events (streets, speeds, a
-                  pool contribution figure) picked at random and presented as
-                  personalised analysis. Deleted rather than restated. Per-trip
-                  analysis returns when it reads real trip data.
-                */}
-              </div>
-            );
-          })()}
-        </motion.div>
+        <AiDriivaCard drivingScore={drivingScore} />
 
         {/* Beta Estimate Card (non-binding premium + refund) */}
         {!isDemoMode && (
@@ -710,288 +359,48 @@ export default function Dashboard() {
         )}
 
         {/* GPS Map Card — collapsible */}
-        <motion.div variants={item} className="instrument-card mb-4">
-          <button
-            onClick={() => setMapExpanded((prev) => !prev)}
-            className="w-full flex items-center justify-between"
-          >
-            <div className="flex items-center gap-3">
-              <MapPin className="w-5 h-5 text-emerald-400" />
-              <h2 className="text-lg font-semibold text-white">Live location</h2>
-            </div>
-            {mapExpanded ? (
-              <ChevronUp className="w-5 h-5 text-white/60" />
-            ) : (
-              <ChevronDown className="w-5 h-5 text-white/60" />
-            )}
-          </button>
-          <AnimatePresence initial={false}>
-            {mapExpanded && (
-              <motion.div
-                key="map-content"
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.3, ease: 'easeInOut' }}
-                className="overflow-hidden"
-              >
-                <div className="pt-4">
-                  <Suspense fallback={<MapLoader />}>
-                    <LeafletMap
-                      className="border border-white/10"
-                      routePoints={lastTripRoutePoints.length >= 2 ? lastTripRoutePoints : undefined}
-                    />
-                  </Suspense>
-                  <p className="text-white/60 text-xs mt-3 text-center">
-                    {lastTripRoutePoints.length >= 2
-                      ? 'Toggle between your live location and last trip route'
-                      : 'Showing your current location'}
-                  </p>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.div>
+        <GpsMapCard
+          mapExpanded={mapExpanded}
+          setMapExpanded={setMapExpanded}
+          lastTripRoutePoints={lastTripRoutePoints}
+        />
 
         {/* Your Trips Card */}
-        <motion.div variants={item} className="instrument-card mb-4">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-white">Your trips</h2>
-            <Car className="w-5 h-5 text-white/60" />
-          </div>
-          {trips.length > 0 ? (
-            <div className="space-y-3">
-              {trips.map((trip) => (
-                <motion.div
-                  key={trip.id}
-                  whileHover={{ y: -2, boxShadow: '0 8px 24px rgba(0,0,0,0.25)' }}
-                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                  className="bg-white/5 rounded-xl p-3 border border-white/10 cursor-pointer"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-white font-medium">{trip.from} → {trip.to}</span>
-                    <span className={`text-sm font-bold tabular ${trip.score >= 80 ? 'text-emerald-400' : trip.score >= 60 ? 'text-amber-400' : 'text-red-400'}`}>
-                      {trip.score}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs text-white/60">
-                    <span className="tabular">{trip.distance} mi</span>
-                    <span>{trip.date}</span>
-                  </div>
-                </motion.div>
-              ))}
-              <div className="pt-2 border-t border-white/10">
-                <div className="flex items-center justify-between">
-                  <span className="text-white/60 text-sm">Total Miles</span>
-                  <span className="text-white font-semibold tabular">{totalMiles.toLocaleString()} mi</span>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-8 text-center">
-              <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center mb-4">
-                <Car className="w-8 h-8 text-white/60" />
-              </div>
-              <p className="text-white/60 text-sm">Start driving to see your first trip!</p>
-              <p className="text-white/60 text-xs mt-1">Your journey data will appear here</p>
-            </div>
-          )}
-          
-          {/* Start Trip Button */}
-          <motion.button
-            whileTap={{ scale: 0.96 }}
-            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-            onClick={() => { haptics.medium(); setLocation('/trip-recording'); }}
-            className="w-full mt-4 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border border-emerald-500/30 text-emerald-300 font-semibold hover:from-emerald-500/30 hover:to-teal-500/30 transition-all flex items-center justify-center gap-2"
-          >
-            <Play className="w-4 h-4" />
-            Start New Trip
-            <Navigation className="w-4 h-4" />
-          </motion.button>
-        </motion.div>
+        <TripsCard
+          trips={trips}
+          totalMiles={totalMiles}
+          haptics={haptics}
+          setLocation={setLocation}
+        />
 
         {/* Community Pool Card */}
-        <motion.div variants={item} className="instrument-card mb-4">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-lg font-semibold text-white">Community pool</h2>
-              {poolDaysRemaining > 0 && !isDemoMode && (
-                <p className="text-xs text-white/60">{poolDaysRemaining} days left in period</p>
-              )}
-            </div>
-            <Users className="w-5 h-5 text-purple-400" />
-          </div>
-          {poolLoading && !isDemoMode ? (
-            <div className="space-y-3 animate-pulse">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="flex items-center justify-between">
-                  <div className="h-4 w-24 bg-white/10 rounded" />
-                  <div className="h-4 w-16 bg-white/10 rounded" />
-                </div>
-              ))}
-              <div className="h-2 w-full bg-white/10 rounded-[2px] mt-2" />
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {/*
-                Wave 0 (0h): there is no funding path into the pool yet. The
-                contribution callable has no callers and trip completion never
-                creates a share, so this card renders a full economy that
-                nothing fills. Rather than invent one (the pool money model is
-                still an open decision), say so while the pool is empty.
-              */}
-              {!isDemoMode && poolTotal === 0 && (
-                <div className="rounded-xl bg-white/[0.03] border border-white/10 p-3">
-                  <p className="text-sm text-white/70 leading-relaxed">
-                    Contributions start when the insurance product launches.
-                    Your score is being tracked now and will set your share of
-                    the pool from day one.
-                  </p>
-                </div>
-              )}
-              <div className="flex items-center justify-between">
-                <span className="text-white/60 text-sm">Total Pool</span>
-                <AnimatedNumber value={poolTotal} prefix="£" locale className="text-white font-semibold" />
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-white/60 text-sm">Your Projected Refund</span>
-                <AnimatedNumber value={poolShare} prefix="£" decimals={2} className="text-emerald-400 font-bold" />
-              </div>
-              {userSharePercentage > 0 && (
-                <div className="flex items-center justify-between">
-                  <span className="text-white/60 text-sm">Your Share</span>
-                  <span className="text-white font-semibold tabular">{userSharePercentage.toFixed(2)}%</span>
-                </div>
-              )}
-              {safetyFactor != null && (
-                <div className="flex items-center justify-between">
-                  <span className="text-white/60 text-sm">Safety Factor</span>
-                  <span className="text-white font-semibold tabular">{Math.round(safetyFactor * 100)}%</span>
-                </div>
-              )}
-              {activeParticipants > 0 && (
-                <div className="flex items-center justify-between">
-                  <span className="text-white/60 text-sm">Participants</span>
-                  <span className="text-white font-semibold tabular">{activeParticipants.toLocaleString()}</span>
-                </div>
-              )}
-              
-              {/* Safety Factor Progress Bar. Drawn only when there is a factor. */}
-              {safetyFactor != null && (
-              <div className="pt-2">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-white/60">Safety Factor</span>
-                  <span className="text-xs text-white/60 tabular">{Math.round(safetyFactor * 100)}%</span>
-                </div>
-                <div className="h-2 bg-white/10 rounded-[2px] overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${safetyFactor * 100}%` }}
-                    transition={{ duration: 1, ease: "easeOut", delay: 0.3 }}
-                    className="h-full bg-gradient-to-r from-purple-500 to-pink-500"
-                  />
-                </div>
-              </div>
-              )}
-
-              {/* Leaderboard Link */}
-              <button
-                onClick={() => setLocation('/leaderboard')}
-                className="w-full mt-2 py-3 rounded-xl bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 text-purple-300 font-medium hover:from-purple-500/30 hover:to-pink-500/30 transition-all flex items-center justify-center gap-2"
-              >
-                <Trophy className="w-4 h-4" />
-                {userRank ? `View Leaderboard • You're #${userRank}` : 'View Leaderboard'}
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          )}
-        </motion.div>
+        <CommunityPoolCard
+          isDemoMode={isDemoMode}
+          poolLoading={poolLoading}
+          poolTotal={poolTotal}
+          poolShare={poolShare}
+          poolDaysRemaining={poolDaysRemaining}
+          userSharePercentage={userSharePercentage}
+          safetyFactor={safetyFactor}
+          activeParticipants={activeParticipants}
+          userRank={userRank}
+          setLocation={setLocation}
+        />
 
         {/* Refund Goals Card */}
-        <motion.div variants={item} className="instrument-card mb-4">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-white">Refund goals</h2>
-            <Target className="w-5 h-5 text-amber-400" />
-          </div>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-white/60 text-sm">Current Refund</span>
-              <AnimatedNumber value={surplusProjection} prefix="£" className="text-emerald-400 font-bold text-xl" />
-            </div>
-            <div className="flex items-center justify-between text-xs text-white/60">
-              <span>Based on {drivingScore}% score</span>
-              <span>Max £{Math.round(premiumAmount * 0.15)}</span>
-            </div>
-            <div className="h-3 bg-white/10 rounded-[2px] overflow-hidden">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${Math.min((surplusProjection / Math.max(premiumAmount * 0.15, 1)) * 100, 100)}%` }}
-                transition={{ duration: 1, ease: "easeOut", delay: 0.4 }}
-                className="h-full bg-gradient-to-r from-amber-500 to-emerald-500"
-              />
-            </div>
-            {isNewUser ? (
-              <p className="text-white/60 text-xs text-center mt-2">
-                Drive safely to unlock refunds up to 15% of your premium!
-              </p>
-            ) : surplusProjection > 0 ? (
-              <p className="text-emerald-300/70 text-sm text-center mt-2">
-                You're on track for £{surplusProjection} back this period. Refunds are calculated at the end of each period.
-              </p>
-            ) : drivingScore < 70 ? (
-              <p className="text-amber-300/70 text-xs text-center mt-2">
-                Score 70+ to qualify for a refund. Keep driving safely!
-              </p>
-            ) : null}
-            <FinancialPromotionDisclaimer className="mt-3 text-center" />
-          </div>
-        </motion.div>
+        <RefundGoalsCard
+          surplusProjection={surplusProjection}
+          drivingScore={drivingScore}
+          premiumAmount={premiumAmount}
+          isNewUser={isNewUser}
+        />
 
         {/* Achievements Card */}
-        <motion.div variants={item} className="instrument-card mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-white">Achievements</h2>
-            <Trophy className="w-5 h-5 text-amber-400" />
-          </div>
-          {(isDemoMode || (dashboardData?.totalTrips || 0) > 0) ? (
-            <>
-              <div className="flex gap-3 overflow-x-auto pb-2 mb-4">
-                <div className="flex-shrink-0 w-16 h-16 rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-600/20 border border-amber-500/30 flex items-center justify-center">
-                  <Trophy className="w-8 h-8 text-amber-400" />
-                </div>
-                <div className="flex-shrink-0 w-16 h-16 rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/20 border border-emerald-500/30 flex items-center justify-center">
-                  <Car className="w-8 h-8 text-emerald-400" />
-                </div>
-                <div className="flex-shrink-0 w-16 h-16 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-600/20 border border-blue-500/30 flex items-center justify-center">
-                  <Target className="w-8 h-8 text-blue-400" />
-                </div>
-                <div className="flex-shrink-0 w-16 h-16 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
-                  <span className="text-white/55 text-2xl">?</span>
-                </div>
-              </div>
-              <button
-                onClick={() => setLocation('/achievements')}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500/20 to-amber-600/20 border border-amber-500/30 text-amber-300 font-medium hover:from-amber-500/30 hover:to-amber-600/30 transition-all flex items-center justify-center gap-2"
-              >
-                <Trophy className="w-4 h-4" />
-                View All Achievements
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-6 text-center">
-              <Trophy className="w-10 h-10 text-white/20 mb-3" />
-              <p className="text-white/60 text-sm mb-4">Complete trips to unlock achievements!</p>
-              <button
-                onClick={() => setLocation('/achievements')}
-                className="px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white/70 text-sm hover:bg-white/15 transition-all flex items-center gap-2"
-              >
-                View Achievements
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          )}
-        </motion.div>
+        <AchievementsCard
+          isDemoMode={isDemoMode}
+          dashboardData={dashboardData}
+          setLocation={setLocation}
+        />
 
         {/* Bottom Action Buttons */}
         <motion.div variants={item} className="grid grid-cols-2 gap-3">

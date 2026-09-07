@@ -38,8 +38,30 @@ import { describe, expect, it } from 'vitest';
 const ROOT = process.cwd();
 const read = (rel: string) => readFileSync(join(ROOT, rel), 'utf8');
 
-const DASHBOARD = 'client/src/pages/dashboard.tsx';
+/**
+ * The dashboard surface: the page plus the card modules it is composed from.
+ * The laws are about what the dashboard RENDERS, not about which file a line
+ * happens to live in, so every pin below runs across all of these. Adding a
+ * card module here is what keeps a law from going quiet when markup moves.
+ */
+const DASHBOARD_SURFACE = [
+  'client/src/pages/dashboard.tsx',
+  'client/src/components/dashboard/DashboardHeader.tsx',
+  'client/src/components/dashboard/DrivingScoreCard.tsx',
+  'client/src/components/dashboard/AiDriivaCard.tsx',
+  'client/src/components/dashboard/GpsMapCard.tsx',
+  'client/src/components/dashboard/TripsCard.tsx',
+  'client/src/components/dashboard/CommunityPoolCard.tsx',
+  'client/src/components/dashboard/RefundGoalsCard.tsx',
+  'client/src/components/dashboard/AchievementsCard.tsx',
+  'client/src/components/dashboard/DashboardSkeletons.tsx',
+  'client/src/components/dashboard/helpers.tsx',
+];
 const EXPLAINER = 'client/src/components/StartingScoreExplainer.tsx';
+
+/** Every dashboard file, paired with its source, so a failure names the file. */
+const readSurface = (): Array<{ rel: string; source: string }> =>
+  DASHBOARD_SURFACE.map((rel) => ({ rel, source: read(rel) }));
 
 /**
  * A resting paint: a bg- utility that applies without interaction. hover:bg-
@@ -73,18 +95,25 @@ function capsuleOffenders(source: string): string[] {
  * or the line above, so a three-line window around the figure is enough to
  * see whether its span carries the tabular class.
  */
-function figureLinesMissingTabular(source: string, anchors: string[]): string[] {
-  const lines = source.split('\n');
+function figureLinesMissingTabular(
+  files: Array<{ rel: string; source: string }>,
+  anchors: string[],
+): string[] {
   const missing: string[] = [];
   for (const anchor of anchors) {
-    const hits = lines
-      .map((line, i) => (line.includes(anchor) ? i : -1))
-      .filter((i) => i >= 0);
-    expect(hits.length, `anchor not found in ${DASHBOARD}: ${anchor}`).toBeGreaterThan(0);
-    for (const i of hits) {
-      const window = lines.slice(Math.max(0, i - 2), i + 1).join('\n');
-      if (!/tabular/.test(window)) missing.push(`${i + 1}: ${anchor}`);
+    let found = 0;
+    for (const { rel, source } of files) {
+      const lines = source.split('\n');
+      const hits = lines
+        .map((line, i) => (line.includes(anchor) ? i : -1))
+        .filter((i) => i >= 0);
+      found += hits.length;
+      for (const i of hits) {
+        const window = lines.slice(Math.max(0, i - 2), i + 1).join('\n');
+        if (!/tabular/.test(window)) missing.push(`${rel}:${i + 1}: ${anchor}`);
+      }
     }
+    expect(found, `anchor not found anywhere on the dashboard surface: ${anchor}`).toBeGreaterThan(0);
   }
   return missing;
 }
@@ -114,29 +143,42 @@ const BODY_COPY_ANCHORS = [
  * lines above it, the same window shape figureLinesMissingTabular already
  * uses for law 6.
  */
-function bodyCopyStillOnSecondaryFloor(source: string, anchors: string[]): string[] {
-  const lines = source.split('\n');
+function bodyCopyStillOnSecondaryFloor(
+  files: Array<{ rel: string; source: string }>,
+  anchors: string[],
+): string[] {
   const offenders: string[] = [];
   for (const anchor of anchors) {
-    const hits = lines
-      .map((line, i) => (line.includes(anchor) ? i : -1))
-      .filter((i) => i >= 0);
-    expect(hits.length, `anchor not found in ${DASHBOARD}: ${anchor}`).toBeGreaterThan(0);
-    for (const i of hits) {
-      const window = lines.slice(Math.max(0, i - 2), i + 1).join('\n');
-      if (/text-xs\b/.test(window)) offenders.push(`${i + 1}: ${anchor}`);
+    let found = 0;
+    for (const { rel, source } of files) {
+      const lines = source.split('\n');
+      const hits = lines
+        .map((line, i) => (line.includes(anchor) ? i : -1))
+        .filter((i) => i >= 0);
+      found += hits.length;
+      for (const i of hits) {
+        const window = lines.slice(Math.max(0, i - 2), i + 1).join('\n');
+        if (/text-xs\b/.test(window)) offenders.push(`${rel}:${i + 1}: ${anchor}`);
+      }
     }
+    expect(found, `anchor not found anywhere on the dashboard surface: ${anchor}`).toBeGreaterThan(0);
   }
   return offenders;
 }
 
 describe('dashboard design-law pins', () => {
   it('law 1: no painted oblong on the dashboard is a capsule', () => {
-    expect(capsuleOffenders(read(DASHBOARD)).join('\n')).toBe('');
+    const offenders = readSurface().flatMap(({ rel, source }) =>
+      capsuleOffenders(source).map((o) => `${rel}:${o}`),
+    );
+    expect(offenders.join('\n')).toBe('');
   });
 
   it('law 5: nothing on the dashboard renders below the 13px secondary floor', () => {
-    expect(read(DASHBOARD).includes('text-[11px]')).toBe(false);
+    const offenders = readSurface()
+      .filter(({ source }) => source.includes('text-[11px]'))
+      .map(({ rel }) => rel);
+    expect(offenders.join('\n')).toBe('');
   });
 
   it('law 5: the starting score explainer sets its body copy at the 15px floor, not 13px', () => {
@@ -144,11 +186,11 @@ describe('dashboard design-law pins', () => {
   });
 
   it('law 6: every plain numeric readout span on the dashboard is tabular', () => {
-    expect(figureLinesMissingTabular(read(DASHBOARD), FIGURE_ANCHORS).join('\n')).toBe('');
+    expect(figureLinesMissingTabular(readSurface(), FIGURE_ANCHORS).join('\n')).toBe('');
   });
 
   it('law 5: the three >=60-character body strings sit at the 15px floor, not text-xs', () => {
-    expect(bodyCopyStillOnSecondaryFloor(read(DASHBOARD), BODY_COPY_ANCHORS).join('\n')).toBe('');
+    expect(bodyCopyStillOnSecondaryFloor(readSurface(), BODY_COPY_ANCHORS).join('\n')).toBe('');
   });
 });
 
@@ -181,12 +223,17 @@ describe('the pins fire on planted violations', () => {
       '</span>',
     ].join('\n');
     expect(
-      figureLinesMissingTabular(planted, ['{activeParticipants.toLocaleString()}']),
+      figureLinesMissingTabular(
+        [{ rel: 'planted.tsx', source: planted }],
+        ['{activeParticipants.toLocaleString()}'],
+      ),
     ).toHaveLength(1);
   });
 
   it('a long body string still on text-xs trips the new law 5 pin', () => {
     const planted = '<p className="text-xs text-white/70 leading-relaxed">{tip.tip}</p>';
-    expect(bodyCopyStillOnSecondaryFloor(planted, ['{tip.tip}'])).toHaveLength(1);
+    expect(
+      bodyCopyStillOnSecondaryFloor([{ rel: 'planted.tsx', source: planted }], ['{tip.tip}']),
+    ).toHaveLength(1);
   });
 });
