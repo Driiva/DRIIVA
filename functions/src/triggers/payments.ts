@@ -151,7 +151,7 @@ export const onPendingPaymentWrite = functions
         processedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
 
-    } catch (err: any) {
+    } catch (err) {
       // MONEY HAS BEEN TAKEN AND THERE IS NO COVER. Previously this wrote a
       // status nobody surfaced and logged a line nobody read, while the
       // checkout screen told the driver their policy was active. The failure
@@ -160,7 +160,7 @@ export const onPendingPaymentWrite = functions
       await snap.ref.update({
         status: 'failed',
         policyStatus: 'none',
-        error: err.message || 'Unknown error',
+        error: err instanceof Error && err.message ? err.message : 'Unknown error',
         processedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
 

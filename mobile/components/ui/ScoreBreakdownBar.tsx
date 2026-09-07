@@ -25,7 +25,7 @@ interface ScoreBreakdownBarProps {
 
 export const ScoreBreakdownBar: React.FC<ScoreBreakdownBarProps> = ({ label, value, weight }) => {
   const color = scoreColor(value);
-  const width = `${Math.min(Math.max(value, 0), 100)}%`;
+  const width: `${number}%` = `${Math.min(Math.max(value, 0), 100)}%`;
 
   return (
     <View style={styles.row}>
@@ -36,7 +36,7 @@ export const ScoreBreakdownBar: React.FC<ScoreBreakdownBarProps> = ({ label, val
         )}
       </View>
       <View style={styles.track}>
-        <View style={[styles.fill, { width: width as any, backgroundColor: color }]} />
+        <View style={[styles.fill, { width, backgroundColor: color }]} />
       </View>
       <Text style={[styles.value, { color }]}>{value}</Text>
     </View>

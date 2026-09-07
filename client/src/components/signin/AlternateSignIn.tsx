@@ -4,14 +4,7 @@
  * from client/src/pages/signin.tsx.
  */
 import BiometricAuth from "@/components/BiometricAuth";
-
-interface BiometricUser {
-  id: string;
-  firebaseUid?: string;
-  email: string;
-  displayName?: string;
-  firstName?: string;
-}
+import type { BiometricUser } from "@/lib/webauthn";
 
 interface AlternateSignInProps {
   isLoading: boolean;

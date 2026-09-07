@@ -95,11 +95,11 @@ export async function getWeatherForTrip(
     }
 
     return wmoCodeToCondition(code);
-  } catch (err: any) {
-    if (err?.name === 'AbortError') {
+  } catch (err) {
+    if (err instanceof Error && err.name === 'AbortError') {
       functions.logger.warn('[weather] Open-Meteo request timed out (3s)');
     } else {
-      functions.logger.warn('[weather] Failed to fetch weather:', err?.message ?? err);
+      functions.logger.warn('[weather] Failed to fetch weather:', err instanceof Error ? err.message : err);
     }
     return null;
   }

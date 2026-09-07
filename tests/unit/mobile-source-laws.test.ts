@@ -13,7 +13,6 @@
  */
 import { describe, expect, it } from 'vitest';
 
-// @ts-expect-error - the harness is plain ESM with no type declarations.
 import { runMobileSourceLaws, lintSource } from '../mobile-source-laws.mjs';
 
 interface LawResult {

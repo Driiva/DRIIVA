@@ -99,6 +99,11 @@ export interface Trip {
   speedViolations: number;
   nightDriving: boolean;
   sharpCorners: number;
-  telematicsData?: any;
+  /**
+   * The raw sensor payload as the provider sent it. Left unstructured because
+   * it is stored and forwarded, never read field by field here; `unknown`
+   * rather than `any` so anything that does read it has to narrow first.
+   */
+  telematicsData?: unknown;
   createdAt: Date;
 }

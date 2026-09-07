@@ -99,7 +99,9 @@ export async function acceptInsuranceQuoteInternal(
   const user = userDoc.data() as UserDocument;
 
   // Ensure Root policyholder
-  let policyholderPackageId: string = (user as any).rootPolicyholderId;
+  // Written back onto the user document by the insurance callable; see there.
+  let policyholderPackageId: string = (user as UserDocument & { rootPolicyholderId?: string })
+    .rootPolicyholderId as string;
   if (!policyholderPackageId) {
     // The identity on an insurance record is the driver's or we do not create
     // it. The old fallback was first_name "Driver", last_name "Unknown" at

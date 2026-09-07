@@ -120,6 +120,20 @@ export function TripRecorder({ userId, onTripEnd }: TripRecorderProps) {
 
   const [totalFlushedPoints, setTotalFlushedPoints] = useState(0);
 
+  /**
+   * The flush interval reads the geolocation buffer procedurally when it
+   * fires, not reactively: naming geo.buffer as a dependency would tear the
+   * timer down and rebuild it on every fix, which is a different batching
+   * behaviour from the one this component is specified to have. Holding the
+   * hook's latest value in a ref refreshed after each render gives the
+   * interval the current buffer while keeping the effect's dependency list
+   * honest, so no rule has to be switched off to express it.
+   */
+  const geoRef = useRef(geo);
+  useEffect(() => {
+    geoRef.current = geo;
+  });
+
   // --------------------------------------------------------------------------
   // 10-second batch upload loop
   // Runs only while status === 'tracking'.
@@ -129,7 +143,7 @@ export function TripRecorder({ userId, onTripEnd }: TripRecorderProps) {
     if (geo.status !== 'tracking') return;
 
     const interval = setInterval(async () => {
-      const snapshot = geo.buffer;
+      const snapshot = geoRef.current.buffer;
       if (snapshot.length === 0 || isFlushing.current) return;
       if (!tripIdRef.current) return;
 
@@ -137,7 +151,7 @@ export function TripRecorder({ userId, onTripEnd }: TripRecorderProps) {
       // Snapshot the current buffer before clearing so any points that arrive
       // during the async flush are captured in the next batch (not dropped).
       const pointsToFlush = [...snapshot];
-      geo.clearBuffer();
+      geoRef.current.clearBuffer();
 
       const payload: TripPointBatchPayload = {
         tripId: tripIdRef.current,
@@ -161,9 +175,6 @@ export function TripRecorder({ userId, onTripEnd }: TripRecorderProps) {
     }, 10_000); // 10-second batch cadence
 
     return () => clearInterval(interval);
-    // geo.buffer and geo.clearBuffer are intentionally NOT in deps — we read
-    // them procedurally inside the interval, not reactively.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [geo.status, userId]);
 
   // --------------------------------------------------------------------------
@@ -195,7 +206,7 @@ export function TripRecorder({ userId, onTripEnd }: TripRecorderProps) {
       };
       try {
         await flushToFirestore(payload);
-        geo.clearBuffer();
+        geoRef.current.clearBuffer();
       } catch (err) {
         console.error('[TripRecorder] final flush failed', err);
       }

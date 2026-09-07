@@ -97,11 +97,47 @@ const storageMock = vi.hoisted(() => ({
 
 vi.mock("../storage", () => ({ storage: storageMock }));
 
+import type { InsertPolicy, Policy } from "@shared/schema";
 import {
   transitionPolicy,
   createPolicyWithAudit,
   InvalidPolicyTransitionError,
 } from "./policyLifecycle";
+
+/**
+ * A complete policy row, so these tests hand the lifecycle a real Policy
+ * rather than a partial cast at each call site. Only the fields a test cares
+ * about are ever overridden; the rest are the column defaults.
+ */
+function policyFixture(overrides: Partial<Policy> = {}): Policy {
+  const now = new Date("2026-01-01T00:00:00.000Z");
+  return {
+    id: 0,
+    userId: 1,
+    policyNumber: "POL-FIXTURE",
+    status: "pending",
+    coverageType: "standard",
+    basePremiumCents: 0,
+    currentPremiumCents: 0,
+    discountPercentage: 0,
+    effectiveDate: now,
+    expirationDate: now,
+    renewalDate: null,
+    stripeSubscriptionId: null,
+    billingCycle: "annual",
+    createdAt: now,
+    updatedAt: now,
+    createdBy: null,
+    updatedBy: null,
+    ...overrides,
+  };
+}
+
+/** The insert half of the same fixture. */
+function insertPolicyFixture(overrides: Partial<InsertPolicy> = {}): InsertPolicy {
+  const { id: _id, ...rest } = policyFixture();
+  return { ...rest, ...overrides };
+}
 
 function auditFor(policyId: number): FakeAuditRow[] {
   return state.auditLog.filter((row) => row.policyId === policyId);
@@ -139,14 +175,14 @@ beforeEach(() => {
 describe("policyLifecycle", () => {
   it("walks the full lifecycle pending -> active -> past_due -> cancelled, one audit row per transition", async () => {
     const { policy: created } = await createPolicyWithAudit({
-      policy: { userId: 1, policyNumber: "POL-1", status: "pending" } as any,
+      policy: insertPolicyFixture({ policyNumber: "POL-1", status: "pending" }),
       causedBy: "admin:test-setup",
     });
     expect(created.status).toBe("pending");
     expect(auditFor(created.id)).toHaveLength(1);
     expect(auditFor(created.id)[0]).toMatchObject({ fromStatus: null, toStatus: "pending", causedBy: "admin:test-setup" });
 
-    const toActive = await transitionPolicy({ policy: created as any, toStatus: "active", causedBy: "stripe:evt_1" });
+    const toActive = await transitionPolicy({ policy: policyFixture(created), toStatus: "active", causedBy: "stripe:evt_1" });
     expect(toActive.policy.status).toBe("active");
     expect(auditFor(created.id)).toHaveLength(2);
     expect(auditFor(created.id)[1]).toMatchObject({ fromStatus: "pending", toStatus: "active", causedBy: "stripe:evt_1" });
@@ -167,14 +203,14 @@ describe("policyLifecycle", () => {
 
   it("rejects cancelled -> active (no re-activation path) and writes no audit entry for the rejected attempt", async () => {
     const { policy: created } = await createPolicyWithAudit({
-      policy: { userId: 1, policyNumber: "POL-2", status: "cancelled" } as any,
+      policy: insertPolicyFixture({ policyNumber: "POL-2", status: "cancelled" }),
       causedBy: "admin:test-setup",
     });
     expect(created.status).toBe("cancelled");
     const auditCountBefore = auditFor(created.id).length;
 
     await expect(
-      transitionPolicy({ policy: created as any, toStatus: "active", causedBy: "admin:sneaky-reactivation" })
+      transitionPolicy({ policy: policyFixture(created), toStatus: "active", causedBy: "admin:sneaky-reactivation" })
     ).rejects.toThrow(InvalidPolicyTransitionError);
 
     // No new audit row for the rejected attempt.
@@ -188,20 +224,20 @@ describe("policyLifecycle", () => {
 
   it("rejects any cancelled -> X transition (cancelled is terminal)", async () => {
     const { policy: created } = await createPolicyWithAudit({
-      policy: { userId: 1, policyNumber: "POL-3", status: "cancelled" } as any,
+      policy: insertPolicyFixture({ policyNumber: "POL-3", status: "cancelled" }),
       causedBy: "admin:test-setup",
     });
 
     for (const target of ["pending", "past_due", "lapsed", "cancelled"] as const) {
       await expect(
-        transitionPolicy({ policy: created as any, toStatus: target, causedBy: "admin:test" })
+        transitionPolicy({ policy: policyFixture(created), toStatus: target, causedBy: "admin:test" })
       ).rejects.toThrow(InvalidPolicyTransitionError);
     }
   });
 
   it("CAS guard rejects a stale-state write: two 'concurrent' transitions off the same observed fromStatus - only one wins, one audit row", async () => {
     const { policy: created } = await createPolicyWithAudit({
-      policy: { userId: 1, policyNumber: "POL-4", status: "active" } as any,
+      policy: insertPolicyFixture({ policyNumber: "POL-4", status: "active" }),
       causedBy: "admin:test-setup",
     });
     const auditCountBefore = auditFor(created.id).length;
@@ -219,11 +255,11 @@ describe("policyLifecycle", () => {
     // the row on; the second, still holding the original "active" snapshot,
     // must be rejected by the CAS guard rather than blindly overwriting
     // whatever the first write landed.
-    const first = await transitionPolicy({ policy: staleSnapshot as any, toStatus: "past_due", causedBy: "stripe:evt_a" });
+    const first = await transitionPolicy({ policy: policyFixture(staleSnapshot), toStatus: "past_due", causedBy: "stripe:evt_a" });
     expect(first.policy.status).toBe("past_due");
 
     await expect(
-      transitionPolicy({ policy: staleSnapshot as any, toStatus: "cancelled", causedBy: "stripe:evt_b" })
+      transitionPolicy({ policy: policyFixture(staleSnapshot), toStatus: "cancelled", causedBy: "stripe:evt_b" })
     ).rejects.toThrow(InvalidPolicyTransitionError);
 
     // Only the winning transition wrote an audit row for the pair.
@@ -246,7 +282,7 @@ describe("policyLifecycle", () => {
 
   it("I4: a forced audit-insert failure rolls back the status change too (CAS write + audit insert are one atomic unit)", async () => {
     const { policy: created } = await createPolicyWithAudit({
-      policy: { userId: 1, policyNumber: "POL-5", status: "active" } as any,
+      policy: insertPolicyFixture({ policyNumber: "POL-5", status: "active" }),
       causedBy: "admin:test-setup",
     });
     const auditCountBefore = auditFor(created.id).length;
@@ -256,7 +292,7 @@ describe("policyLifecycle", () => {
     state.auditShouldFailForPolicyId = created.id;
 
     await expect(
-      transitionPolicy({ policy: created as any, toStatus: "past_due", causedBy: "stripe:evt_audit_fail" })
+      transitionPolicy({ policy: policyFixture(created), toStatus: "past_due", causedBy: "stripe:evt_audit_fail" })
     ).rejects.toThrow("simulated audit insert failure");
 
     // The status change must NOT have taken effect - rolled back with the
@@ -269,7 +305,7 @@ describe("policyLifecycle", () => {
     // proving the rollback left the policy in a genuinely retryable state,
     // not stuck.
     state.auditShouldFailForPolicyId = null;
-    const retried = await transitionPolicy({ policy: created as any, toStatus: "past_due", causedBy: "stripe:evt_retry" });
+    const retried = await transitionPolicy({ policy: policyFixture(created), toStatus: "past_due", causedBy: "stripe:evt_retry" });
     expect(retried.policy.status).toBe("past_due");
     expect(auditFor(created.id)).toHaveLength(auditCountBefore + 1);
   });

@@ -11,7 +11,7 @@
  * Every Firestore query listener in the app should compose from this primitive.
  */
 
-import { useState, useEffect, useCallback, useRef, useContext } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, useContext } from 'react';
 import {
   onSnapshot,
   FirestoreError,
@@ -85,7 +85,17 @@ export function useFirestoreQuery<T>(
   options?: UseFirestoreQueryOptions<T>,
 ): UseFirestoreQueryResult<T> {
   const onlineStatus = useContext(OnlineStatusContext);
-  const reportFirestoreError = onlineStatus?.reportFirestoreError ?? (() => {});
+  /**
+   * Memoised because this sits in the subscribe effect's dependency list. The
+   * `??` fallback built a fresh closure on every render whenever the context
+   * was absent, which tore the Firestore subscription down and rebuilt it on
+   * every render. That churn was what the exhaustive-deps suppression here
+   * used to hide.
+   */
+  const reportFirestoreError = useMemo(
+    () => onlineStatus?.reportFirestoreError ?? (() => {}),
+    [onlineStatus],
+  );
 
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
@@ -174,7 +184,6 @@ export function useFirestoreQuery<T>(
       }
     };
   // refreshKey forces re-subscribe; queryOrNull identity change triggers cleanup+resubscribe
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queryOrNull, refreshKey, reportFirestoreError]);
 
   return { data, loading, error, isFromCache, refresh };

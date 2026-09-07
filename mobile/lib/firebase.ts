@@ -11,6 +11,8 @@
  */
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
+import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import type { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
 
 export const isExpoGo = Constants.appOwnership === 'expo';
 
@@ -61,7 +63,7 @@ const PREVIEW_USER_DOC = {
 const emptySnapshot = { empty: true, size: 0, docs: [] as never[] };
 
 /** A chainable query that always resolves to nothing. */
-const mockQuery: any = {
+const mockQuery = {
   where: () => mockQuery,
   orderBy: () => mockQuery,
   limit: () => mockQuery,
@@ -80,7 +82,7 @@ const mockDocSnapshot = {
   data: () => PREVIEW_USER_DOC,
 };
 
-const mockDocRef: any = {
+const mockDocRef = {
   id: 'preview',
   set: async () => {},
   update: async () => {},
@@ -93,15 +95,15 @@ const mockDocRef: any = {
   collection: () => mockCollection,
 };
 
-const mockCollection: any = {
+const mockCollection = {
   ...mockQuery,
   doc: (_id?: string) => mockDocRef,
   add: async () => mockDocRef,
 };
 
-const mockAuth: any = () => ({
+const mockAuth = () => ({
   currentUser: mockUser,
-  onAuthStateChanged: (cb: (u: any) => void) => {
+  onAuthStateChanged: (cb: (u: typeof mockUser) => void) => {
     setTimeout(() => cb(mockUser), 0);
     return () => {};
   },
@@ -111,27 +113,45 @@ const mockAuth: any = () => ({
   sendPasswordResetEmail: async () => {},
 });
 
-const mockFirestore: any = () => ({
+const mockFirestore = Object.assign(() => ({
   collection: (_name: string) => mockCollection,
   batch: () => ({ set: () => {}, update: () => {}, delete: () => {}, commit: async () => {} }),
   settings: () => {},
+}), {
+  FieldValue: {
+    serverTimestamp: () => new Date(),
+    increment: (n: number) => n,
+    arrayUnion: (...items: unknown[]) => items,
+    arrayRemove: (...items: unknown[]) => items,
+  },
+  Timestamp: {
+    now: () => ({ toDate: () => new Date(), toMillis: () => Date.now() }),
+    fromDate: (d: Date) => ({ toDate: () => d, toMillis: () => d.getTime() }),
+  },
+  CACHE_SIZE_UNLIMITED: 0,
 });
-mockFirestore.FieldValue = {
-  serverTimestamp: () => new Date(),
-  increment: (n: number) => n,
-  arrayUnion: (...items: unknown[]) => items,
-  arrayRemove: (...items: unknown[]) => items,
-};
-mockFirestore.CACHE_SIZE_UNLIMITED = 0;
 
 // --- Conditional export --------------------------------------------------
 
-let _auth: any;
-let _firestore: any;
+/**
+ * The two module callables this app uses, typed as the real SDK's. The Expo Go
+ * doubles above stand in for them, which is the one place a cast is honest:
+ * a hand-written preview cannot BE the library, it can only present its
+ * surface. Both branches then expose the same checked type to every screen.
+ */
+type AuthModule = () => FirebaseAuthTypes.Module;
+type FirestoreModule = (() => FirebaseFirestoreTypes.Module) & {
+  FieldValue: typeof FirebaseFirestoreTypes.FieldValue;
+  Timestamp: typeof FirebaseFirestoreTypes.Timestamp;
+  CACHE_SIZE_UNLIMITED: number;
+};
+
+let _auth: AuthModule;
+let _firestore: FirestoreModule;
 
 if (isExpoGo) {
-  _auth = mockAuth;
-  _firestore = mockFirestore;
+  _auth = mockAuth as unknown as AuthModule;
+  _firestore = mockFirestore as unknown as FirestoreModule;
 } else {
   // Lazy native loads. Metro bundles these but they only execute on this branch.
   _auth = require('@react-native-firebase/auth').default;

@@ -62,9 +62,15 @@ export class TelematicsCollector {
     }
 
     // Request device motion permission (iOS 13+)
-    if (typeof DeviceMotionEvent !== 'undefined' && typeof (DeviceMotionEvent as any).requestPermission === 'function') {
+    // iOS gates motion behind a permission prompt that the standard DOM lib
+    // does not declare, so the constructor is read through the shape that
+    // carries it rather than through `any`.
+    const motionEvent = typeof DeviceMotionEvent !== 'undefined'
+      ? (DeviceMotionEvent as unknown as { requestPermission?: () => Promise<string> })
+      : undefined;
+    if (typeof motionEvent?.requestPermission === 'function') {
       try {
-        const permission = await (DeviceMotionEvent as any).requestPermission();
+        const permission = await motionEvent.requestPermission();
         return {
           granted: permission === 'granted',
           permission: permission as PermissionState

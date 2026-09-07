@@ -14,7 +14,7 @@ function isIos() {
 function isInStandaloneMode() {
   return (
     window.matchMedia('(display-mode: standalone)').matches ||
-    ('standalone' in window.navigator && (window.navigator as any).standalone === true)
+    ('standalone' in window.navigator && (window.navigator as Navigator & { standalone?: boolean }).standalone === true)
   );
 }
 

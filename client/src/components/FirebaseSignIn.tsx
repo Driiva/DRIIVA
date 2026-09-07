@@ -5,9 +5,11 @@ import {
   createUserWithEmailAndPassword,
   signInWithPopup,
   GoogleAuthProvider,
-  signOut
+  signOut,
+  type User as FirebaseUser,
 } from "firebase/auth";
 import { auth, isFirebaseConfigured } from "@/lib/firebase";
+import { asAuthError } from "@/lib/signInErrors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { GlassCard } from "@/components/GlassCard";
@@ -18,7 +20,7 @@ import DriivaLogo from "@/components/DrivvaLogo";
 import FloatingStardust from "@/components/FloatingStardust";
 
 interface FirebaseSignInProps {
-  onAuthSuccess: (user: any) => void;
+  onAuthSuccess: (user: FirebaseUser) => void;
 }
 
 export default function FirebaseSignIn({ onAuthSuccess }: FirebaseSignInProps) {
@@ -58,10 +60,10 @@ export default function FirebaseSignIn({ onAuthSuccess }: FirebaseSignInProps) {
           description: `Signed in as ${user.email}`,
         });
       }
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: "Authentication failed",
-        description: error.message,
+        description: asAuthError(error).message,
         variant: "destructive",
       });
     } finally {
@@ -94,10 +96,10 @@ export default function FirebaseSignIn({ onAuthSuccess }: FirebaseSignInProps) {
           description: `Signed in with Google as ${user.email}`,
         });
       }
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: "Google sign-in failed",
-        description: error.message,
+        description: asAuthError(error).message,
         variant: "destructive",
       });
     } finally {

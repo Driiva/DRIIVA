@@ -10,7 +10,7 @@ import path from "path";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-type AppHandler = (req: any, res: any) => void;
+type AppHandler = (req: IncomingMessage, res: ServerResponse) => void;
 let handler: AppHandler | null = null;
 let initError: string | null = null;
 

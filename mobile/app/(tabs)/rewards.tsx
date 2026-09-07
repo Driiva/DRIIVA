@@ -103,7 +103,7 @@ export default function Rewards() {
     const unsubscribe = firestore()
       .collection('users')
       .doc(user.id)
-      .onSnapshot((snap: { data: () => Record<string, never> | undefined }) => {
+      .onSnapshot((snap) => {
         const dp = (snap.data()?.drivingProfile ?? {}) as Partial<Profile>;
         setProfile({
           totalTrips: dp.totalTrips ?? 0,

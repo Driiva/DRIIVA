@@ -75,8 +75,9 @@ export function useGeolocation(
   const getCurrentPosition = useCallback((): Promise<GeolocationPosition> => {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
-        const error = new Error('Geolocation is not supported') as any;
-        error.code = 2;
+        // Callers switch on GeolocationPositionError.code, so this stand-in
+        // carries the POSITION_UNAVAILABLE code rather than arriving bare.
+        const error = Object.assign(new Error('Geolocation is not supported'), { code: 2 });
         reject(error);
         return;
       }

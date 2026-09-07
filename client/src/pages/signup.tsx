@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { asAuthError } from '@/lib/signInErrors';
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
 import { AlertCircle, Loader2, Eye, EyeOff, User, Mail, Lock } from "lucide-react";
@@ -165,7 +166,8 @@ export default function Signup() {
         // Non-fatal - the Cloud Function has already provisioned the account.
       });
 
-    } catch (err: any) {
+    } catch (error) {
+      const err = asAuthError(error);
       console.error("Signup error:", err);
 
       if (err.code === 'auth/api-key-not-valid.-please-pass-a-valid-api-key' ||

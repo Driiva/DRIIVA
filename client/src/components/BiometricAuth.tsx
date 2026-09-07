@@ -18,6 +18,7 @@ import {
   checkHasPasskey,
   authenticateWithBiometrics,
   registerBiometricCredential,
+  type BiometricUser,
 } from '@/lib/webauthn';
 import { auth } from '@/lib/firebase';
 import { signInWithCustomToken } from 'firebase/auth';
@@ -28,7 +29,7 @@ import { ArcTracer } from '@/components/motion/Instrument';
 interface BiometricAuthProps {
   /** Email of the user trying to sign in (used for server lookup). */
   email: string;
-  onSuccess: (userData: any) => void;
+  onSuccess: (userData: BiometricUser) => void;
   onRegister?: () => void;
 }
 
@@ -76,13 +77,17 @@ export default function BiometricAuth({ email, onSuccess, onRegister }: Biometri
         await signInWithCustomToken(auth, result.customToken);
       }
 
+      // The server only returns a user alongside success; typing that honestly
+      // means saying what happens if it ever does not, rather than handing
+      // undefined to a caller that will dereference it.
+      if (!result.user) throw new Error('Authentication succeeded but returned no account');
       onSuccess(result.user);
       toast({ title: 'Welcome back!', description: `Authenticated with ${getDeviceLabel()}` });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Biometric authentication error:', error);
       toast({
         title: 'Authentication Failed',
-        description: error.message || 'Could not authenticate with biometrics',
+        description: error instanceof Error && error.message ? error.message : 'Could not authenticate with biometrics',
         variant: 'destructive',
       });
     } finally {
@@ -102,11 +107,11 @@ export default function BiometricAuth({ email, onSuccess, onRegister }: Biometri
       setHasCredentials(true);
       toast({ title: 'Passkey enabled!', description: `${getDeviceLabel()} has been enabled for your account` });
       if (onRegister) onRegister();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Biometric registration error:', error);
       toast({
         title: 'Setup Failed',
-        description: error.message || 'Could not set up biometric authentication',
+        description: error instanceof Error && error.message ? error.message : 'Could not set up biometric authentication',
         variant: 'destructive',
       });
     } finally {

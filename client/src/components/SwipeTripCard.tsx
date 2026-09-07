@@ -70,7 +70,7 @@ export function SwipeTripCard({
   const actionOpacity = useTransform(x, [-100, -60, 0], [1, 0.5, 0]);
   const actionScale = useTransform(x, [-100, -60, 0], [1, 0.8, 0.6]);
 
-  const handleDragEnd = useCallback((_: any, info: PanInfo) => {
+  const handleDragEnd = useCallback((_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     if (info.offset.x < -60) {
       setSwiped(true);
       haptic('light');

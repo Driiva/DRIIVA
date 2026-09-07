@@ -4,11 +4,13 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import type { ComponentProps } from 'react';
 import { C, T, S } from './theme';
 import { DriivButton } from './DriivButton';
 
 interface EmptyStateProps {
-  icon: string;
+  /** An Ionicons glyph name, checked against the set the icon font actually has. */
+  icon: ComponentProps<typeof Ionicons>['name'];
   title: string;
   subtitle?: string;
   action?: { label: string; onPress: () => void };
@@ -16,7 +18,7 @@ interface EmptyStateProps {
 
 export const EmptyState: React.FC<EmptyStateProps> = ({ icon, title, subtitle, action }) => (
   <View style={styles.container}>
-    <Ionicons name={icon as any} size={48} color={C.text.mut} style={styles.icon} />
+    <Ionicons name={icon} size={48} color={C.text.mut} style={styles.icon} />
     <Text style={styles.title}>{title}</Text>
     {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
     {action && (

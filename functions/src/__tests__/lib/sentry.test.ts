@@ -14,6 +14,7 @@
  * setting the env var and resetting the module cache.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import type * as functions from 'firebase-functions';
 
 const { mockAddBreadcrumb, mockCaptureException, mockSetUser, mockFlush, mockInit } = vi.hoisted(() => ({
   mockAddBreadcrumb: vi.fn(),
@@ -85,12 +86,24 @@ describe('wrapFunction breadcrumbs', () => {
     process.env.SENTRY_DSN_FUNCTIONS = 'https://fake@sentry.io/1';
   });
 
+  /**
+   * A CallableContext with only the field wrapFunction reads. Built through the
+   * real type so a change to what the wrapper reads fails here rather than
+   * sliding past a cast.
+   */
+  function callableContext(uid?: string): functions.https.CallableContext {
+    return {
+      auth: uid ? { uid, token: {} } : undefined,
+      rawRequest: {},
+    } as unknown as functions.https.CallableContext;
+  }
+
   it('leaves a breadcrumb before invoking the wrapped handler', async () => {
     const { wrapFunction } = await import('../../lib/sentry');
     const handler = vi.fn().mockResolvedValue('ok');
     const wrapped = wrapFunction(handler);
 
-    await wrapped({ foo: 1 }, { auth: { uid: 'u1' } } as any);
+    await wrapped({ foo: 1 }, callableContext('u1'));
 
     expect(mockAddBreadcrumb).toHaveBeenCalledWith(
       expect.objectContaining({ category: 'function', data: { userId: 'u1' } }),
@@ -106,7 +119,7 @@ describe('wrapFunction breadcrumbs', () => {
     const handler = vi.fn().mockResolvedValue('ok');
     const wrapped = wrapFunction(handler);
 
-    await wrapped({}, {} as any);
+    await wrapped({}, callableContext());
 
     expect(mockAddBreadcrumb).not.toHaveBeenCalled();
   });
@@ -116,6 +129,18 @@ describe('wrapTrigger breadcrumbs', () => {
   beforeEach(() => {
     process.env.SENTRY_DSN_FUNCTIONS = 'https://fake@sentry.io/1';
   });
+
+  /**
+   * A CallableContext with only the field wrapFunction reads. Built through the
+   * real type so a change to what the wrapper reads fails here rather than
+   * sliding past a cast.
+   */
+  function callableContext(uid?: string): functions.https.CallableContext {
+    return {
+      auth: uid ? { uid, token: {} } : undefined,
+      rawRequest: {},
+    } as unknown as functions.https.CallableContext;
+  }
 
   it('leaves a breadcrumb before invoking the wrapped handler', async () => {
     const { wrapTrigger } = await import('../../lib/sentry');

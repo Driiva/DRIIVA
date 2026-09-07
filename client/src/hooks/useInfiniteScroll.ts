@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, type ComponentType } from 'react';
 import { useLocation } from 'wouter';
 
 interface PageConfig {
   path: string;
-  component: any;
+  component: ComponentType;
   name: string;
 }
 

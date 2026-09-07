@@ -7,17 +7,22 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
-export async function apiRequest(
+/**
+ * The caller knows what the endpoint returns, so the payload type is theirs to
+ * name. Defaults to `unknown`, which forces a narrowing at the call site rather
+ * than handing back an `any` that spreads.
+ */
+export async function apiRequest<T = unknown>(
   url: string,
   options?: RequestInit
-): Promise<any> {
+): Promise<T> {
   const res = await fetch(url, {
     ...options,
     credentials: "include",
   });
 
   await throwIfResNotOk(res);
-  return res.json();
+  return res.json() as Promise<T>;
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";

@@ -431,7 +431,7 @@ export default function SignIn() {
                     // Firebase session is already established inside BiometricAuth
                     // via signInWithCustomToken — we just need to update React state.
                     setUser({
-                      id: userData.firebaseUid || userData.id,
+                      id: String(userData.firebaseUid || userData.id),
                       email: userData.email,
                       name: userData.displayName || userData.firstName || 'User',
                       onboardingComplete: true,

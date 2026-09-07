@@ -26,8 +26,18 @@ export default function BottomSheet({ isOpen, onClose }: BottomSheetProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
+  /** The payload this sheet posts to /api/incidents. */
+  interface IncidentReport {
+    userId: string | number;
+    type: string;
+    description: string;
+    location?: string;
+    severity: string;
+    status: string;
+  }
+
   const reportIncidentMutation = useMutation({
-    mutationFn: async (incidentData: any) => {
+    mutationFn: async (incidentData: IncidentReport) => {
       return apiRequest("/api/incidents", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

@@ -6,6 +6,7 @@ vi.hoisted(() => {
 });
 
 import type { Response, NextFunction } from "express";
+import type { User } from "@shared/schema";
 import {
   verifyFirebaseAuth,
   requireAuth,
@@ -36,6 +37,15 @@ function mockReq(overrides: Partial<AuthRequest> = {}): AuthRequest {
   } as AuthRequest;
 }
 
+/**
+ * A Neon user row with only the fields this middleware reads populated. Typed
+ * as the real row so a shape change here fails the test rather than sliding
+ * past a cast.
+ */
+function userRow(id: number): User {
+  return { id } as User;
+}
+
 function mockRes(): Response {
   const res: Partial<Response> = {};
   res.status = vi.fn().mockReturnValue(res);
@@ -59,17 +69,17 @@ describe("verifyFirebaseAuth", () => {
   });
 
   it("calls next without setting req.auth for invalid token", async () => {
-    mockedVerify.mockResolvedValue(null as any);
-    const req = mockReq({ headers: { authorization: "Bearer bad-token" } } as any);
+    mockedVerify.mockResolvedValue(null);
+    const req = mockReq({ headers: { authorization: "Bearer bad-token" } });
     await verifyFirebaseAuth(req, mockRes(), next);
     expect(next).toHaveBeenCalled();
     expect(req.auth).toBeUndefined();
   });
 
   it("sets req.auth when token is valid and user exists in DB", async () => {
-    mockedVerify.mockResolvedValue({ uid: "fb-123", email: "test@driiva.com" } as any);
-    mockedGetUser.mockResolvedValue({ id: 42 } as any);
-    const req = mockReq({ headers: { authorization: "Bearer valid-token" } } as any);
+    mockedVerify.mockResolvedValue({ uid: "fb-123", email: "test@driiva.com" });
+    mockedGetUser.mockResolvedValue(userRow(42));
+    const req = mockReq({ headers: { authorization: "Bearer valid-token" } });
     await verifyFirebaseAuth(req, mockRes(), next);
     expect(next).toHaveBeenCalled();
     expect(req.auth).toEqual({ uid: "fb-123", email: "test@driiva.com", userId: 42 });
@@ -79,9 +89,9 @@ describe("verifyFirebaseAuth", () => {
   // req.auth left unset). A valid token now authenticates regardless; the
   // Neon row only enriches userId, it is no longer a gate.
   it("sets req.auth with userId=undefined when token is valid but no DB user", async () => {
-    mockedVerify.mockResolvedValue({ uid: "fb-999", email: "ghost@driiva.com" } as any);
-    mockedGetUser.mockResolvedValue(null as any);
-    const req = mockReq({ headers: { authorization: "Bearer valid-token" } } as any);
+    mockedVerify.mockResolvedValue({ uid: "fb-999", email: "ghost@driiva.com" });
+    mockedGetUser.mockResolvedValue(undefined);
+    const req = mockReq({ headers: { authorization: "Bearer valid-token" } });
     await verifyFirebaseAuth(req, mockRes(), next);
     expect(next).toHaveBeenCalled();
     expect(req.auth).toEqual({ uid: "fb-999", email: "ghost@driiva.com", userId: undefined });
@@ -96,7 +106,7 @@ describe("requireAuth", () => {
   });
 
   it("calls next when req.auth.uid is present", () => {
-    const req = mockReq({ auth: { uid: "fb-123", email: "a@b.com", userId: 1 } } as any);
+    const req = mockReq({ auth: { uid: "fb-123", email: "a@b.com", userId: 1 } });
     const res = mockRes();
     requireAuth(req, res, next);
     expect(next).toHaveBeenCalled();
@@ -126,7 +136,7 @@ describe("requireResourceOwner", () => {
     const req = mockReq({
       auth: { uid: "fb-1", userId: 7 },
       params: { userId: "7" },
-    } as any);
+    });
     const res = mockRes();
     requireResourceOwner()(req, res, next);
     expect(next).toHaveBeenCalled();
@@ -136,7 +146,7 @@ describe("requireResourceOwner", () => {
     const req = mockReq({
       auth: { uid: "fb-1", userId: 7 },
       params: { userId: "99" },
-    } as any);
+    });
     const res = mockRes();
     requireResourceOwner()(req, res, next);
     expect(res.status).toHaveBeenCalledWith(403);
@@ -154,7 +164,7 @@ describe("requireResourceOwner", () => {
     const req = mockReq({
       auth: { uid: "fb-1", userId: undefined },
       params: { userId: "7" },
-    } as any);
+    });
     const res = mockRes();
     requireResourceOwner()(req, res, next);
     expect(res.status).toHaveBeenCalledWith(403);
@@ -173,7 +183,7 @@ describe("requireAdmin", () => {
   });
 
   it("calls next when uid is in ADMIN_UIDS", () => {
-    const req = mockReq({ auth: { uid: "admin-uid-1", userId: 1 } } as any);
+    const req = mockReq({ auth: { uid: "admin-uid-1", userId: 1 } });
     const res = mockRes();
     requireAdmin(req, res, next);
     expect(next).toHaveBeenCalled();
@@ -181,7 +191,7 @@ describe("requireAdmin", () => {
   });
 
   it("returns 403 when uid is not in ADMIN_UIDS", () => {
-    const req = mockReq({ auth: { uid: "not-an-admin", userId: 1 } } as any);
+    const req = mockReq({ auth: { uid: "not-an-admin", userId: 1 } });
     const res = mockRes();
     requireAdmin(req, res, next);
     expect(res.status).toHaveBeenCalledWith(403);

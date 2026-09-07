@@ -23,9 +23,11 @@ import type {
   VerifyAuthenticationResponseOpts,
   RegistrationResponseJSON,
   AuthenticationResponseJSON,
+  PublicKeyCredentialCreationOptionsJSON,
+  PublicKeyCredentialRequestOptionsJSON,
 } from '@simplewebauthn/server';
 import { db } from './db';
-import { users, webauthnCredentials, webauthnChallenges, type WebauthnCredential } from '@shared/schema';
+import { users, webauthnCredentials, webauthnChallenges, type User, type WebauthnCredential } from '@shared/schema';
 import { eq, and, lt } from 'drizzle-orm';
 import { getFirebaseAdmin } from './lib/firebase-admin';
 
@@ -78,13 +80,16 @@ const challengeStore = {
 // Service interface
 // ---------------------------------------------------------------------------
 
+/** The user row a successful assertion returns, with the password stripped. */
+export type AuthenticatedUser = Omit<User, 'password'>;
+
 export interface WebAuthnService {
-  generateRegistrationOptions(email: string, userAgent?: string): Promise<any>;
+  generateRegistrationOptions(email: string, userAgent?: string): Promise<PublicKeyCredentialCreationOptionsJSON>;
   verifyRegistration(email: string, response: RegistrationResponseJSON, userAgent?: string): Promise<{ verified: boolean; error?: string }>;
-  generateAuthenticationOptions(email: string): Promise<any>;
+  generateAuthenticationOptions(email: string): Promise<PublicKeyCredentialRequestOptionsJSON>;
   verifyAuthentication(email: string, response: AuthenticationResponseJSON): Promise<{
     verified: boolean;
-    user?: any;
+    user?: AuthenticatedUser;
     customToken?: string;
     error?: string;
   }>;
@@ -99,7 +104,7 @@ export interface WebAuthnService {
 
 export class SimpleWebAuthnService implements WebAuthnService {
 
-  async generateRegistrationOptions(email: string, userAgent?: string): Promise<any> {
+  async generateRegistrationOptions(email: string, userAgent?: string): Promise<PublicKeyCredentialCreationOptionsJSON> {
     const [user] = await db.select().from(users).where(eq(users.email, email));
     if (!user) throw new Error('User not found');
 
@@ -184,7 +189,7 @@ export class SimpleWebAuthnService implements WebAuthnService {
     }
   }
 
-  async generateAuthenticationOptions(email: string): Promise<any> {
+  async generateAuthenticationOptions(email: string): Promise<PublicKeyCredentialRequestOptionsJSON> {
     const [user] = await db.select().from(users).where(eq(users.email, email));
     if (!user) throw new Error('User not found');
 
@@ -218,7 +223,7 @@ export class SimpleWebAuthnService implements WebAuthnService {
   async verifyAuthentication(
     email: string,
     response: AuthenticationResponseJSON,
-  ): Promise<{ verified: boolean; user?: any; customToken?: string; error?: string }> {
+  ): Promise<{ verified: boolean; user?: AuthenticatedUser; customToken?: string; error?: string }> {
     const expectedChallenge = await challengeStore.get(`auth_${email}`);
     if (!expectedChallenge) {
       return { verified: false, error: 'Authentication challenge expired or not found' };
@@ -337,7 +342,11 @@ export class SimpleWebAuthnService implements WebAuthnService {
           eq(webauthnCredentials.userId, user.id),
         ));
 
-      return (result as any).rowCount > 0;
+      // drizzle's update result carries the affected-row count under a driver
+      // specific key; this is the node-postgres shape this app runs on.
+      return (result as { rowCount?: number }).rowCount !== undefined
+        ? (result as { rowCount: number }).rowCount > 0
+        : false;
     } catch (err) {
       console.error('[WebAuthn] deleteCredential error:', err);
       return false;

@@ -164,10 +164,10 @@ export function wrapFunction<TData, TResult>(
 /**
  * Wrap a Firestore trigger handler with Sentry error tracking.
  */
-export function wrapTrigger<T extends (...args: any[]) => Promise<any>>(
+export function wrapTrigger<T extends (...args: never[]) => Promise<unknown>>(
   handler: T,
 ): T {
-  return (async (...args: any[]): Promise<void> => {
+  return (async (...args: Parameters<T>): Promise<void> => {
     initSentry();
 
     addBreadcrumb('trigger', `${handler.name || 'anonymous'} invoked`);

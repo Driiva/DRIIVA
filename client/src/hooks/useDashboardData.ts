@@ -36,6 +36,23 @@ export interface DashboardTrip {
   duration: number; // minutes
 }
 
+/**
+ * Fields a user document may carry that the canonical UserDocument does not
+ * declare: `fullName` and `vehicle` predate the current schema, and the four
+ * quote inputs below are written by onboarding rather than by the profile
+ * writer. All optional, because a document is valid without any of them, and
+ * spelled out here so the dashboard reads them through a type rather than
+ * through a cast to any.
+ */
+interface LooselyTypedUserFields {
+  fullName?: string | null;
+  vehicle?: DashboardVehicle | null;
+  age?: number | null;
+  postcode?: string | null;
+  annualMileage?: number | null;
+  currentInsurer?: string | null;
+}
+
 export interface DashboardVehicle {
   make: string;
   model: string;
@@ -167,13 +184,22 @@ function calculateProjectedRefund(score: number, premiumCents: number): number {
   return cents === null ? 0 : cents / 100;
 }
 
+/** A Firestore Timestamp, recognised by the one method this file calls on it. */
+function hasToDate(value: unknown): value is { toDate: () => Date } {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as { toDate?: unknown }).toDate === 'function'
+  );
+}
+
 function parseMemberSince(rawCreatedAt: unknown): string | null {
   if (!rawCreatedAt) return null;
   try {
     const date: Date | null = typeof rawCreatedAt === 'string'
       ? new Date(rawCreatedAt)
-      : typeof (rawCreatedAt as any)?.toDate === 'function'
-        ? (rawCreatedAt as any).toDate()
+      : hasToDate(rawCreatedAt)
+        ? rawCreatedAt.toDate()
         : null;
     if (date && !isNaN(date.getTime())) {
       return date.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
@@ -222,11 +248,14 @@ export function useDashboardData(userId: string | null): UseDashboardDataResult 
       policy?.currentPremiumCents || userDoc?.activePolicy?.premiumCents || 0,
     );
 
+    // The fields UserDocument does not declare, read through one narrow type.
+    const looseFields = userDoc as (typeof userDoc & LooselyTypedUserFields) | null | undefined;
+
     return {
-      displayName: userDoc?.displayName || (userDoc as any)?.fullName || 'Driver',
+      displayName: userDoc?.displayName || looseFields?.fullName || 'Driver',
       photoURL: userDoc?.photoURL || null,
       phoneNumber: userDoc?.phoneNumber || null,
-      vehicle: (userDoc as any)?.vehicle ?? null,
+      vehicle: looseFields?.vehicle ?? null,
       email: userDoc?.email || null,
       drivingScore: Math.round(profile.currentScore),
       scoreBreakdown: {
@@ -254,10 +283,10 @@ export function useDashboardData(userId: string | null): UseDashboardDataResult 
       safetyFactor: typeof pool?.safetyFactor === 'number' ? pool.safetyFactor : null,
       activeParticipants: pool?.activeParticipants || 0,
       projectedRefund,
-      age: (userDoc as any)?.age ?? null,
-      postcode: (userDoc as any)?.postcode ?? null,
-      annualMileage: (userDoc as any)?.annualMileage ?? null,
-      currentInsurer: (userDoc as any)?.currentInsurer ?? null,
+      age: looseFields?.age ?? null,
+      postcode: looseFields?.postcode ?? null,
+      annualMileage: looseFields?.annualMileage ?? null,
+      currentInsurer: looseFields?.currentInsurer ?? null,
       memberSince: parseMemberSince(userDoc?.createdAt),
     };
   }, [userDoc, userLoading, userId, trips, policy, pool]);

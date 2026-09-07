@@ -34,6 +34,47 @@ export function base64UrlToArrayBuffer(base64url: string): ArrayBuffer {
 // Device support check
 // ---------------------------------------------------------------------------
 
+/**
+ * The credential descriptors the server sends inside the options JSON. Only
+ * `id` is rewritten here (base64url to ArrayBuffer); everything else is passed
+ * through to the browser untouched, so it is carried as-is.
+ */
+interface CredentialDescriptorJSON {
+  id: string;
+  [key: string]: unknown;
+}
+
+/**
+ * The options JSON as it arrives over the wire, before the base64url fields are
+ * turned into ArrayBuffers for navigator.credentials.
+ */
+interface WebAuthnOptionsJSON {
+  publicKey: {
+    challenge: string | ArrayBuffer;
+    user?: { id: string | ArrayBuffer; [key: string]: unknown };
+    excludeCredentials?: CredentialDescriptorJSON[];
+    allowCredentials?: CredentialDescriptorJSON[];
+    [key: string]: unknown;
+  };
+}
+
+/**
+ * The user a successful assertion returns: the server row with the password
+ * stripped. Only the fields the client reads are named.
+ */
+export interface BiometricUser {
+  id: string | number;
+  firebaseUid?: string | null;
+  email: string;
+  displayName?: string | null;
+  firstName?: string | null;
+}
+
+/** The message to show for a thrown value, without assuming it is an Error. */
+function messageFor(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message ? error.message : fallback;
+}
+
 export async function checkBiometricSupport(): Promise<{
   supported: boolean;
   platformAuthenticator: boolean;
@@ -100,17 +141,24 @@ export async function registerBiometricCredential(email: string): Promise<{
       throw new Error(err.message || 'Failed to start registration');
     }
 
-    const options = await startRes.json();
-    options.publicKey.challenge = base64UrlToArrayBuffer(options.publicKey.challenge);
-    options.publicKey.user.id = base64UrlToArrayBuffer(options.publicKey.user.id);
+    const options = await startRes.json() as WebAuthnOptionsJSON;
+    options.publicKey.challenge = base64UrlToArrayBuffer(options.publicKey.challenge as string);
+    if (options.publicKey.user) {
+      options.publicKey.user.id = base64UrlToArrayBuffer(options.publicKey.user.id as string);
+    }
     if (options.publicKey.excludeCredentials) {
-      options.publicKey.excludeCredentials = options.publicKey.excludeCredentials.map((c: any) => ({
+      options.publicKey.excludeCredentials = options.publicKey.excludeCredentials.map((c) => ({
         ...c,
-        id: base64UrlToArrayBuffer(c.id),
+        id: base64UrlToArrayBuffer(c.id) as unknown as string,
       }));
     }
 
-    const credential = await navigator.credentials.create(options);
+    // The JSON above has been rewritten in place into the ArrayBuffer shape the
+    // browser expects; the two types describe the same object either side of
+    // that rewrite, which is why this is asserted rather than inferred.
+    const credential = await navigator.credentials.create(
+      options as unknown as CredentialCreationOptions,
+    );
     if (!credential) throw new Error('Failed to create credential');
 
     const pk = credential as PublicKeyCredential;
@@ -139,9 +187,9 @@ export async function registerBiometricCredential(email: string): Promise<{
     }
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error('Biometric registration error:', error);
-    return { success: false, error: error.message || 'Failed to register biometric authentication' };
+    return { success: false, error: messageFor(error, 'Failed to register biometric authentication') };
   }
 }
 
@@ -151,7 +199,7 @@ export async function registerBiometricCredential(email: string): Promise<{
 
 export async function authenticateWithBiometrics(email: string): Promise<{
   success: boolean;
-  user?: any;
+  user?: BiometricUser;
   customToken?: string;
   error?: string;
 }> {
@@ -166,16 +214,19 @@ export async function authenticateWithBiometrics(email: string): Promise<{
       throw new Error(err.message || 'Failed to start authentication');
     }
 
-    const options = await startRes.json();
-    options.publicKey.challenge = base64UrlToArrayBuffer(options.publicKey.challenge);
+    const options = await startRes.json() as WebAuthnOptionsJSON;
+    options.publicKey.challenge = base64UrlToArrayBuffer(options.publicKey.challenge as string);
     if (options.publicKey.allowCredentials) {
-      options.publicKey.allowCredentials = options.publicKey.allowCredentials.map((c: any) => ({
+      options.publicKey.allowCredentials = options.publicKey.allowCredentials.map((c) => ({
         ...c,
-        id: base64UrlToArrayBuffer(c.id),
+        id: base64UrlToArrayBuffer(c.id) as unknown as string,
       }));
     }
 
-    const assertion = await navigator.credentials.get(options);
+    // Same rewrite-in-place as registration above.
+    const assertion = await navigator.credentials.get(
+      options as unknown as CredentialRequestOptions,
+    );
     if (!assertion) throw new Error('Failed to get assertion');
 
     const pk = assertion as PublicKeyCredential;
@@ -209,9 +260,9 @@ export async function authenticateWithBiometrics(email: string): Promise<{
 
     const result = await verifyRes.json();
     return { success: true, user: result.user, customToken: result.customToken ?? undefined };
-  } catch (error: any) {
+  } catch (error) {
     console.error('Biometric authentication error:', error);
-    return { success: false, error: error.message || 'Failed to authenticate with biometrics' };
+    return { success: false, error: messageFor(error, 'Failed to authenticate with biometrics') };
   }
 }
 
@@ -234,9 +285,9 @@ export async function getUserCredentials(idToken: string): Promise<{
     }
     const data = await res.json();
     return { hasCredentials: data.credentials.length > 0, credentials: data.credentials };
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error fetching credentials:', error);
-    return { hasCredentials: false, error: error.message || 'Failed to fetch credentials' };
+    return { hasCredentials: false, error: messageFor(error, 'Failed to fetch credentials') };
   }
 }
 
@@ -254,8 +305,8 @@ export async function deleteCredential(credentialId: string, idToken: string): P
       throw new Error(err.message || 'Failed to delete credential');
     }
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error deleting credential:', error);
-    return { success: false, error: error.message || 'Failed to delete credential' };
+    return { success: false, error: messageFor(error, 'Failed to delete credential') };
   }
 }

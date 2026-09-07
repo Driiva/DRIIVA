@@ -30,7 +30,18 @@ import { firestore, isExpoGo } from '@/lib/firebase';
  * time and crashes Expo Go before a single screen renders. The mock keeps the
  * preview path alive; a real build takes the native module.
  */
-const messaging: any = isExpoGo
+/**
+ * The slice of @react-native-firebase/messaging this app uses. Declared here so
+ * the Expo Go double below and the native module present the same checked
+ * surface instead of an `any`.
+ */
+type MessagingModule = () => {
+  registerDeviceForRemoteMessages: () => Promise<void>;
+  getToken: () => Promise<string>;
+  onTokenRefresh: (cb: (token: string) => void) => () => void;
+};
+
+const messaging: MessagingModule = isExpoGo
   ? () => ({
       registerDeviceForRemoteMessages: async () => {},
       getToken: async () => 'expo-go-preview-token',

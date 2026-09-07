@@ -18,7 +18,7 @@
  * asked for less motion watches the first entrance play before the preference
  * lands. A guard that arrives after the animation is not a guard.
  */
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { Platform, Pressable, StyleSheet, View } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
 import Animated, {
@@ -96,14 +96,17 @@ export function Enter({ children, index = 0, count = 1, delay = 0, style }: Ente
   const from = useMemo(() => enterFrom(reduceMotion), [reduceMotion]);
   const wait = staggerDelay(index, count, reduceMotion) + (reduceMotion ? 0 : delay);
 
+  // The entrance plays once, from the delay as it stood at mount. Holding that
+  // in a ref is what lets the dependency list be honest: `progress` is a shared
+  // value with a stable identity, so naming it does not make this rerun.
+  const waitOnMount = useRef(wait);
+
   useEffect(() => {
     progress.value = withDelay(
-      wait,
+      waitOnMount.current,
       withTiming(1, { duration: MOTION.duration.enter, easing: EASE_OUT }),
     );
-    // Mount only. See the note above.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [progress]);
 
   const animated = useAnimatedStyle(() => ({
     opacity: from.opacity + (1 - from.opacity) * progress.value,
@@ -229,15 +232,22 @@ export function useDrawOn(duration: number, delay = 0) {
   const reduceMotion = useReduceMotion();
   const progress = useSharedValue(reduceMotion ? 1 : 0);
 
+  // The draw runs once, from the timing as it stood at mount, and again only if
+  // the reduced-motion preference flips. A trace redrawing itself on every
+  // snapshot is a distraction, so the timings are pinned in a ref rather than
+  // named as dependencies.
+  const timingOnMount = useRef({ duration, delay });
+
   useEffect(() => {
     if (reduceMotion) {
       progress.value = 1;
       return;
     }
-    progress.value = withDelay(delay, withTiming(1, { duration, easing: EASE_OUT }));
-    // Mount only: a trace redrawing itself on every snapshot is a distraction.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reduceMotion]);
+    progress.value = withDelay(
+      timingOnMount.current.delay,
+      withTiming(1, { duration: timingOnMount.current.duration, easing: EASE_OUT }),
+    );
+  }, [reduceMotion, progress]);
 
   return progress;
 }

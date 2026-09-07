@@ -20,7 +20,11 @@ export function getStripe(): Stripe {
   if (!key) {
     throw new Error('STRIPE_SECRET_KEY is not configured');
   }
-  _stripe = new Stripe(key, { apiVersion: '2025-01-27.acacia' as any });
+  // Pinned deliberately: stripe-node's types track the newest API version, but
+  // this app is written against the fields 2025-01-27.acacia returns.
+  _stripe = new Stripe(key, {
+    apiVersion: '2025-01-27.acacia' as Stripe.StripeConfig['apiVersion'],
+  });
   return _stripe;
 }
 

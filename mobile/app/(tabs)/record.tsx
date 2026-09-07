@@ -112,6 +112,20 @@ export default function Drive() {
       .catch(() => undefined);
   }, []);
 
+  /**
+   * The tick below calls two handlers that are declared after it, and calls
+   * them when it FIRES rather than when it is created. Naming them as
+   * dependencies would tear the interval down and rebuild it whenever either
+   * identity changed; declaring them earlier would not help, because the tick
+   * still needs whichever version is current a minute into a drive. A ref
+   * refreshed after every render gives it exactly that, and lets the
+   * dependency list say what it means instead of being switched off.
+   */
+  const tickHandlers = useRef<{
+    captureBaseline: () => Promise<void>;
+    onTripClosed: (tripId: string | null) => void;
+  } | null>(null);
+
   // One tick drives the whole readout, from the monitor rather than from any
   // single sensor callback: once "Always" location is granted iOS delivers the
   // trip's fixes to the background task, which never touches React state.
@@ -128,21 +142,20 @@ export default function Drive() {
         // trip that is when the driver set off, not when detection became sure
         // and not when this screen happened to mount.
         tripStartedAt.current = driveMonitor.tripStartedAt ?? Date.now();
-        void captureBaseline();
+        void tickHandlers.current?.captureBaseline();
       }
       if (!open && tripStartedAt.current !== null) {
         tripStartedAt.current = null;
         setElapsed(0);
         setDistanceMeters(0);
         setPickups(0);
-        onTripClosed(openId);
+        tickHandlers.current?.onTripClosed(openId);
       }
       if (open) {
         setElapsed(Math.floor((Date.now() - (tripStartedAt.current ?? Date.now())) / 1000));
       }
     }, 1000);
     return () => clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const captureBaseline = useCallback(async () => {
@@ -182,11 +195,13 @@ export default function Drive() {
         return;
       }
       setNotice(null);
-      if (tripId) waitForScore(tripId);
+      if (tripId) scoreWatcher.current?.(tripId);
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
+
+  /** waitForScore is declared below; onTripClosed reaches it through this ref. */
+  const scoreWatcher = useRef<((tripId: string) => void) | null>(null);
 
   const waitForScore = useCallback(
     (tripId: string) => {
@@ -194,7 +209,7 @@ export default function Drive() {
       scoreWatch.current = firestore()
         .collection('trips')
         .doc(tripId)
-        .onSnapshot(async (docSnap: { exists: boolean; data: () => Record<string, unknown> }) => {
+        .onSnapshot(async (docSnap) => {
           if (!docSnap.exists) return;
           const data = docSnap.data() as { status?: string; score?: number; distanceMeters?: number };
           if (data.status !== 'completed') return;
@@ -233,6 +248,13 @@ export default function Drive() {
     },
     [user],
   );
+
+  // Refresh the handler refs after every render, so the mount-once tick above
+  // and onTripClosed always reach the current closures.
+  useEffect(() => {
+    tickHandlers.current = { captureBaseline, onTripClosed };
+    scoreWatcher.current = waitForScore;
+  });
 
   useEffect(() => () => scoreWatch.current?.(), []);
 

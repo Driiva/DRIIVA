@@ -125,9 +125,12 @@ async function ensurePolicyholder(
   userId: string,
   user: UserDocument,
 ): Promise<string> {
-  // Return cached ID if we already created one
-  if ((user as any).rootPolicyholderId) {
-    return (user as any).rootPolicyholderId as string;
+  // Return cached ID if we already created one. rootPolicyholderId is written
+  // back onto the user document by this function, so it is not part of the
+  // canonical UserDocument; named here rather than reached through `any`.
+  const cached = (user as UserDocument & { rootPolicyholderId?: string }).rootPolicyholderId;
+  if (cached) {
+    return cached;
   }
 
   const { firstName, lastName, email } = requirePolicyholderIdentity(userId, user);
